@@ -1,0 +1,244 @@
+using Nexus.GameEngine.Actions;
+using Nexus.GameEngine.Components;
+
+using Silk.NET.Input;
+
+namespace Nexus.GameEngine.Input.Components;
+
+/// <summary>
+/// Runtime component that binds gamepad input events to a specific action type.
+/// The action is injected via constructor, eliminating the need for service provider dependencies.
+/// When activated, subscribes directly to gamepad events and executes the injected action
+/// when the specified gamepad input occurs.
+/// </summary>
+/// <typeparam name="TAction">The type of action to execute when the gamepad binding is triggered</typeparam>
+/// <remarks>
+/// Initializes a new instance of the GamepadBinding class with dependency injection.
+/// </remarks>
+/// <param name="inputContext">The input context to use for registering gamepad events</param>
+/// <param name="action">The action instance to execute when the gamepad input occurs</param>
+public class GamepadBinding(
+    IInputContext inputContext,
+    IActionFactory actionFactory)
+    : InputBinding(inputContext, actionFactory)
+{
+
+    /// <summary>
+    /// Template for configuring gamepad input bindings.
+    /// </summary>
+    public new record Template : InputBinding.Template
+    {
+        /// <summary>
+        /// The gamepad button that triggers this binding.
+        /// </summary>
+        public ButtonName Button { get; init; } = ButtonName.A;
+
+        /// <summary>
+        /// The type of gamepad event to listen for.
+        /// </summary>
+        public GamepadEventType EventType { get; init; } = GamepadEventType.ButtonDown;
+
+        /// <summary>
+        /// For analog inputs (triggers, thumbsticks), the threshold value to trigger the action.
+        /// </summary>
+        public float Threshold { get; init; } = 0.5f;
+
+        /// <summary>
+        /// For thumbstick inputs, the specific thumbstick to monitor.
+        /// </summary>
+        public ThumbstickType ThumbstickType { get; init; } = ThumbstickType.Left;
+
+        /// <summary>
+        /// For trigger inputs, the specific trigger to monitor.
+        /// </summary>
+        public TriggerType TriggerType { get; init; } = TriggerType.Left;
+
+        /// <summary>
+        /// The action type to execute when the gamepad input is triggered.
+        /// </summary>
+        public Type ActionType { get; init; } = typeof(object);
+    }
+
+    private ButtonName _button = ButtonName.A;
+    private GamepadEventType _eventType = GamepadEventType.ButtonDown;
+    private float _threshold = 0.5f;
+    private ThumbstickType _thumbstickType = ThumbstickType.Left;
+    private TriggerType _triggerType = TriggerType.Left;
+
+    /// <summary>
+    /// The gamepad button that triggers this binding.
+    /// </summary>
+    public ButtonName Button
+    {
+        get => _button;
+        set => _button = value;
+    }
+
+    /// <summary>
+    /// The type of gamepad event to listen for.
+    /// </summary>
+    public GamepadEventType EventType
+    {
+        get => _eventType;
+        set => _eventType = value;
+    }
+
+    /// <summary>
+    /// For analog inputs, the threshold value to trigger the action.
+    /// </summary>
+    public float Threshold
+    {
+        get => _threshold;
+        set => _threshold = Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>
+    /// For thumbstick inputs, the specific thumbstick to monitor.
+    /// </summary>
+    public ThumbstickType ThumbstickType
+    {
+        get => _thumbstickType;
+        set => _thumbstickType = value;
+    }
+
+    /// <summary>
+    /// For trigger inputs, the specific trigger to monitor.
+    /// </summary>
+    public TriggerType TriggerType
+    {
+        get => _triggerType;
+        set => _triggerType = value;
+    }
+
+    /// <summary>
+    /// Configure the gamepad binding using the provided template.
+    /// </summary>
+    /// <param name="template">Template containing configuration data</param>
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            Button = template.Button;
+            EventType = template.EventType;
+            Threshold = template.Threshold;
+            ThumbstickType = template.ThumbstickType;
+            TriggerType = template.TriggerType;
+        }
+    }
+
+    /// <summary>
+    /// Subscribe to the appropriate gamepad events based on configuration.
+    /// </summary>
+    protected override void SubscribeToInputEvents()
+    {
+        if (_inputContext == null) return;
+
+        foreach (var gamepad in _inputContext.Gamepads)
+        {
+            switch (EventType)
+            {
+                case GamepadEventType.ButtonDown:
+                    gamepad.ButtonDown += OnButtonDown;
+                    break;
+                case GamepadEventType.ButtonUp:
+                    gamepad.ButtonUp += OnButtonUp;
+                    break;
+                case GamepadEventType.ThumbstickMoved:
+                    gamepad.ThumbstickMoved += OnThumbstickMoved;
+                    break;
+                case GamepadEventType.TriggerPressed:
+                    gamepad.TriggerMoved += OnTriggerMoved;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unsubscribe from gamepad events.
+    /// </summary>
+    protected override void UnsubscribeFromInputEvents()
+    {
+        if (_inputContext == null) return;
+
+        foreach (var gamepad in _inputContext.Gamepads)
+        {
+            gamepad.ButtonDown -= OnButtonDown;
+            gamepad.ButtonUp -= OnButtonUp;
+            gamepad.ThumbstickMoved -= OnThumbstickMoved;
+            gamepad.TriggerMoved -= OnTriggerMoved;
+        }
+    }
+
+    /// <summary>
+    /// Handle gamepad button down events.
+    /// </summary>
+    private async void OnButtonDown(IGamepad gamepad, Button button)
+    {
+        if (button.Name == Button)
+        {
+            await ExecuteActionAsync($"Gamepad button {button.Name} down");
+        }
+    }
+
+    /// <summary>
+    /// Handle gamepad button up events.
+    /// </summary>
+    private async void OnButtonUp(IGamepad gamepad, Button button)
+    {
+        if (button.Name == Button)
+        {
+            await ExecuteActionAsync($"Gamepad button {button.Name} up");
+        }
+    }
+
+    /// <summary>
+    /// Handle thumbstick movement events.
+    /// </summary>
+    private async void OnThumbstickMoved(IGamepad gamepad, Thumbstick thumbstick)
+    {
+        bool isTargetThumbstick = (ThumbstickType == ThumbstickType.Left && thumbstick.Index == 0) ||
+                                  (ThumbstickType == ThumbstickType.Right && thumbstick.Index == 1);
+
+        if (isTargetThumbstick)
+        {
+            var magnitude = Math.Sqrt(thumbstick.X * thumbstick.X + thumbstick.Y * thumbstick.Y);
+            if (magnitude >= Threshold)
+            {
+                await ExecuteActionAsync($"Gamepad {ThumbstickType} thumbstick moved (magnitude: {magnitude:F2})");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle trigger movement events.
+    /// </summary>
+    private async void OnTriggerMoved(IGamepad gamepad, Trigger trigger)
+    {
+        bool isTargetTrigger = (TriggerType == TriggerType.Left && trigger.Index == 0) ||
+                               (TriggerType == TriggerType.Right && trigger.Index == 1);
+
+        if (isTargetTrigger && trigger.Position >= Threshold)
+        {
+            await ExecuteActionAsync($"Gamepad {TriggerType} trigger pressed (value: {trigger.Position:F2})");
+        }
+    }
+
+    /// <summary>
+    /// Validate the gamepad binding configuration.
+    /// </summary>
+    protected override IEnumerable<ValidationError> OnValidate()
+    {
+        foreach (var error in base.OnValidate()) yield return error;
+
+        if (Threshold < 0f || Threshold > 1f)
+        {
+            yield return new ValidationError(
+                this,
+                "Threshold must be between 0.0 and 1.0",
+                ValidationSeverityEnum.Error
+            );
+        }
+    }
+}

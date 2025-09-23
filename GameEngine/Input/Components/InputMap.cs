@@ -1,0 +1,147 @@
+using Microsoft.Extensions.Logging;
+
+using Nexus.GameEngine.Components;
+
+namespace Nexus.GameEngine.Input.Components;
+
+/// <summary>
+/// Runtime component that serves as a container for input binding components.
+/// Provides context-aware input handling by managing the activation/deactivation
+/// of child input binding components. When this mapping is active, all child
+/// input bindings are activated. When deactivated, all child bindings are deactivated.
+/// </summary>
+public class InputMap : RuntimeComponent
+{
+
+    /// <summary>
+    /// Template for defining input mappings that organize input binding components.
+    /// InputMap serves as a container for InputBinding components and provides
+    /// context-aware input handling through component activation/deactivation.
+    /// </summary>
+    public new record Template : RuntimeComponent.Template
+    {
+        /// <summary>
+        /// Description of when this input mapping should be active.
+        /// </summary>
+        public string Description { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Priority level for this input mapping when multiple mappings are active.
+        /// Higher values have higher priority.
+        /// </summary>
+        public int Priority { get; init; } = 0;
+    }
+
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private int _priority = 0;
+    private bool _enabledByDefault = true;
+
+    /// <summary>
+    /// Description of when this input mapping should be active.
+    /// </summary>
+    public string Description
+    {
+        get => _description;
+        set => _description = value ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Priority level for this input mapping when multiple mappings are active.
+    /// Higher values have higher priority.
+    /// </summary>
+    public int Priority
+    {
+        get => _priority;
+        set => _priority = value;
+    }
+
+    /// <summary>
+    /// Whether this input mapping should be enabled by default.
+    /// </summary>
+    public bool EnabledByDefault
+    {
+        get => _enabledByDefault;
+        set => _enabledByDefault = value;
+    }
+
+    /// <summary>
+    /// Configure the input mapping using the provided template.
+    /// </summary>
+    /// <param name="componentTemplate">Template containing configuration data</param>
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            Description = template.Description;
+            Priority = template.Priority;
+        }
+    }
+
+    /// <summary>
+    /// Activate this input mapping and all child input bindings.
+    /// Called when this input context becomes active.
+    /// </summary>
+    protected override void OnActivate()
+    {
+        Logger?.LogDebug($"InputMap '{Name}' activated with {Children.Count()} child bindings");
+
+        // Child components are automatically activated by the base class
+        // Each input binding will handle its own event subscription
+    }
+
+    /// <summary>
+    /// Deactivate this input mapping and all child input bindings.
+    /// Called when this input context becomes inactive.
+    /// </summary>
+    protected override void OnDeactivate()
+    {
+        Logger?.LogDebug($"InputMap '{Name}' deactivated");
+
+        // Child components are automatically deactivated by the base class
+        // Each input binding will handle its own event unsubscription
+    }
+
+    /// <summary>
+    /// Validate the input mapping configuration.
+    /// </summary>
+    /// <returns>Collection of validation errors</returns>
+    protected override IEnumerable<ValidationError> OnValidate()
+    {
+        var errors = new List<ValidationError>();
+
+        if (string.IsNullOrWhiteSpace(Name))
+        {
+            errors.Add(new ValidationError(
+                this,
+                "Name should be specified for better debugging and identification",
+                ValidationSeverityEnum.Warning
+            ));
+        }
+
+        return errors;
+    }
+
+    /// <summary>
+    /// Get all input binding components that are children of this mapping.
+    /// </summary>
+    /// <returns>Enumerable of input binding components</returns>
+    public IEnumerable<IRuntimeComponent> GetInputBindings()
+    {
+        return Children.Where(child =>
+            child.GetType().IsGenericType &&
+            child.GetType().GetGenericTypeDefinition().Name.Contains("Binding"));
+    }
+
+    /// <summary>
+    /// Get all input binding components of a specific type.
+    /// </summary>
+    /// <typeparam name="T">Type of input binding to retrieve</typeparam>
+    /// <returns>Enumerable of input binding components of the specified type</returns>
+    public IEnumerable<T> GetInputBindings<T>() where T : IRuntimeComponent
+    {
+        return GetChildren<T>();
+    }
+}

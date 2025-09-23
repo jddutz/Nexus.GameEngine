@@ -1,0 +1,142 @@
+[
+  {
+    "id": "legionary",
+    "name": "Legionary",
+    "image_resource_path": "GameArt/Characters/Legionary",
+    "sprite_path": "Sprites/Characters/Legionary_48",
+    "description": ""
+  },
+  {
+    "id": "sentinel",
+    "name": "Sentinel",
+    "image_resource_path": "GameArt/Characters/Sentinel",
+    "sprite_path": "Sprites/Characters/Sentinel_48",
+    "description": ""
+  },
+  {
+    "id": "blade_dancer",
+    "name": "Blade Dancer",
+    "image_resource_path": "GameArt/Characters/BladeDancer",
+    "sprite_path": "Sprites/Characters/BladeDancer_48",
+    "description": ""
+  },
+  {
+    "id": "war_engineer",
+    "name": "War Engineer",
+    "image_resource_path": "GameArt/Characters/WarEngineer",
+    "sprite_path": "Sprites/Characters/WarEngineer_48",
+    "description": ""
+  },
+  {
+    "id": "combat_medic",
+    "name": "Combat Medic",
+    "image_resource_path": "GameArt/Characters/CombatMedic",
+    "sprite_path": "Sprites/Characters/CombatMedic_48",
+    "description": ""
+  },
+  {
+    "id": "gadgeteer",
+    "name": "Gadgeteer",
+    "image_resource_path": "GameArt/Characters/Gadgeteer",
+    "sprite_path": "Sprites/Characters/Gadgeteer_48",
+    "description": ""
+  },
+  {
+    "id": "machinist",
+    "name": "Machinist",
+    "image_resource_path": "GameArt/Characters/Machinist",
+    "sprite_path": "Sprites/Characters/Machinist_48",
+    "description": ""
+  },
+  {
+    "id": "artificer",
+    "name": "Artificer",
+    "image_resource_path": "GameArt/Characters/Artificer",
+    "sprite_path": "Sprites/Characters/Artificer_48",
+    "description": ""
+  },
+  {
+    "id": "flux_engineer",
+    "name": "Flux Engineer",
+    "image_resource_path": "GameArt/Characters/FluxEngineer",
+    "sprite_path": "Sprites/Characters/FluxEngineer_48",
+    "description": ""
+  },
+  {
+    "id": "technomancer",
+    "name": "Technomancer",
+    "image_resource_path": "GameArt/Characters/Technomancer",
+    "sprite_path": "Sprites/Characters/Technomancer_48",
+    "description": ""
+  },
+  {
+    "id": "water_keeper",
+    "name": "Water Keeper",
+    "image_resource_path": "GameArt/Characters/WaterKeeper",
+    "sprite_path": "Sprites/Characters/WaterKeeper_48",
+    "description": ""
+  },
+  {
+    "id": "beastkin",
+    "name": "Beastkin",
+    "image_resource_path": "GameArt/Characters/Beastkin",
+    "sprite_path": "Sprites/Characters/Beastkin_48",
+    "description": ""
+  },
+  {
+    "id": "arborist",
+    "name": "Arborist",
+    "image_resource_path": "GameArt/Characters/Arborist",
+    "sprite_path": "Sprites/Characters/Arborist_48",
+    "description": ""
+  },
+  {
+    "id": "shaman",
+    "name": "Shaman",
+    "image_resource_path": "GameArt/Characters/Shaman",
+    "sprite_path": "Sprites/Characters/Shaman_48",
+    "description": ""
+  },
+  {
+    "id": "pathfinder",
+    "name": "Pathfinder",
+    "image_resource_path": "GameArt/Characters/Pathfinder",
+    "sprite_path": "Sprites/Characters/Pathfinder_48",
+    "description": ""
+  },
+  {
+    "id": "wayfinder",
+    "name": "Wayfinder",
+    "image_resource_path": "GameArt/Characters/Wayfinder",
+    "sprite_path": "Sprites/Characters/Wayfinder_48",
+    "description": ""
+  },
+  {
+    "id": "astral_navigator",
+    "name": "Astral Navigator",
+    "image_resource_path": "GameArt/Characters/AstralNavigator",
+    "sprite_path": "Sprites/Characters/AstralNavigator_48",
+    "description": ""
+  },
+  {
+    "id": "gatekeeper",
+    "name": "Gatekeeper",
+    "image_resource_path": "GameArt/Characters/Gatekeeper",
+    "sprite_path": "Sprites/Characters/Gatekeeper_48",
+    "description": ""
+  },
+  {
+    "id": "arcanist",
+    "name": "Arcanist",
+    "image_resource_path": "GameArt/Characters/Arcanist",
+    "sprite_path": "Sprites/Characters/Arcanist_48",
+    "description": ""
+  },
+  {
+    "id": "runemaster",
+    "name": "Runemaster",
+    "image_resource_path": "GameArt/Characters/Runemaster",
+    "sprite_path": "Sprites/Characters/Runemaster_48",
+    "description": ""
+  }
+]

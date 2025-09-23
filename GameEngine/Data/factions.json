@@ -1,0 +1,48 @@
+[
+  {
+    "id": "ironforged",
+    "name": "Ironforged",
+    "image_resource_path": "GameArt/Factions/Ironforged",
+    "description": "The Ironforged call the Iron Mountains their home. From their fortified cities and the ancient mines below them, the Ironforged defend the realm from hordes of monsters and demons eternally flowing out of the depths. Hardened by the trials of eternal battle, they are fearsome warriors. They are known for their unwavering loyalty to their kin, and their unyielding devotion to the cause of good.",
+    "jobs": [
+      "legionary",
+      "sentinel",
+      "blade_dancer",
+      "war_engineer",
+      "combat_medic"
+    ]
+  },
+  {
+    "id": "leywatchers",
+    "name": "Leywatchers",
+    "image_resource_path": "GameArt/Factions/Leywatchers",
+    "description": "",
+    "jobs": [
+      "wayfinder",
+      "astral_navigator",
+      "gatekeeper",
+      "arcanist",
+      "runemaster"
+    ]
+  },
+  {
+    "id": "steamwrights",
+    "name": "Steamwrights",
+    "image_resource_path": "GameArt/Factions/Steamwrights",
+    "description": "",
+    "jobs": [
+      "gadgeteer",
+      "machinist",
+      "artificer",
+      "flux_engineer",
+      "technomancer"
+    ]
+  },
+  {
+    "id": "wardens",
+    "name": "Wardens",
+    "image_resource_path": "GameArt/Factions/Wardens",
+    "description": "",
+    "jobs": ["water_keeper", "beastkin", "arborist", "shaman", "pathfinder"]
+  }
+]
