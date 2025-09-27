@@ -21,6 +21,8 @@ public class UserInterfaceManager(
     private readonly IRenderer _renderer = renderer;
     private IRuntimeComponent? _active;
     private readonly Dictionary<string, IRuntimeComponent> _userInterfaces = [];
+    private string? _pendingActivationName;
+    private bool _hasPendingActivation;
 
     /// <inheritdoc/>
     public IRuntimeComponent? Active => _active;
@@ -58,11 +60,54 @@ public class UserInterfaceManager(
             return false;
         }
 
+        // Schedule activation for the next update cycle
+        _pendingActivationName = name;
+        _hasPendingActivation = true;
+
+        _logger.LogDebug("Scheduled User Interface '{Name}' for activation on next update", name);
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    public void Update(double deltaTime)
+    {
+        // Process pending activation first
+        if (_hasPendingActivation && _pendingActivationName != null)
+        {
+            ProcessPendingActivation();
+        }
+
+        if (_active == null)
+        {
+            _logger.LogDebug("No active user interface available for update - skipping UI update");
+            return;
+        }
+
+        _active.Update(deltaTime);
+    }
+
+    /// <summary>
+    /// Processes the pending activation by actually activating the component.
+    /// This is called during Update() to ensure all services are ready.
+    /// </summary>
+    private void ProcessPendingActivation()
+    {
+        if (_pendingActivationName == null) return;
+
+        if (!_userInterfaces.TryGetValue(_pendingActivationName, out var component))
+        {
+            _logger.LogWarning("Pending User Interface '{Name}' not found during activation", _pendingActivationName);
+            _hasPendingActivation = false;
+            _pendingActivationName = null;
+            return;
+        }
+
         // Deactivate current UI
         if (_active != null)
         {
             _active.Deactivate();
-            _logger.LogDebug("Deactivated User Interface");
+            _logger.LogDebug("Deactivated User Interface during pending activation");
         }
 
         // Activate new UI
@@ -72,21 +117,11 @@ public class UserInterfaceManager(
         // Set the active UI as the renderer's root component for rendering
         _renderer.RootComponent = _active;
 
-        _logger.LogDebug("Activated User Interface '{Name}' and set as renderer root component", name);
+        _logger.LogDebug("Activated User Interface '{Name}' and set as renderer root component", _pendingActivationName);
 
-        return true;
-    }
-
-    /// <inheritdoc/>
-    public void Update(double deltaTime)
-    {
-        if (_active == null)
-        {
-            _logger.LogDebug("No active user interface available for update - skipping UI update");
-            return;
-        }
-
-        _active.Update(deltaTime);
+        // Clear pending activation
+        _hasPendingActivation = false;
+        _pendingActivationName = null;
     }
 
     /// <inheritdoc/>

@@ -168,7 +168,7 @@ public abstract class LayoutBase : RuntimeComponent, IRenderable
 
     public bool IsVisible { get; set; } = true;
     public bool ShouldRender => IsVisible;
-    public int RenderPriority => 420; // UI layout layer
+    public uint RenderPriority => 420; // UI layout layer
 
     /// <summary>
     /// Bounding box for layout components. Returns minimal box since these are UI elements.

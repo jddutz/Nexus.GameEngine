@@ -42,7 +42,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
             if (_componentFactory == value) return;
 
             _componentFactory = value;
-            NotifyPropertyChanged();
+            // Infrastructure property - don't trigger validation
         }
     }
 
@@ -58,7 +58,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
             if (_logger == value) return;
 
             _logger = value;
-            NotifyPropertyChanged();
+            // Infrastructure property - don't trigger validation
         }
     }
 

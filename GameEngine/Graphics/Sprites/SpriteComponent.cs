@@ -133,7 +133,7 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     }
 
     public bool ShouldRender => _loadedTexture != null && IsVisible;
-    public int RenderPriority => 400; // UI layer
+    public uint RenderPriority => 400; // UI layer
 
     /// <summary>
     /// Bounding box for frustum culling based on sprite size.

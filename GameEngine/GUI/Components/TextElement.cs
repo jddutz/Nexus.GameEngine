@@ -147,7 +147,7 @@ public class TextElement : RuntimeComponent, IRenderable
     }
 
     public bool ShouldRender => IsVisible;
-    public int RenderPriority => 450; // UI text layer
+    public uint RenderPriority => 1; // UI text layer
 
     /// <summary>
     /// Bounding box for text elements. Returns minimal box since these are UI elements.

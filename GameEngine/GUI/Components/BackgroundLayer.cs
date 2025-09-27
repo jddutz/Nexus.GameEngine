@@ -17,17 +17,17 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
     public bool IsVisible { get; set; } = true;
 
-    public int RenderPriority => 0;
+    public uint RenderPriority => 0;
 
     public Box3D<float> BoundingBox => new(Vector3D<float>.Zero, Vector3D<float>.Zero);
 
     public uint RenderPassFlags => 1;
 
-    public Vector4D<float> BackgroundColor { get; set; }
+    public Vector4D<float> BackgroundColor { get; set; } = new(0.392f, 0.584f, 0.929f, 1.0f); // CornflowerBlue
 
     public void OnRender(IRenderer renderer, double deltaTime)
     {
-        renderer.GL.ClearColor(BackgroundColor);
+        renderer.GL.ClearColor(BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, BackgroundColor.W);
         renderer.GL.Clear((uint)ClearBufferMask.ColorBufferBit);
     }
 }

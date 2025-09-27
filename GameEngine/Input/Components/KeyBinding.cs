@@ -112,7 +112,7 @@ public class KeyBinding(
                 keyboard.KeyDown += OnKeyDown;
             }
 
-            Logger?.LogDebug("KeyBinding for {Key} (modifiers: {string.Join(", ", ModifierKeys)}) activated and listening");
+            Logger?.LogDebug("KeyBinding for {Key} (modifiers: {Modifiers}) activated and listening", Key, string.Join(", ", ModifierKeys));
         }
         catch (Exception ex)
         {

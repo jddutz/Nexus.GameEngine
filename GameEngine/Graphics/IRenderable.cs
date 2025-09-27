@@ -25,7 +25,7 @@ public interface IRenderable : IRuntimeComponent
     /// Render priority for sorting (lower values render first)
     /// Background=0, 3D Objects=100-299, Transparent=300-399, UI=400+
     /// </summary>
-    int RenderPriority { get; }
+    uint RenderPriority { get; }
 
     /// <summary>
     /// Bounding box for frustum culling. Components outside camera view are automatically culled.
