@@ -11,15 +11,15 @@ namespace Nexus.GameEngine.Input.Components;
 /// Abstract base class for input binding components that provides shared behavior
 /// for binding input events to actions. Handles common functionality like
 /// action execution, error handling, and lifecycle management.
+/// Uses lazy initialization to obtain input context from window service when ready.
 /// </summary>
-/// <typeparam name="TAction">The type of action to execute when input is triggered</typeparam>
-/// <typeparam name="TTemplate">The template type used to configure this binding</typeparam>
 /// <remarks>
-/// Initializes a new instance of the InputBinding class.
+/// Initializes a new instance of the InputBinding class with dependency injection.
+/// The input context is obtained lazily from the window service to ensure proper
+/// initialization order during component lifecycle.
 /// </remarks>
-/// <param name="inputContext">The input context for registering events</param>
-/// <param name="action">The action to execute when input is triggered</param>
-/// <param name="logger">Logger for debugging and diagnostics</param>
+/// <param name="windowService">The window service used to obtain input context when ready</param>
+/// <param name="actionFactory">The action factory for creating and executing actions</param>
 public abstract class InputBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
