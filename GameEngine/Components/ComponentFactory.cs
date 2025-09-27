@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Components;
 public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
     : IComponentFactory
 {
-    private readonly ILogger logger = loggerFactory.CreateLogger<ComponentFactory>();
+    private readonly ILogger logger = loggerFactory.CreateLogger(nameof(ComponentFactory));
 
     /// <summary>
     /// Creates a component instance of the specified type using the service provider.

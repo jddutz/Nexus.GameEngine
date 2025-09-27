@@ -92,4 +92,4 @@ For RuntimeComponents, ComponentFactory sets the Logger when a component is crea
 
 For non-RuntimeComponent services, inject ILoggerFactory to create a logger with the proper context:
 
-    private readonly ILogger _logger = loggerFactory.CreateLogger<WindowService>();
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Service));

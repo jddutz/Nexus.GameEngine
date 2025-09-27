@@ -31,7 +31,7 @@ public class ConsoleLogger(string context, LoggingConfiguration? configuration =
         var message = formatter(state, exception);
         var formattedMessage = FormatMessage(logLevel, message);
 
-        Console.WriteLine(message);
+        Console.WriteLine(formattedMessage);
 
         if (exception != null)
         {

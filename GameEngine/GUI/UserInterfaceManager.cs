@@ -11,12 +11,12 @@ namespace Nexus.GameEngine.GUI;
 /// Rendering is handled by setting the active UI as the renderer's root component.
 /// </summary>
 public class UserInterfaceManager(
-    ILogger<UserInterfaceManager> logger,
+    ILoggerFactory loggerFactory,
     IComponentFactory componentFactory,
     IRenderer renderer)
     : IUserInterfaceManager
 {
-    private readonly ILogger<UserInterfaceManager> _logger = logger;
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(UserInterfaceManager));
     private readonly IComponentFactory _factory = componentFactory;
     private readonly IRenderer _renderer = renderer;
     private IRuntimeComponent? _active;

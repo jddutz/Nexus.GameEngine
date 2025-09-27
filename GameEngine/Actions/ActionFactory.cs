@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Actions;
 public class ActionFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) : IActionFactory
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<ActionFactory> _logger = loggerFactory.CreateLogger<ActionFactory>();
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(ActionFactory));
 
     /// <summary>
     /// Executes an action by resolving it from DI and calling its ExecuteAsync method.

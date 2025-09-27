@@ -13,19 +13,23 @@ namespace Tests.GUI;
 /// </summary>
 public class UserInterfaceManagerTests
 {
-    private readonly Mock<ILogger<UserInterfaceManager>> _mockLogger;
+    private readonly Mock<ILoggerFactory> _mockLoggerFactory;
+    private readonly Mock<ILogger> _mockLogger;
     private readonly Mock<IComponentFactory> _mockFactory;
     private readonly Mock<IRenderer> _mockRenderer;
     private readonly UserInterfaceManager _uiManager;
 
     public UserInterfaceManagerTests()
     {
-        _mockLogger = new Mock<ILogger<UserInterfaceManager>>();
+        _mockLoggerFactory = new Mock<ILoggerFactory>();
+        _mockLogger = new Mock<ILogger>();
+        _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
+
         _mockFactory = CreateMockFactory();
         _mockRenderer = new Mock<IRenderer>();
 
         _uiManager = new UserInterfaceManager(
-            _mockLogger.Object,
+            _mockLoggerFactory.Object,
             _mockFactory.Object,
             _mockRenderer.Object);
     }

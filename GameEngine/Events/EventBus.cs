@@ -15,7 +15,7 @@ public class EventBus(ILoggerFactory loggerFactory) : IEventBus
     private readonly ConcurrentDictionary<Type, ConcurrentBag<IEventSubscription>> _subscriptions = new();
     private readonly ConcurrentDictionary<Guid, EventSubscription> _subscriptionLookup = new();
     private readonly object _subscriptionLock = new();
-    private readonly ILogger _logger = loggerFactory.CreateLogger<EventBus>();
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(EventBus));
     private bool _disposed;
 
     /// <summary>

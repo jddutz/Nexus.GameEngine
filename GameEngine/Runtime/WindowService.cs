@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.Runtime;
 /// </summary>
 public class WindowService(ILoggerFactory loggerFactory) : IWindowService
 {
-    private readonly ILogger _logger = loggerFactory.CreateLogger<WindowService>();
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(WindowService));
     private IWindow? _window;
     private IInputContext? _inputContext;
     private bool _isInitialized = false;
