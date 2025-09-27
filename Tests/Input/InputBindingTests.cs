@@ -3,9 +3,10 @@ using Moq;
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Input.Components;
+using Nexus.GameEngine.Runtime;
 using Silk.NET.Input;
 
-namespace Tests;
+namespace Tests.Input;
 
 /// <summary>
 /// Unit tests for InputBinding abstract base class functionality
@@ -32,7 +33,7 @@ public class InputBindingTests
             Enabled = true
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, mockActionFactory.Object);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object);
 
         // Act
         inputBinding.Configure(template);
@@ -58,7 +59,7 @@ public class InputBindingTests
             ActionId = ActionId.None
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, mockActionFactory.Object);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object);
         inputBinding.Configure(template);
 
         // Act
@@ -85,7 +86,7 @@ public class InputBindingTests
             ActionId = ActionId.FromType(typeof(QuitGameAction))
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, null!);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), null!);
         inputBinding.Configure(template);
 
         // Act
@@ -119,7 +120,7 @@ public class InputBindingTests
             Enabled = true
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, mockActionFactory.Object);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object);
         inputBinding.Configure(template);
 
         // Act
@@ -148,7 +149,7 @@ public class InputBindingTests
             Enabled = false
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, mockActionFactory.Object);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object);
         inputBinding.Configure(template);
 
         // Act
@@ -179,7 +180,7 @@ public class InputBindingTests
             Enabled = true
         };
 
-        var inputBinding = new TestInputBinding(mockLogger.Object, mockInputContext.Object, mockActionFactory.Object);
+        var inputBinding = new TestInputBinding(mockLogger.Object, CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object);
         inputBinding.Configure(template);
 
         // Act
@@ -191,6 +192,16 @@ public class InputBindingTests
         // The actual logging verification would require capturing log output,
         // which is complex. The important part is that the action was attempted.
     }
+
+    /// <summary>
+    /// Helper method to create a mock IWindowService that returns the specified IInputContext
+    /// </summary>
+    private static IWindowService CreateMockWindowService(IInputContext inputContext)
+    {
+        var mockWindowService = new Mock<IWindowService>();
+        mockWindowService.Setup(ws => ws.GetInputContext()).Returns(inputContext);
+        return mockWindowService.Object;
+    }
 }
 
 /// <summary>
@@ -198,8 +209,8 @@ public class InputBindingTests
 /// </summary>
 public class TestInputBinding : InputBinding
 {
-    public TestInputBinding(ILogger logger, IInputContext inputContext, IActionFactory actionFactory)
-        : base(inputContext, actionFactory)
+    public TestInputBinding(ILogger logger, IWindowService windowService, IActionFactory actionFactory)
+        : base(windowService, actionFactory)
     {
         Logger = logger;
     }

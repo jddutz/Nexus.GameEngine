@@ -3,6 +3,7 @@ using Moq;
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Input.Components;
+using Nexus.GameEngine.Runtime;
 using Silk.NET.Input;
 
 namespace Tests.Input;
@@ -31,7 +32,7 @@ public class KeyBindingTests
             Name = "Test Key Binding"
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, mockActionFactory.Object)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object)
         {
             Logger = mockLogger.Object
         };
@@ -63,7 +64,7 @@ public class KeyBindingTests
             ActionId = ActionId.None
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, mockActionFactory.Object)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object)
         {
             Logger = mockLogger.Object
         };
@@ -95,7 +96,7 @@ public class KeyBindingTests
             ActionId = ActionId.FromType(typeof(ToggleFullscreenAction))
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, null!)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), null!)
         {
             Logger = mockLogger.Object
         };
@@ -132,7 +133,7 @@ public class KeyBindingTests
             ActionId = ActionId.FromType(typeof(QuitGameAction))
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, mockActionFactory.Object)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object)
         {
             Logger = mockLogger.Object
         };
@@ -174,7 +175,7 @@ public class KeyBindingTests
             Enabled = true
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, mockActionFactory.Object)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object)
         {
             Logger = mockLogger.Object
         };
@@ -222,7 +223,7 @@ public class KeyBindingTests
             Enabled = false // Disabled
         };
 
-        var keyBinding = new KeyBinding(mockInputContext.Object, mockActionFactory.Object)
+        var keyBinding = new KeyBinding(CreateMockWindowService(mockInputContext.Object), mockActionFactory.Object)
         {
             Logger = mockLogger.Object
         };
@@ -245,5 +246,15 @@ public class KeyBindingTests
         // Assert
         mockActionFactory.Verify(af => af.ExecuteAsync(It.IsAny<ActionId>(), It.IsAny<IRuntimeComponent>()),
                                 Times.Never);
+    }
+
+    /// <summary>
+    /// Helper method to create a mock IWindowService that returns the specified IInputContext
+    /// </summary>
+    private static IWindowService CreateMockWindowService(IInputContext inputContext)
+    {
+        var mockWindowService = new Mock<IWindowService>();
+        mockWindowService.Setup(ws => ws.GetInputContext()).Returns(inputContext);
+        return mockWindowService.Object;
     }
 }

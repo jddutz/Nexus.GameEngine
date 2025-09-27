@@ -2,6 +2,7 @@ using System.Numerics;
 
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Runtime;
 
 using Silk.NET.Input;
 
@@ -17,13 +18,12 @@ namespace Nexus.GameEngine.Input.Components;
 /// <remarks>
 /// Initializes a new instance of the MouseBinding class with dependency injection.
 /// </remarks>
-/// <param name="inputContext">The input context to use for registering mouse events</param>
-/// <param name="action">The action instance to execute when the mouse input occurs</param>
-/// <param name="logger">The logger instance for debugging and logging</param>
+/// <param name="windowService">The window service to use for getting input context</param>
+/// <param name="actionFactory">The action factory for creating and executing actions</param>
 public class MouseBinding<TAction>(
-    IInputContext inputContext,
+    IWindowService windowService,
     IActionFactory actionFactory)
-    : InputBinding(inputContext, actionFactory)
+    : InputBinding(windowService, actionFactory)
 {
 
     /// <summary>
@@ -104,9 +104,9 @@ public class MouseBinding<TAction>(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (_inputContext == null) return;
+        if (InputContext == null) return;
 
-        foreach (var mouse in _inputContext.Mice)
+        foreach (var mouse in InputContext.Mice)
         {
             switch (EventType)
             {
@@ -131,9 +131,9 @@ public class MouseBinding<TAction>(
     /// </summary>
     protected override void UnsubscribeFromInputEvents()
     {
-        if (_inputContext == null) return;
+        if (InputContext == null) return;
 
-        foreach (var mouse in _inputContext.Mice)
+        foreach (var mouse in InputContext.Mice)
         {
             mouse.MouseDown -= OnMouseDown;
             mouse.MouseUp -= OnMouseUp;
@@ -191,10 +191,10 @@ public class MouseBinding<TAction>(
     /// </summary>
     private bool AreModifierKeysPressed()
     {
-        if (_inputContext == null || ModifierKeys.Length == 0)
+        if (InputContext == null || ModifierKeys.Length == 0)
             return true;
 
-        foreach (var keyboard in _inputContext.Keyboards)
+        foreach (var keyboard in InputContext.Keyboards)
         {
             foreach (var modifierKey in ModifierKeys)
             {

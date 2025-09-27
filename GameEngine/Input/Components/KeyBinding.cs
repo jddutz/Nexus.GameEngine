@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Runtime;
 
 using Silk.NET.Input;
 
@@ -17,13 +18,12 @@ namespace Nexus.GameEngine.Input.Components;
 /// <remarks>
 /// Initializes a new instance of the KeyBinding class with dependency injection.
 /// </remarks>
-/// <param name="input">The input context to use for registering keyboard events</param>
-/// <param name="action">The action instance to execute when the key is pressed. This action is injected and ready to use.</param>
-/// <param name="logger">Logger for debugging and diagnostics</param>
+/// <param name="windowService">The window service to use for getting input context</param>
+/// <param name="actionFactory">The action factory for creating and executing actions</param>
 public class KeyBinding(
-    IInputContext inputContext,
+    IWindowService windowService,
     IActionFactory actionFactory)
-    : InputBinding(inputContext, actionFactory)
+    : InputBinding(windowService, actionFactory)
 {
     public new record Template : InputBinding.Template
     {
@@ -53,9 +53,9 @@ public class KeyBinding(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (_inputContext == null) return;
+        if (InputContext == null) return;
 
-        foreach (var keyboard in _inputContext.Keyboards)
+        foreach (var keyboard in InputContext.Keyboards)
         {
             keyboard.KeyChar += OnKeyChar;
             keyboard.KeyDown += OnKeyDown;
@@ -83,9 +83,9 @@ public class KeyBinding(
     /// </summary>
     protected override void UnsubscribeFromInputEvents()
     {
-        if (_inputContext?.Keyboards == null) return;
+        if (InputContext?.Keyboards == null) return;
 
-        foreach (var keyboard in _inputContext.Keyboards)
+        foreach (var keyboard in InputContext.Keyboards)
         {
             keyboard.KeyChar -= OnKeyChar;
             keyboard.KeyDown -= OnKeyDown;
@@ -100,14 +100,14 @@ public class KeyBinding(
     {
         try
         {
-            if (_inputContext == null)
+            if (InputContext == null)
             {
                 Logger?.LogDebug("Input context not available, cannot activate KeyBinding");
                 return;
             }
 
             // Subscribe to keyboard events
-            foreach (var keyboard in _inputContext.Keyboards)
+            foreach (var keyboard in InputContext.Keyboards)
             {
                 keyboard.KeyDown += OnKeyDown;
             }

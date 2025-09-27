@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Runtime;
 
 using Silk.NET.Input;
 
@@ -15,12 +16,12 @@ namespace Nexus.GameEngine.Input.Components;
 /// <remarks>
 /// Initializes a new instance of the GamepadBinding class with dependency injection.
 /// </remarks>
-/// <param name="inputContext">The input context to use for registering gamepad events</param>
-/// <param name="action">The action instance to execute when the gamepad input occurs</param>
+/// <param name="windowService">The window service to use for getting input context</param>
+/// <param name="actionFactory">The action factory for creating and executing actions</param>
 public class GamepadBinding(
-    IInputContext inputContext,
+    IWindowService windowService,
     IActionFactory actionFactory)
-    : InputBinding(inputContext, actionFactory)
+    : InputBinding(windowService, actionFactory)
 {
 
     /// <summary>
@@ -133,9 +134,9 @@ public class GamepadBinding(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (_inputContext == null) return;
+        if (InputContext == null) return;
 
-        foreach (var gamepad in _inputContext.Gamepads)
+        foreach (var gamepad in InputContext.Gamepads)
         {
             switch (EventType)
             {
@@ -160,9 +161,9 @@ public class GamepadBinding(
     /// </summary>
     protected override void UnsubscribeFromInputEvents()
     {
-        if (_inputContext == null) return;
+        if (InputContext == null) return;
 
-        foreach (var gamepad in _inputContext.Gamepads)
+        foreach (var gamepad in InputContext.Gamepads)
         {
             gamepad.ButtonDown -= OnButtonDown;
             gamepad.ButtonUp -= OnButtonUp;

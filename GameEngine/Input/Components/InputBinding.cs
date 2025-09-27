@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
-
+using Nexus.GameEngine.Runtime;
 using Silk.NET.Input;
 
 namespace Nexus.GameEngine.Input.Components;
@@ -21,7 +21,7 @@ namespace Nexus.GameEngine.Input.Components;
 /// <param name="action">The action to execute when input is triggered</param>
 /// <param name="logger">Logger for debugging and diagnostics</param>
 public abstract class InputBinding(
-    IInputContext inputContext,
+    IWindowService windowService,
     IActionFactory actionFactory)
     : RuntimeComponent
 {
@@ -30,20 +30,44 @@ public abstract class InputBinding(
     {
         public ActionId ActionId { get; set; } = ActionId.None;
     }
+    /// <summary>
+    /// Direct access to Silk.NET Input interface for component input handling.
+    /// Components use this to register for input events in their Subscribe/Unsubscribe methods.
+    /// Lazily initialized when first accessed, with graceful handling if window isn't ready.
+    /// </summary>
+    private IInputContext? _inputContext;
+    public IInputContext? InputContext
+    {
+        get
+        {
+            if (_inputContext != null)
+                return _inputContext;
 
+            try
+            {
+                _inputContext = windowService.GetInputContext();
+                return _inputContext;
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("view was not initialized"))
+            {
+                // Window view not ready yet - this is expected during early component lifecycle
+                Logger?.LogDebug("Input context not available yet, window view not initialized");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogWarning(ex, "Failed to get input context from window service");
+                return null;
+            }
+        }
+    }
 
-    protected readonly IInputContext _inputContext = inputContext;
     protected readonly IActionFactory _actionFactory = actionFactory;
 
     /// <summary>
     /// Gets the action that will be executed when input is triggered.
     /// </summary>
     public ActionId ActionId { get; set; } = ActionId.None;
-
-    /// <summary>
-    /// Gets the input context used for event registration.
-    /// </summary>
-    public IInputContext? InputContext => _inputContext;
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)
     {
@@ -85,14 +109,21 @@ public abstract class InputBinding(
     /// </summary>
     protected override void OnActivate()
     {
-        if (_inputContext == null)
+        try
         {
-            Logger?.LogDebug("Input context not available, cannot activate {ComponentType}", GetType().Name);
-            return;
-        }
+            if (InputContext == null)
+            {
+                Logger?.LogDebug("Input context not available, cannot activate {ComponentType}", GetType().Name);
+                return;
+            }
 
-        SubscribeToInputEvents();
-        Logger?.LogDebug("{ComponentType} activated and listening for input", GetType().Name);
+            SubscribeToInputEvents();
+            Logger?.LogDebug("{ComponentType} activated and listening for input", GetType().Name);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Failed to activate input binding {ComponentType}, input context may not be ready yet", GetType().Name);
+        }
     }
 
     /// <summary>
