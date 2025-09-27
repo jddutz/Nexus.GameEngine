@@ -23,11 +23,7 @@ public class Renderer(IWindowService windowService, ILogger<Renderer> logger)
     {
         get
         {
-            if (_gl == null)
-            {
-                var window = windowService.GetOrCreateWindow();
-                _gl = window.CreateOpenGL();
-            }
+            _gl ??= windowService.GetOrCreateWindow().CreateOpenGL();
             return _gl;
         }
     }
