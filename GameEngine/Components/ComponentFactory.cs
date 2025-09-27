@@ -85,16 +85,34 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     /// <returns>The configured component instance, or null if the type cannot be determined or does not implement IRuntimeComponent.</returns>
     public IRuntimeComponent? Instantiate(IComponentTemplate template)
     {
-        if (template == null) return null;
+        if (template == null)
+        {
+            Console.WriteLine("[ComponentFactory] Instantiate called with null template");
+            return null;
+        }
+
+        Console.WriteLine($"[ComponentFactory] Instantiate called for template: {template.GetType().Name} with name '{template.Name}'");
+        Console.WriteLine($"[ComponentFactory] Template has {template.Subcomponents?.Length ?? 0} subcomponents");
 
         // Try to get the component type from the template's containing class
         var componentType = template.GetType().DeclaringType;
 
+        Console.WriteLine($"[ComponentFactory] Inferred component type: {componentType?.Name ?? "null"}");
+
         // Type-safety: Ensure the type implements IRuntimeComponent
         if (componentType == null || !typeof(IRuntimeComponent).IsAssignableFrom(componentType))
+        {
+            Console.WriteLine($"[ComponentFactory] Component type is null or doesn't implement IRuntimeComponent");
             return null;
+        }
+
+        Console.WriteLine($"[ComponentFactory] Creating component of type: {componentType.Name}");
 
         // Create and configure the component
-        return Create(componentType, template);
+        var result = Create(componentType, template);
+
+        Console.WriteLine($"[ComponentFactory] Component creation result: {(result != null ? "SUCCESS" : "FAILED")}");
+
+        return result;
     }
 }

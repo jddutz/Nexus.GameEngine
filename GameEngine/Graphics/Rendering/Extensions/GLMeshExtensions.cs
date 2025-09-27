@@ -10,8 +10,10 @@ public static class GLMeshExtensions
     /// <summary>
     /// Helper method to draw indexed mesh
     /// </summary>
-    public static void DrawMesh(this GL gl, uint vaoId, int indexCount)
+    public static void DrawMesh(this IRenderer renderer, uint vaoId, int indexCount)
     {
+        var gl = renderer.GL;
+
         gl.BindVertexArray(vaoId);
         nint offset = 0;
         gl.DrawElements(PrimitiveType.Triangles, (uint)indexCount, DrawElementsType.UnsignedInt, in offset);
@@ -20,8 +22,10 @@ public static class GLMeshExtensions
     /// <summary>
     /// Helper method to create mesh with vertices and indices
     /// </summary>
-    public static uint CreateMesh(this GL gl, ReadOnlySpan<float> vertices, ReadOnlySpan<uint> indices)
+    public static uint CreateMesh(this IRenderer renderer, ReadOnlySpan<float> vertices, ReadOnlySpan<uint> indices)
     {
+        var gl = renderer.GL;
+
         var vao = gl.GenVertexArray();
         var vbo = gl.GenBuffer();
         var ebo = gl.GenBuffer();

@@ -10,8 +10,10 @@ public static class GLTextureExtensions
     /// <summary>
     /// Helper method to bind texture to specified slot
     /// </summary>
-    public static void SetTexture(this GL gl, uint textureId, int slot = 0)
+    public static void SetTexture(this IRenderer renderer, uint textureId, int slot = 0)
     {
+        var gl = renderer.GL;
+
         gl.ActiveTexture(TextureUnit.Texture0 + slot);
         gl.BindTexture(TextureTarget.Texture2D, textureId);
     }
@@ -19,8 +21,10 @@ public static class GLTextureExtensions
     /// <summary>
     /// Helper method to create texture from raw data
     /// </summary>
-    public static uint CreateTexture(this GL gl, ReadOnlySpan<byte> data, int width, int height)
+    public static uint CreateTexture(this IRenderer renderer, ReadOnlySpan<byte> data, int width, int height)
     {
+        var gl = renderer.GL;
+
         var texture = gl.GenTexture();
         gl.BindTexture(TextureTarget.Texture2D, texture);
 

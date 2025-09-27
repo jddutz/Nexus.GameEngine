@@ -4,16 +4,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Silk.NET.OpenGL;
 
 using Nexus.GameEngine.Actions;
+using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.GUI;
-using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Runtime.Settings;
+using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -59,9 +59,12 @@ public static class ServiceCollectionExtensions
 
         // Register renderer with window service dependency
         services.AddSingleton<IRenderer, Renderer>();
+        services.AddSingleton<IUserInterfaceManager, UserInterfaceManager>();
+
+        // Temporary: Provide stub IAssetService until real implementation
+        services.AddSingleton<IAssetService, StubAssetService>();
 
         services.AddSingleton<IGameStateManager, GameStateManager>();
-        services.AddSingleton<IUserInterfaceManager, UserInterfaceManager>();
         services.AddSingleton<IEventBus, EventBus>();
         services.AddSingleton<IApplication, Application>();
 

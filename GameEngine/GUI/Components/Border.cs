@@ -3,7 +3,6 @@ using Silk.NET.Maths;
 using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.GUI.Components;
 
@@ -18,14 +17,12 @@ public record BorderTemplate
 /// Runtime border component that implements event-driven rendering behavior.
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
-public class Border(
-    UserInterfaceManager uiManager)
+public class Border()
     : RuntimeComponent
 {
-    private UserInterfaceManager? _uiManager = uiManager;
     private BorderStyle _style = BorderStyle.Rectangle;
     private Vector4D<float> _backgroundColor = Vector4D<float>.Zero; // Transparent (0,0,0,0)
-    private Vector4D<float> _borderColor = new Vector4D<float>(0, 0, 0, 1); // Black (0,0,0,1)
+    private Vector4D<float> _borderColor = new(0, 0, 0, 1); // Black (0,0,0,1)
     private Thickness _borderThickness = new(0);
     private float _cornerRadius = 0f;
     private string? _backgroundImage;
@@ -189,12 +186,8 @@ public class Border(
     /// </summary>
     protected override void OnActivate()
     {
-        if (_uiManager != null)
-        {
-            // Subscribe to render events instead of implementing IGraphicsRenderable
-            // TODO: Subscribe to render events when UserInterfaceManager implements IUserInterfaceManager
-            // _uiManager.RenderEvent += OnRender;
-        }
+        // Border components are rendered through the IRenderable interface
+        // when the renderer walks the component tree
     }
 
     /// <summary>

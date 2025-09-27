@@ -35,7 +35,7 @@ public abstract class ComponentCollection : IComponentCollection, IDisposable
     /// </summary>
     private class ComponentReference(IRuntimeComponent component)
     {
-        private readonly WeakReference<IRuntimeComponent> _weakRef = new WeakReference<IRuntimeComponent>(component);
+        private readonly WeakReference<IRuntimeComponent> _weakRef = new(component);
         private IRuntimeComponent? _strongRef = component.IsEnabled ? component : null;
         private readonly ComponentId _id = component.Id;
 

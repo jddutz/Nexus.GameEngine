@@ -4,17 +4,23 @@ param(
     [string]$Configuration = "Release",
     [string]$OutputPath = ".\packages",
     [string]$LocalRepoPath = "$env:USERPROFILE\source\LocalNuGetRepo",
-    [string]$SourceName = "Nexus-GameEngine-Local",
-    [string]$VersionSuffix = "dev",
+    [string]$SourceName = "NuGet-Local",
+    #[string]$VersionSuffix = "dev", # Not needed for semver build number
     [switch]$SkipTests,
     [switch]$SkipPublish,
     [switch]$SkipSetup,
     [switch]$Clean
 )
 
-# Generate pre-release version with timestamp for tracking
-$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$preReleaseVersion = "$VersionSuffix.$timestamp"
+
+# Extract base version from csproj
+$csprojPath = "GameEngine\GameEngine.csproj"
+$baseVersion = Select-String -Path $csprojPath -Pattern "<Version>(.*?)</Version>" | ForEach-Object { $_.Matches[0].Groups[1].Value }
+if (-not $baseVersion) { $baseVersion = "1.0.0" }
+# Generate build number (date-based)
+$buildNumber = Get-Date -Format "yyMMddHHmm"
+# Compose semver version (NuGet prerelease label)
+$semverVersion = "$baseVersion-$buildNumber"
 
 # Resolve workspace root 
 $WorkspaceRoot = $PSScriptRoot
@@ -64,7 +70,7 @@ try {
     
     # Build solution
     Write-Host "Building solution ($Configuration)..." -ForegroundColor Green
-    dotnet build Nexus.GameEngine.sln --configuration $Configuration --no-restore --version-suffix $preReleaseVersion
+    dotnet build Nexus.GameEngine.sln --configuration $Configuration --no-restore /p:Version=$semverVersion
     if ($LASTEXITCODE -ne 0) { throw "Build failed" }
     
     # Run tests
@@ -75,9 +81,16 @@ try {
     }
     
     # Pack NuGet packages
-    Write-Host "Creating NuGet packages with version suffix: $preReleaseVersion..." -ForegroundColor Green
+    Write-Host "Creating NuGet packages with version: $semverVersion..." -ForegroundColor Green
+    
+    # Clean packages folder before creating new packages
+    if (Test-Path $OutputPath) {
+        Write-Host "Cleaning packages folder..." -ForegroundColor Yellow
+        Remove-Item $OutputPath -Recurse -Force
+    }
+    
     New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-    dotnet pack "GameEngine\GameEngine.csproj" --configuration $Configuration --no-build --output $OutputPath --version-suffix $preReleaseVersion
+    dotnet pack "GameEngine\GameEngine.csproj" --configuration $Configuration --no-build --output $OutputPath /p:Version=$semverVersion
     if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
     
     Write-Host "Packages created:" -ForegroundColor Cyan
@@ -98,9 +111,9 @@ try {
         foreach ($package in $packages) {
             Write-Host "Publishing $($package.Name)..." -ForegroundColor Yellow
             
-            dotnet nuget push $package.FullName --source $SourceName --skip-duplicate
+            dotnet nuget push $package.FullName --source $SourceName
             if ($LASTEXITCODE -ne 0) {
-                dotnet nuget push $package.FullName --source $LocalRepoPath --skip-duplicate
+                dotnet nuget push $package.FullName --source $LocalRepoPath
                 if ($LASTEXITCODE -ne 0) {
                     Copy-Item $package.FullName $LocalRepoPath -Force
                 }
@@ -109,9 +122,9 @@ try {
             # Publish symbol package if it exists
             $symbolPackage = $package.FullName -replace "\.nupkg$", ".symbols.nupkg"
             if (Test-Path $symbolPackage) {
-                dotnet nuget push $symbolPackage --source $SourceName --skip-duplicate
+                dotnet nuget push $symbolPackage --source $SourceName
                 if ($LASTEXITCODE -ne 0) {
-                    dotnet nuget push $symbolPackage --source $LocalRepoPath --skip-duplicate
+                    dotnet nuget push $symbolPackage --source $LocalRepoPath
                     if ($LASTEXITCODE -ne 0) {
                         Copy-Item $symbolPackage $LocalRepoPath -Force
                     }
@@ -121,7 +134,7 @@ try {
     }
     
     Write-Host "Build, test, and publish complete!" -ForegroundColor Green
-    Write-Host "Version: $preReleaseVersion" -ForegroundColor Cyan
+    Write-Host "Version: $semverVersion" -ForegroundColor Cyan
     Write-Host "Packages: $((Resolve-Path $OutputPath).Path)" -ForegroundColor Cyan
     if (-not $SkipPublish) {
         Write-Host "Local repo: $LocalRepoPath" -ForegroundColor Cyan

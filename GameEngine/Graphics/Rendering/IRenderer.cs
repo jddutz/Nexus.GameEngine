@@ -1,58 +1,43 @@
 using Silk.NET.OpenGL;
+using System.Collections.Concurrent;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Cameras;
 
 namespace Nexus.GameEngine.Graphics.Rendering;
 
 /// <summary>
-/// Minimal renderer interface providing GL access, shared resource management, and render pass orchestration.
-/// Component tree walking is handled by the application, not the renderer.
+/// Renderer interface providing direct GL access and render orchestration.
+/// Renders IRenderable components by walking the component tree and calling OnRender() methods.
 /// </summary>
 public interface IRenderer
 {
     /// <summary>
     /// Direct access to Silk.NET OpenGL interface for component rendering.
-    /// Use GLRenderingExtensions for common helper methods.
+    /// Components use this to make direct GL calls in their OnRender() methods.
     /// </summary>
     GL GL { get; }
 
     /// <summary>
-    /// Collection of draw batches for lambda-based batching support.
-    /// Provides read-only access to all batches for debugging and statistics.
-    /// </summary>
-    List<DrawBatch> Batches { get; }
-
-    /// <summary>
-    /// Gets or creates a draw batch for the specified batch key.
-    /// Uses object-based keys for maximum flexibility in batching strategies.
-    /// </summary>
-    /// <param name="batchKey">Unique key identifying the batch (typically tuple of render state)</param>
-    /// <returns>Existing or newly created draw batch for the key</returns>
-    DrawBatch GetOrCreateBatch(object batchKey);
-
-    /// <summary>
     /// Root component for the component tree to render.
-    /// The renderer will walk this tree during RenderFrame() to collect draw commands.
+    /// The renderer walks this tree during RenderFrame() to find and render IRenderable components.
     /// </summary>
     IRuntimeComponent? RootComponent { get; set; }
 
     /// <summary>
-    /// List of discovered cameras in the component tree.
-    /// Automatically populated when RenderFrame() is called if empty.
+    /// Configured render passes that define rendering pipeline stages.
+    /// Each pass can have different GL state configuration (depth testing, blending, etc.).
     /// </summary>
-    IReadOnlyList<ICamera> Cameras { get; }
+    RenderPassConfiguration[] RenderPasses { get; set; }
 
     /// <summary>
-    /// Shared resource management for common assets like fullscreen quads, default shaders.
-    /// Provides a simple cache that components can use for frequently-used resources.
+    /// Shared resources dictionary for caching common rendering resources.
+    /// Used by GLRenderingExtensions for resource management and caching.
     /// </summary>
-    T GetSharedResource<T>(string name);
-    void SetSharedResource<T>(string name, T resource);
+    ConcurrentDictionary<string, object> SharedResources { get; }
 
     /// <summary>
-    /// Orchestrates the actual rendering process through all configured passes.
-    /// Called after the application has walked the component tree to update GL state.
-    /// This method executes the render passes in dependency order.
+    /// Walks the component tree and calls OnRender() on IRenderable components.
+    /// Components are processed in RenderPriority order (lower values render first).
+    /// Each render pass may apply different GL state before rendering components.
     /// </summary>
-    void RenderFrame();
+    void RenderFrame(double deltaTime);
 }

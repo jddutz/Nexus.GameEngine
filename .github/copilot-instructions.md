@@ -1,6 +1,8 @@
 DO NOT change any code without explicit instructions to do so.
 
-This project follows a documentation-first test-driven-development approach. Before updating any code:
+This project follows a documentation-first test-driven-development approach. See Tests\README.md for comprehensive testing guidelines.
+
+Before updating any code:
 
 1. Build the solution and verify that the build succeeds without any errors
    - If there are any errors, confirm:

@@ -10,7 +10,7 @@ public struct InterpolationSettings
     public float Speed { get; set; }
     public AnimationCurve Curve { get; set; }
     public bool UseTimeBasedInterpolation { get; set; }
-    public static InterpolationSettings Default => new InterpolationSettings
+    public static InterpolationSettings Default => new()
     {
         Enabled = true,
         Type = InterpolationTypeEnum.Linear,

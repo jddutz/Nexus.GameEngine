@@ -12,8 +12,8 @@ namespace Nexus.GameEngine.Events;
 /// </remarks>
 public class EventBus(ILoggerFactory loggerFactory) : IEventBus
 {
-    private readonly ConcurrentDictionary<Type, ConcurrentBag<IEventSubscription>> _subscriptions = new ConcurrentDictionary<Type, ConcurrentBag<IEventSubscription>>();
-    private readonly ConcurrentDictionary<Guid, EventSubscription> _subscriptionLookup = new ConcurrentDictionary<Guid, EventSubscription>();
+    private readonly ConcurrentDictionary<Type, ConcurrentBag<IEventSubscription>> _subscriptions = new();
+    private readonly ConcurrentDictionary<Guid, EventSubscription> _subscriptionLookup = new();
     private readonly object _subscriptionLock = new();
     private readonly ILogger _logger = loggerFactory.CreateLogger<EventBus>();
     private bool _disposed;

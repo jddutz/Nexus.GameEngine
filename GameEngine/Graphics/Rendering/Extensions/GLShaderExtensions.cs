@@ -10,16 +10,20 @@ public static class GLShaderExtensions
     /// <summary>
     /// Helper method to set the active shader program
     /// </summary>
-    public static void SetShader(this GL gl, uint programId)
+    public static void SetShader(this IRenderer renderer, uint programId)
     {
+        var gl = renderer.GL;
+
         gl.UseProgram(programId);
     }
 
     /// <summary>
     /// Helper method to create shader program from source
     /// </summary>
-    public static uint CreateShaderProgram(this GL gl, string vertexSource, string fragmentSource)
+    public static uint CreateShaderProgram(this IRenderer renderer, string vertexSource, string fragmentSource)
     {
+        var gl = renderer.GL;
+
         var vertexShader = gl.CreateShader(ShaderType.VertexShader);
         gl.ShaderSource(vertexShader, vertexSource);
         gl.CompileShader(vertexShader);

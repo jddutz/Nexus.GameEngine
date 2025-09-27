@@ -1,4 +1,4 @@
-# NexusRealms Game Engine
+# Nexus Game Engine
 
 A modern .NET 9 game engine built with Silk.NET, featuring a component-based architecture with dependency injection and template-driven configuration.
 
@@ -6,7 +6,7 @@ A modern .NET 9 game engine built with Silk.NET, featuring a component-based arc
 
 ```bash
 # Build the solution
-dotnet build NexusRealms.sln --configuration Debug
+dotnet build Nexus.GameEngine.sln --configuration Debug
 
 # Run tests
 dotnet test
@@ -55,6 +55,7 @@ See the actual interface definitions in the codebase:
 - `TextElement`: Displays text content
 - `VerticalLayout`: Arranges children vertically
 - `HorizontalLayout`: Arranges children horizontally
+- `BackgroundLayer`: Full-screen background rendering with multiple material types
 
 **Game Components:**
 
@@ -297,11 +298,164 @@ rootComponent.Activate();
 rootComponent.Dispose(); // Will dispose all children
 ```
 
+## Resource Management System
+
+The engine includes a comprehensive attribute-based resource management system for efficient handling of graphics resources:
+
+### Declarative Resource Definitions
+
+Resources are declared using attributes on static definitions:
+
+```csharp
+public static class Geometry
+{
+    [SharedResource("FullScreenQuad", ResourceType.Geometry)]
+    public static readonly GeometryDefinition FullScreenQuad = new()
+    {
+        Vertices = [ /* vertex data */ ],
+        Indices = [ /* index data */ ],
+        Attributes = [ /* vertex attributes */ ]
+    };
+}
+
+public static class Shaders
+{
+    [SharedResource("BackgroundSolid", ResourceType.Shader)]
+    public static readonly ShaderDefinition BackgroundSolid = new()
+    {
+        VertexSource = "...",
+        FragmentSource = "..."
+    };
+}
+```
+
+### Type-Safe Resource Access
+
+Components access resources through the resource manager:
+
+```csharp
+public class BackgroundLayer : RuntimeComponent, IRenderable
+{
+    private readonly IResourceManager _resourceManager;
+
+    public void OnRender(IRenderer renderer, double deltaTime)
+    {
+        // Direct definition access - type-safe, no strings!
+        var quadVAO = _resourceManager.GetOrCreateResource<uint>(Geometry.FullScreenQuad);
+        var shader = _resourceManager.GetOrCreateResource<uint>(Shaders.BackgroundSolid);
+
+        var gl = renderer.GL;
+        gl.UseProgram(shader);
+        gl.BindVertexArray(quadVAO);
+        // ... rendering logic
+    }
+}
+```
+
+### Component-Scoped Resources
+
+Resources can be scoped to components for automatic lifecycle management:
+
+```csharp
+// Component-scoped resource automatically cleaned up when component is disposed
+var backgroundTexture = new AssetDefinition
+{
+    Name = $"Background_{componentId}",
+    Scope = this,  // Tied to this component's lifecycle
+    AssetPath = texturePath,
+    AssetType = typeof(Texture2D)
+};
+```
+
+### Benefits
+
+- **Type Safety**: Compile-time checking ensures resources exist
+- **IntelliSense Support**: Auto-completion for available resources
+- **Automatic Cleanup**: Component-scoped resources cleaned up automatically
+- **Memory Management**: Automatic purging under memory pressure
+- **Performance**: Shared resources reduce memory usage and state changes
+
+## BackgroundLayer Component
+
+The `BackgroundLayer` component provides full-screen background rendering with multiple material types:
+
+### Material Types
+
+- **SolidColor**: Pure color backgrounds with effects
+- **ImageAsset**: Texture-based backgrounds with UV manipulation
+- **ProceduralTexture**: Procedurally generated backgrounds
+
+### Material Effects
+
+- **Tint**: Color overlay effects
+- **Saturation**: Saturation adjustment (grayscale to oversaturated)
+- **Fade**: Opacity control for transitions
+
+### Example Usage
+
+```csharp
+new BackgroundLayer
+{
+    Template = new BackgroundLayer.Template
+    {
+        MaterialType = MaterialType.SolidColor,
+        BackgroundColor = new Vector4D(0.2f, 0.3f, 0.8f, 1.0f), // Blue background
+        Tint = Vector4D.One,
+        Saturation = 1.0f,
+        Fade = 1.0f
+    }
+}
+```
+
+## Testing Infrastructure
+
+The engine includes a robust OpenGL testing framework designed for reliable integration testing:
+
+### OpenGL Test Infrastructure
+
+- **SharedOpenGLContext**: Thread-safe shared OpenGL context for all tests
+- **Automatic State Reset**: OpenGL state automatically resets between test methods
+- **Singleton OpenGLTestApp**: Prevents multiple context creation issues
+- **Headless Testing**: Tests run without visible windows for CI/CD compatibility
+
+### Key Features
+
+- **Test Isolation**: Each test gets a clean OpenGL state automatically
+- **No Manual Setup**: Tests can directly use OpenGL functionality without boilerplate
+- **Thread Safety**: Proper locking for parallel test execution
+- **Context Sharing**: Single OpenGL context shared across all tests for stability
+
+### Example Test Usage
+
+```csharp
+[Fact]
+public void BackgroundLayer_OnRender_ExecutesOpenGLCallsWithoutError()
+{
+    // No manual setup required - OpenGL context and state reset handled automatically
+    using var app = new OpenGLTestApp();
+    var backgroundLayer = app.Factory.Create<BackgroundLayer>()
+        .Configure(new BackgroundLayer.Template
+        {
+            MaterialType = MaterialType.SolidColor,
+            BackgroundColor = new Vector4D(1.0f, 0.0f, 0.0f, 1.0f)
+        });
+
+    // OpenGL calls work seamlessly in test environment
+    backgroundLayer.OnRender(app.Renderer, 0.016);
+
+    // Automatic state reset happens before next test
+}
+```
+
+See [`Tests/README.md`](Tests/README.md) for comprehensive testing documentation and best practices.
+
 ## Project Structure
 
 - `.docs/`: Additional documentation
+  - `Project Structure.md`: Detailed architecture overview
+  - `Silk dotNET Setup.md`: Graphics integration guide
 - `GameEngine/`: Core engine components and systems
-- `Tests/`: Unit tests for engine functionality
+- `Tests/`: Unit tests and OpenGL testing infrastructure
 
 ## Dependencies
 

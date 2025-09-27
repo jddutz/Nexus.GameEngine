@@ -3,6 +3,7 @@ using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Rendering;
 using Nexus.GameEngine.Graphics.Rendering.Extensions;
+using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.Graphics.Textures;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -13,7 +14,7 @@ namespace Nexus.GameEngine.Graphics.Sprites;
 /// Component that renders a 2D sprite using a texture asset.
 /// Demonstrates integration with the asset management system.
 /// </summary>
-public class SpriteComponent(IAssetService assetService)
+public class SpriteComponent(IAssetService assetService, IResourceManager resourceManager)
     : RuntimeComponent, IRenderable
 {
     /// <summary>
@@ -48,6 +49,7 @@ public class SpriteComponent(IAssetService assetService)
     }
 
     private readonly IAssetService _assetService = assetService ?? throw new ArgumentNullException(nameof(assetService));
+    private readonly IResourceManager _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
     private Template? _template;
     private Texture2D? _loadedTexture;
 
@@ -153,16 +155,13 @@ public class SpriteComponent(IAssetService assetService)
     {
         if (!ShouldRender) return;
 
-        // Direct GL access with extension methods - no abstraction layers
-        var gl = renderer.GL;
-
         // Use extension methods for common operations
-        gl.SetTexture(_loadedTexture!.Id, 0);
-        gl.SetBlending(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        renderer.SetTexture(_loadedTexture!.Id, 0);
+        renderer.SetBlending(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-        // Get shared quad mesh from renderer cache
-        var quadVAO = renderer.GetSharedResource<uint>("FullScreenQuad");
-        gl.DrawMesh(quadVAO, 6); // 6 indices for 2 triangles
+        // Get shared sprite quad from resource manager
+        var quadVAO = _resourceManager.GetOrCreateResource<uint>("SpriteQuad", this);
+        renderer.DrawMesh(quadVAO, 6); // 6 indices for 2 triangles
 
         Logger?.LogTrace("Rendered sprite: TextureId={TextureId}, Size={Size}, Tint={Tint}",
             _loadedTexture.Id, Size, Tint);

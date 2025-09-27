@@ -9,7 +9,6 @@
 
     <!-- Package Information -->
     <PackageId>Nexus.GameEngine</PackageId>
-    <PackageVersion>1.0.0-dev</PackageVersion>
     <Authors>NexusRealms</Authors>
     <Company>NexusRealms</Company>
     <Product>NexusRealms Game Engine</Product>

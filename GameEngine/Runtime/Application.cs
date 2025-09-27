@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Graphics.Rendering;
-using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -8,13 +7,11 @@ namespace Nexus.GameEngine.Runtime;
 public class Application(
     IWindowService windowService,
     IGameStateManager gameState,
-    IUserInterfaceManager userInterface,
     IRenderer renderer,
     ILogger<Application> logger) : IApplication
 {
     private readonly IWindowService _windowService = windowService;
     private readonly IGameStateManager _gameState = gameState;
-    private readonly IUserInterfaceManager _ui = userInterface;
     private readonly IRenderer _renderer = renderer;
     private readonly ILogger<Application> _logger = logger;
 
@@ -40,11 +37,20 @@ public class Application(
         {
             try
             {
-                _ui.Update(deltaTime);
+                // Check if renderer has a root component (UI) set
+                if (_renderer.RootComponent == null)
+                {
+                    _logger.LogInformation("No root component set on renderer - exiting");
+                    _windowService.Close();
+                    return;
+                }
+
+                // Update the root component (which will recursively update all children)
+                _renderer.RootComponent.Update(deltaTime);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user interface update");
+                _logger.LogError(ex, "Error during component update");
                 throw; // Re-throw to ensure the application terminates properly
             }
         };
@@ -54,7 +60,7 @@ public class Application(
         {
             try
             {
-                _renderer.RenderFrame();
+                _renderer.RenderFrame(deltaTime);
             }
             catch (Exception ex)
             {

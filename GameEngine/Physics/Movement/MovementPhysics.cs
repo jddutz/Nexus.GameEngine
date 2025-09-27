@@ -11,7 +11,7 @@ public struct MovementPhysics
     public bool UseGravity { get; set; }
     public bool CanPush { get; set; }
     public bool CanBePushed { get; set; }
-    public static MovementPhysics Default => new MovementPhysics
+    public static MovementPhysics Default => new()
     {
         Mass = 1.0f,
         Drag = 0.1f,

@@ -10,8 +10,10 @@ public static class GLBlendingExtensions
     /// <summary>
     /// Helper method to configure blending
     /// </summary>
-    public static void SetBlending(this GL gl, BlendingFactor src, BlendingFactor dst)
+    public static void SetBlending(this IRenderer renderer, BlendingFactor src, BlendingFactor dst)
     {
+        var gl = renderer.GL;
+
         gl.Enable(EnableCap.Blend);
         gl.BlendFunc(src, dst);
     }
@@ -19,8 +21,10 @@ public static class GLBlendingExtensions
     /// <summary>
     /// Helper method to configure blending using BlendingMode enum
     /// </summary>
-    public static void SetBlending(this GL gl, BlendingMode mode)
+    public static void SetBlending(this IRenderer renderer, BlendingMode mode)
     {
+        var gl = renderer.GL;
+
         switch (mode)
         {
             case BlendingMode.None:

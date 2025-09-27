@@ -163,8 +163,18 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     /// <returns>This component instance for fluent chaining.</returns>
     public void Configure(IComponentTemplate componentTemplate)
     {
+        if (componentTemplate == null)
+        {
+            Console.WriteLine($"[RuntimeComponent] Configure called on {GetType().Name} with null template");
+            return;
+        }
+
+        Console.WriteLine($"[RuntimeComponent] Configure called on {GetType().Name} with template: {componentTemplate.GetType().Name}");
+
         Name = componentTemplate.Name;
         IsEnabled = componentTemplate.Enabled;
+
+        Console.WriteLine($"[RuntimeComponent] Component name set to: '{Name}', enabled: {IsEnabled}");
 
         BeforeConfiguration?.Invoke(this, new(componentTemplate));
 
@@ -173,10 +183,28 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         if (componentTemplate is Template template)
         {
-            foreach (var subcomponentTemplate in template.Subcomponents)
+            Console.WriteLine($"[RuntimeComponent] Template is RuntimeComponent.Template with {template.Subcomponents?.Length ?? 0} subcomponents");
+
+            if (template.Subcomponents != null)
             {
-                CreateChild(subcomponentTemplate);
+                foreach (var subcomponentTemplate in template.Subcomponents)
+                {
+                    if (subcomponentTemplate != null)
+                    {
+                        Console.WriteLine($"[RuntimeComponent] Creating child from subcomponent template: {subcomponentTemplate.GetType().Name} with name '{subcomponentTemplate.Name ?? "null"}'");
+                        var child = CreateChild(subcomponentTemplate);
+                        Console.WriteLine($"[RuntimeComponent] Child creation result: {(child != null ? $"SUCCESS - {child.GetType().Name}" : "FAILED")}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[RuntimeComponent] Skipping null subcomponent template");
+                    }
+                }
             }
+        }
+        else
+        {
+            Console.WriteLine($"[RuntimeComponent] Template is not RuntimeComponent.Template, it's: {componentTemplate.GetType().Name}");
         }
 
         AfterConfiguration?.Invoke(this, new(componentTemplate));
@@ -455,11 +483,23 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     public virtual IRuntimeComponent? CreateChild(IComponentTemplate template)
     {
+        if (template == null)
+        {
+            Console.WriteLine($"[RuntimeComponent] CreateChild called on {GetType().Name} with null template");
+            return null;
+        }
+
+        Console.WriteLine($"[RuntimeComponent] CreateChild called on {GetType().Name} with template: {template.GetType().Name}");
+        Console.WriteLine($"[RuntimeComponent] ComponentFactory is: {(ComponentFactory != null ? "available" : "null")}");
+
         var component = ComponentFactory?.Instantiate(template);
+
+        Console.WriteLine($"[RuntimeComponent] ComponentFactory.Instantiate returned: {(component != null ? component.GetType().Name : "null")}");
 
         if (component == null) return null;
 
         AddChild(component);
+        Console.WriteLine($"[RuntimeComponent] Added child {component.GetType().Name} to {GetType().Name}. Total children now: {_children.Count}");
 
         return component;
     }

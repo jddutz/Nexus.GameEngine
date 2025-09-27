@@ -22,14 +22,14 @@ public struct ViewFrustum
         // Test each corner of the bounding box against all frustum planes
         var corners = new Vector3D<float>[]
         {
-            new Vector3D<float>(boundingBox.Min.X, boundingBox.Min.Y, boundingBox.Min.Z),
-            new Vector3D<float>(boundingBox.Max.X, boundingBox.Min.Y, boundingBox.Min.Z),
-            new Vector3D<float>(boundingBox.Min.X, boundingBox.Max.Y, boundingBox.Min.Z),
-            new Vector3D<float>(boundingBox.Max.X, boundingBox.Max.Y, boundingBox.Min.Z),
-            new Vector3D<float>(boundingBox.Min.X, boundingBox.Min.Y, boundingBox.Max.Z),
-            new Vector3D<float>(boundingBox.Max.X, boundingBox.Min.Y, boundingBox.Max.Z),
-            new Vector3D<float>(boundingBox.Min.X, boundingBox.Max.Y, boundingBox.Max.Z),
-            new Vector3D<float>(boundingBox.Max.X, boundingBox.Max.Y, boundingBox.Max.Z)
+            new(boundingBox.Min.X, boundingBox.Min.Y, boundingBox.Min.Z),
+            new(boundingBox.Max.X, boundingBox.Min.Y, boundingBox.Min.Z),
+            new(boundingBox.Min.X, boundingBox.Max.Y, boundingBox.Min.Z),
+            new(boundingBox.Max.X, boundingBox.Max.Y, boundingBox.Min.Z),
+            new(boundingBox.Min.X, boundingBox.Min.Y, boundingBox.Max.Z),
+            new(boundingBox.Max.X, boundingBox.Min.Y, boundingBox.Max.Z),
+            new(boundingBox.Min.X, boundingBox.Max.Y, boundingBox.Max.Z),
+            new(boundingBox.Max.X, boundingBox.Max.Y, boundingBox.Max.Z)
         };
 
         // For each plane, check if all corners are on the negative side

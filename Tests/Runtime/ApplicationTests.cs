@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI.Abstractions;
+using Nexus.GameEngine.Graphics.Rendering;
 using Nexus.GameEngine.Runtime;
 
 namespace Tests.Runtime;
@@ -35,13 +35,13 @@ public class ApplicationTests
             var app = scope.ServiceProvider.GetRequiredService<IApplication>();
             var windowService = scope.ServiceProvider.GetRequiredService<IWindowService>();
             var gameState = scope.ServiceProvider.GetRequiredService<IGameStateManager>();
-            var userInterface = scope.ServiceProvider.GetRequiredService<IUserInterfaceManager>();
+            var renderer = scope.ServiceProvider.GetRequiredService<IRenderer>();
 
             // Verify these are not null
             Assert.NotNull(app);
             Assert.NotNull(windowService);
             Assert.NotNull(gameState);
-            Assert.NotNull(userInterface);
+            Assert.NotNull(renderer);
         });
 
         // Assert: No exceptions should be thrown during service registration and resolution
@@ -69,10 +69,10 @@ public class ApplicationTests
 
             // Verify that typed loggers can be resolved (this was the original DI issue)
             var typedLogger = scope.ServiceProvider.GetRequiredService<ILogger<IApplication>>();
-            var typedLoggerUI = scope.ServiceProvider.GetRequiredService<ILogger<IUserInterfaceManager>>();
+            var typedLoggerRenderer = scope.ServiceProvider.GetRequiredService<ILogger<IRenderer>>();
 
             Assert.NotNull(typedLogger);
-            Assert.NotNull(typedLoggerUI);
+            Assert.NotNull(typedLoggerRenderer);
         });
 
         Assert.Null(exception);

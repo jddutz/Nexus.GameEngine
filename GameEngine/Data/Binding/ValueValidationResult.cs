@@ -11,7 +11,7 @@ namespace Main.Data
             ErrorMessage = errorMessage;
             Severity = severity;
         }
-        public static ValueValidationResult Success => new ValueValidationResult(true);
+        public static ValueValidationResult Success => new(true);
         public static ValueValidationResult Failure(string errorMessage, BindingErrorSeverityEnum severity = BindingErrorSeverityEnum.Error)
         {
             return new ValueValidationResult(false, errorMessage, severity);
