@@ -160,8 +160,8 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
         renderer.SetBlending(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         // Get shared sprite quad from resource manager
-        var quadVAO = _resourceManager.GetOrCreateResource<uint>("SpriteQuad", this);
-        renderer.DrawMesh(quadVAO, 6); // 6 indices for 2 triangles
+        var quadVAO = _resourceManager.GetOrCreateResource("SpriteQuad", this);
+        if (quadVAO != null) renderer.DrawMesh(quadVAO.Value, 6); // 6 indices for 2 triangles
 
         Logger?.LogTrace("Rendered sprite: TextureId={TextureId}, Size={Size}, Tint={Tint}",
             _loadedTexture.Id, Size, Tint);

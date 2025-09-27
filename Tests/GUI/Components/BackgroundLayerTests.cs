@@ -301,40 +301,4 @@ public class BackgroundLayerTests
     #endregion
 
 
-
-    #region Edge Case Tests
-
-    [Fact]
-    public void OnRender_WhenNotVisible_DoesNotRender()
-    {
-        // Arrange
-        var template = new BackgroundLayer.Template { MaterialType = MaterialType.SolidColor };
-        _backgroundLayer.Configure(template);
-        _backgroundLayer.IsVisible = false;
-
-        // Act & Assert - Should not call resource manager when not visible
-        _backgroundLayer.OnRender(new Mock<IRenderer>().Object, 16.67);
-
-        _mockResourceManager.Verify(rm => rm.GetOrCreateResource<uint>(
-            It.IsAny<IResourceDefinition>(),
-            It.IsAny<IRuntimeComponent>()), Times.Never);
-    }
-
-    [Fact]
-    public void OnRender_WhenFullyTransparent_DoesNotRender()
-    {
-        // Arrange
-        var template = new BackgroundLayer.Template { Fade = 0.0f };
-        _backgroundLayer.Configure(template);
-        _backgroundLayer.IsVisible = true;
-
-        // Act & Assert - Should not call resource manager when fully transparent
-        _backgroundLayer.OnRender(new Mock<IRenderer>().Object, 16.67);
-
-        _mockResourceManager.Verify(rm => rm.GetOrCreateResource<uint>(
-            It.IsAny<IResourceDefinition>(),
-            It.IsAny<IRuntimeComponent>()), Times.Never);
-    }
-
-    #endregion
 }

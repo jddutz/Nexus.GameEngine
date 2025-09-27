@@ -14,6 +14,7 @@ using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime.Settings;
 using Nexus.GameEngine.GUI.Abstractions;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -60,6 +61,7 @@ public static class ServiceCollectionExtensions
         // Register renderer with window service dependency
         services.AddSingleton<IRenderer, Renderer>();
         services.AddSingleton<IUserInterfaceManager, UserInterfaceManager>();
+        services.AddSingleton<IResourceManager, ResourceManager>();
 
         // Temporary: Provide stub IAssetService until real implementation
         services.AddSingleton<IAssetService, StubAssetService>();
