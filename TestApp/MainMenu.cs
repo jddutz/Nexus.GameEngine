@@ -2,7 +2,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Components;
 
-namespace NexusRealms.Prelude.Shared.UI;
+namespace TestApp;
 
 public static partial class Templates
 {

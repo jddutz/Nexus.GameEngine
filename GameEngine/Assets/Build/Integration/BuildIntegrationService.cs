@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Assets.Build.Models;
 using Nexus.GameEngine.Assets.Build.Management;
-using Nexus.GameEngine.Assets.Build.Logging;
 
 namespace Nexus.GameEngine.Assets.Build.Integration;
 
@@ -231,7 +230,7 @@ public class BuildIntegrationService(
                 TargetPlatform = ConvertStringToTargetPlatform(request.TargetPlatform),
                 Configuration = request.Configuration,
                 Options = new Dictionary<string, object>(request.ProcessingOptions),
-                Logger = new ConsoleTaskLogger(),
+                Logger = logger,
                 ForceProcessing = request.ForceRebuild
             };
 

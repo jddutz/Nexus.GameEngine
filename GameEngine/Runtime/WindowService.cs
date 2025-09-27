@@ -93,7 +93,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug($"Error disposing input context: {ex.Message}");
+                    _logger.LogError(ex, "Error disposing input context");
                 }
                 _inputContext = null;
             }
@@ -112,7 +112,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug($"Error disposing window: {ex.Message}");
+                    _logger.LogError(ex, "Error disposing window");
                 }
                 _window = null;
             }
@@ -122,8 +122,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
         }
         catch (Exception ex)
         {
-            _logger.LogDebug($"Error during window service cleanup: {ex.Message}");
-            _logger.LogDebug($"Stack trace: {ex.StackTrace}");
+            _logger.LogError(ex, "Error during window service cleanup");
         }
     }
 
@@ -145,7 +144,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
         _window.Closing += OnWindowClosing;
         _window.Resize += OnWindowResize;
 
-        _logger.LogDebug($"Window created - {options.Size.X}x{options.Size.Y} (Fullscreen)");
+        _logger.LogDebug("Window created - {Width}x{Height} (Fullscreen)", options.Size.X, options.Size.Y);
     }
 
     private void OnWindowLoad()
@@ -162,7 +161,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
 
     private void OnWindowResize(Vector2D<int> newSize)
     {
-        _logger.LogDebug($"Window resized to {newSize.X}x{newSize.Y}");
+        _logger.LogDebug("Window resized to {Width}x{Height}", newSize.X, newSize.Y);
         // Note: Consumers should subscribe to _window.Resize directly if they need resize events
     }
 
@@ -209,7 +208,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
             // Give the window system time to process the state change
             await Task.Delay(50);
 
-            _logger.LogDebug($"Fullscreen mode set to: {fullscreen}");
+            _logger.LogDebug("Fullscreen mode set to: {Fullscreen}", fullscreen);
         }
     }
 }

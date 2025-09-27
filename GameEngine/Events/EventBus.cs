@@ -63,7 +63,7 @@ public class EventBus(ILoggerFactory loggerFactory) : IEventBus
                     subscription.SubscriptionId,
                     ex);
 
-                _logger.LogDebug($"Event handling error: {handlingException}");
+                _logger.LogDebug("Event handling error: {HandlingException}", handlingException);
                 EventHandlingError?.Invoke(handlingException);
             }
         }
@@ -116,7 +116,7 @@ public class EventBus(ILoggerFactory loggerFactory) : IEventBus
                     subscription.SubscriptionId,
                     ex);
 
-                _logger.LogDebug($"Async event handling error: {handlingException}");
+                _logger.LogDebug("Async event handling error: {HandlingException}", handlingException);
                 EventHandlingError?.Invoke(handlingException);
             }
         }

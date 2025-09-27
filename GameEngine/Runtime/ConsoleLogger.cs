@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -26,38 +25,21 @@ public class ConsoleLogger(string context, LoggingConfiguration? configuration =
         if (!IsEnabled(logLevel))
             return;
 
+        var fgColor = Console.ForegroundColor;
+        Console.ForegroundColor = GetLogLevelColor(logLevel);
+
         var message = formatter(state, exception);
         var formattedMessage = FormatMessage(logLevel, message);
 
-        if (_configuration.UseColors)
-        {
-            WriteColoredMessage(logLevel, formattedMessage);
-        }
-        else
-        {
-            Console.WriteLine(formattedMessage);
-            if (_configuration.MinimumLevel <= LogLevel.Debug)
-            {
-                Debug.WriteLine(formattedMessage);
-            }
-        }
+        Console.WriteLine(message);
 
         if (exception != null)
         {
             var exceptionMessage = FormatException(exception);
-            if (_configuration.UseColors)
-            {
-                WriteColoredMessage(LogLevel.Error, exceptionMessage);
-            }
-            else
-            {
-                Console.WriteLine(exceptionMessage);
-                if (_configuration.MinimumLevel <= LogLevel.Debug)
-                {
-                    Debug.WriteLine(exceptionMessage);
-                }
-            }
+            Console.WriteLine(exceptionMessage);
         }
+
+        Console.ForegroundColor = fgColor;
     }
 
     private string FormatMessage(LogLevel logLevel, string message)
@@ -98,25 +80,6 @@ public class ConsoleLogger(string context, LoggingConfiguration? configuration =
             LogLevel.Critical => "CRIT",
             _ => "NONE"
         };
-    }
-
-    private void WriteColoredMessage(LogLevel logLevel, string message)
-    {
-        var originalColor = Console.ForegroundColor;
-
-        try
-        {
-            Console.ForegroundColor = GetLogLevelColor(logLevel);
-            Console.WriteLine(message);
-            if (_configuration.MinimumLevel <= LogLevel.Debug)
-            {
-                Debug.WriteLine(message);
-            }
-        }
-        finally
-        {
-            Console.ForegroundColor = originalColor;
-        }
     }
 
     private static ConsoleColor GetLogLevelColor(LogLevel logLevel)

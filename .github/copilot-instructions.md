@@ -32,8 +32,6 @@ use dotnet command for editing CSPROJ and SLN files.
 
 All classes and interfaces should be defined in separate files.
 
-The application does not use any logging services. For debugging, we use Debug.WriteLine().
-
 To build, use the following command:
 
 ```bash
@@ -83,3 +81,15 @@ public class PlaceholderUI : ComponentTemplate
     ];
 }
 ```
+
+**Logging**:
+
+All logging should be structured using ILogger.
+
+For RuntimeComponents, ComponentFactory sets the Logger when a component is created. The logger should not be injected. Logging via RuntimeComponent looks like this:
+
+    Logger?.LogDebug("Input context not available, cannot activate {ComponentType}", GetType().Name);
+
+For non-RuntimeComponent services, inject ILoggerFactory to create a logger with the proper context:
+
+    private readonly ILogger _logger = loggerFactory.CreateLogger<WindowService>();

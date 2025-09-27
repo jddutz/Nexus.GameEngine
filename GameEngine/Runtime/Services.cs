@@ -14,7 +14,6 @@ using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime.Settings;
 using Nexus.GameEngine.GUI.Abstractions;
-using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Runtime;
 

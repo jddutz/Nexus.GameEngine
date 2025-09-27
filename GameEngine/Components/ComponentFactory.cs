@@ -10,6 +10,7 @@ namespace Nexus.GameEngine.Components;
 public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory)
     : IComponentFactory
 {
+    private readonly ILogger logger = loggerFactory.CreateLogger<ComponentFactory>();
 
     /// <summary>
     /// Creates a component instance of the specified type using the service provider.
@@ -87,31 +88,31 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     {
         if (template == null)
         {
-            Console.WriteLine("[ComponentFactory] Instantiate called with null template");
+            logger.LogDebug("[ComponentFactory] Instantiate called with null template");
             return null;
         }
 
-        Console.WriteLine($"[ComponentFactory] Instantiate called for template: {template.GetType().Name} with name '{template.Name}'");
-        Console.WriteLine($"[ComponentFactory] Template has {template.Subcomponents?.Length ?? 0} subcomponents");
+        logger.LogDebug("Instantiate called for template: {TemplateTypeName} with name '{TemplateName}'", template.GetType().Name, template.Name);
+        logger.LogDebug("Template has {Count} subcomponents", template.Subcomponents?.Length ?? 0);
 
         // Try to get the component type from the template's containing class
         var componentType = template.GetType().DeclaringType;
 
-        Console.WriteLine($"[ComponentFactory] Inferred component type: {componentType?.Name ?? "null"}");
+        logger.LogDebug("Inferred component type: {TypeName}", componentType?.Name ?? "null");
 
         // Type-safety: Ensure the type implements IRuntimeComponent
         if (componentType == null || !typeof(IRuntimeComponent).IsAssignableFrom(componentType))
         {
-            Console.WriteLine($"[ComponentFactory] Component type is null or doesn't implement IRuntimeComponent");
+            logger.LogDebug("Component type is null or doesn't implement IRuntimeComponent");
             return null;
         }
 
-        Console.WriteLine($"[ComponentFactory] Creating component of type: {componentType.Name}");
+        logger.LogDebug("Creating component of type: {TypeName}", componentType.Name);
 
         // Create and configure the component
         var result = Create(componentType, template);
 
-        Console.WriteLine($"[ComponentFactory] Component creation result: {(result != null ? "SUCCESS" : "FAILED")}");
+        logger.LogDebug("Component creation result: {Result}", result != null ? "SUCCESS" : "FAILED");
 
         return result;
     }

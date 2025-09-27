@@ -307,7 +307,7 @@ public interface IResourceManager
 
 // Usage in debugging/profiling
 var stats = resourceManager.GetMemoryStats();
-Console.WriteLine($"GPU Memory Usage: {stats.EstimatedMemoryUsage / 1024 / 1024}MB");
+logger.LogDebug("GPU Memory Usage: {stats.EstimatedMemoryUsage / 1024 / 1024}MB");
 ```
 
 ## Best Practices

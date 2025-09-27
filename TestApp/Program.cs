@@ -3,9 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Runtime;
-using NexusRealms.Prelude.Shared.UI;
 
-namespace Program;
+namespace TestApp;
 
 class Program
 {

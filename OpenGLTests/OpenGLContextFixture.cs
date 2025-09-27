@@ -23,8 +23,6 @@ public class OpenGLContextFixture : IDisposable
 
     public OpenGLContextFixture()
     {
-        Debug.WriteLine("Initializing OpenGL Context Fixture");
-
         // Create window for OpenGL context
         var options = WindowOptions.Default;
         options.IsVisible = false;
@@ -47,8 +45,6 @@ public class OpenGLContextFixture : IDisposable
 
         // Create test renderer
         _renderer = new TestRenderer(_gl);
-
-        Debug.WriteLine("OpenGL Context Fixture initialized successfully.");
     }
 
     /// <summary>
@@ -56,48 +52,31 @@ public class OpenGLContextFixture : IDisposable
     /// </summary>
     public void ResetState()
     {
-        try
-        {
-            Debug.WriteLine("Resetting OpenGL state");
+        // Ensure context is current
+        _window.MakeCurrent();
 
-            // Ensure context is current
-            _window.MakeCurrent();
+        // Clear all buffers with neutral values
+        _gl.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-            // Clear all buffers with neutral values
-            _gl.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        // Reset common OpenGL state
+        _gl.Disable(EnableCap.DepthTest);
+        _gl.Disable(EnableCap.Blend);
+        _gl.Disable(EnableCap.CullFace);
+        _gl.Disable(EnableCap.ScissorTest);
+        _gl.Disable(EnableCap.StencilTest);
 
-            // Reset common OpenGL state
-            _gl.Disable(EnableCap.DepthTest);
-            _gl.Disable(EnableCap.Blend);
-            _gl.Disable(EnableCap.CullFace);
-            _gl.Disable(EnableCap.ScissorTest);
-            _gl.Disable(EnableCap.StencilTest);
+        // Reset to default values
+        _gl.DepthFunc(DepthFunction.Less);
+        _gl.DepthMask(true);
+        _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        _gl.CullFace(TriangleFace.Back);
+        _gl.FrontFace(FrontFaceDirection.Ccw);
+        _gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
 
-            // Reset to default values
-            _gl.DepthFunc(DepthFunction.Less);
-            _gl.DepthMask(true);
-            _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            _gl.CullFace(TriangleFace.Back);
-            _gl.FrontFace(FrontFaceDirection.Ccw);
-            _gl.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
-
-            // Reset viewport to window size
-            var size = _window.Size;
-            _gl.Viewport(0, 0, (uint)size.X, (uint)size.Y);
-
-            // Check for errors after reset
-            var error = _gl.GetError();
-            if (error != GLEnum.NoError)
-            {
-                Debug.WriteLine($"Warning: OpenGL error after state reset: {error}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error during OpenGL state reset: {ex.Message}");
-            throw;
-        }
+        // Reset viewport to window size
+        var size = _window.Size;
+        _gl.Viewport(0, 0, (uint)size.X, (uint)size.Y);
     }
 
     /// <summary>
@@ -128,20 +107,11 @@ public class OpenGLContextFixture : IDisposable
     {
         if (!_disposed)
         {
-            Debug.WriteLine("Disposing OpenGL Context Fixture");
-
-            try
+            if (_renderer is IDisposable disposableRenderer)
             {
-                if (_renderer is IDisposable disposableRenderer)
-                {
-                    disposableRenderer.Dispose();
-                }
-                _window?.Dispose();
+                disposableRenderer.Dispose();
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error during OpenGL fixture disposal: {ex.Message}");
-            }
+            _window?.Dispose();
 
             _disposed = true;
         }

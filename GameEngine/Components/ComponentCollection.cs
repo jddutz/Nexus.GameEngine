@@ -447,16 +447,8 @@ public abstract class ComponentCollection : IComponentCollection, IDisposable
         if (_disposed)
             return;
 
-        try
-        {
-            CleanupUnloadedComponents();
-            CheckMemoryPressure();
-        }
-        catch (Exception ex)
-        {
-            // Log error but don't throw to avoid crashing cleanup timer
-            System.Diagnostics.Debug.WriteLine($"ComponentCollection cleanup error: {ex.Message}");
-        }
+        CleanupUnloadedComponents();
+        CheckMemoryPressure();
     }
 
     /// <summary>

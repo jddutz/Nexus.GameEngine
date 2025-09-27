@@ -87,12 +87,12 @@ public abstract class InputBinding(
     {
         if (_inputContext == null)
         {
-            Logger?.LogDebug($"Input context not available, cannot activate {GetType().Name}");
+            Logger?.LogDebug("Input context not available, cannot activate {ComponentType}", GetType().Name);
             return;
         }
 
         SubscribeToInputEvents();
-        Logger?.LogDebug($"{GetType().Name} activated and listening for input");
+        Logger?.LogDebug("{ComponentType} activated and listening for input", GetType().Name);
     }
 
     /// <summary>
@@ -110,32 +110,32 @@ public abstract class InputBinding(
 
             if (ActionId == ActionId.None)
             {
-                Logger?.LogDebug($"No action configured for {inputDescription} on {GetType().Name}");
+                Logger?.LogDebug("No action configured for {InputDescription} on {ComponentType}", inputDescription, GetType().Name);
                 return;
             }
 
             if (_actionFactory == null)
             {
-                Logger?.LogDebug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
+                Logger?.LogDebug("ActionFactory not available for {InputDescription} on {ComponentType}", inputDescription, GetType().Name);
                 return;
             }
 
-            Logger?.LogDebug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
+            Logger?.LogDebug("Executing action for {InputDescription} - ActionId: {ActionIdentifier}", inputDescription, ActionId.Identifier);
 
             var result = await _actionFactory.ExecuteAsync(ActionId, this);
 
             if (result.Success)
             {
-                Logger?.LogDebug($"Action executed successfully for {inputDescription}: {result.Message}");
+                Logger?.LogDebug("Action executed successfully for {InputDescription}: {ResultMessage}", inputDescription, result.Message);
             }
             else
             {
-                Logger?.LogDebug($"Action execution failed for {inputDescription}: {result.Message}");
+                Logger?.LogDebug("Action execution failed for {InputDescription}: {ResultMessage}", inputDescription, result.Message);
             }
         }
         catch (Exception ex)
         {
-            Logger?.LogDebug($"Error executing action for {inputDescription}: {ex.Message}");
+            Logger?.LogError(ex, "Error executing action for {InputDescription}", inputDescription);
         }
     }
 
@@ -145,7 +145,7 @@ public abstract class InputBinding(
     protected override void OnDeactivate()
     {
         UnsubscribeFromInputEvents();
-        Logger?.LogDebug($"{GetType().Name} deactivated");
+        Logger?.LogDebug("{ComponentType} deactivated", GetType().Name);
     }
 
     /// <summary>

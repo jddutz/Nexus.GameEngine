@@ -76,21 +76,26 @@ public class Renderer(IWindowService windowService, ILogger<Renderer> logger)
         }
 
         // Walk the component tree and collect IRenderable components
-        var renderables = FindRenderableComponents(RootComponent)
-            .Where(r => r.IsEnabled && r.IsVisible)
+        var components = FindRenderableComponents(RootComponent)
+            .Where(component => component.IsEnabled && component.IsVisible)
             .OrderBy(component => component.RenderPriority);
 
-        foreach (var component in renderables)
+        var errorCodes = new List<GLEnum>();
+        foreach (var component in components)
         {
-            logger.LogDebug("Rendering component {ComponentName}", component.Name);
             component.OnRender(this, deltaTime);
+            var errorCode = GL.GetError();
 
-            var error = GL.GetError();
-            if (error != GLEnum.NoError)
+            if (errorCode != GLEnum.NoError)
             {
-                logger.LogError("OpenGL error: {Error}", error);
+                logger.LogDebug("GL Error Code {ErrorCode}", errorCode);
+                errorCodes.Add(errorCode);
+
+                // TODO: Handle critical errors (OutOfMemory, etc)
             }
         }
+
+        // TODO: Adaptive degradation to address GL errors
 
         // Process render passes
         foreach (var renderPass in RenderPasses)
@@ -110,21 +115,10 @@ public class Renderer(IWindowService windowService, ILogger<Renderer> logger)
             yield break;
 
         if (component is IRenderable renderable)
-        {
-            logger.LogDebug(
-                "Found component: {Name}, IsEnabled: {IsEnabled}, IsVisible: {IsVisible}",
-                renderable.Name,
-                renderable.IsEnabled,
-                renderable.IsVisible
-            );
-
             yield return renderable;
-        }
 
-        foreach (var child in component.Children)
-        {
-            FindRenderableComponents(child);
-        }
+        foreach (var child in component.Children.SelectMany(c => FindRenderableComponents(c)))
+            yield return child;
     }
 
     private bool _disposed;

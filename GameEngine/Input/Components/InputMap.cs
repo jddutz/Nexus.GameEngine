@@ -86,7 +86,7 @@ public class InputMap : RuntimeComponent
     /// </summary>
     protected override void OnActivate()
     {
-        Logger?.LogDebug($"InputMap '{Name}' activated with {Children.Count()} child bindings");
+        Logger?.LogDebug("InputMap '{InputMapName}' activated with {ChildCount} child bindings", Name, Children.Count());
 
         // Child components are automatically activated by the base class
         // Each input binding will handle its own event subscription
@@ -98,7 +98,7 @@ public class InputMap : RuntimeComponent
     /// </summary>
     protected override void OnDeactivate()
     {
-        Logger?.LogDebug($"InputMap '{Name}' deactivated");
+        Logger?.LogDebug("InputMap '{InputMapName}' deactivated", Name);
 
         // Child components are automatically deactivated by the base class
         // Each input binding will handle its own event unsubscription
