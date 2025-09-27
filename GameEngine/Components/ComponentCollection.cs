@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Components;
 

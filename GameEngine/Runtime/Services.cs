@@ -9,7 +9,7 @@ using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime.Settings;

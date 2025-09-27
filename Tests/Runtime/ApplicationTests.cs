@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Runtime;
 
 namespace Tests.Runtime;

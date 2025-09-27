@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Graphics.Rendering.Buffers;
+using Nexus.GameEngine.Graphics.Buffers;
 
 namespace Tests.Graphics.Rendering.Lighting;
 

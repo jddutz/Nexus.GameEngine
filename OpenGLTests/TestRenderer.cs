@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Silk.NET.OpenGL;
 
 namespace OpenGLTests;

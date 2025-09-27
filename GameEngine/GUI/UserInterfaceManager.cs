@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.GUI;

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using static Tests.Components.RuntimeComponentTestHelpers;
 

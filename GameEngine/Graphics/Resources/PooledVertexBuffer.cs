@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Graphics.Rendering.Resources;
+namespace Nexus.GameEngine.Graphics.Resources;
 
 /// <summary>
 /// A pooled vertex buffer resource

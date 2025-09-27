@@ -1,5 +1,5 @@
 using Silk.NET.Maths;
-using Nexus.GameEngine.Graphics.Rendering.Lighting;
+using Nexus.GameEngine.Graphics.Lighting;
 
 namespace Tests.Graphics.Rendering.Lighting;
 

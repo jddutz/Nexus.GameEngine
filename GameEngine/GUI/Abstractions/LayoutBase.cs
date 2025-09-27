@@ -2,7 +2,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 

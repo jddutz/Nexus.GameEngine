@@ -1,5 +1,5 @@
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;

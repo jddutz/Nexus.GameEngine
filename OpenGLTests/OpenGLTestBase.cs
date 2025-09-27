@@ -1,6 +1,6 @@
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 using Xunit;
 
 namespace OpenGLTests;

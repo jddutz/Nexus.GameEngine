@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics.Rendering;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Runtime;
 

@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Rendering;
-using Nexus.GameEngine.Graphics.Rendering.Extensions;
+using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Extensions;
 using Nexus.GameEngine.Graphics.Resources;
 using Nexus.GameEngine.Graphics.Textures;
 using Silk.NET.Maths;
@@ -25,7 +25,7 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
         /// <summary>
         /// Reference to the texture asset for this sprite.
         /// </summary>
-        public AssetReference<Texture2D> Texture { get; init; } = new();
+        public AssetReference<ManagedTexture> Texture { get; init; } = new();
 
         /// <summary>
         /// The size of the sprite in world units.
@@ -51,12 +51,12 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     private readonly IAssetService _assetService = assetService ?? throw new ArgumentNullException(nameof(assetService));
     private readonly IResourceManager _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
     private Template? _template;
-    private Texture2D? _loadedTexture;
+    private ManagedTexture? _loadedTexture;
 
     /// <summary>
     /// Gets the currently loaded texture, if any.
     /// </summary>
-    public Texture2D? Texture => _loadedTexture;
+    public ManagedTexture? Texture => _loadedTexture;
 
     /// <summary>
     /// Gets the sprite size in world units.
@@ -106,7 +106,7 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
                 try
                 {
                     Logger?.LogDebug("Loading texture asset: {AssetId}", _template.Texture.AssetId.Address);
-                    _loadedTexture = await _assetService.LoadAsync<Texture2D>(_template.Texture.AssetId.Address);
+                    _loadedTexture = await _assetService.LoadAsync<ManagedTexture>(_template.Texture.AssetId.Address);
                     _template.Texture.CachedAsset = _loadedTexture;
 
                     Logger?.LogDebug("Successfully loaded texture asset: {AssetId}", _template.Texture.AssetId.Address);
@@ -156,7 +156,7 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
         if (!ShouldRender) return;
 
         // Use extension methods for common operations
-        renderer.SetTexture(_loadedTexture!.Id, 0);
+        renderer.SetTexture(_loadedTexture!.TextureId, 0);
         renderer.SetBlending(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         // Get shared sprite quad from resource manager
@@ -164,6 +164,6 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
         if (quadVAO != null) renderer.DrawMesh(quadVAO.Value, 6); // 6 indices for 2 triangles
 
         Logger?.LogTrace("Rendered sprite: TextureId={TextureId}, Size={Size}, Tint={Tint}",
-            _loadedTexture.Id, Size, Tint);
+            _loadedTexture.TextureId, Size, Tint);
     }
 }
