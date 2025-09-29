@@ -23,11 +23,15 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
     public uint RenderPassFlags => 1;
 
-    public Vector4D<float> BackgroundColor { get; set; } = new(0.392f, 0.584f, 0.929f, 1.0f); // CornflowerBlue
+    public Vector4D<float> BackgroundColor { get; set; } = Colors.CornflowerBlue;
 
-    public void OnRender(IRenderer renderer, double deltaTime)
+    public IEnumerable<RenderState> OnRender(double deltaTime)
     {
-        renderer.GL.ClearColor(BackgroundColor.X, BackgroundColor.Y, BackgroundColor.Z, BackgroundColor.W);
-        renderer.GL.Clear((uint)ClearBufferMask.ColorBufferBit);
+        // BackgroundLayer no longer directly calls GL methods
+        // Background clearing is now handled by RenderPassConfiguration.FillColor
+        // This component can be removed or repurposed for other background rendering needs
+        
+        // For now, return empty to not interfere with the new render pass clearing
+        return System.Linq.Enumerable.Empty<RenderState>();
     }
 }

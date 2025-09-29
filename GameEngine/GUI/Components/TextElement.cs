@@ -183,8 +183,12 @@ public class TextElement : RuntimeComponent, IRenderable
         }
     }
 
-    public void OnRender(IRenderer renderer, double deltaTime)
+    public IEnumerable<RenderState> OnRender(double deltaTime)
     {
-        // TODO: Implement text rendering using direct GL calls
+        var renderState = new RenderState();
+
+        // TODO: Implement text rendering by declaring render state requirements
+        // For now, just return empty render state
+        yield return renderState;
     }
 }

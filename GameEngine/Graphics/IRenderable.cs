@@ -10,15 +10,13 @@ namespace Nexus.GameEngine.Graphics;
 public interface IRenderable : IRuntimeComponent
 {
     /// <summary>
-    /// Renders this component directly using OpenGL calls
+    /// Provides a set of rendering state requirements for the component.
+    /// Components declare what they need to render without direct OpenGL access.
     /// </summary>
-    /// <param name="renderer">Provides GL context and helper methods</param>
-    /// <param name="deltaTime">Time since last frame for animations</param>
-    void OnRender(IRenderer renderer, double deltaTime);
+    /// <param name="deltaTime">Time elapsed since the last frame, used for animations</param>
+    /// <returns>An enumerable collection of render states required to render the component</returns>
+    IEnumerable<RenderState> OnRender(double deltaTime);
 
-    /// <summary>
-    /// Whether this component is visible (legacy compatibility)
-    /// </summary>
     bool IsVisible { get; set; }
 
     /// <summary>

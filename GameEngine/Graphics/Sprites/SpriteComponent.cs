@@ -151,19 +151,12 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     /// </summary>
     public bool ShouldRenderChildren => false;
 
-    public void OnRender(IRenderer renderer, double deltaTime)
+    public IEnumerable<RenderState> OnRender(double deltaTime)
     {
-        if (!ShouldRender) return;
+        var renderState = new RenderState();
 
-        // Use extension methods for common operations
-        renderer.SetTexture(_loadedTexture!.TextureId, 0);
-        renderer.SetBlending(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-        // Get shared sprite quad from resource manager
-        var quadVAO = _resourceManager.GetOrCreateResource("SpriteQuad", this);
-        if (quadVAO != null) renderer.DrawMesh(quadVAO.Value, 6); // 6 indices for 2 triangles
-
-        Logger?.LogTrace("Rendered sprite: TextureId={TextureId}, Size={Size}, Tint={Tint}",
-            _loadedTexture.TextureId, Size, Tint);
+        // TODO: Implement sprite rendering by declaring render state requirements
+        // For now, just return empty render state
+        yield return renderState;
     }
 }

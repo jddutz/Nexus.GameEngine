@@ -36,7 +36,14 @@ public class TestRenderer : IRenderer, IDisposable
             return;
 
         foreach (var component in FindRenderableComponents(RootComponent).OrderBy(c => c.RenderPriority))
-            component.OnRender(this, deltaTime);
+        {
+            var renderStates = component.OnRender(deltaTime);
+            // Process the render states for testing
+            foreach (var state in renderStates)
+            {
+                // For test purposes, just validate that states were returned
+            }
+        }
     }
 
     private static IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)

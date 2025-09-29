@@ -1,3 +1,5 @@
+using Silk.NET.Maths;
+
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
@@ -22,6 +24,8 @@ public class RenderPassConfiguration
     /// Used for dependency ordering in multi-pass rendering.
     /// </summary>
     public List<int> Dependencies { get; set; } = [];
+
+    public Vector4D<float> FillColor { get; set; } = Colors.Transparent;
 
     /// <summary>
     /// Whether this pass renders directly to the screen/backbuffer.

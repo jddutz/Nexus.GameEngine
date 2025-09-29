@@ -23,6 +23,7 @@ public static partial class Templates
             new TextElement.Template()
             {
                 Name = "TextElement",
+                Color = Colors.DarkSlateBlue,
                 Text = "Nexus Game Engine Test App"
             },
             new KeyBinding.Template()
