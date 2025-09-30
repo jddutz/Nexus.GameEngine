@@ -18,7 +18,7 @@ public interface IRenderer
     /// <summary>
     /// Main viewport, defines how components should be displayed on the screen.
     /// </summary>
-    IViewport? Viewport { get; set; }
+    IViewport Viewport { get; }
 
     /// <summary>
     /// Walks the component tree and calls OnRender() on IRenderable components.

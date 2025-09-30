@@ -11,7 +11,7 @@ namespace OpenGLTests;
 public class TestRenderer : IRenderer, IDisposable
 {
     public GL GL { get; }
-    public IViewport? Viewport { get; set; }
+    public IViewport Viewport { get; set; } = new Viewport();
 
     public TestRenderer(GL gl)
     {

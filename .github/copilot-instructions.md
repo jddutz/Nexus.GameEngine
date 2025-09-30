@@ -51,16 +51,28 @@ The engine uses a **ContentManager + Viewport** architecture for UI and content 
 
 ### Key Architectural Principles
 
-**Content Creation Pattern:**
+**Application Startup Pattern:**
 
 ```csharp
-// Get ContentManager and create/retrieve content
-var contentManager = services.GetRequiredService<IContentManager>();
-var mainMenu = contentManager.GetOrCreate(Templates.MainMenu);
+// CORRECT: Use StartupTemplate for deferred component creation
+var app = services.GetRequiredService<IApplication>();
+app.StartupTemplate = Templates.MainMenu;  // Created after window initialization
+await app.RunAsync();
+```
 
-// Assign to renderer's viewport
+**IMPORTANT**: Do not create InputContext-dependent components (KeyBinding, MouseBinding, InputMap) before calling `app.RunAsync()`. These components require the window to be initialized first. Use the StartupTemplate property instead of directly calling `contentManager.GetOrCreate()` in startup code.
+
+The Application class automatically defers StartupTemplate instantiation until after the WindowLoaded event fires, ensuring the InputContext is available when input binding components are created.
+
+**Content Creation Pattern (for runtime content changes):**
+
+```csharp
+// Use this pattern for content changes after application startup
+var contentManager = services.GetRequiredService<IContentManager>();
+var newContent = contentManager.GetOrCreate(Templates.SomeContent);
+
 var renderer = services.GetRequiredService<IRenderer>();
-renderer.Viewport.Content = mainMenu;
+renderer.Viewport.Content = newContent;
 ```
 
 **RuntimeComponent System Design Summary**

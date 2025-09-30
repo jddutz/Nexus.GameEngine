@@ -65,7 +65,6 @@ public static class ServiceCollectionExtensions
         // Temporary: Provide stub IAssetService until real implementation
         services.AddSingleton<IAssetService, StubAssetService>();
 
-        services.AddSingleton<IGameStateManager, GameStateManager>();
         services.AddSingleton<IEventBus, EventBus>();
         services.AddSingleton<IApplication, Application>();
 

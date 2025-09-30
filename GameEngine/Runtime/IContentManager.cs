@@ -9,11 +9,12 @@ namespace Nexus.GameEngine.Runtime;
 public interface IContentManager : IDisposable
 {
     /// <summary>
-    /// Creates a content tree from the provided template and stores it with the given name.
-    /// If content with the same name already exists, this operation is ignored.
+    /// Gets existing content or creates it from the template if it doesn't exist.
     /// </summary>
-    /// <param name="template">Template to instantiate</param>
-    void Create(IComponentTemplate template);
+    /// <param name="template">Template to use if content needs to be created</param>
+    /// <param name="activate">Whether to automatically activate newly created content. Defaults to true</param>
+    /// <returns>The content component, or null if creation failed</returns>
+    IRuntimeComponent? GetOrCreate(IComponentTemplate template, bool activate = true);
 
     /// <summary>
     /// Attempts to retrieve content by name.
@@ -23,13 +24,6 @@ public interface IContentManager : IDisposable
     IRuntimeComponent? TryGet(string name);
 
     /// <summary>
-    /// Gets existing content or creates it from the template if it doesn't exist.
-    /// </summary>
-    /// <param name="template">Template to use if content needs to be created</param>
-    /// <returns>The content component, or null if creation failed</returns>
-    IRuntimeComponent? GetOrCreate(IComponentTemplate template);
-
-    /// <summary>
     /// Removes and disposes content by name.
     /// </summary>
     /// <param name="name">Name of the content to remove</param>
@@ -37,7 +31,8 @@ public interface IContentManager : IDisposable
     bool Remove(string name);
 
     /// <summary>
-    /// Gets all content names currently managed.
+    /// Enumerates all managed content.
     /// </summary>
-    IEnumerable<string> GetContentNames();
+    /// <returns>An enumerator of all managed content.</returns>
+    IEnumerable<IRuntimeComponent> GetContent();
 }

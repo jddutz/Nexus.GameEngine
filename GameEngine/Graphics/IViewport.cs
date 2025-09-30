@@ -8,7 +8,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Represents a viewport that renders a component tree through a camera to a screen region or framebuffer.
 /// Viewports manage their own content and can pass camera/viewport context to components during rendering.
 /// </summary>
-public interface IViewport
+public interface IViewport : IRuntimeComponent
 {
     /// <summary>
     /// Screen region in pixels where this viewport renders. Full screen is typically (0, 0, screenWidth, screenHeight).

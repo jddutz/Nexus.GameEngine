@@ -119,7 +119,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
         ClearValidationResults();
-        Validate();
+
 
         PropertyChanged?.Invoke(this, new(propertyName));
     }
@@ -209,6 +209,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         }
 
         AfterConfiguration?.Invoke(this, new(componentTemplate));
+
+        Logger?.LogDebug("{ComponentType} '{Name}' configuration completed", GetType().Name, Name);
     }
 
     #endregion
@@ -259,7 +261,24 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     public bool Validate()
     {
         // Return cached results if available
-        if (_validationState != null) return IsValid;
+        if (_validationState != null)
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' using cached validation result: {IsValid}", GetType().Name, Name, IsValid);
+
+            // Always log validation errors when using cached results, especially for failed validation
+            if (!IsValid && ValidationErrors.Any())
+            {
+                Logger?.LogDebug("{ComponentType} '{Name}' cached validation errors:", GetType().Name, Name);
+                foreach (var error in ValidationErrors)
+                {
+                    Logger?.LogDebug("  - {ErrorMessage} (Severity: {Severity})", error.Message, error.Severity);
+                }
+            }
+
+            return IsValid;
+        }
+
+        Logger?.LogDebug("{ComponentType} '{Name}' validating...", GetType().Name, Name);
 
         Validating?.Invoke(this, EventArgs.Empty);
 
@@ -270,18 +289,26 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         _validationState = _validationErrors.Count == 0; // true when no errors (valid), false when errors exist (invalid)
         if (_validationState == false)
         {
+            Logger?.LogDebug("{ComponentType} '{Name}' validation failed with {ErrorCount} errors", GetType().Name, Name, _validationErrors.Count);
             ValidationFailed?.Invoke(this, EventArgs.Empty);
+        }
+        else
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' validation passed", GetType().Name, Name);
         }
 
         // Log validation errors for debugging
-        foreach (var error in ValidationErrors)
+        if (ValidationErrors.Any())
         {
-            Logger?.LogDebug(
-                "Validation Error: {ComponentType} {ComponentName} {ErrorMessage}",
-                error.RuntimeComponent.GetType().Name,
-                error.RuntimeComponent.Name,
-                error.Message
-            );
+            Logger?.LogDebug("{ComponentType} '{Name}' validation errors:", GetType().Name, Name);
+            foreach (var error in ValidationErrors)
+            {
+                Logger?.LogDebug(
+                    "  - {ErrorMessage} (Severity: {Severity})",
+                    error.Message,
+                    error.Severity
+                );
+            }
         }
 
         // Fire PropertyChanged event directly to avoid infinite recursion through NotifyPropertyChanged
@@ -327,7 +354,13 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     public void Activate()
     {
         // Validate before activation (uses cached results if available)
-        if (!Validate()) return;
+        if (!Validate())
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' failed validation, cannot activate", GetType().Name, Name);
+            return;
+        }
+
+        Logger?.LogDebug("{ComponentType} '{Name}' activating...", GetType().Name, Name);
 
         Activating?.Invoke(this, EventArgs.Empty);
 
@@ -336,11 +369,14 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         foreach (var child in Children)
         {
+            Logger?.LogDebug("{ComponentType} '{Name}' activating child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
             child.Activate();
         }
 
         // Set active state after successful activation
         IsActive = true;
+
+        Logger?.LogDebug("{ComponentType} '{Name}' activated successfully. IsActive: {IsActive}", GetType().Name, Name, IsActive);
 
         Activated?.Invoke(this, EventArgs.Empty);
     }
@@ -362,7 +398,15 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     public void Update(double deltaTime)
     {
+        if (!IsActive)
+        {
+            Logger?.LogTrace("{ComponentType} '{Name}' skipping update - not active", GetType().Name, Name);
+            return;
+        }
+
         IsUpdating = true;
+
+        Logger?.LogTrace("{ComponentType} '{Name}' updating with deltaTime: {DeltaTime:F4}s", GetType().Name, Name, deltaTime);
 
         Updating?.Invoke(this, EventArgs.Empty);
 
@@ -405,7 +449,13 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     public void Deactivate()
     {
-        if (IsUnloaded) return; // Already inactive
+        if (IsUnloaded)
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' already deactivated", GetType().Name, Name);
+            return; // Already inactive
+        }
+
+        Logger?.LogDebug("{ComponentType} '{Name}' deactivating...", GetType().Name, Name);
 
         Deactivating?.Invoke(this, EventArgs.Empty);
 
@@ -415,6 +465,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         // Deactivate leaf to root
         foreach (var child in Children)
         {
+            Logger?.LogDebug("{ComponentType} '{Name}' deactivating child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
             child.Deactivate();
         }
 
@@ -423,6 +474,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         Deactivated?.Invoke(this, EventArgs.Empty);
 
         IsUnloaded = true;
+
+        Logger?.LogDebug("{ComponentType} '{Name}' deactivated successfully. IsUnloaded: {IsUnloaded}", GetType().Name, Name, IsUnloaded);
     }
 
     #endregion
@@ -433,11 +486,15 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     public void Dispose()
     {
+        Logger?.LogDebug("{ComponentType} '{Name}' disposing...", GetType().Name, Name);
+
         // Dispose children first (leaf to root)
         foreach (var child in Children.OfType<IDisposable>().ToArray()) // ToArray to avoid collection modification during iteration
         {
             if (child is IDisposable disposableChild)
             {
+                var childName = child is IRuntimeComponent runtimeChild ? runtimeChild.Name : "Unknown";
+                Logger?.LogDebug("{ComponentType} '{Name}' disposing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, childName);
                 disposableChild.Dispose();
             }
         }
@@ -447,6 +504,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         // Call component-specific disposal logic
         OnDispose();
+
+        Logger?.LogDebug("{ComponentType} '{Name}' disposed successfully", GetType().Name, Name);
     }
 
     #endregion
@@ -471,6 +530,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     {
         if (!_children.Contains(child))
         {
+            Logger?.LogDebug("{ComponentType} '{Name}' adding child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+
             _children.Add(child);
 
             child.Parent = this;
@@ -479,6 +540,12 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
             {
                 Added = [child]
             });
+
+            Logger?.LogDebug("{ComponentType} '{Name}' child added successfully. Total children: {ChildCount}", GetType().Name, Name, _children.Count);
+        }
+        else
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' child already exists: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
         }
     }
 
@@ -509,12 +576,20 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     {
         if (_children.Remove(child))
         {
+            Logger?.LogDebug("{ComponentType} '{Name}' removing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+
             child.Parent = null;
 
             ChildCollectionChanged?.Invoke(child, new()
             {
                 Removed = [child]
             });
+
+            Logger?.LogDebug("{ComponentType} '{Name}' child removed successfully. Total children: {ChildCount}", GetType().Name, Name, _children.Count);
+        }
+        else
+        {
+            Logger?.LogDebug("{ComponentType} '{Name}' child not found for removal: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
         }
     }
 

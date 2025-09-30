@@ -143,6 +143,49 @@ When working with graphics resources:
 4. Let the resource manager handle lifecycle management automatically
 5. Test memory management behavior with unit tests
 
+## Application Lifecycle and Startup
+
+### Startup Pattern
+
+The engine uses a deferred creation pattern to ensure proper initialization order:
+
+```csharp
+// CORRECT: Use StartupTemplate for deferred creation
+var app = services.GetRequiredService<IApplication>();
+app.StartupTemplate = Templates.MainMenu;  // Created after window initialization
+await app.RunAsync();
+```
+
+```csharp
+// INCORRECT: Don't create InputContext-dependent components before app.RunAsync()
+var contentManager = services.GetRequiredService<IContentManager>();
+var mainMenu = contentManager.GetOrCreate(Templates.MainMenu);  // Will fail if contains KeyBinding
+var renderer = services.GetRequiredService<IRenderer>();
+renderer.Viewport.Content = mainMenu;  // InputContext not available yet
+await app.RunAsync();
+```
+
+### Component Lifecycle Phases
+
+1. **Service Registration**: Dependency injection container setup
+2. **Application Creation**: IApplication service instantiated
+3. **Template Assignment**: StartupTemplate set (no component creation yet)
+4. **Window Initialization**: Window and InputContext created during app.RunAsync()
+5. **Content Creation**: StartupTemplate instantiated after window is ready
+6. **Component Activation**: Components activated and event subscriptions established
+7. **Game Loop**: Update and render cycles begin
+
+### InputContext Dependencies
+
+Components that depend on InputContext (input bindings, input maps) cannot be created before window initialization:
+
+- **KeyBinding**: Requires InputContext for keyboard event subscription
+- **MouseBinding**: Requires InputContext for mouse event subscription
+- **InputMap**: Manages collections of input bindings
+- **GamepadBinding**: Requires InputContext for gamepad event subscription
+
+These components will throw `InvalidOperationException` if created before the window is ready.
+
 ## Architecture Principles
 
 - **Composition over Inheritance**: Use component composition instead of deep inheritance hierarchies
@@ -151,3 +194,4 @@ When working with graphics resources:
 - **Event-Driven**: Reactive updates through event subscriptions
 - **Resource Efficiency**: Shared resources with automatic lifecycle management
 - **Type Safety**: Strong typing throughout the API surface
+- **Deferred Creation**: Use StartupTemplate pattern for InputContext-dependent components

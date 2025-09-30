@@ -34,13 +34,11 @@ public class ApplicationTests
             using var scope = services.CreateScope();
             var app = scope.ServiceProvider.GetRequiredService<IApplication>();
             var windowService = scope.ServiceProvider.GetRequiredService<IWindowService>();
-            var gameState = scope.ServiceProvider.GetRequiredService<IGameStateManager>();
             var renderer = scope.ServiceProvider.GetRequiredService<IRenderer>();
 
             // Verify these are not null
             Assert.NotNull(app);
             Assert.NotNull(windowService);
-            Assert.NotNull(gameState);
             Assert.NotNull(renderer);
         });
 

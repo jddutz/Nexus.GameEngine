@@ -18,40 +18,13 @@ public class ContentManager(
     private bool _disposed;
 
     /// <inheritdoc/>
-    public void Create(IComponentTemplate template)
-    {
-        if (string.IsNullOrEmpty(template.Name))
-        {
-            _logger.LogWarning("Cannot create content with empty name");
-            return;
-        }
-
-        if (_content.ContainsKey(template.Name))
-        {
-            _logger.LogDebug("Content '{Name}' already exists, skipping creation", template.Name);
-            return;
-        }
-
-        var created = _factory.Instantiate(template);
-        if (created != null)
-        {
-            _content[template.Name] = created;
-            _logger.LogDebug("Created content '{Name}'", template.Name);
-        }
-        else
-        {
-            _logger.LogWarning("Failed to create content from template '{Name}'", template.Name);
-        }
-    }
-
-    /// <inheritdoc/>
     public IRuntimeComponent? TryGet(string name)
     {
         return _content.TryGetValue(name, out var component) ? component : null;
     }
 
     /// <inheritdoc/>
-    public IRuntimeComponent? GetOrCreate(IComponentTemplate template)
+    public IRuntimeComponent? GetOrCreate(IComponentTemplate template, bool activate = true)
     {
         if (string.IsNullOrEmpty(template.Name))
         {
@@ -72,7 +45,9 @@ public class ContentManager(
             if (created != null)
             {
                 _content[template.Name] = created;
-                _logger.LogDebug("Created content '{Name}'", template.Name);
+
+                if (activate) created.Activate();
+
                 return created;
             }
             else
@@ -103,9 +78,14 @@ public class ContentManager(
     }
 
     /// <inheritdoc/>
-    public IEnumerable<string> GetContentNames()
+    public IEnumerable<IRuntimeComponent> GetContent()
     {
-        return _content.Keys.ToList(); // Create a copy to avoid enumeration issues
+        if (_disposed) yield break;
+
+        foreach (var component in _content.Values)
+        {
+            yield return component;
+        }
     }
 
     public void Dispose()

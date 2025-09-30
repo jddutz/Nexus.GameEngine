@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Abstractions;
 
@@ -14,61 +15,67 @@ namespace Nexus.GameEngine.Runtime;
 /// <param name="logger">Logger for application-level logging</param>
 public class Application(
     IWindowService windowService,
-    IGameStateManager gameState,
+    IContentManager contentManager,
     IRenderer renderer,
     ILogger<Application> logger) : IApplication
 {
-    /// <summary>
-    /// Runs the application asynchronously, setting up the main game loop and event handlers.
-    /// This method initializes the window, subscribes to update and render events, and starts the main loop.
-    /// The application will run until the window is closed or an unrecoverable error occurs.
-    /// </summary>
-    /// <param name="cancellationToken">Token to support cancellation of the operation (currently not used as window lifecycle is managed by the windowing system)</param>
-    /// <returns>A task that represents the running application</returns>
+    // <inheritdoc/>
+    public IComponentTemplate? StartupTemplate { get; set; }
+
+    // <inheritdoc/>
     public Task RunAsync(CancellationToken cancellationToken = default)
     {
         var window = windowService.GetOrCreateWindow();
 
+        window.Load += Window_OnLoad;
         window.Update += OnUpdate;
         window.Render += OnRender;
 
-        // Note: WindowService.Run() is synchronous and blocks until window closes
-        // Future enhancement could add cancellation token support
         windowService.Run();
 
         return Task.CompletedTask;
     }
 
+    private void Window_OnLoad()
+    {
+        if (StartupTemplate == null)
+        {
+            logger.LogError("Application.StartupTemplate is required.");
+            return;
+        }
+
+        var content = contentManager.GetOrCreate(StartupTemplate);
+        if (content == null)
+        {
+            logger.LogError("Failed to create content from StartupTemplate {TemplateName}", StartupTemplate.Name);
+            return;
+        }
+
+        logger.LogDebug("Created startup content from StartupTemplate {TemplateName}", StartupTemplate.Name);
+        renderer.Viewport.Content = content;
+        renderer.Viewport.Activate();
+    }
+
     /// <summary>
     /// Handles the update phase of the game loop. Called once per frame before rendering.
-    /// Updates game state first, then user interface components. Any exceptions during update
+    /// Updates all active content components. Any exceptions during update
     /// will be logged and cause the application to exit gracefully.
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last update, in seconds</param>
     private void OnUpdate(double deltaTime)
     {
-        // Update GameState first - handles core game logic
         try
         {
-            gameState.Update(deltaTime);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error updating Game State");
-            Exit();
-        }
+            var active = contentManager.GetContent().Where(content => content.IsActive);
 
-        // Process viewport content changes - this handles delayed content assignments
-        try
-        {
-            if (renderer.Viewport is Viewport viewport)
+            foreach (var content in active)
             {
-                viewport.ProcessPendingContentChanges();
+                content.Update(deltaTime);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error processing viewport content changes");
+            logger.LogError(ex, "Error updating content");
             Exit();
         }
     }

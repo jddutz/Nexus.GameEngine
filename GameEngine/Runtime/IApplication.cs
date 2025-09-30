@@ -1,3 +1,5 @@
+using Nexus.GameEngine.Components;
+
 namespace Nexus.GameEngine.Runtime;
 
 /// <summary>
@@ -6,6 +8,11 @@ namespace Nexus.GameEngine.Runtime;
 /// </summary>
 public interface IApplication
 {
+    /// <summary>
+    /// Determines the template loaded when the application first starts.
+    /// </summary>
+    IComponentTemplate? StartupTemplate { get; set; }
+
     /// <summary>
     /// Starts the application and runs the main application loop.
     /// This method will block until the application is terminated.

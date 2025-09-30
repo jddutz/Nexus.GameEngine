@@ -52,7 +52,7 @@ public class Renderer(
     /// Gets or sets the root <see cref="IRuntimeComponent"/> of the component tree to render.
     /// The renderer traverses this tree to locate and render all <see cref="IRenderable"/> components.
     /// </summary>
-    public IViewport? Viewport { get; set; }
+    public IViewport Viewport { get; init; } = new Viewport();
 
     /// <summary>
     /// Gets or sets the configured render passes that define the rendering pipeline stages.

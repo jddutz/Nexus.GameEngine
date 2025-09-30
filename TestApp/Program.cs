@@ -26,14 +26,10 @@ class Program
             .AddGameEngineServices(configuration, loggingConfig)
             .BuildServiceProvider();
 
-        var contentManager = services.GetRequiredService<IContentManager>();
-        var mainMenu = contentManager.GetOrCreate(Templates.MainMenu);
-
-        var renderer = services.GetRequiredService<IRenderer>();
-        renderer.Viewport.Content = mainMenu;
-
         // Get and run the application
-        var gameApplication = services.GetRequiredService<IApplication>();
-        await gameApplication.RunAsync();
+        var app = services.GetRequiredService<IApplication>();
+        app.StartupTemplate = Templates.MainMenu;
+
+        await app.RunAsync();
     }
 }

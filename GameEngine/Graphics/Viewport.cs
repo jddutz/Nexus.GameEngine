@@ -8,24 +8,27 @@ namespace Nexus.GameEngine.Graphics;
 /// <summary>
 /// Basic viewport implementation with delayed content assignment capabilities.
 /// Supports changing content trees during runtime with proper lifecycle management.
+/// Inherits from RuntimeComponent to participate in the standard component lifecycle.
 /// </summary>
-public class Viewport : IViewport
+public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
 {
-    private readonly ILogger<Viewport>? _logger;
+    public new record Template : RuntimeComponent.Template
+    {
+        public ICamera? Camera { get; set; }
+        public Rectangle<int> ScreenRegion { get; set; }
+        public uint? FramebufferTarget { get; set; }
+        public int ViewportPriority { get; set; } = 0;
+        public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
+        public bool RequiresFlushAfterRender { get; set; } = false;
+    }
+
     private IRuntimeComponent? _content;
     private IRuntimeComponent? _pendingContent;
     private bool _hasPendingContentChange;
 
-    public Viewport(Rectangle<int> screenRegion, ICamera camera, ILogger<Viewport>? logger = null)
-    {
-        ScreenRegion = screenRegion;
-        Camera = camera;
-        _logger = logger;
-    }
-
     public Rectangle<int> ScreenRegion { get; set; }
 
-    public ICamera Camera { get; set; }
+    public ICamera Camera { get; set; } = camera ?? new StaticCamera();
 
     public uint? FramebufferTarget { get; set; }
 
@@ -47,43 +50,76 @@ public class Viewport : IViewport
             {
                 _pendingContent = value;
                 _hasPendingContentChange = true;
-                _logger?.LogDebug("Scheduled content change for next update cycle");
+                Logger?.LogDebug("Scheduled content change for next update cycle");
             }
         }
     }
 
     /// <summary>
     /// Processes any pending content changes. Should be called during update cycle.
+    /// Content activation/deactivation is now handled by ContentManager, not Viewport.
     /// </summary>
     public void ProcessPendingContentChanges()
     {
         if (!_hasPendingContentChange) return;
 
-        // Deactivate current content
-        if (_content != null)
-        {
-            _content.Deactivate();
-            _logger?.LogDebug("Deactivated previous content");
-        }
-
-        // Activate new content
+        // Simply assign new content - no lifecycle management needed
+        // Components are activated when created by ContentManager
         _content = _pendingContent;
-        if (_content != null)
-        {
-            _content.Activate();
-            _logger?.LogDebug("Activated new content");
-        }
+        Logger?.LogDebug("Applied pending content change");
 
         // Clear pending change
         _hasPendingContentChange = false;
         _pendingContent = null;
     }
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    /// <summary>
+    /// Override OnActivate to immediately apply any pending content changes.
+    /// This allows viewports to be activated after content assignment to bypass the deferred update cycle.
+    /// </summary>
+    protected override void OnActivate()
     {
-        // Process any pending content changes first
+        if (_content == null && _pendingContent != null)
+        {
+            _content = _pendingContent;
+            _hasPendingContentChange = false;
+            _pendingContent = null;
+            Logger?.LogDebug("Applied pending content change during activation");
+        }
+    }
+
+    /// <summary>
+    /// Override OnUpdate to handle pending content changes during the component lifecycle.
+    /// </summary>
+    protected override void OnUpdate(double deltaTime)
+    {
+        // Process pending content changes during update cycle
         ProcessPendingContentChanges();
 
+        base.OnUpdate(deltaTime);
+    }
+
+    /// <summary>
+    /// Override OnConfigure to apply template settings to viewport properties.
+    /// </summary>
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            if (template.Camera != null)
+                Camera = template.Camera;
+            ScreenRegion = template.ScreenRegion;
+            FramebufferTarget = template.FramebufferTarget;
+            ViewportPriority = template.ViewportPriority;
+            RenderPasses = template.RenderPasses;
+            RequiresFlushAfterRender = template.RequiresFlushAfterRender;
+        }
+    }
+
+    public IEnumerable<RenderState> OnRender(double deltaTime)
+    {
         if (_content == null)
         {
             return Enumerable.Empty<RenderState>();

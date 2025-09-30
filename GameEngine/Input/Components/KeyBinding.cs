@@ -49,21 +49,6 @@ public class KeyBinding(
     public Key[] ModifierKeys { get; set; } = [];
 
     /// <summary>
-    /// Subscribe to the appropriate keyboard events based on configuration.
-    /// </summary>
-    protected override void SubscribeToInputEvents()
-    {
-        if (InputContext == null) return;
-
-        foreach (var keyboard in InputContext.Keyboards)
-        {
-            keyboard.KeyChar += OnKeyChar;
-            keyboard.KeyDown += OnKeyDown;
-            keyboard.KeyUp += OnKeyUp;
-        }
-    }
-
-    /// <summary>
     /// Configure the gamepad binding using the provided template.
     /// </summary>
     /// <param name="template">Template containing configuration data</param>
@@ -73,8 +58,22 @@ public class KeyBinding(
 
         if (componentTemplate is Template template)
         {
+            Logger?.LogDebug("Binding KeyDown event for {Key}", template.Key);
             Key = template.Key;
             ModifierKeys = template.ModifierKeys;
+        }
+    }
+
+    /// <summary>
+    /// Subscribe to the appropriate keyboard events based on configuration.
+    /// </summary>
+    protected override void SubscribeToInputEvents()
+    {
+        if (InputContext == null) return;
+
+        foreach (var keyboard in InputContext.Keyboards)
+        {
+            keyboard.KeyDown += OnKeyDown;
         }
     }
 
@@ -87,36 +86,7 @@ public class KeyBinding(
 
         foreach (var keyboard in InputContext.Keyboards)
         {
-            keyboard.KeyChar -= OnKeyChar;
             keyboard.KeyDown -= OnKeyDown;
-            keyboard.KeyUp -= OnKeyUp;
-        }
-    }
-
-    /// <summary>
-    /// Activate the key binding by subscribing to input events.
-    /// </summary>
-    protected override void OnActivate()
-    {
-        try
-        {
-            if (InputContext == null)
-            {
-                Logger?.LogDebug("Input context not available, cannot activate KeyBinding");
-                return;
-            }
-
-            // Subscribe to keyboard events
-            foreach (var keyboard in InputContext.Keyboards)
-            {
-                keyboard.KeyDown += OnKeyDown;
-            }
-
-            Logger?.LogDebug("KeyBinding for {Key} (modifiers: {Modifiers}) activated and listening", Key, string.Join(", ", ModifierKeys));
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogError(ex, "Error activating KeyBinding");
         }
     }
 
@@ -130,21 +100,13 @@ public class KeyBinding(
             yield return error;
     }
 
-    private void OnKeyChar(IKeyboard keyboard, char arg2)
-    {
-        throw new NotImplementedException();
-    }
-
-    private void OnKeyUp(IKeyboard keyboard, Key key, int arg3)
-    {
-        throw new NotImplementedException();
-    }
-
     /// <summary>
     /// Handle the key down event directly from Silk.NET.
     /// </summary>
     private void OnKeyDown(IKeyboard keyboard, Key key, int scanCode)
     {
+        Logger?.LogDebug("OnKeyDown event {KeyPressed}", key);
+
         // Check if this is the key we're looking for
         if (key != Key) return;
 

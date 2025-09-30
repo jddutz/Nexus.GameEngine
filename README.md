@@ -12,6 +12,37 @@ dotnet build Nexus.GameEngine.sln --configuration Debug
 dotnet test
 ```
 
+## Application Startup
+
+The recommended way to start a Nexus Game Engine application uses the `StartupTemplate` pattern to defer component creation until after the window is initialized:
+
+```csharp
+class Program
+{
+    private static async Task Main(string[] args)
+    {
+        // Create configuration and services
+        var configuration = new ConfigurationBuilder().Build();
+        var loggingConfig = new LoggingConfiguration { MinimumLevel = LogLevel.Debug };
+
+        var services = new ServiceCollection()
+            .AddGameEngineServices(configuration, loggingConfig)
+            .BuildServiceProvider();
+
+        // Set the startup template (deferred creation)
+        var app = services.GetRequiredService<IApplication>();
+        app.StartupTemplate = Templates.MainMenu;
+
+        // Template will be instantiated after window creation
+
+        // Run the application
+        await app.RunAsync();
+    }
+}
+```
+
+**Important**: Do not create components that depend on InputContext (like KeyBinding) before calling `app.RunAsync()`, as the window and input system are not yet initialized. Use the `StartupTemplate` property instead to defer creation until the proper time in the application lifecycle.
+
 ## RuntimeComponent System Design Summary
 
 **Core Principle**: Everything is an IRuntimeComponent that can contain other components via a Children property. Components implement only the behavior interfaces they need.

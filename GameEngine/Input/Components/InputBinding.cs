@@ -135,7 +135,6 @@ public abstract class InputBinding(
     {
         try
         {
-            // Check if this is the key we're looking for
             if (!IsEnabled)
                 return;
 
