@@ -41,6 +41,12 @@ public class RenderState
     public int ActiveTextureUnit { get; set; } = 0;
 
     /// <summary>
+    /// Viewport that generated this render state. Used for viewport-aware batching and debugging.
+    /// Optional - can be null for legacy components that don't use viewport context.
+    /// </summary>
+    public IViewport? SourceViewport { get; set; }
+
+    /// <summary>
     /// Checks if a texture is already bound to the specified slot.
     /// </summary>
     /// <param name="textureId">Texture ID to check</param>

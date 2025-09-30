@@ -35,16 +35,40 @@ All classes and interfaces should be defined in separate files.
 To build, use the following command:
 
 ```bash
-dotnet build NexusRealms.sln --configuration Debug
+dotnet build Nexus.GameEngine.sln --configuration Debug
 dotnet test
 ```
 
-RuntimeComponent System Design Summary
+## Architecture Overview
+
+### Content Management System
+
+The engine uses a **ContentManager + Viewport** architecture for UI and content management:
+
+- **ContentManager**: Manages reusable content trees (menus, screens, levels) with caching
+- **Viewport**: Manages screen regions with cameras and content assignment
+- **Renderer**: Renders viewport content trees via IRenderer.Viewport property
+
+### Key Architectural Principles
+
+**Content Creation Pattern:**
+
+```csharp
+// Get ContentManager and create/retrieve content
+var contentManager = services.GetRequiredService<IContentManager>();
+var mainMenu = contentManager.GetOrCreate(Templates.MainMenu);
+
+// Assign to renderer's viewport
+var renderer = services.GetRequiredService<IRenderer>();
+renderer.Viewport.Content = mainMenu;
+```
+
+**RuntimeComponent System Design Summary**
 Core Principle: Everything is an IRuntimeComponent that can contain other components via a Children property. Components implement only the behavior interfaces they need.
 
 Components implement only the behaviors they need:
 
-Declarative UI Syntax for Components
+**Declarative UI Syntax for Components**
 
 ```csharp
 public class PlaceholderUI : ComponentTemplate
@@ -62,7 +86,7 @@ public class PlaceholderUI : ComponentTemplate
                 Subcomponents =
                 [
                     new TextElement { Text = "No User Interface loaded." },
-                    new TextElement { Text = "Call UserInterfaceManager.SetCurrent() in UserInterfaceManager.OnStartup." },
+                    new TextElement { Text = "Set Renderer.Viewport.Content with ContentManager.GetOrCreate() in your startup code." },
                     new TextElement { Text = "Press F12 to toggle full screen mode" },
                     new TextElement { Text = "Press ESC to quit" }
                 ]

@@ -52,7 +52,7 @@ public class Renderer(
     /// Gets or sets the root <see cref="IRuntimeComponent"/> of the component tree to render.
     /// The renderer traverses this tree to locate and render all <see cref="IRenderable"/> components.
     /// </summary>
-    public IRuntimeComponent? RootComponent { get; set; }
+    public IViewport? Viewport { get; set; }
 
     /// <summary>
     /// Gets or sets the configured render passes that define the rendering pipeline stages.
@@ -217,20 +217,24 @@ public class Renderer(
 
         if (BatchStrategy == null)
         {
-            logger.LogError("BatchStrategy is required but currently null");
+            logger.LogError("BatchStrategy is required but currently null.");
             return;
         }
 
-        if (RootComponent == null)
+        if (Viewport == null)
         {
-            logger.LogWarning("No root component set, nothing to render");
+            logger.LogError("Viewport is null. Nothing to render.");
+            return;
+        }
+
+        if (Viewport.Content == null)
+        {
+            logger.LogWarning("Viewport content has not been set, nothing to render.");
             return;
         }
 
         // Walk the component tree and collect requirements from components
-        var renderStates = FindRenderableComponents(RootComponent)
-            .Where(component => component.IsEnabled && component.IsVisible)
-            .SelectMany(c => c.OnRender(deltaTime));
+        var renderStates = Viewport.OnRender(deltaTime);
 
         // Sort the requirements
         var sorted = new SortedSet<RenderState>(BatchStrategy);
@@ -285,23 +289,6 @@ public class Renderer(
         {
             logger.LogWarning("Encountered {ErrorCount} GL errors during frame rendering", errorCodes.Count);
         }
-    }
-
-    /// <summary>
-    /// Enumerates all <see cref="IRenderable"/> components in the given component tree, recursively.
-    /// </summary>
-    /// <param name="component">The root component to search from.</param>
-    /// <returns>An enumerable of all <see cref="IRenderable"/> components found in the tree.</returns>
-    private IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)
-    {
-        if (component is null)
-            yield break;
-
-        if (component is IRenderable renderable)
-            yield return renderable;
-
-        foreach (var child in component.Children.SelectMany(c => FindRenderableComponents(c)))
-            yield return child;
     }
 
     private bool _disposed;

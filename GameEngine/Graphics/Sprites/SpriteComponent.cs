@@ -151,7 +151,7 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     /// </summary>
     public bool ShouldRenderChildren => false;
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
         var renderState = new RenderState();
 

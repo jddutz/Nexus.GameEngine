@@ -1,6 +1,5 @@
 using Silk.NET.OpenGL;
 using System.Collections.Concurrent;
-using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -17,22 +16,9 @@ public interface IRenderer
     GL GL { get; }
 
     /// <summary>
-    /// Root component for the component tree to render.
-    /// The renderer walks this tree during RenderFrame() to find and render IRenderable components.
+    /// Main viewport, defines how components should be displayed on the screen.
     /// </summary>
-    IRuntimeComponent? RootComponent { get; set; }
-
-    /// <summary>
-    /// Configured render passes that define rendering pipeline stages.
-    /// Each pass can have different GL state configuration (depth testing, blending, etc.).
-    /// </summary>
-    RenderPassConfiguration[] RenderPasses { get; set; }
-
-    /// <summary>
-    /// Shared resources dictionary for caching common rendering resources.
-    /// Used by GLRenderingExtensions for resource management and caching.
-    /// </summary>
-    ConcurrentDictionary<string, object> SharedResources { get; }
+    IViewport? Viewport { get; set; }
 
     /// <summary>
     /// Walks the component tree and calls OnRender() on IRenderable components.

@@ -25,12 +25,12 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
     public Vector4D<float> BackgroundColor { get; set; } = Colors.CornflowerBlue;
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
         // BackgroundLayer no longer directly calls GL methods
         // Background clearing is now handled by RenderPassConfiguration.FillColor
         // This component can be removed or repurposed for other background rendering needs
-        
+
         // For now, return empty to not interfere with the new render pass clearing
         return System.Linq.Enumerable.Empty<RenderState>();
     }

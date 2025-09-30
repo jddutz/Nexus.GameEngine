@@ -185,7 +185,7 @@ public abstract class LayoutBase : RuntimeComponent, IRenderable
     /// </summary>
     public bool ShouldRenderChildren => true;
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
         // Layout components typically don't render themselves, just manage child positioning
         // Return empty collection since layouts don't have visual representation

@@ -11,19 +11,7 @@ namespace OpenGLTests;
 public class TestRenderer : IRenderer, IDisposable
 {
     public GL GL { get; }
-    public IRuntimeComponent? RootComponent { get; set; }
-    public RenderPassConfiguration[] RenderPasses { get; set; } =
-    [
-        new RenderPassConfiguration
-        {
-            Id = 0,
-            Name = "Test",
-            DirectRenderMode = true,
-            DepthTestEnabled = true,
-            BlendingMode = BlendingMode.None
-        }
-    ];
-    public ConcurrentDictionary<string, object> SharedResources { get; } = new();
+    public IViewport? Viewport { get; set; }
 
     public TestRenderer(GL gl)
     {
@@ -32,35 +20,19 @@ public class TestRenderer : IRenderer, IDisposable
 
     public void RenderFrame(double deltaTime)
     {
-        if (RootComponent == null)
+        if (Viewport == null)
             return;
 
-        foreach (var component in FindRenderableComponents(RootComponent).OrderBy(c => c.RenderPriority))
+        var renderStates = Viewport.OnRender(deltaTime);
+        // Process the render states for testing
+        foreach (var state in renderStates)
         {
-            var renderStates = component.OnRender(deltaTime);
-            // Process the render states for testing
-            foreach (var state in renderStates)
-            {
-                // For test purposes, just validate that states were returned
-            }
-        }
-    }
-
-    private static IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)
-    {
-        if (component is null)
-            yield break;
-        if (component is IRenderable renderable)
-            yield return renderable;
-        foreach (var child in component.Children)
-        {
-            foreach (var r in FindRenderableComponents(child))
-                yield return r;
+            // For test purposes, just validate that states were returned
         }
     }
 
     public void Dispose()
     {
-        SharedResources.Clear();
+        // Cleanup test resources if needed
     }
 }

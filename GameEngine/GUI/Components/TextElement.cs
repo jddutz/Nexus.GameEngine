@@ -183,7 +183,7 @@ public class TextElement : RuntimeComponent, IRenderable
         }
     }
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
         var renderState = new RenderState();
 

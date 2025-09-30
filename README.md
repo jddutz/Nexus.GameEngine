@@ -41,7 +41,8 @@ See the actual interface definitions in the codebase:
 
 - `InputMap`: Manages collections of input bindings
 - `SceneGraph`: Manages spatial hierarchy of game objects
-- `UserInterfaceManager`: Manages UI component trees
+- `ContentManager`: Manages reusable UI content trees
+- `Viewport`: Manages screen regions with cameras and content
 
 **Input Components:**
 

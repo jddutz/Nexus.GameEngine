@@ -15,7 +15,7 @@ public interface IRenderable : IRuntimeComponent
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations</param>
     /// <returns>An enumerable collection of render states required to render the component</returns>
-    IEnumerable<RenderState> OnRender(double deltaTime);
+    IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime);
 
     bool IsVisible { get; set; }
 

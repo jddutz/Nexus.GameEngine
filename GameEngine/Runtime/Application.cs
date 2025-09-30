@@ -10,13 +10,11 @@ namespace Nexus.GameEngine.Runtime;
 /// </summary>
 /// <param name="windowService">Service for managing the application window</param>
 /// <param name="gameState">Manager for game state updates</param>
-/// <param name="uiManager">Manager for user interface components and lifecycle</param>
-/// <param name="renderer">Graphics renderer for drawing frames</param>
+/// <param name="renderer">Graphics renderer for rendering frames to viewports</param>
 /// <param name="logger">Logger for application-level logging</param>
 public class Application(
     IWindowService windowService,
     IGameStateManager gameState,
-    IUserInterfaceManager uiManager,
     IRenderer renderer,
     ILogger<Application> logger) : IApplication
 {
@@ -60,15 +58,17 @@ public class Application(
             Exit();
         }
 
-        // Update UI second - this processes pending activations and component updates
-        // UI updates happen after game state to ensure all services are ready
+        // Process viewport content changes - this handles delayed content assignments
         try
         {
-            uiManager.Update(deltaTime);
+            if (renderer.Viewport is Viewport viewport)
+            {
+                viewport.ProcessPendingContentChanges();
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during UI component update");
+            logger.LogError(ex, "Error processing viewport content changes");
             Exit();
         }
     }

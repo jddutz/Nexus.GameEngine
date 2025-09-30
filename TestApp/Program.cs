@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Runtime;
 
@@ -25,12 +26,11 @@ class Program
             .AddGameEngineServices(configuration, loggingConfig)
             .BuildServiceProvider();
 
-        // Get the user interface manager
-        var userInterfaceManager = services.GetRequiredService<IUserInterfaceManager>();
+        var contentManager = services.GetRequiredService<IContentManager>();
+        var mainMenu = contentManager.GetOrCreate(Templates.MainMenu);
 
-        // Create and activate the main menu UI
-        userInterfaceManager.Create(Templates.MainMenu);
-        userInterfaceManager.Activate(Templates.MainMenu.Name);
+        var renderer = services.GetRequiredService<IRenderer>();
+        renderer.Viewport.Content = mainMenu;
 
         // Get and run the application
         var gameApplication = services.GetRequiredService<IApplication>();

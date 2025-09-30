@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
 
         // Register renderer with window service dependency
         services.AddSingleton<IRenderer, Renderer>();
-        services.AddSingleton<IUserInterfaceManager, UserInterfaceManager>();
+        services.AddSingleton<IContentManager, ContentManager>();
         services.AddSingleton<IResourceManager, ResourceManager>();
 
         // Temporary: Provide stub IAssetService until real implementation

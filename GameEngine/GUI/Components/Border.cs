@@ -192,7 +192,7 @@ public class Border()
 
     /// <summary>
     /// Render event handler - Implements actual rendering behavior.
-    /// Called automatically when UserInterfaceManager fires render events.
+    /// Called automatically when the renderer walks the component tree via viewports.
     /// </summary>
     private void OnRender(object sender, EventArgs e)
     {

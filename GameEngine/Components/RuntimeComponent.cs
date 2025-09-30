@@ -42,7 +42,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
             if (_componentFactory == value) return;
 
             _componentFactory = value;
-            // Infrastructure property - don't trigger validation
+            // Infrastructure property - don't trigger validation but do notify property change
+            NotifyPropertyChanged();
         }
     }
 
