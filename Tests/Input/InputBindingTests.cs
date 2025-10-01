@@ -63,7 +63,7 @@ public class InputBindingTests
         inputBinding.Configure(template);
 
         // Act
-        var result = inputBinding.Validate();
+        var result = inputBinding.Validate(true);
 
         // Assert
         Assert.False(result);

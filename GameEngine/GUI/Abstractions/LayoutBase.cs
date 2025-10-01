@@ -166,7 +166,26 @@ public abstract class LayoutBase : RuntimeComponent, IRenderable
         InvalidateLayout();
     }
 
-    public bool IsVisible { get; set; } = true;
+    private bool _isVisible = true;
+
+    public bool IsVisible
+    {
+        get => _isVisible;
+        private set
+        {
+            if (_isVisible != value)
+            {
+                _isVisible = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public void SetVisible(bool visible)
+    {
+        QueueUpdate(() => IsVisible = visible);
+    }
+
     public bool ShouldRender => IsVisible;
     public uint RenderPriority => 420; // UI layout layer
 

@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Input.Components;
 /// of child input binding components. When this mapping is active, all child
 /// input bindings are activated. When deactivated, all child bindings are deactivated.
 /// </summary>
-public class InputMap : RuntimeComponent
+public class InputMap : RuntimeComponent, IInputMapController
 {
 
     /// <summary>
@@ -43,7 +43,15 @@ public class InputMap : RuntimeComponent
     public string Description
     {
         get => _description;
-        set => _description = value ?? string.Empty;
+        private set
+        {
+            var newValue = value ?? string.Empty;
+            if (_description != newValue)
+            {
+                _description = newValue;
+                NotifyPropertyChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -53,7 +61,14 @@ public class InputMap : RuntimeComponent
     public int Priority
     {
         get => _priority;
-        set => _priority = value;
+        private set
+        {
+            if (_priority != value)
+            {
+                _priority = value;
+                NotifyPropertyChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -62,7 +77,14 @@ public class InputMap : RuntimeComponent
     public bool EnabledByDefault
     {
         get => _enabledByDefault;
-        set => _enabledByDefault = value;
+        private set
+        {
+            if (_enabledByDefault != value)
+            {
+                _enabledByDefault = value;
+                NotifyPropertyChanged();
+            }
+        }
     }
 
     /// <summary>
@@ -75,8 +97,9 @@ public class InputMap : RuntimeComponent
 
         if (componentTemplate is Template template)
         {
-            Description = template.Description;
-            Priority = template.Priority;
+            // Direct field assignment during configuration - no deferred updates needed
+            _description = template.Description ?? string.Empty;
+            _priority = template.Priority;
         }
     }
 
@@ -143,5 +166,21 @@ public class InputMap : RuntimeComponent
     public IEnumerable<T> GetInputBindings<T>() where T : IRuntimeComponent
     {
         return GetChildren<T>();
+    }
+
+    // IInputMapController implementation - all methods use deferred updates
+    public void SetDescription(string description)
+    {
+        QueueUpdate(() => Description = description);
+    }
+
+    public void SetPriority(int priority)
+    {
+        QueueUpdate(() => Priority = priority);
+    }
+
+    public void SetEnabledByDefault(bool enabledByDefault)
+    {
+        QueueUpdate(() => EnabledByDefault = enabledByDefault);
     }
 }

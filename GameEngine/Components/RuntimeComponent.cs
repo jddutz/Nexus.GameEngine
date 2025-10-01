@@ -118,11 +118,65 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     /// </summary>
     protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
     {
-        ClearValidationResults();
-
-
         PropertyChanged?.Invoke(this, new(propertyName));
     }
+
+    #region Deferred Updates
+
+    /// <summary>
+    /// Queue of deferred property updates to be applied before rendering.
+    /// </summary>
+    private readonly List<Action> _deferredUpdates = [];
+
+    /// <summary>
+    /// Queues an update to be executed during the next ApplyUpdates() call.
+    /// Used by derived classes to defer property changes until frame boundaries.
+    /// </summary>
+    /// <param name="update">The update action to queue</param>
+    protected void QueueUpdate(Action update)
+    {
+        if (update == null) throw new ArgumentNullException(nameof(update));
+
+        _deferredUpdates.Add(update);
+
+        Logger?.LogTrace("{ComponentType} '{Name}' queued deferred update. Total pending: {PendingCount}",
+            GetType().Name, Name, _deferredUpdates.Count);
+    }
+
+    /// <summary>
+    /// Applies all queued deferred updates.
+    /// Called by the renderer before rendering each component.
+    /// </summary>
+    public void ApplyUpdates()
+    {
+        if (_deferredUpdates.Count == 0) return;
+
+        Logger?.LogTrace("{ComponentType} '{Name}' applying {UpdateCount} deferred updates",
+            GetType().Name, Name, _deferredUpdates.Count);
+
+        foreach (var update in _deferredUpdates)
+        {
+            try
+            {
+                update();
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "{ComponentType} '{Name}' error applying deferred update",
+                    GetType().Name, Name);
+            }
+        }
+
+        _deferredUpdates.Clear();
+
+        // Trigger validation after all updates have been applied
+        Validate();
+
+        Logger?.LogTrace("{ComponentType} '{Name}' finished applying deferred updates",
+            GetType().Name, Name);
+    }
+
+    #endregion
 
     #region Configuration
 
@@ -258,10 +312,10 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     protected virtual IEnumerable<ValidationError> OnValidate() => [];
 
-    public bool Validate()
+    public bool Validate(bool ignoreCached = false)
     {
         // Return cached results if available
-        if (_validationState != null)
+        if (!ignoreCached && _validationState != null)
         {
             Logger?.LogDebug("{ComponentType} '{Name}' using cached validation result: {IsValid}", GetType().Name, Name, IsValid);
 

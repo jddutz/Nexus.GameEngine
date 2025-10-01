@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// Simple orthographic camera for rendering UI components and textures. Fixed position and orientation, placed at high Z.
 /// </summary>
-public class StaticCamera : RuntimeComponent, ICamera
+public class StaticCamera : RuntimeComponent, ICamera, IOrthographicController
 {
     /// <summary>
     /// Template for configuring Static cameras.
@@ -33,6 +33,49 @@ public class StaticCamera : RuntimeComponent, ICamera
     private float _orthographicSize = 200000f;
     private float _nearPlane = -50000f;
     private float _farPlane = 50000f;
+
+    // Properties with private setters for deferred updates
+    public float OrthographicSize
+    {
+        get => _orthographicSize;
+        private set
+        {
+            if (_orthographicSize != value)
+            {
+                _orthographicSize = value;
+                InitializeMatrices();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public float NearPlane
+    {
+        get => _nearPlane;
+        private set
+        {
+            if (_nearPlane != value)
+            {
+                _nearPlane = value;
+                InitializeMatrices();
+                NotifyPropertyChanged();
+            }
+        }
+    }
+
+    public float FarPlane
+    {
+        get => _farPlane;
+        private set
+        {
+            if (_farPlane != value)
+            {
+                _farPlane = value;
+                InitializeMatrices();
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     // Fixed position at high Z value to avoid conflicts with 3D objects
     public Vector3D<float> Position { get; } = new Vector3D<float>(0, 0, 100000f);
@@ -125,5 +168,35 @@ public class StaticCamera : RuntimeComponent, ICamera
             // Reinitialize matrices with new configuration
             InitializeMatrices();
         }
+    }
+
+    // IOrthographicController implementation - all methods use deferred updates
+    public void SetWidth(float width)
+    {
+        // StaticCamera uses square orthographic projection, so set size to match width
+        QueueUpdate(() => OrthographicSize = width);
+    }
+
+    public void SetHeight(float height)
+    {
+        // StaticCamera uses square orthographic projection, so set size to match height
+        QueueUpdate(() => OrthographicSize = height);
+    }
+
+    public void SetSize(float width, float height)
+    {
+        // StaticCamera uses square orthographic projection, so use the larger dimension
+        var size = Math.Max(width, height);
+        QueueUpdate(() => OrthographicSize = size);
+    }
+
+    public void SetNearPlane(float nearPlane)
+    {
+        QueueUpdate(() => NearPlane = nearPlane);
+    }
+
+    public void SetFarPlane(float farPlane)
+    {
+        QueueUpdate(() => FarPlane = farPlane);
     }
 }

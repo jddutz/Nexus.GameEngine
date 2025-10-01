@@ -1,7 +1,7 @@
 using Silk.NET.Maths;
 using Nexus.GameEngine.Graphics.Cameras;
 
-namespace Tests.Graphics.Cameras;
+namespace Nexus.GameEngine.Tests.Graphics.Cameras;
 
 public class PerspectiveCameraTests
 {
@@ -30,7 +30,8 @@ public class PerspectiveCameraTests
         var newFov = MathF.PI / 3; // 60 degrees
 
         // Act
-        camera.FieldOfView = newFov;
+        camera.SetFieldOfView(newFov);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         Assert.Equal(newFov, camera.FieldOfView, 0.001f);
@@ -44,7 +45,8 @@ public class PerspectiveCameraTests
         var newNear = 0.5f;
 
         // Act
-        camera.NearPlane = newNear;
+        camera.SetNearPlane(newNear);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         Assert.Equal(newNear, camera.NearPlane, 0.001f);
@@ -58,7 +60,8 @@ public class PerspectiveCameraTests
         var newFar = 2000f;
 
         // Act
-        camera.FarPlane = newFar;
+        camera.SetFarPlane(newFar);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         Assert.Equal(newFar, camera.FarPlane, 0.001f);
@@ -72,7 +75,8 @@ public class PerspectiveCameraTests
         var newAspect = 4f / 3f;
 
         // Act
-        camera.AspectRatio = newAspect;
+        camera.SetAspectRatio(newAspect);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         Assert.Equal(newAspect, camera.AspectRatio, 0.001f);
@@ -86,7 +90,8 @@ public class PerspectiveCameraTests
         var newPosition = new Vector3D<float>(10, 20, 30);
 
         // Act
-        camera.Position = newPosition;
+        camera.SetPosition(newPosition);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         Assert.Equal(newPosition, camera.Position);
@@ -100,7 +105,8 @@ public class PerspectiveCameraTests
         var newForward = Vector3D.Normalize(new Vector3D<float>(1, 0, -1));
 
         // Act
-        camera.Forward = newForward;
+        camera.SetForward(newForward);
+        camera.ApplyUpdates(); // Apply deferred updates
 
         // Assert
         // Use tolerance-based comparison for floating point values
@@ -117,7 +123,8 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = new Vector3D<float>(0, 0, 5);
+        camera.SetPosition(new Vector3D<float>(0, 0, 5));
+        camera.ApplyUpdates();
 
         // Act
         var viewMatrix = camera.ViewMatrix;
@@ -144,8 +151,9 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Forward = -Vector3D<float>.UnitZ;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetForward(-Vector3D<float>.UnitZ);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-1, -1, -10),
@@ -164,8 +172,9 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Forward = -Vector3D<float>.UnitZ;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetForward(-Vector3D<float>.UnitZ);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-1, -1, 5),
@@ -184,9 +193,10 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Forward = -Vector3D<float>.UnitZ;
-        camera.FarPlane = 100f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetForward(-Vector3D<float>.UnitZ);
+        camera.SetFarPlane(100f);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-1, -1, -200),
@@ -205,8 +215,9 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Forward = -Vector3D<float>.UnitZ;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetForward(-Vector3D<float>.UnitZ);
+        camera.ApplyUpdates();
 
         var screenWidth = 800;
         var screenHeight = 600;
@@ -227,8 +238,9 @@ public class PerspectiveCameraTests
     {
         // Arrange
         var camera = new PerspectiveCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Forward = -Vector3D<float>.UnitZ;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetForward(-Vector3D<float>.UnitZ);
+        camera.ApplyUpdates();
 
         var worldPoint = new Vector3D<float>(0, 0, -10);
         var screenWidth = 800;
@@ -254,13 +266,15 @@ public class PerspectiveCameraTests
         var originalProjectionMatrix = camera.ProjectionMatrix;
 
         // Act - Change a property that should invalidate matrices
-        camera.FieldOfView = MathF.PI / 6; // 30 degrees
+        camera.SetFieldOfView(MathF.PI / 6); // 30 degrees
+        camera.ApplyUpdates();
 
         // Assert - Matrices should be recalculated
         Assert.NotEqual(originalProjectionMatrix, camera.ProjectionMatrix);
 
         // Act - Change position
-        camera.Position = new Vector3D<float>(10, 0, 0);
+        camera.SetPosition(new Vector3D<float>(10, 0, 0));
+        camera.ApplyUpdates();
 
         // Assert - View matrix should be recalculated
         Assert.NotEqual(originalViewMatrix, camera.ViewMatrix);

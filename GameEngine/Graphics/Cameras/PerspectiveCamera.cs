@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// A typical 3D perspective camera with configurable FOV, view range, and perspective control.
 /// </summary>
-public class PerspectiveCamera : RuntimeComponent, ICamera
+public class PerspectiveCamera : RuntimeComponent, ICamera, ICameraController, IPerspectiveController
 {
     /// <summary>
     /// Template for configuring Perspective cameras.
@@ -59,76 +59,99 @@ public class PerspectiveCamera : RuntimeComponent, ICamera
     private Vector3D<float> _right = Vector3D<float>.UnitX;
     private bool _matricesDirty = true;
 
-    // Properties for DI configuration
+    // Properties with private setters for deferred updates
     public float FieldOfView
     {
         get => _fieldOfView;
-        set
+        private set
         {
-            _fieldOfView = value;
-            _matricesDirty = true;
+            if (_fieldOfView != value)
+            {
+                _fieldOfView = value;
+                _matricesDirty = true;
+            }
         }
     }
 
     public float NearPlane
     {
         get => _nearPlane;
-        set
+        private set
         {
-            _nearPlane = value;
-            _matricesDirty = true;
+            if (_nearPlane != value)
+            {
+                _nearPlane = value;
+                _matricesDirty = true;
+            }
         }
     }
 
     public float FarPlane
     {
         get => _farPlane;
-        set
+        private set
         {
-            _farPlane = value;
-            _matricesDirty = true;
+            if (_farPlane != value)
+            {
+                _farPlane = value;
+                _matricesDirty = true;
+            }
         }
     }
 
     public float AspectRatio
     {
         get => _aspectRatio;
-        set
+        private set
         {
-            _aspectRatio = value;
-            _matricesDirty = true;
+            if (_aspectRatio != value)
+            {
+                _aspectRatio = value;
+                _matricesDirty = true;
+            }
         }
     }
 
     public Vector3D<float> Position
     {
         get => _position;
-        set
+        private set
         {
-            _position = value;
-            _matricesDirty = true;
+            if (_position != value)
+            {
+                _position = value;
+                _matricesDirty = true;
+            }
         }
     }
 
     public Vector3D<float> Forward
     {
         get => _forward;
-        set
+        private set
         {
-            _forward = Vector3D.Normalize(value);
-            UpdateDirectionVectors();
-            _matricesDirty = true;
+            var normalized = Vector3D.Normalize(value);
+            if (_forward != normalized)
+            {
+                _forward = normalized;
+                UpdateDirectionVectors();
+                _matricesDirty = true;
+            }
         }
     }
 
     public Vector3D<float> Up
     {
         get => _up;
-        set
+        private set
         {
-            _up = Vector3D.Normalize(value);
-            UpdateDirectionVectors();
-            _matricesDirty = true;
+            var normalized = Vector3D.Normalize(value);
+            if (_up != normalized)
+            {
+                _up = normalized;
+                UpdateDirectionVectors();
+                _matricesDirty = true;
+            }
         }
     }
 
@@ -244,6 +267,53 @@ public class PerspectiveCamera : RuntimeComponent, ICamera
         var screenY = (int)((1.0f - ndc.Y) * 0.5f * screenHeight);
 
         return new Vector2D<int>(screenX, screenY);
+    }
+
+    // ICameraController implementation - all methods use deferred updates
+    public void SetPosition(Vector3D<float> position)
+    {
+        QueueUpdate(() => Position = position);
+    }
+
+    public void Translate(Vector3D<float> translation)
+    {
+        QueueUpdate(() => Position += translation);
+    }
+
+    public void SetForward(Vector3D<float> forward)
+    {
+        QueueUpdate(() => Forward = forward);
+    }
+
+    public void SetUp(Vector3D<float> up)
+    {
+        QueueUpdate(() => Up = up);
+    }
+
+    public void LookAt(Vector3D<float> target)
+    {
+        QueueUpdate(() => Forward = Vector3D.Normalize(target - Position));
+    }
+
+    // IPerspectiveController implementation - all methods use deferred updates
+    public void SetFieldOfView(float fieldOfView)
+    {
+        QueueUpdate(() => FieldOfView = fieldOfView);
+    }
+
+    public void SetNearPlane(float nearPlane)
+    {
+        QueueUpdate(() => NearPlane = nearPlane);
+    }
+
+    public void SetFarPlane(float farPlane)
+    {
+        QueueUpdate(() => FarPlane = farPlane);
+    }
+
+    public void SetAspectRatio(float aspectRatio)
+    {
+        QueueUpdate(() => AspectRatio = aspectRatio);
     }
 
     /// <summary>

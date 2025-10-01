@@ -23,7 +23,7 @@ namespace Nexus.GameEngine.Input.Components;
 public abstract class InputBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
-    : RuntimeComponent
+    : RuntimeComponent, IInputBindingController
 {
 
     public new record Template : RuntimeComponent.Template
@@ -64,10 +64,24 @@ public abstract class InputBinding(
 
     protected readonly IActionFactory _actionFactory = actionFactory;
 
+    // Private field for deferred updates
+    private ActionId _actionId = ActionId.None;
+
     /// <summary>
     /// Gets the action that will be executed when input is triggered.
     /// </summary>
-    public ActionId ActionId { get; set; } = ActionId.None;
+    public ActionId ActionId
+    {
+        get => _actionId;
+        private set
+        {
+            if (_actionId != value)
+            {
+                _actionId = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)
     {
@@ -75,7 +89,8 @@ public abstract class InputBinding(
 
         if (componentTemplate is Template template)
         {
-            ActionId = template.ActionId;
+            // Direct field assignment during configuration - no deferred updates needed
+            _actionId = template.ActionId;
         }
     }
 
@@ -187,4 +202,10 @@ public abstract class InputBinding(
     /// Unsubscribe from input events. Must be implemented by derived classes.
     /// </summary>
     protected abstract void UnsubscribeFromInputEvents();
+
+    // IInputBindingController implementation - all methods use deferred updates
+    public void SetActionId(ActionId actionId)
+    {
+        QueueUpdate(() => ActionId = actionId);
+    }
 }

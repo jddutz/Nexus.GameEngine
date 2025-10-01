@@ -7,7 +7,7 @@ using Silk.NET.OpenGL;
 namespace Nexus.GameEngine.GUI.Components;
 
 public class BackgroundLayer(IResourceManager resourceManager)
-    : RuntimeComponent, IRenderable
+    : RuntimeComponent, IRenderable, IBackgroundController
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -15,7 +15,22 @@ public class BackgroundLayer(IResourceManager resourceManager)
         public Vector4D<float> BackgroundColor { get; set; }
     }
 
-    public bool IsVisible { get; set; } = true;
+    // Private fields for deferred updates
+    private bool _isVisible = true;
+    private Vector4D<float> _backgroundColor = Colors.CornflowerBlue;
+
+    public bool IsVisible
+    {
+        get => _isVisible;
+        private set
+        {
+            if (_isVisible != value)
+            {
+                _isVisible = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     public uint RenderPriority => 0;
 
@@ -23,7 +38,18 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
     public uint RenderPassFlags => 1;
 
-    public Vector4D<float> BackgroundColor { get; set; } = Colors.CornflowerBlue;
+    public Vector4D<float> BackgroundColor
+    {
+        get => _backgroundColor;
+        private set
+        {
+            if (_backgroundColor != value)
+            {
+                _backgroundColor = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
@@ -33,5 +59,66 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
         // For now, return empty to not interfere with the new render pass clearing
         return System.Linq.Enumerable.Empty<RenderState>();
+    }
+
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            // Direct field assignment during configuration - no deferred updates needed
+            _isVisible = template.IsVisible;
+            _backgroundColor = template.BackgroundColor;
+        }
+    }
+
+    // IBackgroundController implementation - all methods use deferred updates
+    public void SetVisible(bool visible)
+    {
+        QueueUpdate(() => IsVisible = visible);
+    }
+
+    public void SetBackgroundColor(Vector4D<float> color)
+    {
+        QueueUpdate(() => BackgroundColor = color);
+    }
+
+    public void SetBackgroundColor(float r, float g, float b, float a = 1.0f)
+    {
+        QueueUpdate(() => BackgroundColor = new Vector4D<float>(r, g, b, a));
+    }
+
+    public void SetBackgroundColor(string colorName)
+    {
+        QueueUpdate(() =>
+        {
+            // Use reflection to get predefined color from Colors class
+            var colorProperty = typeof(Colors).GetProperty(colorName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (colorProperty?.GetValue(null) is Vector4D<float> color)
+            {
+                BackgroundColor = color;
+            }
+            else
+            {
+                // Fallback to default color if name not found
+                BackgroundColor = Colors.White;
+            }
+        });
+    }
+
+    public void FadeToColor(Vector4D<float> targetColor, float factor)
+    {
+        QueueUpdate(() =>
+        {
+            // Linear interpolation between current and target color
+            var current = BackgroundColor;
+            BackgroundColor = new Vector4D<float>(
+                current.X + (targetColor.X - current.X) * factor,
+                current.Y + (targetColor.Y - current.Y) * factor,
+                current.Z + (targetColor.Z - current.Z) * factor,
+                current.W + (targetColor.W - current.W) * factor
+            );
+        });
     }
 }

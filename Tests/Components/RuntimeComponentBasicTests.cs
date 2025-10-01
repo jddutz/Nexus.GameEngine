@@ -222,21 +222,6 @@ public class RuntimeComponentBasicTests
         Assert.Equal(nameof(_component.ComponentFactory), propertyName);
     }
 
-    [Fact]
-    public void NotifyPropertyChanged_TriggersValidation()
-    {
-        // Arrange
-        var derivedComponent = new TestableRuntimeComponent(_mockLogger.Object);
-        var validationCalled = false;
-        derivedComponent.OnValidateCallback = () => { validationCalled = true; return []; };
-
-        // Act
-        derivedComponent.Name = "NewName"; // This should trigger NotifyPropertyChanged
-
-        // Assert
-        Assert.True(validationCalled);
-    }
-
     #endregion
 
     #region Initialization Tests

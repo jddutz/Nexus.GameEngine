@@ -95,7 +95,7 @@ public interface IRuntimeComponent : IDisposable
     /// Subsequent calls return cached results until configuration changes.
     /// </summary>
     /// <returns>Collection of validation errors</returns>
-    bool Validate();
+    bool Validate(bool ignoreCached = false);
 
     /// <summary>
     /// Activate this component and all its subcomponents.
@@ -109,6 +109,12 @@ public interface IRuntimeComponent : IDisposable
     /// </summary>
     /// <param name="deltaTime">Time elapsed in seconds since the previous update.</param>
     void Update(double deltaTime);
+
+    /// <summary>
+    /// Applies all queued deferred property updates.
+    /// Called by the renderer before rendering each component to ensure temporal consistency.
+    /// </summary>
+    void ApplyUpdates();
 
     /// <summary>
     /// Deactivate this component and all its subcomponents, preparing for disposal.

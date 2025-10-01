@@ -17,7 +17,16 @@ public interface IRenderable : IRuntimeComponent
     /// <returns>An enumerable collection of render states required to render the component</returns>
     IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime);
 
-    bool IsVisible { get; set; }
+    /// <summary>
+    /// Whether the component should be rendered. Read-only property updated via SetVisible().
+    /// </summary>
+    bool IsVisible { get; }
+
+    /// <summary>
+    /// Set the visibility of the renderable component. Change is applied at next frame boundary.
+    /// </summary>
+    /// <param name="visible">True to show the component, false to hide it</param>
+    void SetVisible(bool visible);
 
     /// <summary>
     /// Render priority for sorting (lower values render first)

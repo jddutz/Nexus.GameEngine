@@ -15,7 +15,7 @@ namespace Nexus.GameEngine.Graphics.Sprites;
 /// Demonstrates integration with the asset management system.
 /// </summary>
 public class SpriteComponent(IAssetService assetService, IResourceManager resourceManager)
-    : RuntimeComponent, IRenderable
+    : RuntimeComponent, IRenderable, ISpriteController
 {
     /// <summary>
     /// Template for configuring a sprite component with texture asset reference.
@@ -53,35 +53,98 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     private Template? _template;
     private ManagedTexture? _loadedTexture;
 
+    // Private fields for mutable properties
+    private Vector2D<float> _size = Vector2D<float>.One;
+    private Vector4D<float> _tint = Vector4D<float>.One;
+    private bool _flipX = false;
+    private bool _flipY = false;
+    private bool _isVisible = true;
+    private AssetReference<ManagedTexture>? _textureAsset;
+
     /// <summary>
     /// Gets the currently loaded texture, if any.
     /// </summary>
     public ManagedTexture? Texture => _loadedTexture;
 
     /// <summary>
-    /// Gets the sprite size in world units.
+    /// Gets or sets the sprite size in world units.
     /// </summary>
-    public Vector2D<float> Size => _template?.Size ?? new Vector2D<float>(1.0f, 1.0f);
+    public Vector2D<float> Size
+    {
+        get => _size;
+        private set
+        {
+            if (_size != value)
+            {
+                _size = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
-    /// Gets the sprite tint color (RGBA as Vector4D<float>).
+    /// Gets or sets the sprite tint color (RGBA as Vector4D<float>).
     /// </summary>
-    public Vector4D<float> Tint => _template?.Tint ?? Vector4D<float>.One;
+    public Vector4D<float> Tint
+    {
+        get => _tint;
+        private set
+        {
+            if (_tint != value)
+            {
+                _tint = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
-    /// Gets whether the sprite is flipped horizontally.
+    /// Gets or sets whether the sprite is flipped horizontally.
     /// </summary>
-    public bool FlipX => _template?.FlipX ?? false;
+    public bool FlipX
+    {
+        get => _flipX;
+        private set
+        {
+            if (_flipX != value)
+            {
+                _flipX = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
-    /// Gets whether the sprite is flipped vertically.
+    /// Gets or sets whether the sprite is flipped vertically.
     /// </summary>
-    public bool FlipY => _template?.FlipY ?? false;
+    public bool FlipY
+    {
+        get => _flipY;
+        private set
+        {
+            if (_flipY != value)
+            {
+                _flipY = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Whether this sprite is visible and should be rendered.
     /// </summary>
-    public bool IsVisible { get; set; } = true;
+    public bool IsVisible
+    {
+        get => _isVisible;
+        private set
+        {
+            if (_isVisible != value)
+            {
+                _isVisible = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Effects to be applied when rendering this sprite.
@@ -92,6 +155,16 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     {
         base.OnConfigure(template);
         _template = template as Template;
+
+        if (_template != null)
+        {
+            // Initialize properties from template - direct field assignment during configuration
+            _size = _template.Size;
+            _tint = _template.Tint;
+            _flipX = _template.FlipX;
+            _flipY = _template.FlipY;
+            _textureAsset = _template.Texture;
+        }
     }
 
     protected override void OnActivate()
@@ -158,5 +231,70 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
         // TODO: Implement sprite rendering by declaring render state requirements
         // For now, just return empty render state
         yield return renderState;
+    }
+
+    // ISpriteController implementation - all methods use deferred updates
+    public void SetSize(Vector2D<float> size)
+    {
+        QueueUpdate(() => Size = size);
+    }
+
+    public void SetSize(float width, float height)
+    {
+        QueueUpdate(() => Size = new Vector2D<float>(width, height));
+    }
+
+    public void Scale(float scale)
+    {
+        QueueUpdate(() => Size = Size * scale);
+    }
+
+    public void Scale(float scaleX, float scaleY)
+    {
+        QueueUpdate(() => Size = new Vector2D<float>(Size.X * scaleX, Size.Y * scaleY));
+    }
+
+    public void SetTint(Vector4D<float> tint)
+    {
+        QueueUpdate(() => Tint = tint);
+    }
+
+    public void SetTint(float r, float g, float b, float a = 1.0f)
+    {
+        QueueUpdate(() => Tint = new Vector4D<float>(r, g, b, a));
+    }
+
+    public void SetFlipX(bool flipX)
+    {
+        QueueUpdate(() => FlipX = flipX);
+    }
+
+    public void SetFlipY(bool flipY)
+    {
+        QueueUpdate(() => FlipY = flipY);
+    }
+
+    public void SetFlip(bool flipX, bool flipY)
+    {
+        QueueUpdate(() =>
+        {
+            FlipX = flipX;
+            FlipY = flipY;
+        });
+    }
+
+    public void SetVisible(bool visible)
+    {
+        QueueUpdate(() => IsVisible = visible);
+    }
+
+    public void SetTexture(AssetReference<ManagedTexture> textureAsset)
+    {
+        QueueUpdate(() =>
+        {
+            _textureAsset = textureAsset;
+            // TODO: Implement texture loading for runtime texture changes
+            // This would need to coordinate with the asset loading system
+        });
     }
 }

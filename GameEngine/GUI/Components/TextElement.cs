@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
@@ -8,7 +9,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// <summary>
 /// A UI component that displays text.
 /// </summary>
-public class TextElement : RuntimeComponent, IRenderable
+public class TextElement : RuntimeComponent, IRenderable, ITextController
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -56,7 +57,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public string? Text
     {
         get => _text;
-        set
+        private set
         {
             if (_text != value)
             {
@@ -72,7 +73,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public Vector4D<float> Color
     {
         get => _color;
-        set
+        private set
         {
             if (_color != value)
             {
@@ -88,7 +89,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public float FontSize
     {
         get => _fontSize;
-        set
+        private set
         {
             if (_fontSize != value)
             {
@@ -104,7 +105,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public string FontName
     {
         get => _fontName;
-        set
+        private set
         {
             if (_fontName != value)
             {
@@ -120,7 +121,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public TextAlignment Alignment
     {
         get => _alignment;
-        set
+        private set
         {
             if (_alignment != value)
             {
@@ -136,7 +137,7 @@ public class TextElement : RuntimeComponent, IRenderable
     public bool IsVisible
     {
         get => _isVisible;
-        set
+        private set
         {
             if (_isVisible != value)
             {
@@ -174,13 +175,88 @@ public class TextElement : RuntimeComponent, IRenderable
 
         if (componentTemplate is Template template)
         {
-            Text = template.Text;
-            Color = template.Color;
-            FontSize = template.FontSize;
-            FontName = template.FontName;
-            Alignment = template.Alignment;
-            IsVisible = template.IsVisible;
+            _text = template.Text;
+            _color = template.Color;
+            _fontSize = Math.Max(1f, template.FontSize); // Ensure minimum size
+            _fontName = template.FontName ?? "DefaultFont";
+            _alignment = template.Alignment;
+            _isVisible = template.IsVisible;
         }
+    }
+
+    // IRenderable.SetVisible implementation
+    public void SetVisible(bool visible)
+    {
+        QueueUpdate(() => IsVisible = visible);
+    }
+
+    // ITextController implementations
+    public void SetText(string? text)
+    {
+        QueueUpdate(() => Text = text);
+    }
+
+    public void SetColor(Vector4D<float> color)
+    {
+        QueueUpdate(() => Color = color);
+    }
+
+    public void SetColor(float r, float g, float b, float a = 1.0f)
+    {
+        QueueUpdate(() => Color = new Vector4D<float>(r, g, b, a));
+    }
+
+    public void SetColor(string colorName)
+    {
+        QueueUpdate(() =>
+        {
+            // Use reflection to get named colors from Colors class
+            var colorProperty = typeof(Colors).GetProperty(colorName,
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            if (colorProperty?.GetValue(null) is Vector4D<float> namedColor)
+            {
+                Color = namedColor;
+            }
+            else
+            {
+                Logger?.LogWarning("Unknown color name: {ColorName}", colorName);
+            }
+        });
+    }
+
+    public void SetFontSize(float fontSize)
+    {
+        QueueUpdate(() => FontSize = fontSize);
+    }
+
+    public void SetFontName(string fontName)
+    {
+        QueueUpdate(() => FontName = fontName);
+    }
+
+    public void SetAlignment(TextAlignment alignment)
+    {
+        QueueUpdate(() => Alignment = alignment);
+    }
+
+    public void AnimateColor(Vector4D<float> targetColor, float factor)
+    {
+        QueueUpdate(() =>
+        {
+            var currentColor = Color;
+            var interpolatedColor = new Vector4D<float>(
+                currentColor.X + (targetColor.X - currentColor.X) * factor,
+                currentColor.Y + (targetColor.Y - currentColor.Y) * factor,
+                currentColor.Z + (targetColor.Z - currentColor.Z) * factor,
+                currentColor.W + (targetColor.W - currentColor.W) * factor
+            );
+            Color = interpolatedColor;
+        });
+    }
+
+    public void ScaleFontSize(float scaleFactor)
+    {
+        QueueUpdate(() => FontSize = FontSize * scaleFactor);
     }
 
     public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)

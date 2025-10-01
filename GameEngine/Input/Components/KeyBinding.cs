@@ -23,7 +23,7 @@ namespace Nexus.GameEngine.Input.Components;
 public class KeyBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
-    : InputBinding(windowService, actionFactory)
+    : InputBinding(windowService, actionFactory), IKeyBindingController
 {
     public new record Template : InputBinding.Template
     {
@@ -38,15 +38,41 @@ public class KeyBinding(
         public Key[] ModifierKeys { get; set; } = [];
     }
 
+    // Private fields for deferred updates
+    private Key _key;
+    private Key[] _modifierKeys = [];
+
     /// <summary>
     /// The key that triggers this binding
     /// </summary>
-    public Key Key { get; set; }
+    public Key Key
+    {
+        get => _key;
+        private set
+        {
+            if (_key != value)
+            {
+                _key = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Optional modifier keys required for this binding
     /// </summary>
-    public Key[] ModifierKeys { get; set; } = [];
+    public Key[] ModifierKeys
+    {
+        get => _modifierKeys;
+        private set
+        {
+            if (!_modifierKeys.SequenceEqual(value))
+            {
+                _modifierKeys = value;
+                NotifyPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Configure the gamepad binding using the provided template.
@@ -59,8 +85,9 @@ public class KeyBinding(
         if (componentTemplate is Template template)
         {
             Logger?.LogDebug("Binding KeyDown event for {Key}", template.Key);
-            Key = template.Key;
-            ModifierKeys = template.ModifierKeys;
+            // Direct field assignment during configuration - no deferred updates needed
+            _key = template.Key;
+            _modifierKeys = template.ModifierKeys;
         }
     }
 
@@ -105,8 +132,6 @@ public class KeyBinding(
     /// </summary>
     private void OnKeyDown(IKeyboard keyboard, Key key, int scanCode)
     {
-        Logger?.LogDebug("OnKeyDown event {KeyPressed}", key);
-
         // Check if this is the key we're looking for
         if (key != Key) return;
 
@@ -132,5 +157,31 @@ public class KeyBinding(
                 return false;
         }
         return true;
+    }
+
+    // IKeyBindingController implementation - all methods use deferred updates
+    public void SetKey(Key key)
+    {
+        QueueUpdate(() => Key = key);
+    }
+
+    public void SetModifierKeys(params Key[] modifierKeys)
+    {
+        QueueUpdate(() => ModifierKeys = modifierKeys);
+    }
+
+    public void AddModifierKey(Key modifierKey)
+    {
+        QueueUpdate(() => ModifierKeys = ModifierKeys.Concat([modifierKey]).ToArray());
+    }
+
+    public void RemoveModifierKey(Key modifierKey)
+    {
+        QueueUpdate(() => ModifierKeys = ModifierKeys.Where(k => k != modifierKey).ToArray());
+    }
+
+    public void ClearModifierKeys()
+    {
+        QueueUpdate(() => ModifierKeys = []);
     }
 }

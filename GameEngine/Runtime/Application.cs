@@ -17,8 +17,10 @@ public class Application(
     IWindowService windowService,
     IContentManager contentManager,
     IRenderer renderer,
-    ILogger<Application> logger) : IApplication
+    ILoggerFactory loggerFactory) : IApplication
 {
+    private readonly ILogger logger = loggerFactory.CreateLogger(nameof(Application));
+
     // <inheritdoc/>
     public IComponentTemplate? StartupTemplate { get; set; }
 

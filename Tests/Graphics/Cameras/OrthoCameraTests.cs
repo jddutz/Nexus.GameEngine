@@ -30,7 +30,8 @@ public class OrthoCameraTests
         var newWidth = 20f;
 
         // Act
-        camera.Width = newWidth;
+        camera.SetWidth(newWidth);
+        camera.ApplyUpdates();
 
         // Assert
         Assert.Equal(newWidth, camera.Width, 0.001f);
@@ -44,7 +45,8 @@ public class OrthoCameraTests
         var newHeight = 15f;
 
         // Act
-        camera.Height = newHeight;
+        camera.SetHeight(newHeight);
+        camera.ApplyUpdates();
 
         // Assert
         Assert.Equal(newHeight, camera.Height, 0.001f);
@@ -58,7 +60,8 @@ public class OrthoCameraTests
         var newNear = -500f;
 
         // Act
-        camera.NearPlane = newNear;
+        camera.SetNearPlane(newNear);
+        camera.ApplyUpdates();
 
         // Assert
         Assert.Equal(newNear, camera.NearPlane, 0.001f);
@@ -72,7 +75,8 @@ public class OrthoCameraTests
         var newFar = 2000f;
 
         // Act
-        camera.FarPlane = newFar;
+        camera.SetFarPlane(newFar);
+        camera.ApplyUpdates();
 
         // Assert
         Assert.Equal(newFar, camera.FarPlane, 0.001f);
@@ -86,7 +90,8 @@ public class OrthoCameraTests
         var newPosition = new Vector3D<float>(5, 10, 15);
 
         // Act
-        camera.Position = newPosition;
+        camera.SetPosition(newPosition);
+        camera.ApplyUpdates();
 
         // Assert
         Assert.Equal(newPosition, camera.Position);
@@ -118,7 +123,8 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = new Vector3D<float>(0, 0, 5);
+        camera.SetPosition(new Vector3D<float>(0, 0, 5));
+        camera.ApplyUpdates();
 
         // Act
         var viewMatrix = camera.ViewMatrix;
@@ -145,9 +151,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-2, -2, -5),
@@ -166,9 +173,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(20, -2, -5),
@@ -187,9 +195,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-2, 20, -5),
@@ -208,8 +217,9 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.FarPlane = 100f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetFarPlane(100f);
+        camera.ApplyUpdates();
 
         var bounds = new Box3D<float>(
             new Vector3D<float>(-2, -2, -200),
@@ -228,9 +238,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var screenWidth = 800;
         var screenHeight = 600;
@@ -251,9 +262,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var screenWidth = 800;
         var screenHeight = 600;
@@ -274,9 +286,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var worldPoint = camera.Position;
         var screenWidth = 800;
@@ -296,9 +309,10 @@ public class OrthoCameraTests
     {
         // Arrange
         var camera = new OrthoCamera();
-        camera.Position = Vector3D<float>.Zero;
-        camera.Width = 10f;
-        camera.Height = 10f;
+        camera.SetPosition(Vector3D<float>.Zero);
+        camera.SetWidth(10f);
+        camera.SetHeight(10f);
+        camera.ApplyUpdates();
 
         var worldPoint = new Vector3D<float>(2.5f, 0, 0); // Quarter width to the right
         var screenWidth = 800;
@@ -322,13 +336,15 @@ public class OrthoCameraTests
         var originalProjectionMatrix = camera.ProjectionMatrix;
 
         // Act - Change a property that should invalidate matrices
-        camera.Width = 20f;
+        camera.SetWidth(20f);
+        camera.ApplyUpdates();
 
         // Assert - Projection matrix should be recalculated
         Assert.NotEqual(originalProjectionMatrix, camera.ProjectionMatrix);
 
         // Act - Change position
-        camera.Position = new Vector3D<float>(5, 10, 15);
+        camera.SetPosition(new Vector3D<float>(5, 10, 15));
+        camera.ApplyUpdates();
 
         // Assert - View matrix should be recalculated
         Assert.NotEqual(originalViewMatrix, camera.ViewMatrix);

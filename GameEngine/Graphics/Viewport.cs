@@ -125,6 +125,9 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
             return Enumerable.Empty<RenderState>();
         }
 
+        // Apply all deferred updates before rendering
+        ApplyUpdatesRecursively(_content);
+
         // Walk the content tree and collect render states
         return FindRenderableComponents(_content)
             .Where(component => component.IsEnabled && component.IsVisible)
@@ -134,6 +137,22 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
                 rs.SourceViewport = this; // Tag render states with their source viewport
                 return rs;
             });
+    }
+
+    /// <summary>
+    /// Recursively applies deferred updates to all components in the content tree.
+    /// Called before rendering to ensure temporal consistency.
+    /// </summary>
+    private static void ApplyUpdatesRecursively(IRuntimeComponent component)
+    {
+        // Apply updates to this component
+        component.ApplyUpdates();
+
+        // Recursively apply updates to all children
+        foreach (var child in component.Children)
+        {
+            ApplyUpdatesRecursively(child);
+        }
     }
 
     /// <summary>
