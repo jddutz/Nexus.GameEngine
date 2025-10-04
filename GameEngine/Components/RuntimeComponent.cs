@@ -633,7 +633,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         Logger?.LogDebug("CreateChild called on {TypeName} with template: {TemplateTypeName}", GetType().Name, template.GetType().Name);
         Logger?.LogDebug("ComponentFactory is: {Availability}", ComponentFactory != null ? "available" : "null");
 
-        var component = ComponentFactory?.Instantiate(template);
+        var component = ComponentFactory?.CreateInstance(template);
 
         Logger?.LogDebug("ComponentFactory.Instantiate returned: {Result}", component != null ? component.GetType().Name : "null");
 

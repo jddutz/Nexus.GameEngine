@@ -43,7 +43,7 @@ public class Application(IServiceProvider services) : IApplication
             return;
         }
 
-        var content = contentManager.GetOrCreate(StartupTemplate);
+        var content = contentManager.Create(StartupTemplate);
         if (content == null)
         {
             logger.LogError("Failed to create content from StartupTemplate {TemplateName}", StartupTemplate.Name);
@@ -65,12 +65,7 @@ public class Application(IServiceProvider services) : IApplication
     {
         try
         {
-            var active = contentManager.GetContent().Where(content => content.IsActive);
-
-            foreach (var content in active)
-            {
-                content.Update(deltaTime);
-            }
+            contentManager.OnUpdate(deltaTime);
         }
         catch (Exception ex)
         {

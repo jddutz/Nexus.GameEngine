@@ -2,6 +2,7 @@ using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Runtime;
 
+/// <inheritdoc cref="IDisposable"/>
 /// <summary>
 /// Manages reusable content trees that can be assigned to viewports.
 /// Content can include UI screens, game levels, menus, or any component hierarchy.
@@ -9,30 +10,25 @@ namespace Nexus.GameEngine.Runtime;
 public interface IContentManager : IDisposable
 {
     /// <summary>
-    /// Gets existing content or creates it from the template if it doesn't exist.
+    /// Creates a new runtime component from the specified template.
     /// </summary>
-    /// <param name="template">Template to use if content needs to be created</param>
-    /// <param name="activate">Whether to automatically activate newly created content. Defaults to true</param>
-    /// <returns>The content component, or null if creation failed</returns>
-    IRuntimeComponent? GetOrCreate(IComponentTemplate template, bool activate = true);
+    /// <param name="template">The component template to instantiate.</param>
+    /// <param name="activate">Whether to activate the component after creation.</param>
+    /// <returns>The created <see cref="IRuntimeComponent"/>, or null if creation failed.</returns>
+    IRuntimeComponent? Create(IComponentTemplate template, string id = "", bool activate = true);
 
     /// <summary>
-    /// Attempts to retrieve content by name.
+    /// Gets an existing component by ID or creates a new one from the template if not found.
     /// </summary>
-    /// <param name="name">Name of the content to retrieve</param>
-    /// <returns>The content component if found, null otherwise</returns>
-    IRuntimeComponent? TryGet(string name);
+    /// <param name="template">The component template to instantiate if needed.</param>
+    /// <param name="id">The unique identifier for the component.</param>
+    /// <param name="activate">Whether to activate the component after creation.</param>
+    /// <returns>The existing or newly created <see cref="IRuntimeComponent"/>, or null if creation failed.</returns>
+    IRuntimeComponent? GetOrCreate(IComponentTemplate template, string id, bool activate = true);
 
     /// <summary>
-    /// Removes and disposes content by name.
+    /// Updates all managed content components for the current frame.
     /// </summary>
-    /// <param name="name">Name of the content to remove</param>
-    /// <returns>True if content was found and removed, false otherwise</returns>
-    bool Remove(string name);
-
-    /// <summary>
-    /// Enumerates all managed content.
-    /// </summary>
-    /// <returns>An enumerator of all managed content.</returns>
-    IEnumerable<IRuntimeComponent> GetContent();
+    /// <param name="deltaTime">The elapsed time since the last update, in seconds.</param>
+    void OnUpdate(double deltaTime);
 }

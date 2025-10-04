@@ -8,5 +8,5 @@ public interface IComponentFactory
         where T : IRuntimeComponent;
     public IRuntimeComponent? Create<T>(IComponentTemplate template)
         where T : IRuntimeComponent;
-    public IRuntimeComponent? Instantiate(IComponentTemplate template);
+    public IRuntimeComponent? CreateInstance(IComponentTemplate template);
 }

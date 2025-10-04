@@ -1,6 +1,6 @@
 # IRenderer Implementation
 
-We're still working through some major issues with the rendering system. For now, we're simply writing this implementation plan, do not update any code yet.
+We're still working through some major issues with the rendering system. For now, we're simply writing this implementation plan. Code should not be updated yet.
 
 I reset the entire Renderer.RenderFrame implementation to mirror the Silk.NET HelloQuad example. We now have an orange quad drawn on the screen.
 

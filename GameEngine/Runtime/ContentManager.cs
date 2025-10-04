@@ -14,17 +14,17 @@ public class ContentManager(
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(ContentManager));
     private readonly IComponentFactory _factory = componentFactory;
-    private readonly Dictionary<string, IRuntimeComponent> _content = [];
+    private readonly Dictionary<string, IRuntimeComponent> content = [];
     private bool _disposed;
 
     /// <inheritdoc/>
     public IRuntimeComponent? TryGet(string name)
     {
-        return _content.TryGetValue(name, out var component) ? component : null;
+        return content.TryGetValue(name, out var component) ? component : null;
     }
 
     /// <inheritdoc/>
-    public IRuntimeComponent? GetOrCreate(IComponentTemplate template, bool activate = true)
+    public IRuntimeComponent? Create(IComponentTemplate template, string id = "", bool activate = true)
     {
         if (string.IsNullOrEmpty(template.Name))
         {
@@ -33,7 +33,7 @@ public class ContentManager(
         }
 
         // Try to get existing content first
-        if (_content.TryGetValue(template.Name, out var existingComponent))
+        if (content.TryGetValue(template.Name, out var existingComponent))
         {
             return existingComponent;
         }
@@ -41,10 +41,10 @@ public class ContentManager(
         // Content doesn't exist, create it
         try
         {
-            var created = _factory.Instantiate(template);
+            var created = _factory.CreateInstance(template);
             if (created != null)
             {
-                _content[template.Name] = created;
+                content[template.Name] = created;
 
                 if (activate) created.Activate();
 
@@ -63,12 +63,30 @@ public class ContentManager(
         }
     }
 
+    public IRuntimeComponent? GetOrCreate(IComponentTemplate template, string id, bool activate = true)
+    {
+        if (content.TryGetValue(id, out var component))
+            return component;
+
+        return Create(template, id);
+    }
+
+    public void OnUpdate(double deltaTime)
+    {
+        var activeComponents = content.Values
+            .OfType<IRuntimeComponent>()
+            .Where(c => c.IsActive);
+
+        foreach (var component in activeComponents)
+            component.Update(deltaTime);
+    }
+
     /// <inheritdoc/>
     public bool Remove(string name)
     {
-        if (_content.TryGetValue(name, out var component))
+        if (content.TryGetValue(name, out var component))
         {
-            _content.Remove(name);
+            content.Remove(name);
             component.Dispose();
             _logger.LogDebug("Removed content '{Name}'", name);
             return true;
@@ -77,28 +95,17 @@ public class ContentManager(
         return false;
     }
 
-    /// <inheritdoc/>
-    public IEnumerable<IRuntimeComponent> GetContent()
-    {
-        if (_disposed) yield break;
-
-        foreach (var component in _content.Values)
-        {
-            yield return component;
-        }
-    }
-
     public void Dispose()
     {
         if (_disposed) return;
 
         // Dispose all managed content instances
-        foreach (var component in _content.Values)
+        foreach (var component in content.Values)
         {
             component.Dispose();
         }
 
-        _content.Clear();
+        content.Clear();
         _disposed = true;
         _logger.LogDebug("ContentManager disposed");
     }

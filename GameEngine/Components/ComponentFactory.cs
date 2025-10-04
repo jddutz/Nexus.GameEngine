@@ -84,7 +84,7 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     /// </summary>
     /// <param name="template">The template to use for component creation and configuration.</param>
     /// <returns>The configured component instance, or null if the type cannot be determined or does not implement IRuntimeComponent.</returns>
-    public IRuntimeComponent? Instantiate(IComponentTemplate template)
+    public IRuntimeComponent? CreateInstance(IComponentTemplate template)
     {
         if (template == null)
         {
