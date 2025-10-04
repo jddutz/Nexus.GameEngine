@@ -9,9 +9,9 @@ The `BackgroundLayer` component exists but currently returns an empty enumerable
 The engine uses a **component-based rendering system** where:
 
 1. Components implement `IRenderable` interface
-2. `OnRender()` returns `IEnumerable<RenderState>` - declarative rendering requirements
+2. `OnRender()` returns `IEnumerable<GLState>` - declarative rendering requirements
 3. The `Renderer` collects these render states and applies them in batches
-4. No direct OpenGL calls in components - all through `RenderState` declarations
+4. No direct OpenGL calls in components - all through `GLState` declarations
 
 ## Required Components for Simple Full-Screen Quad
 
@@ -45,7 +45,7 @@ Indices: [0,1,2, 2,3,0]                       // Triangle indices
 
 ### 3. Render State Declaration
 
-In `OnRender()`, the BackgroundLayer needs to return a `RenderState` with:
+In `OnRender()`, the BackgroundLayer needs to return a `GLState` with:
 
 - `ShaderProgram`: ID of compiled background shader
 - `VertexArray`: ID of full-screen quad VAO
@@ -83,12 +83,12 @@ public static class Shaders
 ### Resource Access Pattern:
 
 ```csharp
-public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
+public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
 {
     var quadVAO = resourceManager.GetOrCreateResource<uint>(Geometry.FullScreenQuad);
     var shader = resourceManager.GetOrCreateResource<uint>(Shaders.BackgroundSolid);
 
-    yield return new RenderState
+    yield return new GLState
     {
         ShaderProgram = shader,
         VertexArray = quadVAO,
@@ -117,7 +117,7 @@ public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
 4. **Update BackgroundLayer.OnRender()**:
 
    - Remove empty return
-   - Add resource access and RenderState creation
+   - Add resource access and GLState creation
    - Handle uniform updates (background color)
 
 5. **Shader Uniform Management**:
@@ -128,7 +128,7 @@ public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
 
 ### Existing Infrastructure:
 
-- `RenderState.cs` - Declarative rendering requirements ✓
+- `GLState.cs` - Declarative rendering requirements ✓
 - `IRenderable.cs` - Rendering interface ✓
 - `Renderer.cs` - Batched rendering system ✓
 - `BackgroundLayer.cs` - Component shell ✓
@@ -146,7 +146,7 @@ public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
 1. **Component Update**: `BackgroundLayer` properties updated via deferred updates
 2. **Render Collection**: `Viewport.OnRender()` calls `BackgroundLayer.OnRender()`
 3. **Resource Resolution**: Component requests VAO + Shader from ResourceManager
-4. **State Declaration**: Component returns `RenderState` with rendering requirements
+4. **State Declaration**: Component returns `GLState` with rendering requirements
 5. **Batch Processing**: `Renderer` groups compatible render states
 6. **GL State Application**: Renderer applies VAO, shader, uniforms
 7. **Draw Call**: Renderer issues draw call for quad geometry

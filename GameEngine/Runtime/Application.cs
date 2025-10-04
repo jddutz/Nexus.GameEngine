@@ -92,7 +92,7 @@ public class Application(
     {
         try
         {
-            renderer.RenderFrame(deltaTime);
+            renderer.OnRender(deltaTime);
         }
         catch (Exception ex)
         {

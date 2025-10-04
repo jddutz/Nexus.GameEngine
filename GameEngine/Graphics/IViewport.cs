@@ -53,5 +53,5 @@ public interface IViewport : IRuntimeComponent
     /// </summary>
     /// <param name="deltaTime">Time elapsed since last frame</param>
     /// <returns>All render states from components in this viewport</returns>
-    IEnumerable<RenderState> OnRender(double deltaTime);
+    IEnumerable<GLState> OnRender(double deltaTime);
 }

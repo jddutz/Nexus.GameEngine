@@ -27,7 +27,7 @@ public class DefaultBatchStrategy : IBatchStrategy
     /// <param name="x">First render state to compare</param>
     /// <param name="y">Second render state to compare</param>
     /// <returns>-1 if x should render before y, 1 if y should render before x, 0 if equal priority</returns>
-    public int Compare(RenderState? x, RenderState? y)
+    public int Compare(GLState? x, GLState? y)
     {
         if (x == null && y == null) return 0;
         if (x == null) return -1;
@@ -59,7 +59,7 @@ public class DefaultBatchStrategy : IBatchStrategy
     /// </summary>
     /// <param name="state">Render state to hash</param>
     /// <returns>Hash code representing the batchable aspects of the render state</returns>
-    public int GetHashCode(RenderState state)
+    public int GetHashCode(GLState state)
     {
         if (state == null)
             return 0;
@@ -76,7 +76,7 @@ public class DefaultBatchStrategy : IBatchStrategy
     /// Computes a stable hash code for the current OpenGL state to facilitate efficient batch grouping.
     /// Queries the GL context for current framebuffer, shader program, VAO, and active textures.
     /// This allows the renderer to detect when GL state changes are needed between batches.
-    /// Uses the same hashing algorithm as GetHashCode(RenderState) to ensure consistency.
+    /// Uses the same hashing algorithm as GetHashCode(GLState) to ensure consistency.
     /// </summary>
     /// <param name="gl">The OpenGL context to query for current state</param>
     /// <returns>Hash code representing the current GL state that affects batching</returns>
@@ -98,10 +98,10 @@ public class DefaultBatchStrategy : IBatchStrategy
         gl.GetInteger(GLEnum.ActiveTexture, out int activeTextureUnit);
         int originalTextureSlot = activeTextureUnit - (int)GLEnum.Texture0;
 
-        // Create texture array matching RenderState.BoundTextures size
-        var boundTextures = new uint?[16]; // Match RenderState.BoundTextures length
+        // Create texture array matching GLState.BoundTextures size
+        var boundTextures = new uint?[16]; // Match GLState.BoundTextures length
 
-        // Query all texture units to match RenderState behavior
+        // Query all texture units to match GLState behavior
         for (int i = 0; i < boundTextures.Length; i++)
         {
             gl.ActiveTexture(TextureUnit.Texture0 + i);
@@ -117,7 +117,7 @@ public class DefaultBatchStrategy : IBatchStrategy
 
     /// <summary>
     /// Computes a consistent hash code for the given GL state parameters.
-    /// This method ensures that both GetHashCode(RenderState) and GetHashCode(GL) 
+    /// This method ensures that both GetHashCode(GLState) and GetHashCode(GL) 
     /// produce identical hash codes when the states are equivalent.
     /// </summary>
     /// <param name="framebuffer">Framebuffer ID or null for default framebuffer</param>

@@ -2,10 +2,10 @@
 
 ## Problem Identified
 
-The `GetHashCode(RenderState state)` and `GetHashCode(GL gl)` methods were producing **inconsistent hash codes** for equivalent states, which would break the batching system. The renderer uses:
+The `GetHashCode(GLState state)` and `GetHashCode(GL gl)` methods were producing **inconsistent hash codes** for equivalent states, which would break the batching system. The renderer uses:
 
 1. `GetHashCode(GL gl)` - Once per frame to get the current GL state hash
-2. `GetHashCode(RenderState state)` - For each render state to compare with current state
+2. `GetHashCode(GLState state)` - For each render state to compare with current state
 
 If these don't match for equivalent states, batch detection fails completely.
 
@@ -16,7 +16,7 @@ If these don't match for equivalent states, batch detection fails completely.
 1. **Different Texture Sampling**:
 
    - `GetHashCode(GL gl)`: Only sampled first 4 texture units
-   - `GetHashCode(RenderState state)`: Included ALL bound textures (16 units)
+   - `GetHashCode(GLState state)`: Included ALL bound textures (16 units)
 
 2. **Different Hash Construction**:
 
@@ -53,14 +53,14 @@ private static int ComputeStateHash(uint? framebuffer, uint? shaderProgram, uint
 
 Updated `GetHashCode(GL gl)` to:
 
-- Query ALL 16 texture units (matching `RenderState.BoundTextures` array size)
+- Query ALL 16 texture units (matching `GLState.BoundTextures` array size)
 - Use identical null handling logic (`0 == null`)
 - Restore original active texture unit properly
 - Call the shared `ComputeStateHash()` method
 
-### 3. Simplified RenderState Hashing ✅
+### 3. Simplified GLState Hashing ✅
 
-Updated `GetHashCode(RenderState state)` to:
+Updated `GetHashCode(GLState state)` to:
 
 - Simply pass state properties to `ComputeStateHash()`
 - No local hash construction logic
@@ -105,8 +105,8 @@ foreach (var targetState in sorted)
 The fix ensures that:
 
 1. If GL is in state X, `GetHashCode(GL)` returns hash H
-2. If RenderState represents state X, `GetHashCode(RenderState)` returns hash H
-3. Therefore: `GetHashCode(GL) == GetHashCode(RenderState)` when states match
+2. If GLState represents state X, `GetHashCode(GLState)` returns hash H
+3. Therefore: `GetHashCode(GL) == GetHashCode(GLState)` when states match
 
 This is **critical** for the batching system to function properly.
 

@@ -118,11 +118,11 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
         }
     }
 
-    public IEnumerable<RenderState> OnRender(double deltaTime)
+    public IEnumerable<GLState> OnRender(double deltaTime)
     {
         if (_content == null)
         {
-            return Enumerable.Empty<RenderState>();
+            return Enumerable.Empty<GLState>();
         }
 
         // Apply all deferred updates before rendering

@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para>The renderer implements efficient batch processing by:</para>
 /// <list type="bullet">
-/// <item>Collecting <see cref="RenderState"/> requirements from all renderable components</item>
+/// <item>Collecting <see cref="GLState"/> requirements from all renderable components</item>
 /// <item>Sorting render states using the configured <see cref="IBatchStrategy"/> to minimize expensive state changes</item>
 /// <item>Applying OpenGL state changes only when batches change (detected via hash code comparison)</item>
 /// <item>Querying actual GL state before each update to avoid redundant glBindXxx() calls</item>
@@ -367,7 +367,7 @@ public class Renderer(
     /// <para>Rendering Pipeline:</para>
     /// <list type="number">
     /// <item>Traverse component tree to find all <see cref="IRenderable"/> components</item>
-    /// <item>Collect <see cref="RenderState"/> requirements from each component's OnRender() method</item>
+    /// <item>Collect <see cref="GLState"/> requirements from each component's OnRender() method</item>
     /// <item>Sort render states using <see cref="IBatchStrategy"/> to group compatible states</item>
     /// <item>Process render states in batches, applying OpenGL state changes only when batch hash codes differ</item>
     /// <item>Query actual GL state before each update to avoid redundant API calls</item>
@@ -376,10 +376,17 @@ public class Renderer(
     /// <para>This approach significantly reduces expensive GL state transitions such as framebuffer switches, shader program changes, and texture bindings.</para>
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations and time-based rendering</param>
-    public unsafe void RenderFrame(double deltaTime)
+    public void OnRender(double deltaTime)
     {
         BeforeRenderFrame?.Invoke(this, new());
 
+        RenderFrame();
+
+        AfterRenderFrame?.Invoke(this, new());
+    }
+
+    private unsafe void RenderFrame()
+    {
         //Clear the color channel.
         GL.Clear((uint)ClearBufferMask.ColorBufferBit);
 
@@ -389,8 +396,6 @@ public class Renderer(
 
         //Draw the geometry.
         GL.DrawElements(PrimitiveType.Triangles, (uint)Indices.Length, DrawElementsType.UnsignedInt, null);
-
-        AfterRenderFrame?.Invoke(this, new());
     }
 
     private bool _disposed;

@@ -29,5 +29,5 @@ public interface IRenderer
     /// Calls OnRender() on each IRenderable component to collect RenderStates.
     /// RenderStates are sorted and processed using IBatchStrategy.
     /// </summary>
-    void RenderFrame(double deltaTime);
+    void OnRender(double deltaTime);
 }

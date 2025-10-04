@@ -34,7 +34,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
         }
     }
 
-    public virtual IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
+    public virtual IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
     {
         FramesRendered++;
         return [];
@@ -52,7 +52,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
 
         if (FramesRendered == 0)
         {
-            result.ErrorMessage = $"Expected FramesRendered > 0, Actual FramesRendered: {FramesRendered}";
+            result.ErrorMessage = $"Expected FramesRendered > 0, Actual: {FramesRendered}";
         }
 
         yield return result;

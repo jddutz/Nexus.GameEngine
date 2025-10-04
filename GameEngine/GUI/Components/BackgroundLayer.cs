@@ -53,7 +53,7 @@ public class BackgroundLayer(IResourceManager resourceManager)
         }
     }
 
-    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
     {
         Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
 
@@ -70,7 +70,7 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
         Logger?.LogDebug("Created geometry resource: {GeometryResource}, shader resource: {ShaderResource}", geometryResource, shaderResource);
 
-        var renderState = new RenderState
+        var GLState = new GLState
         {
             ShaderProgram = shaderResource,
             VertexArray = geometryResource,
@@ -79,7 +79,7 @@ public class BackgroundLayer(IResourceManager resourceManager)
             // No uniforms needed for basic orange color shader
         };
 
-        yield return renderState;
+        yield return GLState;
     }
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)

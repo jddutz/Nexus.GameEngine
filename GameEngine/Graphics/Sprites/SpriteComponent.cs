@@ -221,13 +221,13 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     /// </summary>
     public bool ShouldRenderChildren => false;
 
-    public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
     {
-        var renderState = new RenderState();
+        var GLState = new GLState();
 
         // TODO: Implement sprite rendering by declaring render state requirements
         // For now, just return empty render state
-        yield return renderState;
+        yield return GLState;
     }
 
     // ISpriteController implementation - all methods use deferred updates

@@ -1,19 +1,21 @@
 # IRenderer Implementation
 
-We're working through some bugs in the rendering system.
+We're working through some bugs in the rendering system. For now, we're simply writing this implementation plan, do not update any code yet.
 
 I reset the entire Renderer.RenderFrame implementation to the Silk.NET HelloQuad example. We now have an orange quad drawn on the screen.
 
-We are going to make very small incremental changes to this code to evolve it to fully support our component-based rendering system.
+We are going to evolve this code making very small incremental changes toward a fully component-based rendering system.
 
-In Application.Window_OnLoad() we call the following methods:
+In Application.Window_OnLoad() we currently call the following methods:
 
 ```csharp
-        renderer.Viewport.Activate();
-        renderer.OnLoad();
+   renderer.Viewport.Activate();
+   renderer.OnLoad();
 ```
 
-OnLoad is a copy of the example code with minimal changes to get it to work.
+Viewport.Activate() is needed to initialize the viewport prior to rendering. Activating the Viewport also activates all components related to it.
+
+Renderer.OnLoad is a copy of the example code with minimal changes to get it to work. It is just setting GL state to render. The example is static - it never changes. This is to keep the example as simple as possible, but we need quite a bit more functionality than this. Calling this method on startup feels unnecessary.
 
 # IRenderer / Renderer
 
@@ -23,6 +25,10 @@ The Renderer is responsible for orchestration of IWindow.Render events.
 
 A Viewport defines how a component tree is rendered.
 
+# IBatchStrategy / DefaultBatchStrategy
+
+Sorts GL state information into batches.
+
 # RenderFrame Execution
 
 1. **Execute pre-render middleware**
@@ -31,7 +37,7 @@ A Viewport defines how a component tree is rendered.
    - For each viewport found:
      - Apply viewport's deferred updates
      - For each render pass in viewport:
-       - Collect `RenderState` objects from viewport's content tree
+       - Collect `GLState` objects from viewport's content tree
        - Tag render states with viewport context (framebuffer, screen region, etc.)
 3. **Batch and sort all render states** using `IBatchStrategy`:
    - Strategy groups by framebuffer target, shader, render priority, etc.

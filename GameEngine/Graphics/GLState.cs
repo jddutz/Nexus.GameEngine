@@ -4,7 +4,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Defines rendering requirements for a component without direct OpenGL access.
 /// Used by the renderer to determine what GL state changes are needed for batched rendering.
 /// </summary>
-public class RenderState
+public class GLState
 {
 
     /// <summary>

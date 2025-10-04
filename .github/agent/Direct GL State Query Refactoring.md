@@ -4,10 +4,10 @@
 
 The original implementation used an unnecessary `currentState` object to track GL state changes, creating an abstraction layer between the target state and actual OpenGL state. This approach had several issues:
 
-1. **Redundant State Tracking**: Maintaining a separate `RenderState currentState` when OpenGL already tracks its own state
+1. **Redundant State Tracking**: Maintaining a separate `GLState currentState` when OpenGL already tracks its own state
 2. **Potential Desynchronization**: Risk of `currentState` becoming out of sync with actual GL state
 3. **Unnecessary Complexity**: Extra parameter passing and state management code
-4. **Memory Overhead**: Creating and maintaining `RenderState` objects just for tracking
+4. **Memory Overhead**: Creating and maintaining `GLState` objects just for tracking
 
 ## Solution: Direct GL State Queries
 
@@ -16,7 +16,7 @@ Refactored all state update methods to query OpenGL state directly instead of re
 ### Before (Problematic Approach):
 
 ```csharp
-private void UpdateFramebuffer(uint? targetFramebuffer, RenderState currentState)
+private void UpdateFramebuffer(uint? targetFramebuffer, GLState currentState)
 {
     if (currentState.Framebuffer != targetFramebuffer)  // Using tracked state
     {
@@ -47,39 +47,39 @@ private void UpdateFramebuffer(uint? targetFramebuffer)
 
 ### ✅ **UpdateFramebuffer(uint? targetFramebuffer)**
 
-- Removed `RenderState currentState` parameter
+- Removed `GLState currentState` parameter
 - Added direct `GL.GetInteger(GLEnum.FramebufferBinding)` query
 - Simplified null handling (null becomes 0 for default framebuffer)
 - Early return when no change needed
 
 ### ✅ **UpdateShaderProgram(uint? targetProgram)**
 
-- Removed `RenderState currentState` parameter
+- Removed `GLState currentState` parameter
 - Added direct `GL.GetInteger(GLEnum.CurrentProgram)` query
 - Early return when current program matches target
 
 ### ✅ **UpdateVertexArray(uint? targetVAO)**
 
-- Removed `RenderState currentState` parameter
+- Removed `GLState currentState` parameter
 - Added direct `GL.GetInteger(GLEnum.VertexArrayBinding)` query
 - Early return when current VAO matches target
 
 ### ✅ **UpdateTextures(uint?[] targetTextures)**
 
-- Removed `RenderState currentState` parameter
+- Removed `GLState currentState` parameter
 - Query current active texture unit with `GL.GetInteger(GLEnum.ActiveTexture)`
 - For each texture slot: query current binding with `GL.GetInteger(GLEnum.TextureBinding2D)`
 - Properly restore original active texture unit after updates
 
-### ✅ **ApplyRenderState(RenderState targetState)**
+### ✅ **ApplyRenderState(GLState targetState)**
 
-- Removed `RenderState currentState` parameter
+- Removed `GLState currentState` parameter
 - Simplified method signature and calls
 - No more state tracking or priority updates
 
 ### ✅ **RenderFrame(double deltaTime)**
 
-- Removed `var currentState = new RenderState(GL)` creation
+- Removed `var currentState = new GLState(GL)` creation
 - Simplified `ApplyRenderState(targetState)` call
 - No more unnecessary object allocation per frame
 
@@ -87,7 +87,7 @@ private void UpdateFramebuffer(uint? targetFramebuffer)
 
 ### 🚀 **Performance Improvements**
 
-- **Eliminated Memory Allocation**: No more `RenderState` object creation per frame
+- **Eliminated Memory Allocation**: No more `GLState` object creation per frame
 - **Reduced Function Call Overhead**: Fewer parameters passed between methods
 - **Direct GL Queries**: Authoritative state information from OpenGL itself
 
@@ -119,7 +119,7 @@ private void UpdateFramebuffer(uint? targetFramebuffer)
 
 ### Memory Benefits
 
-- **Before**: Allocated `RenderState` object per frame + tracking arrays
+- **Before**: Allocated `GLState` object per frame + tracking arrays
 - **After**: No additional allocations, direct stack variables only
 - **Improvement**: Reduced GC pressure and memory footprint
 
