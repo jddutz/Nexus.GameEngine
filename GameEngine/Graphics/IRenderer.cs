@@ -1,5 +1,4 @@
 using Silk.NET.OpenGL;
-using System.Collections.Concurrent;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -20,10 +19,15 @@ public interface IRenderer
     /// </summary>
     IViewport Viewport { get; }
 
+    event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
+    event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
+
+    unsafe void OnLoad();
+
     /// <summary>
-    /// Walks the component tree and calls OnRender() on IRenderable components.
-    /// Components are processed in RenderPriority order (lower values render first).
-    /// Each render pass may apply different GL state before rendering components.
+    /// Handles IWindow.Render events. Walks the component tree.
+    /// Calls OnRender() on each IRenderable component to collect RenderStates.
+    /// RenderStates are sorted and processed using IBatchStrategy.
     /// </summary>
     void RenderFrame(double deltaTime);
 }

@@ -1,13 +1,8 @@
 namespace Main.Data
 {
-    public class DataSourceChangedEventArgs : EventArgs
+    public class DataSourceChangedEventArgs(object? oldDataSource, object? newDataSource) : EventArgs
     {
-        public object? OldDataSource { get; }
-        public object? NewDataSource { get; }
-        public DataSourceChangedEventArgs(object? oldDataSource, object? newDataSource)
-        {
-            OldDataSource = oldDataSource;
-            NewDataSource = newDataSource;
-        }
+        public object? OldDataSource { get; } = oldDataSource;
+        public object? NewDataSource { get; } = newDataSource;
     }
 }

@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Graphics;

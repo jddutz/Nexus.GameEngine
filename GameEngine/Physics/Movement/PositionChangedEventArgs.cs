@@ -5,15 +5,10 @@ namespace Nexus.GameEngine.Physics.Movement;
 /// <summary>
 /// Provides data for position changed events.
 /// </summary>
-public class PositionChangedEventArgs : EventArgs
+public class PositionChangedEventArgs(Vector2D<float> oldPosition, Vector2D<float> newPosition) : EventArgs
 {
-    public Vector2D<float> OldPosition { get; }
-    public Vector2D<float> NewPosition { get; }
+    public Vector2D<float> OldPosition { get; } = oldPosition;
+    public Vector2D<float> NewPosition { get; } = newPosition;
     public Vector2D<float> Delta => NewPosition - OldPosition;
     public float DistanceSquared => Delta.LengthSquared;
-    public PositionChangedEventArgs(Vector2D<float> oldPosition, Vector2D<float> newPosition)
-    {
-        OldPosition = oldPosition;
-        NewPosition = newPosition;
-    }
 }

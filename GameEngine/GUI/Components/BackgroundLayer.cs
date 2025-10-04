@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Resources;
+using Nexus.GameEngine.Resources;
+using Nexus.GameEngine.Resources.Geometry;
+using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.GUI.Components;
 
@@ -53,12 +55,31 @@ public class BackgroundLayer(IResourceManager resourceManager)
 
     public IEnumerable<RenderState> OnRender(IViewport viewport, double deltaTime)
     {
-        // BackgroundLayer no longer directly calls GL methods
-        // Background clearing is now handled by RenderPassConfiguration.FillColor
-        // This component can be removed or repurposed for other background rendering needs
+        Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
 
-        // For now, return empty to not interfere with the new render pass clearing
-        return System.Linq.Enumerable.Empty<RenderState>();
+        if (!IsVisible)
+        {
+            Logger?.LogDebug("BackgroundLayer not visible, skipping render");
+            yield break;
+        }
+
+        // Get resources using our new resource system
+        Logger?.LogDebug("Creating resources for BackgroundLayer");
+        var geometryResource = resourceManager.GetOrCreateResource(Geometry.FullScreenQuad);
+        var shaderResource = resourceManager.GetOrCreateResource(Shaders.BackgroundSolid);
+
+        Logger?.LogDebug("Created geometry resource: {GeometryResource}, shader resource: {ShaderResource}", geometryResource, shaderResource);
+
+        var renderState = new RenderState
+        {
+            ShaderProgram = shaderResource,
+            VertexArray = geometryResource,
+            Priority = RenderPriority,
+            SourceViewport = viewport
+            // No uniforms needed for basic orange color shader
+        };
+
+        yield return renderState;
     }
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)

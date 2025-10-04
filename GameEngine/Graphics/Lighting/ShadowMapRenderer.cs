@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics.Resources;
+using Nexus.GameEngine.Resources;
 using Silk.NET.OpenGL;
 using Silk.NET.Maths;
 

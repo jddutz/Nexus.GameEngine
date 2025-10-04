@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// Types of pooled resources

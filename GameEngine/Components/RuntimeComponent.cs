@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Components;
 
@@ -29,6 +30,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         // <inheritdoc/>
         public IComponentTemplate[] Subcomponents { get; set; } = [];
     }
+
 
     /// <summary>
     /// Factory used to create new components.
@@ -584,6 +586,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     {
         if (!_children.Contains(child))
         {
+            if (string.IsNullOrEmpty(child.Name)) child.Name = child.GetType().Name;
+
             Logger?.LogDebug("{ComponentType} '{Name}' adding child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
 
             _children.Add(child);
@@ -601,6 +605,21 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         {
             Logger?.LogDebug("{ComponentType} '{Name}' child already exists: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
         }
+    }
+
+    public virtual IRuntimeComponent? CreateChild(Type componentType)
+    {
+        Logger?.LogDebug("CreateChild called for Type: {TypeName}", componentType.Name);
+
+        var component = ComponentFactory?.Create(componentType);
+
+        Logger?.LogDebug("ComponentFactory.Create returned: {Result}", component != null ? component.GetType().Name : "null");
+
+        if (component == null) return null;
+
+        AddChild(component);
+
+        return component;
     }
 
     public virtual IRuntimeComponent? CreateChild(IComponentTemplate template)
@@ -621,7 +640,6 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         if (component == null) return null;
 
         AddChild(component);
-        Logger?.LogDebug("Added child {ComponentTypeName} to {TypeName}. Total children now: {ChildCount}", component.GetType().Name, GetType().Name, _children.Count);
 
         return component;
     }

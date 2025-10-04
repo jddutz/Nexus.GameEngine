@@ -4,23 +4,16 @@ namespace Nexus.GameEngine.Assets;
 /// Reference to an asset that can be loaded on demand.
 /// </summary>
 /// <typeparam name="T">Type of asset being referenced</typeparam>
-public class AssetReference<T> where T : class
+/// <remarks>
+/// Initializes a new asset reference.
+/// </remarks>
+/// <param name="assetPath">Path to the asset</param>
+/// <param name="assetService">Asset service for loading</param>
+public class AssetReference<T>(string assetPath, IAssetService? assetService = null) where T : class
 {
-    private readonly string _assetPath;
-    private readonly IAssetService? _assetService;
+    private readonly string _assetPath = assetPath ?? throw new ArgumentNullException(nameof(assetPath));
+    private readonly IAssetService? _assetService = assetService;
     private T? _cachedAsset;
-
-    /// <summary>
-    /// Initializes a new asset reference.
-    /// </summary>
-    /// <param name="assetPath">Path to the asset</param>
-    /// <param name="assetService">Asset service for loading</param>
-    public AssetReference(string assetPath, IAssetService? assetService = null)
-    {
-        _assetPath = assetPath ?? throw new ArgumentNullException(nameof(assetPath));
-        _assetService = assetService;
-        AssetId = new AssetId(assetPath);
-    }
 
     /// <summary>
     /// Initializes a new empty asset reference.
@@ -37,7 +30,7 @@ public class AssetReference<T> where T : class
     /// <summary>
     /// Gets the asset identifier.
     /// </summary>
-    public AssetId AssetId { get; }
+    public AssetId AssetId { get; } = new AssetId(assetPath);
 
     /// <summary>
     /// Gets or sets the cached asset.

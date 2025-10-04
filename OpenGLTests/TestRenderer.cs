@@ -8,18 +8,18 @@ namespace OpenGLTests;
 /// <summary>
 /// Test implementation of IRenderer for unit and integration tests.
 /// </summary>
-public class TestRenderer : IRenderer, IDisposable
+public class TestRenderer(GL gl) : IRenderer, IDisposable
 {
-    public GL GL { get; }
+    public GL GL { get; } = gl;
     public IViewport Viewport { get; set; } = new Viewport();
 
-    public TestRenderer(GL gl)
-    {
-        GL = gl;
-    }
+    public event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
+    public event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
 
     public void RenderFrame(double deltaTime)
     {
+        BeforeRenderFrame?.Invoke(this, new());
+
         if (Viewport == null)
             return;
 
@@ -29,10 +29,17 @@ public class TestRenderer : IRenderer, IDisposable
         {
             // For test purposes, just validate that states were returned
         }
+
+        AfterRenderFrame?.Invoke(this, new());
     }
 
     public void Dispose()
     {
         // Cleanup test resources if needed
+    }
+
+    public void OnLoad()
+    {
+        throw new NotImplementedException();
     }
 }

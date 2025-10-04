@@ -1,20 +1,14 @@
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// A pooled vertex buffer resource
 /// </summary>
-public class PooledVertexBuffer : PooledResource
+public class PooledVertexBuffer(uint resourceId, int size) : PooledResource(resourceId, PooledResourceType.VertexBuffer)
 {
     /// <summary>
     /// Size of the buffer in bytes
     /// </summary>
-    public int Size { get; }
-
-    public PooledVertexBuffer(uint resourceId, int size)
-        : base(resourceId, PooledResourceType.VertexBuffer)
-    {
-        Size = size;
-    }
+    public int Size { get; } = size;
 
     public override int EstimatedMemoryUsage => Size;
 

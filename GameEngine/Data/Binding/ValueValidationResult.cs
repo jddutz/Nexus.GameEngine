@@ -1,16 +1,11 @@
 namespace Main.Data
 {
-    public struct ValueValidationResult
+    public struct ValueValidationResult(bool isValid, string? errorMessage = null, BindingErrorSeverityEnum severity = BindingErrorSeverityEnum.Error)
     {
-        public bool IsValid { get; }
-        public string? ErrorMessage { get; }
-        public BindingErrorSeverityEnum Severity { get; }
-        public ValueValidationResult(bool isValid, string? errorMessage = null, BindingErrorSeverityEnum severity = BindingErrorSeverityEnum.Error)
-        {
-            IsValid = isValid;
-            ErrorMessage = errorMessage;
-            Severity = severity;
-        }
+        public bool IsValid { get; } = isValid;
+        public string? ErrorMessage { get; } = errorMessage;
+        public BindingErrorSeverityEnum Severity { get; } = severity;
+
         public static ValueValidationResult Success => new(true);
         public static ValueValidationResult Failure(string errorMessage, BindingErrorSeverityEnum severity = BindingErrorSeverityEnum.Error)
         {

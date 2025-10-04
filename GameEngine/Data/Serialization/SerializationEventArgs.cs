@@ -3,17 +3,11 @@ namespace Main.Data
     /// <summary>
     /// Provides data for serialization events.
     /// </summary>
-    public class SerializationEventArgs : EventArgs
+    public class SerializationEventArgs(ISerializable serializable, SerializationFormatEnum format, SerializationContext context) : EventArgs
     {
-        public ISerializable Serializable { get; }
-        public SerializationFormatEnum Format { get; }
-        public SerializationContext Context { get; }
+        public ISerializable Serializable { get; } = serializable;
+        public SerializationFormatEnum Format { get; } = format;
+        public SerializationContext Context { get; } = context;
         public bool Cancel { get; set; }
-        public SerializationEventArgs(ISerializable serializable, SerializationFormatEnum format, SerializationContext context)
-        {
-            Serializable = serializable;
-            Format = format;
-            Context = context;
-        }
     }
 }

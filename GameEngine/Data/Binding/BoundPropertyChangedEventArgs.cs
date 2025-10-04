@@ -1,17 +1,10 @@
 namespace Main.Data
 {
-    public class BoundPropertyChangedEventArgs : EventArgs
+    public class BoundPropertyChangedEventArgs(string propertyName, object? oldValue, object? newValue, DataBinding binding) : EventArgs
     {
-        public string PropertyName { get; }
-        public object? OldValue { get; }
-        public object? NewValue { get; }
-        public DataBinding Binding { get; }
-        public BoundPropertyChangedEventArgs(string propertyName, object? oldValue, object? newValue, DataBinding binding)
-        {
-            PropertyName = propertyName;
-            OldValue = oldValue;
-            NewValue = newValue;
-            Binding = binding;
-        }
+        public string PropertyName { get; } = propertyName;
+        public object? OldValue { get; } = oldValue;
+        public object? NewValue { get; } = newValue;
+        public DataBinding Binding { get; } = binding;
     }
 }

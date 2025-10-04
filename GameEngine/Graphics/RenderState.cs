@@ -1,5 +1,3 @@
-using Silk.NET.OpenGL;
-
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
@@ -45,6 +43,12 @@ public class RenderState
     /// Optional - can be null for legacy components that don't use viewport context.
     /// </summary>
     public IViewport? SourceViewport { get; set; }
+
+    /// <summary>
+    /// Uniform values to set when this render state is applied.
+    /// Key is the uniform name, value is the uniform data.
+    /// </summary>
+    public Dictionary<string, object> Uniforms { get; init; } = new();
 
     /// <summary>
     /// Checks if a texture is already bound to the specified slot.

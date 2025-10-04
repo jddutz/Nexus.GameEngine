@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Silk.NET.OpenGL;
 using System.Collections.Concurrent;
 
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// Object pool for graphics resources to minimize allocation overhead

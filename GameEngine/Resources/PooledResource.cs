@@ -1,43 +1,34 @@
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// Base class for pooled resources
 /// </summary>
-public abstract class PooledResource
+public abstract class PooledResource(uint resourceId, PooledResourceType resourceType)
 {
     /// <summary>
     /// Unique identifier for this resource
     /// </summary>
-    public uint ResourceId { get; }
+    public uint ResourceId { get; } = resourceId;
 
     /// <summary>
     /// Type of this resource
     /// </summary>
-    public PooledResourceType ResourceType { get; }
+    public PooledResourceType ResourceType { get; } = resourceType;
 
     /// <summary>
     /// Whether this resource is currently rented
     /// </summary>
-    public bool IsRented { get; internal set; }
+    public bool IsRented { get; internal set; } = false;
 
     /// <summary>
     /// When this resource was last returned to the pool
     /// </summary>
-    public DateTime LastReturnTime { get; internal set; }
+    public DateTime LastReturnTime { get; internal set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Number of times this resource has been rented
     /// </summary>
-    public int RentCount { get; internal set; }
-
-    protected PooledResource(uint resourceId, PooledResourceType resourceType)
-    {
-        ResourceId = resourceId;
-        ResourceType = resourceType;
-        IsRented = false;
-        LastReturnTime = DateTime.UtcNow;
-        RentCount = 0;
-    }
+    public int RentCount { get; internal set; } = 0;
 
     /// <summary>
     /// Called when the resource is rented from the pool

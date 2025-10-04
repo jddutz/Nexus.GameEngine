@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Silk.NET.OpenGL;
-using Nexus.GameEngine.Graphics.Resources;
+using Nexus.GameEngine.Resources;
 using System.Collections.Concurrent;
 
 namespace Nexus.GameEngine.Graphics.Textures;

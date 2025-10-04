@@ -81,16 +81,10 @@ public class Mesh
 /// <summary>
 /// Axis-aligned bounding box for culling calculations
 /// </summary>
-public struct BoundingBox
+public struct BoundingBox(Vector3D<float> min, Vector3D<float> max)
 {
-    public Vector3D<float> Min { get; set; }
-    public Vector3D<float> Max { get; set; }
-
-    public BoundingBox(Vector3D<float> min, Vector3D<float> max)
-    {
-        Min = min;
-        Max = max;
-    }
+    public Vector3D<float> Min { get; set; } = min;
+    public Vector3D<float> Max { get; set; } = max;
 
     /// <summary>
     /// Get the center point of the bounding box

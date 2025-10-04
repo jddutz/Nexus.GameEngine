@@ -3,28 +3,22 @@ namespace Nexus.GameEngine.Graphics.Buffers;
 /// <summary>
 /// Represents a memory range within a buffer
 /// </summary>
-public readonly struct BufferRange
+public readonly struct BufferRange(int offset, int size)
 {
     /// <summary>
     /// The offset in bytes from the start of the buffer
     /// </summary>
-    public int Offset { get; }
+    public int Offset { get; } = offset;
 
     /// <summary>
     /// The size in bytes of this range
     /// </summary>
-    public int Size { get; }
+    public int Size { get; } = size;
 
     /// <summary>
     /// Whether this range is valid
     /// </summary>
     public bool IsValid => Size > 0;
-
-    public BufferRange(int offset, int size)
-    {
-        Offset = offset;
-        Size = size;
-    }
 
     /// <summary>
     /// Gets the end offset of this range

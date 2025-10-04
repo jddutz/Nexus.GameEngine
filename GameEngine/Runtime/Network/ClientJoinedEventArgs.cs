@@ -1,13 +1,8 @@
 namespace Main.Data
 {
-    public class ClientJoinedEventArgs : EventArgs
+    public class ClientJoinedEventArgs(string clientId, Dictionary<string, object> clientInfo) : EventArgs
     {
-        public string ClientId { get; }
-        public Dictionary<string, object> ClientInfo { get; }
-        public ClientJoinedEventArgs(string clientId, Dictionary<string, object> clientInfo)
-        {
-            ClientId = clientId;
-            ClientInfo = clientInfo;
-        }
+        public string ClientId { get; } = clientId;
+        public Dictionary<string, object> ClientInfo { get; } = clientInfo;
     }
 }

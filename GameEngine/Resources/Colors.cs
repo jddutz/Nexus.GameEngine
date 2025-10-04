@@ -1,6 +1,6 @@
 using Silk.NET.Maths;
 
-namespace Nexus.GameEngine.Graphics;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// Standard color constants as Vector4D&lt;float&gt; values (RGBA format).

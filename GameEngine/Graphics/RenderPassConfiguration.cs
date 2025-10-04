@@ -1,4 +1,5 @@
 using Silk.NET.Maths;
+using Nexus.GameEngine.Resources;
 
 namespace Nexus.GameEngine.Graphics;
 

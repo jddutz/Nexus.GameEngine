@@ -1,19 +1,11 @@
 namespace Main.Data
 {
-    public struct BindingError
+    public struct BindingError(string propertyName, string message, BindingErrorSeverityEnum severity, Exception? exception = null)
     {
-        public string PropertyName { get; }
-        public string Message { get; }
-        public Exception? Exception { get; }
-        public BindingErrorSeverityEnum Severity { get; }
-        public DateTime Timestamp { get; }
-        public BindingError(string propertyName, string message, BindingErrorSeverityEnum severity, Exception? exception = null)
-        {
-            PropertyName = propertyName;
-            Message = message;
-            Severity = severity;
-            Exception = exception;
-            Timestamp = DateTime.UtcNow;
-        }
+        public string PropertyName { get; } = propertyName;
+        public string Message { get; } = message;
+        public Exception? Exception { get; } = exception;
+        public BindingErrorSeverityEnum Severity { get; } = severity;
+        public DateTime Timestamp { get; } = DateTime.UtcNow;
     }
 }

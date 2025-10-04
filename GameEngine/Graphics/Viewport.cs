@@ -36,7 +36,7 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
 
     public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
 
-    public bool RequiresFlushAfterRender { get; set; } = false;
+    public bool FlushAfterRender { get; set; } = false;
 
     /// <summary>
     /// Gets or sets the content tree. Setting schedules a delayed content change.
@@ -114,7 +114,7 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
             FramebufferTarget = template.FramebufferTarget;
             ViewportPriority = template.ViewportPriority;
             RenderPasses = template.RenderPasses;
-            RequiresFlushAfterRender = template.RequiresFlushAfterRender;
+            FlushAfterRender = template.RequiresFlushAfterRender;
         }
     }
 

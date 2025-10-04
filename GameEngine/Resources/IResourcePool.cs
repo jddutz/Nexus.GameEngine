@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// Interface for resource pooling to enable testing

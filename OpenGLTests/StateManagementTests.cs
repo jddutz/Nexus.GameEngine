@@ -7,12 +7,8 @@ namespace OpenGLTests;
 /// Tests to verify that OpenGL state is properly managed between tests.
 /// These tests demonstrate that each test starts with a clean OpenGL state.
 /// </summary>
-public class StateManagementTests : OpenGLTestBase
+public class StateManagementTests(OpenGLContextFixture fixture) : OpenGLTestBase(fixture)
 {
-    public StateManagementTests(OpenGLContextFixture fixture) : base(fixture)
-    {
-    }
-
     [Fact]
     public void FirstTest_ModifiesState_IsolatedFromOtherTests()
     {

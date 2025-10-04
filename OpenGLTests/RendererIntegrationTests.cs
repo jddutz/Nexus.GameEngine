@@ -24,7 +24,10 @@ public class RendererIntegrationTests : OpenGLTestBase, IDisposable
         mockWindowService.Setup(x => x.GetOrCreateWindow()).Returns(Window);
 
         // Create our renderer with the mock window service
-        _renderer = new Renderer(mockWindowService.Object, mockLogger.Object);
+        _renderer = new Renderer(
+            mockWindowService.Object,
+            mockLogger.Object,
+            new DefaultBatchStrategy());
     }
 
     [Fact]

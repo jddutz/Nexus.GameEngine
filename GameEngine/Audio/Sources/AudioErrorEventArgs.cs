@@ -1,17 +1,9 @@
 namespace Nexus.GameEngine.Audio;
 
-public class AudioErrorEventArgs : EventArgs
+public class AudioErrorEventArgs(string errorMessage, IAudioSource audioSource, Exception? exception = null) : EventArgs
 {
-    public string ErrorMessage { get; }
-    public Exception? Exception { get; }
-    public IAudioSource AudioSource { get; }
-    public DateTime Timestamp { get; }
-
-    public AudioErrorEventArgs(string errorMessage, IAudioSource audioSource, Exception? exception = null)
-    {
-        ErrorMessage = errorMessage;
-        Exception = exception;
-        AudioSource = audioSource;
-        Timestamp = DateTime.UtcNow;
-    }
+    public string ErrorMessage { get; } = errorMessage;
+    public Exception? Exception { get; } = exception;
+    public IAudioSource AudioSource { get; } = audioSource;
+    public DateTime Timestamp { get; } = DateTime.UtcNow;
 }

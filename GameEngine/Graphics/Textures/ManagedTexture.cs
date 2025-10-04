@@ -1,83 +1,68 @@
-using Nexus.GameEngine.Graphics.Resources;
+using Nexus.GameEngine.Resources;
 
 namespace Nexus.GameEngine.Graphics.Textures;
 
 /// <summary>
 /// Represents a managed texture resource
 /// </summary>
-public class ManagedTexture
+public class ManagedTexture(string name, uint textureId, int width, int height,
+    TextureFormat format, bool isRenderTarget = false, string? filePath = null,
+    TextureUsage usage = TextureUsage.Static)
 {
     /// <summary>
     /// Unique name or identifier for this texture
     /// </summary>
-    public string Name { get; }
+    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
 
     /// <summary>
     /// File path if loaded from disk, null for runtime textures
     /// </summary>
-    public string? FilePath { get; }
+    public string? FilePath { get; } = filePath;
 
     /// <summary>
     /// OpenGL texture ID
     /// </summary>
-    public uint TextureId { get; }
+    public uint TextureId { get; } = textureId;
 
     /// <summary>
     /// Width in pixels
     /// </summary>
-    public int Width { get; }
+    public int Width { get; } = width;
 
     /// <summary>
     /// Height in pixels
     /// </summary>
-    public int Height { get; }
+    public int Height { get; } = height;
 
     /// <summary>
     /// Texture format
     /// </summary>
-    public TextureFormat Format { get; }
+    public TextureFormat Format { get; } = format;
 
     /// <summary>
     /// Whether this texture is a render target
     /// </summary>
-    public bool IsRenderTarget { get; }
+    public bool IsRenderTarget { get; } = isRenderTarget;
 
     /// <summary>
     /// Whether this texture is currently loaded
     /// </summary>
-    public bool IsLoaded { get; internal set; }
+    public bool IsLoaded { get; internal set; } = true;
 
     /// <summary>
     /// When this texture was last accessed
     /// </summary>
-    public DateTime LastAccessTime { get; internal set; }
+    public DateTime LastAccessTime { get; internal set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Number of times this texture has been accessed
     /// </summary>
-    public int AccessCount { get; internal set; }
+    public int AccessCount { get; internal set; } = 0;
 
     /// <summary>
     /// Usage hint for optimization
     /// </summary>
-    public TextureUsage Usage { get; }
-
-    public ManagedTexture(string name, uint textureId, int width, int height,
-        TextureFormat format, bool isRenderTarget = false, string? filePath = null,
-        TextureUsage usage = TextureUsage.Static)
-    {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        TextureId = textureId;
-        Width = width;
-        Height = height;
-        Format = format;
-        IsRenderTarget = isRenderTarget;
-        FilePath = filePath;
-        Usage = usage;
-        IsLoaded = true;
-        LastAccessTime = DateTime.UtcNow;
-        AccessCount = 0;
-    }
+    public TextureUsage Usage { get; } = usage;
 
     /// <summary>
     /// Called when the texture is accessed

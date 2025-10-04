@@ -9,19 +9,14 @@ namespace Nexus.GameEngine.Runtime;
 /// This enables support for ILogger&lt;T&gt; typed loggers while using our custom logging implementation.
 /// Each category gets its own ConsoleLogger instance with context-specific naming.
 /// </summary>
-public class ConsoleLoggerFactory : ILoggerProvider
+/// <remarks>
+/// Initializes a new instance of the ConsoleLoggerFactory.
+/// </remarks>
+/// <param name="configuration">The logging configuration to use for all created loggers</param>
+public class ConsoleLoggerFactory(LoggingConfiguration configuration) : ILoggerProvider
 {
-    private readonly LoggingConfiguration _configuration;
+    private readonly LoggingConfiguration _configuration = configuration;
     private readonly ConcurrentDictionary<string, ILogger> _loggers = new();
-
-    /// <summary>
-    /// Initializes a new instance of the ConsoleLoggerFactory.
-    /// </summary>
-    /// <param name="configuration">The logging configuration to use for all created loggers</param>
-    public ConsoleLoggerFactory(LoggingConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
 
     /// <summary>
     /// Creates a logger for the specified category name.

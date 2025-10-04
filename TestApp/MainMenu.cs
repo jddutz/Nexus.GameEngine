@@ -1,38 +1,38 @@
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.GUI.Components;
 using Nexus.GameEngine.Input.Components;
 using Silk.NET.Input;
 
 namespace TestApp;
 
+/// <summary>
+/// Provides declarative templates for application components used in TestApp.
+/// </summary>
 public static partial class Templates
 {
+    /// <summary>
+    /// MainMenu template defines the root component tree for the TestApp main menu.
+    /// Includes the TestRunner and key bindings for toggling fullscreen and quitting the application.
+    /// </summary>
     public static readonly RuntimeComponent.Template MainMenu = new()
     {
         // Set required properties here
         Name = "MainMenu",
         Subcomponents =
         [
-            new BackgroundLayer.Template()
+            new TestRunner.Template()
             {
-                Name = "BackgroundLayer",
-                BackgroundColor = Colors.CornflowerBlue
-            },
-            new TextElement.Template()
-            {
-                Name = "TextElement",
-                Color = Colors.DarkSlateBlue,
-                Text = "Nexus Game Engine Test App"
+                Name = "Test Runner"
             },
             new KeyBinding.Template()
             {
+                Name = "Toggle FullScreen (F12)",
                 Key = Key.F12,
                 ActionId = ActionId.FromType<ToggleFullscreenAction>()
             },
             new KeyBinding.Template()
             {
+                Name = "Quit (ESC)",
                 Key = Key.Escape,
                 ActionId = ActionId.FromType<QuitGameAction>()
             }

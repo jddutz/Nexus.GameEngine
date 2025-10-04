@@ -1,4 +1,3 @@
-using Nexus.GameEngine.GUI;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;

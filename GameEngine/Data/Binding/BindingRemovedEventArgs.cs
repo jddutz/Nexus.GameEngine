@@ -1,11 +1,7 @@
 namespace Main.Data
 {
-    public class BindingRemovedEventArgs : EventArgs
+    public class BindingRemovedEventArgs(DataBinding binding) : EventArgs
     {
-        public DataBinding Binding { get; }
-        public BindingRemovedEventArgs(DataBinding binding)
-        {
-            Binding = binding;
-        }
+        public DataBinding Binding { get; } = binding;
     }
 }

@@ -1,6 +1,8 @@
 DO NOT change any code without explicit instructions to do so.
 
-This project follows a documentation-first test-driven-development approach. See Tests\README.md for comprehensive testing guidelines.
+This project follows a documentation-first test-driven-development approach. See `Tests\README.md` for comprehensive testing guidelines.
+
+## Development Workflow
 
 Before updating any code:
 
@@ -20,34 +22,40 @@ Before updating any code:
 7. Rebuild the project and address any warnings and errors
 8. Provide a summary (via chat) of the changes made and instructions for manual testing required
 
-Use the .github/agent/ folder for temporary files:
+Use the `.github/agent/` folder for temporary files:
 
 - Work instructions or plans
 - Checklists
 - Temporary scripts
 - Progress tracking
-- Ouput files
+- Output files
 
-use dotnet command for editing CSPROJ and SLN files.
-
+Use dotnet command for editing CSPROJ and SLN files.
 All classes and interfaces should be defined in separate files.
 
-To build, use the following command:
+## Build Commands
 
 ```bash
 dotnet build Nexus.GameEngine.sln --configuration Debug
-dotnet test
+dotnet test  # Regular unit tests
+dotnet run --project TestApp # Integration tests
 ```
 
 ## Architecture Overview
 
-### Content Management System
+### Core Systems
 
-The engine uses a **ContentManager + Viewport** architecture for UI and content management:
+**Component-Based Architecture**: Everything is an `IRuntimeComponent` that can contain other components via a `Children` property. Components implement only the behavior interfaces they need.
 
-- **ContentManager**: Manages reusable content trees (menus, screens, levels) with caching
+**Viewport + Renderer System**:
+
 - **Viewport**: Manages screen regions with cameras and content assignment
-- **Renderer**: Renders viewport content trees via IRenderer.Viewport property
+- **Renderer**: Renders viewport content trees with efficient batching and state management
+- **Middleware**: Extensible pre/post render hooks for debugging and state capture
+
+**Resource Management**: Attribute-based system for OpenGL resources with automatic lifecycle management. See `GameEngine/Graphics/Resources/` for implementations.
+
+**Testing Infrastructure**: Comprehensive unit and integration testing with OpenGL context management. See `Tests/README.md` for details.
 
 ### Key Architectural Principles
 
@@ -60,107 +68,63 @@ app.StartupTemplate = Templates.MainMenu;  // Created after window initializatio
 await app.RunAsync();
 ```
 
-**IMPORTANT**: Do not create InputContext-dependent components (KeyBinding, MouseBinding, InputMap) before calling `app.RunAsync()`. These components require the window to be initialized first. Use the StartupTemplate property instead of directly calling `contentManager.GetOrCreate()` in startup code.
+**IMPORTANT**: Do not create InputContext-dependent components (KeyBinding, MouseBinding, InputMap) before calling `app.RunAsync()`. Use the StartupTemplate property instead of directly calling content managers in startup code.
 
-The Application class automatically defers StartupTemplate instantiation until after the WindowLoaded event fires, ensuring the InputContext is available when input binding components are created.
-
-**Content Creation Pattern (for runtime content changes):**
+**Runtime Content Changes:**
 
 ```csharp
-// Use this pattern for content changes after application startup
-var contentManager = services.GetRequiredService<IContentManager>();
-var newContent = contentManager.GetOrCreate(Templates.SomeContent);
-
+// Use renderer viewport for content changes after startup
 var renderer = services.GetRequiredService<IRenderer>();
 renderer.Viewport.Content = newContent;
 ```
 
-**RuntimeComponent System Design Summary**
-Core Principle: Everything is an IRuntimeComponent that can contain other components via a Children property. Components implement only the behavior interfaces they need.
+### RuntimeComponent System
 
-**Deferred Property Updates**
+**Deferred Property Updates**: Components use lambda-based deferred updates via `QueueUpdate()` to maintain temporal consistency during frame processing. Properties have `private set` and interface methods queue changes for execution at frame boundaries.
 
-Components use lambda-based deferred updates to maintain temporal consistency during frame processing:
+**Declarative Templates**: Components use strongly-typed template records for configuration. See `TestApp/MainMenu.cs` for example declarative syntax.
 
-```csharp
-public class PhysicsBody : RuntimeComponent, IPhysicsBody
-{
-    private Vector3D<float> _velocity;
-    public Vector3D<float> Velocity
-    {
-        get => _velocity;
-        private set  // Private setter preserves encapsulation
-        {
-            if (_velocity != value)
-            {
-                _velocity = value;
-                OnPropertyChanged(); // Notifications still work
-            }
-        }
-    }
+**Lifecycle Management**: Components support activation, validation, updating, and disposal with automatic child propagation.
 
-    // Interface method queues deferred update
-    public void ApplyForce(Vector3D<float> force)
-    {
-        QueueUpdate(() => Velocity += force); // Lambda calls private setter
-    }
-}
-```
+### Resource Management System
 
-Key principles:
+**Attribute-Based Resources**: Shared resources declared using `[SharedResource]` attributes on static definitions. See `GameEngine/Graphics/Resources/` for implementation.
 
-- Properties have `private set` to prevent external mutation during Update phase
-- Interface methods (like `ApplyForce`) queue changes via `QueueUpdate(lambda)`
-- `ApplyUpdates()` is called before rendering to execute all queued changes
-- Lambda closures access component instance for property updates
-- Change notifications fire normally when lambdas execute
+**Type-Safe Access**: Components access resources through `IResourceManager.GetOrCreateResource<T>()` with compile-time checking.
 
-Components implement only the behaviors they need:
+**Automatic Lifecycle**: Resources are automatically created, cached, and cleaned up based on component scope.
 
-**Declarative UI Syntax for Components**
+### Graphics and Rendering
+
+**Batch Rendering**: Renderer uses `IBatchStrategy` to minimize OpenGL state changes by grouping compatible render states.
+
+**Middleware System**: Extensible `IRenderMiddleware` for debugging, profiling, and state capture. See `GameEngine/Graphics/Middleware/`.
+
+**OpenGL State Management**: Renderer queries actual GL state before updates to avoid redundant API calls.
+
+### Testing Infrastructure
+
+**OpenGL Testing**: Shared context with automatic state reset between tests. Use `[Collection("OpenGL")]` and inherit from `OpenGLTestBase`.
+
+**Integration Testing**: Frame-based test execution using fire-and-forget pattern:
+
+- **Update** = Arrange (set up test state synchronously)
+- **Renderer** = Act (execute during render phase)
+- **PostRender middleware** = Assert (validate results)
+  See `TestApp/Testing/` for implementation.
+
+**Test Types**: Unit tests (Tests project), OpenGL integration tests (OpenGLTests project), and frame-based integration tests (TestApp).
+
+### Logging
+
+For RuntimeComponents, ComponentFactory sets the Logger - do not inject:
 
 ```csharp
-public static partial class Templates
-{
-    public static readonly RuntimeComponent.Template MainMenu = new()
-    {
-        Name = "MainMenu",
-        Subcomponents =
-        [
-            new BackgroundLayer.Template()
-            {
-                Name = "BackgroundLayer",
-                BackgroundColor = Colors.CornflowerBlue
-            },
-            new TextElement.Template()
-            {
-                Name = "TextElement",
-                Color = Colors.DarkSlateBlue,
-                Text = "Nexus Game Engine Test App"
-            },
-            new KeyBinding.Template()
-            {
-                Key = Key.F12,
-                ActionId = ActionId.FromType<ToggleFullscreenAction>()
-            },
-            new KeyBinding.Template()
-            {
-                Key = Key.Escape,
-                ActionId = ActionId.FromType<QuitGameAction>()
-            }
-        ]
-    };
-}
+Logger?.LogDebug("Message {ComponentType}", GetType().Name);
 ```
 
-**Logging**:
+For services, inject ILoggerFactory:
 
-All logging should be structured using ILogger.
-
-For RuntimeComponents, ComponentFactory sets the Logger when a component is created. The logger should not be injected. Logging via RuntimeComponent looks like this:
-
-    Logger?.LogDebug("Input context not available {ComponentType}", GetType().Name);
-
-For non-RuntimeComponent services, inject ILoggerFactory to create a logger with the proper context:
-
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Service));
+```csharp
+private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Service));
+```

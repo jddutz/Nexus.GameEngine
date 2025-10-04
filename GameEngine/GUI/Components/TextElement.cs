@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.Resources;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;

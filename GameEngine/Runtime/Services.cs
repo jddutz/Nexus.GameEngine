@@ -10,10 +10,8 @@ using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Resources;
-using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime.Settings;
-using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.Runtime;
 

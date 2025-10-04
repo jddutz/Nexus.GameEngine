@@ -1,12 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Extensions;
-using Nexus.GameEngine.Graphics.Resources;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Graphics.Textures;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Graphics.Sprites;
 

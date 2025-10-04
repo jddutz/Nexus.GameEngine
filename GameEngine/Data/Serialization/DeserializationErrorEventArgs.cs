@@ -3,19 +3,12 @@ namespace Main.Data
     /// <summary>
     /// Provides data for deserialization error events.
     /// </summary>
-    public class DeserializationErrorEventArgs : EventArgs
+    public class DeserializationErrorEventArgs(ISerializable serializable, Exception exception, string? propertyPath = null, object? sourceData = null) : EventArgs
     {
-        public ISerializable Serializable { get; }
-        public Exception Exception { get; }
-        public string? PropertyPath { get; }
-        public object? SourceData { get; }
+        public ISerializable Serializable { get; } = serializable;
+        public Exception Exception { get; } = exception;
+        public string? PropertyPath { get; } = propertyPath;
+        public object? SourceData { get; } = sourceData;
         public bool Ignore { get; set; }
-        public DeserializationErrorEventArgs(ISerializable serializable, Exception exception, string? propertyPath = null, object? sourceData = null)
-        {
-            Serializable = serializable;
-            Exception = exception;
-            PropertyPath = propertyPath;
-            SourceData = sourceData;
-        }
     }
 }

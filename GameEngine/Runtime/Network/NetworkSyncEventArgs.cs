@@ -1,16 +1,10 @@
 namespace Main.Data
 {
-    public class NetworkSyncEventArgs : EventArgs
+    public class NetworkSyncEventArgs(INetworkSync networkSync, NetworkUpdate update, SyncDirectionEnum direction) : EventArgs
     {
-        public INetworkSync NetworkSync { get; }
-        public NetworkUpdate Update { get; }
-        public SyncDirectionEnum Direction { get; }
+        public INetworkSync NetworkSync { get; } = networkSync;
+        public NetworkUpdate Update { get; } = update;
+        public SyncDirectionEnum Direction { get; } = direction;
         public bool Cancel { get; set; }
-        public NetworkSyncEventArgs(INetworkSync networkSync, NetworkUpdate update, SyncDirectionEnum direction)
-        {
-            NetworkSync = networkSync;
-            Update = update;
-            Direction = direction;
-        }
     }
 }

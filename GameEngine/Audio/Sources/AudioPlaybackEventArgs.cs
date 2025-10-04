@@ -1,17 +1,9 @@
 namespace Nexus.GameEngine.Audio;
 
-public class AudioPlaybackEventArgs : EventArgs
+public class AudioPlaybackEventArgs(IAudioSource audioSource, IAudioClip audioClip, float position) : EventArgs
 {
-    public IAudioSource AudioSource { get; }
-    public IAudioClip AudioClip { get; }
-    public float Position { get; }
-    public DateTime Timestamp { get; }
-
-    public AudioPlaybackEventArgs(IAudioSource audioSource, IAudioClip audioClip, float position)
-    {
-        AudioSource = audioSource;
-        AudioClip = audioClip;
-        Position = position;
-        Timestamp = DateTime.UtcNow;
-    }
+    public IAudioSource AudioSource { get; } = audioSource;
+    public IAudioClip AudioClip { get; } = audioClip;
+    public float Position { get; } = position;
+    public DateTime Timestamp { get; } = DateTime.UtcNow;
 }

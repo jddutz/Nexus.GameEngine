@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -56,6 +55,7 @@ public class Application(
         logger.LogDebug("Created startup content from StartupTemplate {TemplateName}", StartupTemplate.Name);
         renderer.Viewport.Content = content;
         renderer.Viewport.Activate();
+        renderer.OnLoad();
     }
 
     /// <summary>

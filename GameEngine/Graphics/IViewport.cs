@@ -45,7 +45,7 @@ public interface IViewport : IRuntimeComponent
     /// Whether this viewport requires a GL flush after rendering completes.
     /// Usually false unless doing multi-pass effects or viewport synchronization.
     /// </summary>
-    bool RequiresFlushAfterRender { get; }
+    bool FlushAfterRender { get; }
 
     /// <summary>
     /// Render this viewport's content by walking the Content component tree.

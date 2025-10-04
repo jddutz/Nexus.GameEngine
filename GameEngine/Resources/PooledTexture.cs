@@ -1,32 +1,24 @@
-namespace Nexus.GameEngine.Graphics.Resources;
+namespace Nexus.GameEngine.Resources;
 
 /// <summary>
 /// A pooled texture resource
 /// </summary>
-public class PooledTexture : PooledResource
+public class PooledTexture(uint resourceId, int width, int height, TextureFormat format) : PooledResource(resourceId, PooledResourceType.Texture)
 {
     /// <summary>
     /// Width of the texture in pixels
     /// </summary>
-    public int Width { get; }
+    public int Width { get; } = width;
 
     /// <summary>
     /// Height of the texture in pixels
     /// </summary>
-    public int Height { get; }
+    public int Height { get; } = height;
 
     /// <summary>
     /// Format of the texture
     /// </summary>
-    public TextureFormat Format { get; }
-
-    public PooledTexture(uint resourceId, int width, int height, TextureFormat format)
-        : base(resourceId, PooledResourceType.Texture)
-    {
-        Width = width;
-        Height = height;
-        Format = format;
-    }
+    public TextureFormat Format { get; } = format;
 
     public override int EstimatedMemoryUsage => CalculateTextureMemory(Width, Height, Format);
 

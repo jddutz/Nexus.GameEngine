@@ -8,10 +8,10 @@ namespace Nexus.GameEngine.Graphics;
 /// Provides comprehensive error handling with integrated GPU health monitoring
 /// and zero runtime cost in release builds
 /// </summary>
-public class AdaptiveErrorRecovery
+public class AdaptiveErrorRecovery(GL gl, ILogger logger)
 {
-    private readonly GL _gl;
-    private readonly ILogger _logger;
+    private readonly GL _gl = gl ?? throw new ArgumentNullException(nameof(gl));
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly HashSet<string> _disabledOperations = [];
     private readonly Dictionary<GLEnum, int> _errorCounts = [];
 
@@ -25,12 +25,6 @@ public class AdaptiveErrorRecovery
     public bool AggressiveCulling { get; private set; }
     public bool ParticlesDisabled { get; private set; }
     public bool ShadowsDisabled { get; private set; }
-
-    public AdaptiveErrorRecovery(GL gl, ILogger logger)
-    {
-        _gl = gl ?? throw new ArgumentNullException(nameof(gl));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
 
     [Conditional("DEBUG")]
     public void BeginFrame()
