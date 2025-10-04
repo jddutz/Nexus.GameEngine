@@ -19,12 +19,12 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para>Exposes direct OpenGL access and manages render passes, shared resources, and direct GL state queries.</para>
 /// </summary>
-public class Renderer(
-        IWindowService windowService,
-        ILogger<Renderer> logger,
-        IBatchStrategy batchStrategy
-        ) : IRenderer, IDisposable
+public class Renderer : IRenderer, IDisposable
 {
+    private readonly IWindowService _windowService;
+    private readonly ILogger<Renderer> _logger;
+    private readonly IBatchStrategy _batchStrategy;
+
     private static uint Vbo;
     private static uint Ebo;
     private static uint Vao;
@@ -69,6 +69,21 @@ public class Renderer(
             1, 2, 3
         };
 
+    public Renderer(
+        IWindowService windowService,
+        ILoggerFactory loggerFactory,
+        IComponentFactory componentFactory,
+        IBatchStrategy batchStrategy
+        )
+    {
+        _windowService = windowService;
+        _logger = loggerFactory.CreateLogger<Renderer>();
+        _batchStrategy = batchStrategy;
+
+        Viewport = componentFactory.Create<Viewport>() as IViewport
+            ?? throw new InvalidOperationException("Unable to create Viewport for Renderer");
+    }
+
     /// <summary>
     /// Gets the Silk.NET OpenGL interface for use by components during rendering.
     /// Lazily initializes the GL context on first access using the window service.
@@ -78,7 +93,7 @@ public class Renderer(
     {
         get
         {
-            _gl ??= windowService.GetOrCreateWindow().CreateOpenGL();
+            _gl ??= _windowService.GetOrCreateWindow().CreateOpenGL();
             return _gl;
         }
 
@@ -92,7 +107,7 @@ public class Renderer(
     /// Gets or sets the root <see cref="IRuntimeComponent"/> of the component tree to render.
     /// The renderer traverses this tree to locate and render all <see cref="IRenderable"/> components.
     /// </summary>
-    public IViewport Viewport { get; init; } = new Viewport();
+    public IViewport Viewport { get; init; }
 
     /// <summary>
     /// Updates the current framebuffer binding to match the target render state.
@@ -114,7 +129,7 @@ public class Renderer(
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            logger.LogWarning("GL Error when binding framebuffer {FramebufferId}: {ErrorCode}",
+            _logger.LogWarning("GL Error when binding framebuffer {FramebufferId}: {ErrorCode}",
                 targetFramebuffer, errorCode);
         }
     }
@@ -139,7 +154,7 @@ public class Renderer(
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            logger.LogWarning("GL Error when using shader program {ProgramId}: {ErrorCode}",
+            _logger.LogWarning("GL Error when using shader program {ProgramId}: {ErrorCode}",
                 targetProgram, errorCode);
         }
     }
@@ -164,7 +179,7 @@ public class Renderer(
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            logger.LogWarning("GL Error when binding vertex array {VAOId}: {ErrorCode}",
+            _logger.LogWarning("GL Error when binding vertex array {VAOId}: {ErrorCode}",
                 targetVAO, errorCode);
         }
     }
@@ -198,7 +213,7 @@ public class Renderer(
                 var errorCode = GL.GetError();
                 if (errorCode != GLEnum.NoError)
                 {
-                    logger.LogWarning("GL Error when binding texture {TextureId} to slot {Slot}: {ErrorCode}",
+                    _logger.LogWarning("GL Error when binding texture {TextureId} to slot {Slot}: {ErrorCode}",
                         targetTexture, slot, errorCode);
                 }
             }
@@ -216,17 +231,17 @@ public class Renderer(
     {
         if (uniforms.Count == 0) return;
 
-        logger.LogDebug("Applying {UniformCount} uniforms to current shader", uniforms.Count);
+        _logger.LogDebug("Applying {UniformCount} uniforms to current shader", uniforms.Count);
         foreach (var (name, value) in uniforms)
         {
             try
             {
                 ApplyUniform(name, value);
-                logger.LogDebug("Applied uniform {UniformName} = {Value}", name, value);
+                _logger.LogDebug("Applied uniform {UniformName} = {Value}", name, value);
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to apply uniform {UniformName} with value {Value}", name, value);
+                _logger.LogWarning(ex, "Failed to apply uniform {UniformName} with value {Value}", name, value);
             }
         }
     }
@@ -242,7 +257,7 @@ public class Renderer(
         GL.GetInteger(GLEnum.CurrentProgram, out int currentProgram);
         if (currentProgram == 0)
         {
-            logger.LogDebug("No shader program active, cannot set uniform {UniformName}", name);
+            _logger.LogDebug("No shader program active, cannot set uniform {UniformName}", name);
             return;
         }
 
@@ -250,7 +265,7 @@ public class Renderer(
         var location = GL.GetUniformLocation((uint)currentProgram, name);
         if (location == -1)
         {
-            logger.LogDebug("Uniform {UniformName} not found in current shader program", name);
+            _logger.LogDebug("Uniform {UniformName} not found in current shader program", name);
             return;
         }
 
@@ -259,29 +274,29 @@ public class Renderer(
         {
             case float floatValue:
                 GL.Uniform1(location, floatValue);
-                logger.LogDebug("Set uniform {UniformName} (location {Location}) to float {Value}", name, location, floatValue);
+                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to float {Value}", name, location, floatValue);
                 break;
             case int intValue:
                 GL.Uniform1(location, intValue);
-                logger.LogDebug("Set uniform {UniformName} (location {Location}) to int {Value}", name, location, intValue);
+                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to int {Value}", name, location, intValue);
                 break;
             case Silk.NET.Maths.Vector4D<float> vec4Value:
                 GL.Uniform4(location, vec4Value.X, vec4Value.Y, vec4Value.Z, vec4Value.W);
-                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec4 ({X}, {Y}, {Z}, {W})",
+                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec4 ({X}, {Y}, {Z}, {W})",
                     name, location, vec4Value.X, vec4Value.Y, vec4Value.Z, vec4Value.W);
                 break;
             case Silk.NET.Maths.Vector3D<float> vec3Value:
                 GL.Uniform3(location, vec3Value.X, vec3Value.Y, vec3Value.Z);
-                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec3 ({X}, {Y}, {Z})",
+                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec3 ({X}, {Y}, {Z})",
                     name, location, vec3Value.X, vec3Value.Y, vec3Value.Z);
                 break;
             case Silk.NET.Maths.Vector2D<float> vec2Value:
                 GL.Uniform2(location, vec2Value.X, vec2Value.Y);
-                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec2 ({X}, {Y})",
+                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec2 ({X}, {Y})",
                     name, location, vec2Value.X, vec2Value.Y);
                 break;
             default:
-                logger.LogWarning("Unsupported uniform type {UniformType} for uniform {UniformName}",
+                _logger.LogWarning("Unsupported uniform type {UniformType} for uniform {UniformName}",
                     value.GetType().Name, name);
                 break;
         }
@@ -413,11 +428,11 @@ public class Renderer(
             // Clean up all shared resources
             Viewport.Dispose();
 
-            logger.LogDebug("Renderer disposed successfully");
+            _logger.LogDebug("Renderer disposed successfully");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during renderer disposal");
+            _logger.LogError(ex, "Error during renderer disposal");
         }
         finally
         {

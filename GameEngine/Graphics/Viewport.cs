@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Supports changing content trees during runtime with proper lifecycle management.
 /// Inherits from RuntimeComponent to participate in the standard component lifecycle.
 /// </summary>
-public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
+public class Viewport : RuntimeComponent, IViewport
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -28,7 +28,7 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
 
     public Rectangle<int> ScreenRegion { get; set; }
 
-    public ICamera Camera { get; set; } = camera ?? new StaticCamera();
+    public ICamera? Camera { get; set; }
 
     public uint? FramebufferTarget { get; set; }
 
@@ -74,6 +74,24 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
     }
 
     /// <summary>
+    /// Override OnConfigure to apply template settings to viewport properties.
+    /// </summary>
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            Camera = template.Camera ?? new StaticCamera();
+            ScreenRegion = template.ScreenRegion;
+            FramebufferTarget = template.FramebufferTarget;
+            ViewportPriority = template.ViewportPriority;
+            RenderPasses = template.RenderPasses;
+            FlushAfterRender = template.RequiresFlushAfterRender;
+        }
+    }
+
+    /// <summary>
     /// Override OnActivate to immediately apply any pending content changes.
     /// This allows viewports to be activated after content assignment to bypass the deferred update cycle.
     /// </summary>
@@ -97,25 +115,6 @@ public class Viewport(ICamera? camera = null) : RuntimeComponent, IViewport
         ProcessPendingContentChanges();
 
         base.OnUpdate(deltaTime);
-    }
-
-    /// <summary>
-    /// Override OnConfigure to apply template settings to viewport properties.
-    /// </summary>
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
-    {
-        base.OnConfigure(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            if (template.Camera != null)
-                Camera = template.Camera;
-            ScreenRegion = template.ScreenRegion;
-            FramebufferTarget = template.FramebufferTarget;
-            ViewportPriority = template.ViewportPriority;
-            RenderPasses = template.RenderPasses;
-            FlushAfterRender = template.RequiresFlushAfterRender;
-        }
     }
 
     public IEnumerable<GLState> OnRender(double deltaTime)

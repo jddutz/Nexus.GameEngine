@@ -27,7 +27,7 @@ public class ApplicationTests
         var exception = Record.Exception(() =>
         {
             var services = new ServiceCollection()
-                .AddGameEngineServices(configuration, loggingConfig)
+                .AddRuntimeServices(configuration, loggingConfig)
                 .BuildServiceProvider();
 
             // Verify that all critical services can be resolved
@@ -60,7 +60,7 @@ public class ApplicationTests
         var exception = Record.Exception(() =>
         {
             var services = new ServiceCollection()
-                .AddGameEngineServices(configuration, loggingConfig)
+                .AddRuntimeServices(configuration, loggingConfig)
                 .BuildServiceProvider();
 
             using var scope = services.CreateScope();
@@ -90,7 +90,7 @@ public class ApplicationTests
         var exception = Record.Exception(() =>
         {
             var services = new ServiceCollection()
-                .AddGameEngineServices(configuration, loggingConfig)
+                .AddRuntimeServices(configuration, loggingConfig)
                 .BuildServiceProvider();
 
             using var scope = services.CreateScope();

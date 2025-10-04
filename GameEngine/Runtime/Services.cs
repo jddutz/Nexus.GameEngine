@@ -20,13 +20,70 @@ namespace Nexus.GameEngine.Runtime;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+
+    /// <summary>
+    /// Register all IAction implementations from the specified assembly
+    /// </summary>
+    public static IServiceCollection AddServicesOfType<T>(
+        this IServiceCollection services,
+        Assembly assembly)
+    {
+        var types = assembly.GetTypes()
+            .Where(t => t.IsClass
+                && !t.IsAbstract
+                && typeof(T).IsAssignableFrom(t)
+            );
+
+        foreach (var type in types)
+        {
+            services.AddTransient(type);
+        }
+
+        return services;
+    }
+
+    /// <summary>
+    /// Register all services of the specified type (typically an interface)
+    /// from the calling assembly and the Engine.Actions assembly
+    /// </summary>
+    public static IServiceCollection AddServicesOfType<T>(
+        this IServiceCollection services)
+    {
+        // Register actions from the assembly that defines the type
+        services.AddServicesOfType<T>(typeof(T).Assembly);
+
+        // Register actions from the calling assembly
+        var callingAssembly = Assembly.GetCallingAssembly();
+        if (callingAssembly != typeof(T).Assembly)
+        {
+            services.AddServicesOfType<T>(callingAssembly);
+        }
+
+        return services;
+    }
+
+    public static IServiceCollection AddRuntimeComponents(
+        this IServiceCollection services,
+        Assembly assembly)
+    {
+        return services.AddServicesOfType<IRuntimeComponent>(assembly);
+    }
+
+    public static IServiceCollection AddRuntimeComponents(
+        this IServiceCollection services)
+    {
+        return services.AddServicesOfType<IRuntimeComponent>(
+            typeof(IRuntimeComponent).Assembly
+        );
+    }
+
     /// <summary>
     /// Configures the service collection with Windows-specific services.
     /// </summary>
     /// <param name="configuration">The configuration to use for service setup</param>
     /// <param name="loggingConfiguration">The logging configuration to use for creating loggers</param>
     /// <returns>The configured service collection</returns>
-    public static IServiceCollection AddGameEngineServices(
+    public static IServiceCollection AddRuntimeServices(
         this IServiceCollection services,
         IConfiguration configuration,
         LoggingConfiguration loggingConfiguration)
@@ -68,49 +125,31 @@ public static class ServiceCollectionExtensions
 
         // Register action system with automatic discovery
         services.AddActionSystem();
-        services.AddServicesOfType<IRuntimeComponent>();
+        services.AddRuntimeComponents();
 
         return services;
     }
 
-    /// <summary>
-    /// Register all IAction implementations from the specified assembly
-    /// </summary>
-    public static IServiceCollection AddServicesOfType<T>(
-        this IServiceCollection services,
-        Assembly assembly)
+    public static IServiceCollection AddRenderer<TRenderer, TBatchStrategy>(
+        this IServiceCollection services)
+        where TRenderer : class, IRenderer
+        where TBatchStrategy : class, IBatchStrategy
     {
-        var types = assembly.GetTypes()
-            .Where(t => t.IsClass
-                && !t.IsAbstract
-                && typeof(T).IsAssignableFrom(t)
-            );
-
-        foreach (var type in types)
-        {
-            services.AddTransient(type);
-        }
-
+        services.AddSingleton<IRenderer, TRenderer>();
+        services.AddTransient<IBatchStrategy, TBatchStrategy>();
         return services;
     }
 
-    /// <summary>
-    /// Register all services of the specified type (typically an interface)
-    /// from the calling assembly and the Engine.Actions assembly
-    /// </summary>
-    public static IServiceCollection AddServicesOfType<T>(
+    public static IServiceCollection AddRenderer<TBatchStrategy>(
+        this IServiceCollection services)
+        where TBatchStrategy : class, IBatchStrategy
+    {
+        return services.AddRenderer<Renderer, TBatchStrategy>();
+    }
+
+    public static IServiceCollection AddDefaultRenderer(
         this IServiceCollection services)
     {
-        // Register actions from the assembly that defines the type
-        services.AddServicesOfType<T>(typeof(T).Assembly);
-
-        // Register actions from the calling assembly
-        var callingAssembly = Assembly.GetCallingAssembly();
-        if (callingAssembly != typeof(T).Assembly)
-        {
-            services.AddServicesOfType<T>(callingAssembly);
-        }
-
-        return services;
+        return services.AddRenderer<Renderer, DefaultBatchStrategy>();
     }
 }

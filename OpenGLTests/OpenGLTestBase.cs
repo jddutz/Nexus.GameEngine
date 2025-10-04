@@ -49,7 +49,7 @@ public abstract class OpenGLTestBase : IDisposable
     /// </summary>
     protected void RenderTestFrame()
     {
-        Renderer.RenderFrame(16.67); // ~60 FPS delta time
+        Renderer.OnRender(16.67); // ~60 FPS delta time
         AssertNoGLErrors();
     }
 

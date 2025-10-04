@@ -16,7 +16,7 @@ public class TestRenderer(GL gl) : IRenderer, IDisposable
     public event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
     public event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
 
-    public void RenderFrame(double deltaTime)
+    public void OnRender(double deltaTime)
     {
         BeforeRenderFrame?.Invoke(this, new());
 

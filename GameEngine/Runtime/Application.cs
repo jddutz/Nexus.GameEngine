@@ -1,47 +1,45 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
+using Silk.NET.Windowing;
 
 namespace Nexus.GameEngine.Runtime;
 
-/// <summary>
-/// Main application class that orchestrates the game loop and manages the lifecycle of core services.
-/// Handles the coordination between game state, user interface, and rendering systems.
-/// </summary>
-/// <param name="windowService">Service for managing the application window</param>
-/// <param name="gameState">Manager for game state updates</param>
-/// <param name="renderer">Graphics renderer for rendering frames to viewports</param>
-/// <param name="logger">Logger for application-level logging</param>
-public class Application(
-    IWindowService windowService,
-    IContentManager contentManager,
-    IRenderer renderer,
-    ILoggerFactory loggerFactory) : IApplication
+/// <inheritdoc/>
+public class Application(IServiceProvider services) : IApplication
 {
-    private readonly ILogger logger = loggerFactory.CreateLogger(nameof(Application));
+    private readonly ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger<Application>();
+    private readonly IWindowService windowService = services.GetRequiredService<IWindowService>();
+    private readonly IContentManager contentManager = services.GetRequiredService<IContentManager>();
+    private readonly IRenderer renderer = services.GetRequiredService<IRenderer>();
+    private IWindow? window;
 
-    // <inheritdoc/>
+    /// <inheritdoc/>
     public IComponentTemplate? StartupTemplate { get; set; }
 
-    // <inheritdoc/>
-    public Task RunAsync(CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public void Run()
     {
-        var window = windowService.GetOrCreateWindow();
+        window = windowService.GetOrCreateWindow();
 
         window.Load += Window_OnLoad;
         window.Update += OnUpdate;
         window.Render += OnRender;
 
         windowService.Run();
-
-        return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Handles the window load event. Initializes the application content using the configured <see cref="StartupTemplate"/>.
+    /// Sets the renderer's viewport content and triggers renderer initialization. Logs errors if content creation fails.
+    /// </summary>
     private void Window_OnLoad()
     {
         if (StartupTemplate == null)
         {
             logger.LogError("Application.StartupTemplate is required.");
+            window?.Close();
             return;
         }
 
@@ -54,16 +52,15 @@ public class Application(
 
         logger.LogDebug("Created startup content from StartupTemplate {TemplateName}", StartupTemplate.Name);
         renderer.Viewport.Content = content;
-        renderer.Viewport.Activate();
         renderer.OnLoad();
     }
 
     /// <summary>
     /// Handles the update phase of the game loop. Called once per frame before rendering.
-    /// Updates all active content components. Any exceptions during update
-    /// will be logged and cause the application to exit gracefully.
+    /// Iterates all active content components and updates their state.
+    /// Any exceptions during update are logged and cause the application to exit gracefully.
     /// </summary>
-    /// <param name="deltaTime">Time elapsed since the last update, in seconds</param>
+    /// <param name="deltaTime">Time elapsed since the last update, in seconds.</param>
     private void OnUpdate(double deltaTime)
     {
         try
@@ -85,9 +82,9 @@ public class Application(
     /// <summary>
     /// Handles the render phase of the game loop. Called once per frame after the update phase.
     /// Renders the current frame using the configured renderer. Any exceptions during rendering
-    /// will be logged and cause the application to exit gracefully.
+    /// are logged and cause the application to exit gracefully.
     /// </summary>
-    /// <param name="deltaTime">Time elapsed since the last render, in seconds</param>
+    /// <param name="deltaTime">Time elapsed since the last render, in seconds.</param>
     private void OnRender(double deltaTime)
     {
         try
@@ -103,7 +100,7 @@ public class Application(
 
     /// <summary>
     /// Gracefully exits the application by closing the window if it exists and is not already closing.
-    /// This method is called when an unrecoverable error occurs during the game loop.
+    /// Called when an unrecoverable error occurs during the game loop to ensure proper shutdown.
     /// </summary>
     private void Exit()
     {

@@ -1,21 +1,28 @@
 # IRenderer Implementation
 
-We're working through some bugs in the rendering system. For now, we're simply writing this implementation plan, do not update any code yet.
+We're still working through some major issues with the rendering system. For now, we're simply writing this implementation plan, do not update any code yet.
 
-I reset the entire Renderer.RenderFrame implementation to the Silk.NET HelloQuad example. We now have an orange quad drawn on the screen.
+I reset the entire Renderer.RenderFrame implementation to mirror the Silk.NET HelloQuad example. We now have an orange quad drawn on the screen.
 
-We are going to evolve this code making very small incremental changes toward a fully component-based rendering system.
+We are going to evolve this code by making very small incremental changes toward a fully component-based rendering system one step at a time.
+
+Before we can implement any changes, we need to define the end goal. Let's start by assessing the current state and then discuss what the preferred state should be. We likely won't be able to completely define the preferred state all at once. We can update it incrementally as we proceed through the implementation plan.
+
+## Current State
 
 In Application.Window_OnLoad() we currently call the following methods:
 
 ```csharp
-   renderer.Viewport.Activate();
    renderer.OnLoad();
 ```
 
-Viewport.Activate() is needed to initialize the viewport prior to rendering. Activating the Viewport also activates all components related to it.
+Application.Window_OnLoad() is called when the application window is first created. This is where we set up the renderer (we need GL)
+
+**Issues with the current state**:
 
 Renderer.OnLoad is a copy of the example code with minimal changes to get it to work. It is just setting GL state to render. The example is static - it never changes. This is to keep the example as simple as possible, but we need quite a bit more functionality than this. Calling this method on startup feels unnecessary.
+
+## Preferred State
 
 # IRenderer / Renderer
 
@@ -27,7 +34,7 @@ A Viewport defines how a component tree is rendered.
 
 # IBatchStrategy / DefaultBatchStrategy
 
-Sorts GL state information into batches.
+Sorts GL state information into batches. Batches are automatically detected by the renderer by checking GLState properties such as Framebuffer or Shader as each state is processed.
 
 # RenderFrame Execution
 

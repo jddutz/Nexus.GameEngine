@@ -18,7 +18,7 @@ public interface IViewport : IRuntimeComponent
     /// <summary>
     /// Camera that defines the view transformation (position, orientation, projection).
     /// </summary>
-    ICamera Camera { get; }
+    ICamera? Camera { get; }
 
     /// <summary>
     /// Framebuffer target for off-screen rendering. Null for default framebuffer (screen).

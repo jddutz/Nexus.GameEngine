@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Moq;
+using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Runtime;
 using Xunit;
@@ -17,16 +18,19 @@ public class RendererIntegrationTests : OpenGLTestBase, IDisposable
     public RendererIntegrationTests(OpenGLContextFixture fixture) : base(fixture)
     {
         // Create a mocked logger for testing
-        var mockLogger = new Mock<ILogger<Renderer>>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
 
         // Create mock window service that returns the test window
         var mockWindowService = new Mock<IWindowService>();
         mockWindowService.Setup(x => x.GetOrCreateWindow()).Returns(Window);
 
+        var mockComponentFactory = new Mock<IComponentFactory>();
+
         // Create our renderer with the mock window service
         _renderer = new Renderer(
             mockWindowService.Object,
-            mockLogger.Object,
+            mockLoggerFactory.Object,
+            mockComponentFactory.Object,
             new DefaultBatchStrategy());
     }
 
@@ -44,7 +48,7 @@ public class RendererIntegrationTests : OpenGLTestBase, IDisposable
     public void RenderFrame_ShouldExecuteWithoutErrors()
     {
         // Act - Should not throw any GL errors
-        _renderer.RenderFrame(16.67);
+        _renderer.OnRender(16.67);
 
         // Assert - Verify no GL errors occurred
         AssertNoGLErrors();
@@ -54,7 +58,7 @@ public class RendererIntegrationTests : OpenGLTestBase, IDisposable
     public void CaptureFrame_ShouldReturnValidPixelData()
     {
         // Act
-        _renderer.RenderFrame(16.67);
+        _renderer.OnRender(16.67);
         var pixels = CaptureFrame();
 
         // Assert
