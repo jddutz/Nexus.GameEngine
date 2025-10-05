@@ -9,7 +9,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A layout component that arranges its children in a grid pattern.
 /// Child components are positioned in rows and columns with configurable spacing and alignment.
 /// </summary>
-public class GridLayout(IWindowService windowService)
+public partial class GridLayout(IWindowService windowService)
     : LayoutBase(windowService)
 {
     /// <summary>

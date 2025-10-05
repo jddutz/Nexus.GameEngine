@@ -18,7 +18,7 @@ namespace Nexus.GameEngine.Input.Components;
 /// </remarks>
 /// <param name="windowService">The window service to use for getting input context</param>
 /// <param name="actionFactory">The action factory for creating and executing actions</param>
-public class GamepadBinding(
+public partial class GamepadBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
     : InputBinding(windowService, actionFactory)

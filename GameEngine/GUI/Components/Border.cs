@@ -17,7 +17,7 @@ public record BorderTemplate
 /// Runtime border component that implements event-driven rendering behavior.
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
-public class Border()
+public partial class Border()
     : RuntimeComponent
 {
     private BorderStyle _style = BorderStyle.Rectangle;

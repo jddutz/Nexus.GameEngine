@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// Orthographic camera for simulating 2D using 3D world coordinates. Orientation is fixed.
 /// </summary>
-public class OrthoCamera : RuntimeComponent, ICamera, ICameraController, IOrthographicController
+public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController, IOrthographicController
 {
     /// <summary>
     /// Template for configuring Orthographic cameras.

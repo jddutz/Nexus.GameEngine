@@ -57,7 +57,7 @@ public class Application(IServiceProvider services) : IApplication
 
         logger.LogDebug("Created startup content from StartupTemplate {TemplateName}", StartupTemplate.Name);
 
-        renderer.Viewport.Content = content;
+        contentManager.Viewport.Content = content;
     }
 
     /// <summary>

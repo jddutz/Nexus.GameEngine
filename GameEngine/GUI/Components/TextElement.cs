@@ -9,7 +9,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// <summary>
 /// A UI component that displays text.
 /// </summary>
-public class TextElement : RuntimeComponent, IRenderable, ITextController
+public partial class TextElement : RuntimeComponent, IRenderable, ITextController
 {
     public new record Template : RuntimeComponent.Template
     {

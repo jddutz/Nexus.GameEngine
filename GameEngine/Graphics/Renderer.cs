@@ -27,10 +27,10 @@ namespace Nexus.GameEngine.Graphics;
 public class Renderer(
         IWindowService windowService,
         ILoggerFactory loggerFactory,
-        IComponentFactory componentFactory,
+        IContentManager contentManager,
         IResourceManager resourceManager,
         IBatchStrategy batchStrategy
-        ) : IRenderer, IDisposable
+        ) : IRenderer
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(nameof(Renderer));
 
@@ -52,14 +52,6 @@ public class Renderer(
             _gl = value;
         }
     }
-
-    /// <summary>
-    /// Gets or sets the root <see cref="IRuntimeComponent"/> of the component tree to render.
-    /// The renderer traverses this tree to locate and render all <see cref="IRenderable"/> components.
-    /// </summary>
-    public IViewport Viewport { get; init; }
-        = componentFactory.Create<Viewport>() as IViewport
-        ?? throw new InvalidOperationException("Unable to create Viewport for Renderer");
 
     /// <summary>
     /// Updates the current framebuffer binding to match the target render state.
@@ -304,7 +296,7 @@ public class Renderer(
 
         int count = 0;
 
-        foreach (var renderData in Viewport.OnRender(deltaTime))
+        foreach (var renderData in contentManager.Viewport.OnRender(deltaTime))
         {
             count++;
             Render(renderData);
@@ -333,29 +325,4 @@ public class Renderer(
     }
 
     private bool _disposed;
-
-    /// <summary>
-    /// Releases all shared resources and disposes the renderer instance.
-    /// Safe to call multiple times; subsequent calls have no effect.
-    /// </summary>
-    public void Dispose()
-    {
-        if (_disposed) return;
-
-        try
-        {
-            // Clean up all shared resources
-            Viewport.Dispose();
-
-            logger.LogDebug("Renderer disposed successfully");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error during renderer disposal");
-        }
-        finally
-        {
-            _disposed = true;
-        }
-    }
 }

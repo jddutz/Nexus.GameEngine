@@ -1,16 +1,18 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Animation;
 using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Components;
 
 
 /// <summary>
-/// Base class for all components in the system.
+/// Base class for all runtime components in the system.
 /// Provides component tree management, lifecycle methods, and configuration.
+/// Implements IRuntimeComponent, which triggers source generation of animated property implementations.
 /// </summary>
-public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
+public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDisposable
 {
     /// <summary>
     /// Interface for component templates that define design-time component structure.
@@ -29,98 +31,6 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         // <inheritdoc/>
         public IComponentTemplate[] Subcomponents { get; set; } = [];
-    }
-
-
-    /// <summary>
-    /// Factory used to create new components.
-    /// </summary>
-    private IComponentFactory? _componentFactory;
-    public IComponentFactory? ComponentFactory
-    {
-        get => _componentFactory;
-        set
-        {
-            if (_componentFactory == value) return;
-
-            _componentFactory = value;
-            // Infrastructure property - don't trigger validation but do notify property change
-            NotifyPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// Logger, for logging of course
-    /// </summary>
-    private ILogger? _logger;
-    public ILogger? Logger
-    {
-        get => _logger;
-        set
-        {
-            if (_logger == value) return;
-
-            _logger = value;
-            // Infrastructure property - don't trigger validation
-        }
-    }
-
-    /// <summary>
-    /// Unique identifier for this component instance.
-    /// </summary>
-    private ComponentId _id = ComponentId.None;
-    public ComponentId Id
-    {
-        get => _id;
-        set
-        {
-            if (_id == value) return;
-
-            _id = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// Human-readable name for this component instance.
-    /// </summary>
-    private string _name = string.Empty;
-    public string Name
-    {
-        get => _name;
-        set
-        {
-            if (_name == value) return;
-
-            _name = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    /// <summary>
-    /// Whether this component is currently enabled and should participate in updates.
-    /// </summary>
-    private bool _enabled = true;
-    public bool IsEnabled
-    {
-        get => _enabled;
-        set
-        {
-            if (_enabled == value) return;
-
-            _enabled = value;
-            NotifyPropertyChanged();
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    /// <summary>
-    /// Call this method when a property changes.
-    /// </summary>
-    protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
-    {
-        PropertyChanged?.Invoke(this, new(propertyName));
     }
 
     #region Deferred Updates
@@ -211,13 +121,11 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     /// <summary>
     /// Configure the component using the specified template.
-    /// Base implementation calls OnConfigure() for component-specific configuration.
+    /// Base implementation calls OnConfigure() for component-specific configuration,
+    /// then applies initial property animations via UpdateAnimations(0).
+    /// This method is sealed to ensure UpdateAnimations is called after OnConfigure.
     /// </summary>
-    /// <summary>
-    /// Configure the component using the specified template.
-    /// Satisfies the IRuntimeComponent<TTemplate> interface.
-    /// </summary>s
-    /// <returns>This component instance for fluent chaining.</returns>
+    /// <param name="componentTemplate">The template to configure from.</param>
     public void Configure(IComponentTemplate componentTemplate)
     {
         if (componentTemplate == null)
@@ -237,6 +145,9 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         // Configure root to leaf
         OnConfigure(componentTemplate);
+
+        // Apply any pending property changes after configuration (instant update with deltaTime = 0)
+        UpdateAnimations(0);
 
         if (componentTemplate is Template template)
         {
@@ -308,8 +219,8 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         _validationState = null;
         _validationErrors = [];
         // Fire PropertyChanged events directly to avoid infinite recursion through NotifyPropertyChanged
-        PropertyChanged?.Invoke(this, new(nameof(IsValid)));
-        PropertyChanged?.Invoke(this, new(nameof(ValidationErrors)));
+        NotifyPropertyChanged(new(nameof(IsValid)));
+        NotifyPropertyChanged(new(nameof(ValidationErrors)));
     }
 
     protected virtual IEnumerable<ValidationError> OnValidate() => [];
@@ -368,7 +279,7 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         }
 
         // Fire PropertyChanged event directly to avoid infinite recursion through NotifyPropertyChanged
-        PropertyChanged?.Invoke(this, new(nameof(IsValid)));
+        NotifyPropertyChanged(new(nameof(IsValid)));
 
         if (_validationState == true)
         {
@@ -450,8 +361,16 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
     public event EventHandler<EventArgs>? Updating;
     public event EventHandler<EventArgs>? Updated;
 
+    /// <summary>
+    /// Override this in derived classes for custom update logic.
+    /// Called after UpdateAnimations() has been processed.
+    /// </summary>
     protected virtual void OnUpdate(double deltaTime) { }
 
+    /// <summary>
+    /// Updates the component and its children.
+    /// This method is sealed to ensure UpdateAnimations is called before OnUpdate.
+    /// </summary>
     public void Update(double deltaTime)
     {
         if (!IsActive)
@@ -466,6 +385,9 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         Updating?.Invoke(this, EventArgs.Empty);
 
+        // Apply property animations/updates before update logic
+        UpdateAnimations(deltaTime);
+
         // Update root to leaf
         OnUpdate(deltaTime);
 
@@ -476,6 +398,45 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         Updated?.Invoke(this, EventArgs.Empty);
         IsUpdating = false;
+    }
+
+    /// <summary>
+    /// Partial method generated by source generator in derived classes.
+    /// Updates all animated properties based on elapsed time.
+    /// </summary>
+    /// <param name="deltaTime">Time elapsed since last update in seconds.</param>
+    partial void UpdateAnimations(double deltaTime);
+
+    #endregion
+
+    #region Animation Events
+
+    /// <summary>
+    /// Raised when a property animation starts.
+    /// </summary>
+    public event EventHandler<PropertyAnimationEventArgs>? AnimationStarted;
+
+    /// <summary>
+    /// Raised when a property animation completes.
+    /// </summary>
+    public event EventHandler<PropertyAnimationEventArgs>? AnimationEnded;
+
+    /// <summary>
+    /// Called when a property animation starts.
+    /// Override in derived classes to respond to animation lifecycle.
+    /// </summary>
+    protected virtual void OnPropertyAnimationStarted(string propertyName)
+    {
+        AnimationStarted?.Invoke(this, new PropertyAnimationEventArgs(propertyName));
+    }
+
+    /// <summary>
+    /// Called when a property animation ends.
+    /// Override in derived classes to respond to animation lifecycle.
+    /// </summary>
+    protected virtual void OnPropertyAnimationEnded(string propertyName)
+    {
+        AnimationEnded?.Invoke(this, new PropertyAnimationEventArgs(propertyName));
     }
 
     #endregion
@@ -536,36 +497,6 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     #endregion
 
-    #region Disposing (IDisposable)
-
-    protected virtual void OnDispose() { }
-
-    public void Dispose()
-    {
-        Logger?.LogDebug("{ComponentType} '{Name}' disposing...", GetType().Name, Name);
-
-        // Dispose children first (leaf to root)
-        foreach (var child in Children.OfType<IDisposable>().ToArray()) // ToArray to avoid collection modification during iteration
-        {
-            if (child is IDisposable disposableChild)
-            {
-                var childName = child is IRuntimeComponent runtimeChild ? runtimeChild.Name : "Unknown";
-                Logger?.LogDebug("{ComponentType} '{Name}' disposing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, childName);
-                disposableChild.Dispose();
-            }
-        }
-
-        // Clear the children collection
-        _children.Clear();
-
-        // Call component-specific disposal logic
-        OnDispose();
-
-        Logger?.LogDebug("{ComponentType} '{Name}' disposed successfully", GetType().Name, Name);
-    }
-
-    #endregion
-
     // Tree Management Events
     public event EventHandler<ChildCollectionChangedEventArgs>? ChildCollectionChanged;
 
@@ -573,8 +504,9 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
     /// <summary>
     /// Parent component in the component tree.
+    /// Internal setter prevents source generation while allowing tree management.
     /// </summary>
-    public virtual IRuntimeComponent? Parent { get; set; }
+    public virtual IRuntimeComponent? Parent { get; internal set; }
 
     /// <summary>
     /// Child components of this component.
@@ -592,7 +524,11 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
             _children.Add(child);
 
-            child.Parent = this;
+            // Set parent using concrete type to access internal setter
+            if (child is RuntimeComponent runtimeChild)
+            {
+                runtimeChild.Parent = this;
+            }
 
             ChildCollectionChanged?.Invoke(child, new()
             {
@@ -650,7 +586,11 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
         {
             Logger?.LogDebug("{ComponentType} '{Name}' removing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
 
-            child.Parent = null;
+            // Clear parent using concrete type to access internal setter
+            if (child is RuntimeComponent runtimeChild)
+            {
+                runtimeChild.Parent = null;
+            }
 
             ChildCollectionChanged?.Invoke(child, new()
             {
@@ -697,4 +637,34 @@ public class RuntimeComponent : IRuntimeComponent, INotifyPropertyChanged
 
         return default;
     }
+
+    #region Disposing (IDisposable)
+
+    protected virtual void OnDispose() { }
+
+    public void Dispose()
+    {
+        Logger?.LogDebug("{ComponentType} '{Name}' disposing...", GetType().Name, Name);
+
+        // Dispose children first (leaf to root)
+        foreach (var child in Children.OfType<IDisposable>().ToArray()) // ToArray to avoid collection modification during iteration
+        {
+            if (child is IDisposable disposableChild)
+            {
+                var childName = child is IRuntimeComponent runtimeChild ? runtimeChild.Name : "Unknown";
+                Logger?.LogDebug("{ComponentType} '{Name}' disposing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, childName);
+                disposableChild.Dispose();
+            }
+        }
+
+        // Clear the children collection
+        _children.Clear();
+
+        // Call component-specific disposal logic
+        OnDispose();
+
+        Logger?.LogDebug("{ComponentType} '{Name}' disposed successfully", GetType().Name, Name);
+    }
+
+    #endregion
 }

@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Supports changing content trees during runtime with proper lifecycle management.
 /// Inherits from RuntimeComponent to participate in the standard component lifecycle.
 /// </summary>
-public class Viewport : RuntimeComponent, IViewport
+public partial class Viewport : RuntimeComponent, IViewport
 {
     public new record Template : RuntimeComponent.Template
     {

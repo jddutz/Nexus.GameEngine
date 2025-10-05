@@ -125,9 +125,10 @@ public interface IRuntimeComponent : IDisposable
 
     /// <summary>
     /// Parent component in the component tree.
-    /// Automatically set when component is activated in a tree.
+    /// Automatically set when AddChild() is called on the parent.
+    /// Read-only from outside the component; the tree structure is managed internally.
     /// </summary>
-    IRuntimeComponent? Parent { get; set; }
+    IRuntimeComponent? Parent { get; }
 
     /// <summary>
     /// Child components of this component.

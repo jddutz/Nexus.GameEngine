@@ -8,7 +8,7 @@ using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public class BackgroundLayer(IResourceManager resourceManager)
+public partial class BackgroundLayer(IResourceManager resourceManager)
     : RuntimeComponent, IRenderable, IBackgroundController
 {
     public new record Template : RuntimeComponent.Template

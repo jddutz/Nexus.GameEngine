@@ -7,7 +7,7 @@ using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public class HelloQuad(IRenderer renderer)
+public partial class HelloQuad(IRenderer renderer)
     : RuntimeComponent, IRenderable
 {
     public new record Template : RuntimeComponent.Template

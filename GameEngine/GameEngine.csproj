@@ -38,4 +38,10 @@
     <EmbeddedResource Include="Resources\Geometry\**\*.mesh" />
     <EmbeddedResource Include="Resources\Shaders\**\*.glsl" />
   </ItemGroup>
+
+  <!-- Source Generators and Analyzers -->
+  <ItemGroup>
+    <ProjectReference Include="..\GameEngine.SourceGenerators\GameEngine.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\GameEngine.Analyzers\GameEngine.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

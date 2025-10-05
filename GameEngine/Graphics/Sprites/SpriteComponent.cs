@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.Graphics.Sprites;
 /// Component that renders a 2D sprite using a texture asset.
 /// Demonstrates integration with the asset management system.
 /// </summary>
-public class SpriteComponent(IAssetService assetService, IResourceManager resourceManager)
+public partial class SpriteComponent(IAssetService assetService, IResourceManager resourceManager)
     : RuntimeComponent, IRenderable, ISpriteController
 {
     /// <summary>

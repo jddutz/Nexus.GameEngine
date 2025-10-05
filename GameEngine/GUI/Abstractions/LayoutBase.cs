@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.GUI.Abstractions;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract class LayoutBase : RuntimeComponent, IRenderable
+public abstract partial class LayoutBase : RuntimeComponent, IRenderable
 {
 
     /// <summary>

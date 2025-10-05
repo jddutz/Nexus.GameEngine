@@ -14,11 +14,6 @@ public interface IRenderer
     /// </summary>
     GL GL { get; }
 
-    /// <summary>
-    /// Main viewport, defines how components should be displayed on the screen.
-    /// </summary>
-    IViewport Viewport { get; }
-
     event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
     event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
 

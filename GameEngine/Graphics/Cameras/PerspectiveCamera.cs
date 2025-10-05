@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// A typical 3D perspective camera with configurable FOV, view range, and perspective control.
 /// </summary>
-public class PerspectiveCamera : RuntimeComponent, ICamera, ICameraController, IPerspectiveController
+public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraController, IPerspectiveController
 {
     /// <summary>
     /// Template for configuring Perspective cameras.

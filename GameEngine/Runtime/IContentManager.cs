@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -9,6 +10,11 @@ namespace Nexus.GameEngine.Runtime;
 /// </summary>
 public interface IContentManager : IDisposable
 {
+    /// <summary>
+    /// Main viewport, defines how components should be displayed on the screen.
+    /// </summary>
+    IViewport Viewport { get; }
+
     /// <summary>
     /// Creates a new runtime component from the specified template.
     /// </summary>

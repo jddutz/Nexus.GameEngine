@@ -9,7 +9,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A layout component that arranges its children vertically.
 /// Child components are positioned one above the other with configurable spacing and alignment.
 /// </summary>
-public class VerticalLayout(IWindowService windowService)
+public partial class VerticalLayout(IWindowService windowService)
     : LayoutBase(windowService)
 {
 

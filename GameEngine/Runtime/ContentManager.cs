@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -16,6 +17,13 @@ public class ContentManager(
     private readonly IComponentFactory _factory = componentFactory;
     private readonly Dictionary<string, IRuntimeComponent> content = [];
     private bool _disposed;
+
+    /// <summary>
+    /// Gets or sets the main <see cref="IViewport"/> used for rendering.
+    /// </summary>
+    public IViewport Viewport { get; init; }
+        = componentFactory.Create<Viewport>() as IViewport
+        ?? throw new InvalidOperationException("Unable to create Viewport");
 
     /// <inheritdoc/>
     public IRuntimeComponent? TryGet(string name)
@@ -73,6 +81,8 @@ public class ContentManager(
 
     public void OnUpdate(double deltaTime)
     {
+        Viewport?.Update(deltaTime);
+
         var activeComponents = content.Values
             .OfType<IRuntimeComponent>()
             .Where(c => c.IsActive);
@@ -106,6 +116,9 @@ public class ContentManager(
         }
 
         content.Clear();
+
+        Viewport.Dispose();
+
         _disposed = true;
         _logger.LogDebug("ContentManager disposed");
     }
