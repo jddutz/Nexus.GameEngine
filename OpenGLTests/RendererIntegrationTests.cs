@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Xunit;
 
@@ -25,12 +26,14 @@ public class RendererIntegrationTests : OpenGLTestBase, IDisposable
         mockWindowService.Setup(x => x.GetOrCreateWindow()).Returns(Window);
 
         var mockComponentFactory = new Mock<IComponentFactory>();
+        var mockResourceManager = new Mock<IResourceManager>();
 
         // Create our renderer with the mock window service
         _renderer = new Renderer(
             mockWindowService.Object,
             mockLoggerFactory.Object,
             mockComponentFactory.Object,
+            mockResourceManager.Object,
             new DefaultBatchStrategy());
     }
 

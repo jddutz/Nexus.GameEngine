@@ -9,7 +9,10 @@ namespace Nexus.GameEngine.Runtime;
 /// <inheritdoc/>
 public class Application(IServiceProvider services) : IApplication
 {
-    private readonly ILogger logger = services.GetRequiredService<ILoggerFactory>().CreateLogger<Application>();
+    private readonly ILogger logger = services
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger(nameof(Application));
+
     private readonly IWindowService windowService = services.GetRequiredService<IWindowService>();
     private readonly IContentManager contentManager = services.GetRequiredService<IContentManager>();
     private readonly IRenderer renderer = services.GetRequiredService<IRenderer>();
@@ -31,8 +34,10 @@ public class Application(IServiceProvider services) : IApplication
     }
 
     /// <summary>
-    /// Handles the window load event. Initializes the application content using the configured <see cref="StartupTemplate"/>.
-    /// Sets the renderer's viewport content and triggers renderer initialization. Logs errors if content creation fails.
+    /// Handles the window load event. Called after window.GL is loaded.
+    /// Initializes the application content using the configured <see cref="StartupTemplate"/>.
+    /// Sets the renderer's viewport content and triggers renderer initialization.
+    /// Logs errors if content creation fails.
     /// </summary>
     private void Window_OnLoad()
     {
@@ -51,8 +56,8 @@ public class Application(IServiceProvider services) : IApplication
         }
 
         logger.LogDebug("Created startup content from StartupTemplate {TemplateName}", StartupTemplate.Name);
+
         renderer.Viewport.Content = content;
-        renderer.OnLoad();
     }
 
     /// <summary>

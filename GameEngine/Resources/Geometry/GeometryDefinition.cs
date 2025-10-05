@@ -11,14 +11,15 @@ public record GeometryDefinition : IResourceDefinition
     public required string Name { get; init; }
 
     /// <summary>
-    /// Vertex data for the geometry
+    /// Vertex data source - can be from inline arrays, embedded resources, or files
     /// </summary>
-    public required ReadOnlyMemory<float> Vertices { get; init; }
+    public required float[] Vertices { get; init; }
 
     /// <summary>
-    /// Index data for the geometry (optional - if null, uses vertex order)
+    /// Index data source - can be from inline arrays, embedded resources, or files
+    /// Optional - if null, uses vertex order for drawing
     /// </summary>
-    public ReadOnlyMemory<uint>? Indices { get; init; }
+    public required uint[] Indices { get; init; }
 
     /// <summary>
     /// Vertex attribute layout description

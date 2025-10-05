@@ -2,23 +2,23 @@
 
 ## Changes Applied
 
-### ✅ **1. Removed GL from GLState**
+### ✅ **1. Removed GL from RenderData**
 
-- **Before**: `public class GLState(GL gl)` with `public GL GL { get; init; } = gl;`
-- **After**: `public class GLState` with no GL reference
-- **Impact**: Components can no longer make direct GL calls through GLState
+- **Before**: `public class RenderData(GL gl)` with `public GL GL { get; init; } = gl;`
+- **After**: `public class RenderData` with no GL reference
+- **Impact**: Components can no longer make direct GL calls through RenderData
 
 ### ✅ **2. Updated IRenderable Interface**
 
-- **Before**: `IEnumerable<GLState> OnRender(IRenderer renderer, double deltaTime)`
-- **After**: `IEnumerable<GLState> OnRender(double deltaTime)`
+- **Before**: `IEnumerable<RenderData> OnRender(IRenderer renderer, double deltaTime)`
+- **After**: `IEnumerable<RenderData> OnRender(double deltaTime)`
 - **Impact**: Components no longer have access to IRenderer or GL context
 
 ### ✅ **3. Updated All Component Implementations**
 
 Updated the following components to match new signature:
 
-- `BackgroundLayer` - Now returns empty GLState collection
+- `BackgroundLayer` - Now returns empty RenderData collection
 - `TextElement` - Updated constructor call and signature
 - `SpriteComponent` - Updated constructor call and signature
 - `LayoutBase` - Updated signature (already returned empty)
@@ -31,7 +31,7 @@ Updated the following components to match new signature:
 ### ✅ **5. BackgroundLayer Architectural Change**
 
 - **Before**: Directly called `renderer.GL.ClearColor()` and `renderer.GL.Clear()`
-- **After**: Returns empty GLState collection with comment about FillColor handling
+- **After**: Returns empty RenderData collection with comment about FillColor handling
 - **Rationale**: Background clearing is now handled by `RenderPassConfiguration.FillColor`
 
 ## Architectural Benefits
@@ -46,12 +46,12 @@ Updated the following components to match new signature:
 
 - **Components**: Declare rendering requirements only
 - **Renderer**: Handles all GL state management and actual rendering
-- **GLState**: Pure data structure for requirements, no behavior
+- **RenderData**: Pure data structure for requirements, no behavior
 
 ### 📈 **Better Testability**
 
 - **Components Don't Need GL Context**: Can be tested without OpenGL setup
-- **GLState Creation**: No longer requires GL parameter, easier to instantiate in tests
+- **RenderData Creation**: No longer requires GL parameter, easier to instantiate in tests
 - **Isolated Testing**: Components can be tested independently of rendering system
 
 ### 🚧 **Simplified Component Development**

@@ -4,8 +4,12 @@ namespace Nexus.GameEngine.Graphics;
 /// Defines rendering requirements for a component without direct OpenGL access.
 /// Used by the renderer to determine what GL state changes are needed for batched rendering.
 /// </summary>
-public class GLState
+public class RenderData
 {
+    public required uint Vbo { get; init; }
+    public required uint Ebo { get; init; }
+    public required uint Vao { get; init; }
+    public required uint Shader { get; init; }
 
     /// <summary>
     /// Priority rendering order. Used for layering render results on top of one another.

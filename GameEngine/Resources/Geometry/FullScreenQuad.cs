@@ -3,7 +3,7 @@ namespace Nexus.GameEngine.Resources.Geometry;
 /// <summary>
 /// Predefined geometry resources
 /// </summary>
-public static partial class Geometry
+public static partial class GeometryDefinitions
 {
     /// <summary>
     /// Full-screen quad for background rendering and post-processing effects
@@ -13,19 +13,17 @@ public static partial class Geometry
     {
         Name = "FullScreenQuad",
 
-        // Vertex data: Position (x,y,z) - fullscreen quad in NDC coordinates
-        // Format: [x, y, z] per vertex
-        Vertices = new float[]
-        {
+        // Vertex data
+        Vertices = [
             //X     Y     Z
             -1.0f, -1.0f, 0.0f,  // 0: bottom-left
-             1.0f, -1.0f, 0.0f,  // 1: bottom-right
-             1.0f,  1.0f, 0.0f,  // 2: top-right
+            1.0f,  -1.0f, 0.0f,  // 1: bottom-right
+            1.0f,   1.0f, 0.0f,  // 2: top-right
             -1.0f,  1.0f, 0.0f   // 3: top-left
-        },
+        ],
 
-        // Triangle indices (two triangles forming a quad) - matching Silk.NET sample
-        Indices = new uint[] { 0, 1, 3, 1, 2, 3 },
+        // Index data
+        Indices = [0, 1, 3, 1, 2, 3],
 
         // Vertex attributes - matching Silk.NET sample
         Attributes = new[]

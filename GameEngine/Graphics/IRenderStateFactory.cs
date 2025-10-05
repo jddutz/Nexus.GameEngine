@@ -4,5 +4,5 @@ namespace Nexus.GameEngine.Graphics;
 
 public interface IRenderStateFactory
 {
-    GLState Create(GL gl);
+    RenderData Create(GL gl);
 }

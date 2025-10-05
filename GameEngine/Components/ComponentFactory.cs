@@ -21,7 +21,14 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     {
         if (componentType == null) return null;
 
-        return serviceProvider.GetService(componentType) as IRuntimeComponent;
+
+        if (serviceProvider.GetService(componentType) is not IRuntimeComponent component)
+            return null;
+
+        component.ComponentFactory = this;
+        component.Logger = loggerFactory.CreateLogger(componentType.Name);
+
+        return component;
     }
 
     /// <summary>
@@ -31,9 +38,7 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     /// <returns>The created component instance, or null if not found.</returns>
     public IRuntimeComponent? Create<T>()
         where T : IRuntimeComponent
-    {
-        return serviceProvider.GetService<T>();
-    }
+        => Create(typeof(T));
 
     /// <summary>
     /// Creates and configures a component instance of the specified type using the provided template.
@@ -43,13 +48,8 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     /// <returns>The configured component instance, or null if not found.</returns>
     public IRuntimeComponent? Create(Type componentType, IComponentTemplate template)
     {
-        var instance = Create(componentType);
-
-        if (instance is IRuntimeComponent component)
+        if (Create(componentType) is IRuntimeComponent component)
         {
-            component.ComponentFactory = this;
-            component.Logger = loggerFactory.CreateLogger(componentType.Name);
-
             component.Configure(template);
             return component;
         }
@@ -65,19 +65,7 @@ public class ComponentFactory(IServiceProvider serviceProvider, ILoggerFactory l
     /// <returns>The configured component instance, or null if not found.</returns>
     public IRuntimeComponent? Create<T>(IComponentTemplate template)
         where T : IRuntimeComponent
-    {
-        var component = Create<T>();
-
-        if (component != null)
-        {
-            component.ComponentFactory = this;
-            component.Logger = loggerFactory.CreateLogger(typeof(T).Name);
-
-            component.Configure(template);
-        }
-
-        return component;
-    }
+        => Create(typeof(T), template);
 
     /// <summary>
     /// Creates and configures a component instance by inferring the component type from the template's containing class.

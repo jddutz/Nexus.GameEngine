@@ -204,11 +204,11 @@ public abstract class LayoutBase : RuntimeComponent, IRenderable
     /// </summary>
     public bool ShouldRenderChildren => true;
 
-    public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
     {
         // Layout components typically don't render themselves, just manage child positioning
         // Return empty collection since layouts don't have visual representation
-        return System.Linq.Enumerable.Empty<GLState>();
+        return System.Linq.Enumerable.Empty<RenderData>();
     }
 
     protected override void OnDeactivate()

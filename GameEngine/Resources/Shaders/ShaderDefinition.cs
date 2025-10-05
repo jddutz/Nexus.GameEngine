@@ -11,27 +11,22 @@ public record ShaderDefinition : IResourceDefinition
     public required string Name { get; init; }
 
     /// <summary>
-    /// Vertex shader source code (GLSL)
+    /// Vertex shader source - can be from embedded resource, file, or inline string
     /// </summary>
-    public required string VertexSource { get; init; }
+    public required ShaderSource VertexShader { get; init; }
 
     /// <summary>
-    /// Fragment shader source code (GLSL)
+    /// Fragment shader source - can be from embedded resource, file, or inline string
     /// </summary>
-    public required string FragmentSource { get; init; }
-
-    /// <summary>
-    /// Optional geometry shader source code (GLSL)
-    /// </summary>
-    public string? GeometrySource { get; init; }
+    public required ShaderSource FragmentShader { get; init; }
 
     /// <summary>
     /// Uniform definitions expected by this shader
     /// </summary>
-    public IReadOnlyList<UniformDefinition> Uniforms { get; init; } = Array.Empty<UniformDefinition>();
+    public IReadOnlyList<UniformDefinition> Uniforms { get; init; } = [];
 
     /// <summary>
     /// Vertex attribute locations expected by this shader
     /// </summary>
-    public IReadOnlyList<AttributeBinding> AttributeBindings { get; init; } = Array.Empty<AttributeBinding>();
+    public IReadOnlyList<AttributeBinding> AttributeBindings { get; init; } = [];
 }

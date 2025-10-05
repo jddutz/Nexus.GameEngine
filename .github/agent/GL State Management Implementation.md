@@ -25,11 +25,11 @@ Successfully implemented comprehensive OpenGL state management and batching syst
 
 Added comprehensive state update methods with proper error handling:
 
-- **`UpdateFramebuffer(uint?, GLState)`** - Manages framebuffer binding changes
-- **`UpdateShaderProgram(uint?, GLState)`** - Manages shader program switches
-- **`UpdateVertexArray(uint?, GLState)`** - Manages VAO binding changes
-- **`UpdateTextures(uint?[], GLState)`** - Manages texture binding across multiple units
-- **`ApplyRenderState(GLState, GLState)`** - Orchestrates all state changes
+- **`UpdateFramebuffer(uint?, RenderData)`** - Manages framebuffer binding changes
+- **`UpdateShaderProgram(uint?, RenderData)`** - Manages shader program switches
+- **`UpdateVertexArray(uint?, RenderData)`** - Manages VAO binding changes
+- **`UpdateTextures(uint?[], RenderData)`** - Manages texture binding across multiple units
+- **`ApplyRenderState(RenderData, RenderData)`** - Orchestrates all state changes
 
 ### 3. GL State Change Detection ✅
 
@@ -44,7 +44,7 @@ Added comprehensive state update methods with proper error handling:
 
 **File:** `Renderer.RenderFrame()`
 
-- **Current State Tracking:** Creates `GLState` initialized with actual GL state
+- **Current State Tracking:** Creates `RenderData` initialized with actual GL state
 - **Hash-Based Batching:** Uses hash code comparison to detect when batches change
 - **Optimized State Application:** Only applies GL state changes when moving to new batch
 - **Error Reporting:** Comprehensive error tracking and performance metrics
@@ -109,7 +109,7 @@ foreach (var targetState in sorted)
 
 - **Minimized GL State Changes:** Only updates state when batches change
 - **Reduced API Calls:** Tracks current state to avoid redundant glBindXxx() calls
-- **Efficient Sorting:** Uses `SortedSet<GLState>` with `IBatchStrategy` comparer
+- **Efficient Sorting:** Uses `SortedSet<RenderData>` with `IBatchStrategy` comparer
 - **Smart Texture Management:** Samples subset of texture units for hash performance
 
 ### ✅ Error Handling

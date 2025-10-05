@@ -2,6 +2,11 @@ using Microsoft.Extensions.Logging;
 using Silk.NET.OpenGL;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
+using System.Resources;
+using Nexus.GameEngine.Resources;
+using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Resources.Geometry;
+using Nexus.GameEngine.GUI.Components;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -11,7 +16,7 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para>The renderer implements efficient batch processing by:</para>
 /// <list type="bullet">
-/// <item>Collecting <see cref="GLState"/> requirements from all renderable components</item>
+/// <item>Collecting <see cref="RenderData"/> requirements from all renderable components</item>
 /// <item>Sorting render states using the configured <see cref="IBatchStrategy"/> to minimize expensive state changes</item>
 /// <item>Applying OpenGL state changes only when batches change (detected via hash code comparison)</item>
 /// <item>Querying actual GL state before each update to avoid redundant glBindXxx() calls</item>
@@ -19,70 +24,15 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para>Exposes direct OpenGL access and manages render passes, shared resources, and direct GL state queries.</para>
 /// </summary>
-public class Renderer : IRenderer, IDisposable
-{
-    private readonly IWindowService _windowService;
-    private readonly ILogger<Renderer> _logger;
-    private readonly IBatchStrategy _batchStrategy;
-
-    private static uint Vbo;
-    private static uint Ebo;
-    private static uint Vao;
-    private static uint Shader;
-
-    //Vertex shaders are run on each vertex.
-    private static readonly string VertexShaderSource = @"
-        #version 330 core //Using version GLSL version 3.3
-        layout (location = 0) in vec4 vPos;
-        
-        void main()
-        {
-            gl_Position = vec4(vPos.x, vPos.y, vPos.z, 1.0);
-        }
-        ";
-
-    //Fragment shaders are run on each fragment/pixel of the geometry.
-    private static readonly string FragmentShaderSource = @"
-        #version 330 core
-        out vec4 FragColor;
-
-        void main()
-        {
-            FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-        }
-        ";
-
-    //Vertex data, uploaded to the VBO.
-    private static readonly float[] Vertices =
-        {
-            //X    Y      Z
-             0.5f,  0.5f, 0.0f,
-             0.5f, -0.5f, 0.0f,
-            -0.5f, -0.5f, 0.0f,
-            -0.5f,  0.5f, 0.5f
-        };
-
-    //Index data, uploaded to the EBO.
-    private static readonly uint[] Indices =
-        {
-            0, 1, 3,
-            1, 2, 3
-        };
-
-    public Renderer(
+public class Renderer(
         IWindowService windowService,
         ILoggerFactory loggerFactory,
         IComponentFactory componentFactory,
+        IResourceManager resourceManager,
         IBatchStrategy batchStrategy
-        )
-    {
-        _windowService = windowService;
-        _logger = loggerFactory.CreateLogger<Renderer>();
-        _batchStrategy = batchStrategy;
-
-        Viewport = componentFactory.Create<Viewport>() as IViewport
-            ?? throw new InvalidOperationException("Unable to create Viewport for Renderer");
-    }
+        ) : IRenderer, IDisposable
+{
+    private readonly ILogger logger = loggerFactory.CreateLogger(nameof(Renderer));
 
     /// <summary>
     /// Gets the Silk.NET OpenGL interface for use by components during rendering.
@@ -93,7 +43,7 @@ public class Renderer : IRenderer, IDisposable
     {
         get
         {
-            _gl ??= _windowService.GetOrCreateWindow().CreateOpenGL();
+            _gl ??= windowService.GetOrCreateWindow().CreateOpenGL();
             return _gl;
         }
 
@@ -108,6 +58,8 @@ public class Renderer : IRenderer, IDisposable
     /// The renderer traverses this tree to locate and render all <see cref="IRenderable"/> components.
     /// </summary>
     public IViewport Viewport { get; init; }
+        = componentFactory.Create<Viewport>() as IViewport
+        ?? throw new InvalidOperationException("Unable to create Viewport for Renderer");
 
     /// <summary>
     /// Updates the current framebuffer binding to match the target render state.
@@ -129,7 +81,7 @@ public class Renderer : IRenderer, IDisposable
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            _logger.LogWarning("GL Error when binding framebuffer {FramebufferId}: {ErrorCode}",
+            logger.LogWarning("GL Error when binding framebuffer {FramebufferId}: {ErrorCode}",
                 targetFramebuffer, errorCode);
         }
     }
@@ -154,7 +106,7 @@ public class Renderer : IRenderer, IDisposable
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            _logger.LogWarning("GL Error when using shader program {ProgramId}: {ErrorCode}",
+            logger.LogWarning("GL Error when using shader program {ProgramId}: {ErrorCode}",
                 targetProgram, errorCode);
         }
     }
@@ -179,7 +131,7 @@ public class Renderer : IRenderer, IDisposable
         var errorCode = GL.GetError();
         if (errorCode != GLEnum.NoError)
         {
-            _logger.LogWarning("GL Error when binding vertex array {VAOId}: {ErrorCode}",
+            logger.LogWarning("GL Error when binding vertex array {VAOId}: {ErrorCode}",
                 targetVAO, errorCode);
         }
     }
@@ -213,7 +165,7 @@ public class Renderer : IRenderer, IDisposable
                 var errorCode = GL.GetError();
                 if (errorCode != GLEnum.NoError)
                 {
-                    _logger.LogWarning("GL Error when binding texture {TextureId} to slot {Slot}: {ErrorCode}",
+                    logger.LogWarning("GL Error when binding texture {TextureId} to slot {Slot}: {ErrorCode}",
                         targetTexture, slot, errorCode);
                 }
             }
@@ -231,17 +183,17 @@ public class Renderer : IRenderer, IDisposable
     {
         if (uniforms.Count == 0) return;
 
-        _logger.LogDebug("Applying {UniformCount} uniforms to current shader", uniforms.Count);
+        logger.LogDebug("Applying {UniformCount} uniforms to current shader", uniforms.Count);
         foreach (var (name, value) in uniforms)
         {
             try
             {
                 ApplyUniform(name, value);
-                _logger.LogDebug("Applied uniform {UniformName} = {Value}", name, value);
+                logger.LogDebug("Applied uniform {UniformName} = {Value}", name, value);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to apply uniform {UniformName} with value {Value}", name, value);
+                logger.LogWarning(ex, "Failed to apply uniform {UniformName} with value {Value}", name, value);
             }
         }
     }
@@ -257,7 +209,7 @@ public class Renderer : IRenderer, IDisposable
         GL.GetInteger(GLEnum.CurrentProgram, out int currentProgram);
         if (currentProgram == 0)
         {
-            _logger.LogDebug("No shader program active, cannot set uniform {UniformName}", name);
+            logger.LogDebug("No shader program active, cannot set uniform {UniformName}", name);
             return;
         }
 
@@ -265,7 +217,7 @@ public class Renderer : IRenderer, IDisposable
         var location = GL.GetUniformLocation((uint)currentProgram, name);
         if (location == -1)
         {
-            _logger.LogDebug("Uniform {UniformName} not found in current shader program", name);
+            logger.LogDebug("Uniform {UniformName} not found in current shader program", name);
             return;
         }
 
@@ -274,102 +226,57 @@ public class Renderer : IRenderer, IDisposable
         {
             case float floatValue:
                 GL.Uniform1(location, floatValue);
-                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to float {Value}", name, location, floatValue);
+                logger.LogDebug("Set uniform {UniformName} (location {Location}) to float {Value}", name, location, floatValue);
                 break;
             case int intValue:
                 GL.Uniform1(location, intValue);
-                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to int {Value}", name, location, intValue);
+                logger.LogDebug("Set uniform {UniformName} (location {Location}) to int {Value}", name, location, intValue);
                 break;
             case Silk.NET.Maths.Vector4D<float> vec4Value:
                 GL.Uniform4(location, vec4Value.X, vec4Value.Y, vec4Value.Z, vec4Value.W);
-                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec4 ({X}, {Y}, {Z}, {W})",
+                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec4 ({X}, {Y}, {Z}, {W})",
                     name, location, vec4Value.X, vec4Value.Y, vec4Value.Z, vec4Value.W);
                 break;
             case Silk.NET.Maths.Vector3D<float> vec3Value:
                 GL.Uniform3(location, vec3Value.X, vec3Value.Y, vec3Value.Z);
-                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec3 ({X}, {Y}, {Z})",
+                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec3 ({X}, {Y}, {Z})",
                     name, location, vec3Value.X, vec3Value.Y, vec3Value.Z);
                 break;
             case Silk.NET.Maths.Vector2D<float> vec2Value:
                 GL.Uniform2(location, vec2Value.X, vec2Value.Y);
-                _logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec2 ({X}, {Y})",
+                logger.LogDebug("Set uniform {UniformName} (location {Location}) to vec2 ({X}, {Y})",
                     name, location, vec2Value.X, vec2Value.Y);
                 break;
             default:
-                _logger.LogWarning("Unsupported uniform type {UniformType} for uniform {UniformName}",
+                logger.LogWarning("Unsupported uniform type {UniformType} for uniform {UniformName}",
                     value.GetType().Name, name);
                 break;
         }
     }
 
-    public unsafe void OnLoad()
+    /// <summary>
+    /// Loads shader source code from embedded resources.
+    /// </summary>
+    /// <param name="resourceName">The name of the shader file (e.g., "basic-quad-vert.glsl")</param>
+    /// <returns>The shader source code as a string</returns>
+    /// <exception cref="FileNotFoundException">Thrown if the embedded resource is not found</exception>
+    private static string LoadEmbeddedShader(string resourceName)
     {
-        //Creating a vertex array.
-        Vao = GL.GenVertexArray();
-        GL.BindVertexArray(Vao);
+        var assembly = typeof(Renderer).Assembly;
+        var fullResourceName = $"Nexus.GameEngine.Resources.Shaders.{resourceName}";
 
-        //Initializing a vertex buffer that holds the vertex data.
-        Vbo = GL.GenBuffer(); //Creating the buffer.
-        GL.BindBuffer(BufferTargetARB.ArrayBuffer, Vbo); //Binding the buffer.
-        fixed (void* v = &Vertices[0])
+        using var stream = assembly.GetManifestResourceStream(fullResourceName);
+        if (stream == null)
         {
-            GL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(Vertices.Length * sizeof(uint)), v, BufferUsageARB.StaticDraw); //Setting buffer data.
+            // List available resources to help with debugging
+            var availableResources = assembly.GetManifestResourceNames();
+            var resourceList = string.Join(", ", availableResources);
+            throw new FileNotFoundException(
+                $"Embedded shader resource '{fullResourceName}' not found. Available resources: {resourceList}");
         }
 
-        //Initializing a element buffer that holds the index data.
-        Ebo = GL.GenBuffer(); //Creating the buffer.
-        GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, Ebo); //Binding the buffer.
-        fixed (void* i = &Indices[0])
-        {
-            GL.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(Indices.Length * sizeof(uint)), i, BufferUsageARB.StaticDraw); //Setting buffer data.
-        }
-
-        //Creating a vertex shader.
-        uint vertexShader = GL.CreateShader(ShaderType.VertexShader);
-        GL.ShaderSource(vertexShader, VertexShaderSource);
-        GL.CompileShader(vertexShader);
-
-        //Checking the shader for compilation errors.
-        string infoLog = GL.GetShaderInfoLog(vertexShader);
-        if (!string.IsNullOrWhiteSpace(infoLog))
-        {
-            Console.WriteLine($"Error compiling vertex shader {infoLog}");
-        }
-
-        //Creating a fragment shader.
-        uint fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-        GL.ShaderSource(fragmentShader, FragmentShaderSource);
-        GL.CompileShader(fragmentShader);
-
-        //Checking the shader for compilation errors.
-        infoLog = GL.GetShaderInfoLog(fragmentShader);
-        if (!string.IsNullOrWhiteSpace(infoLog))
-        {
-            Console.WriteLine($"Error compiling fragment shader {infoLog}");
-        }
-
-        //Combining the shaders under one shader program.
-        Shader = GL.CreateProgram();
-        GL.AttachShader(Shader, vertexShader);
-        GL.AttachShader(Shader, fragmentShader);
-        GL.LinkProgram(Shader);
-
-        //Checking the linking for errors.
-        GL.GetProgram(Shader, GLEnum.LinkStatus, out var status);
-        if (status == 0)
-        {
-            Console.WriteLine($"Error linking shader {GL.GetProgramInfoLog(Shader)}");
-        }
-
-        //Delete the no longer useful individual shaders;
-        GL.DetachShader(Shader, vertexShader);
-        GL.DetachShader(Shader, fragmentShader);
-        GL.DeleteShader(vertexShader);
-        GL.DeleteShader(fragmentShader);
-
-        //Tell opengl how to give the data to the shaders.
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), null);
-        GL.EnableVertexAttribArray(0);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
     }
 
     public event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
@@ -382,7 +289,7 @@ public class Renderer : IRenderer, IDisposable
     /// <para>Rendering Pipeline:</para>
     /// <list type="number">
     /// <item>Traverse component tree to find all <see cref="IRenderable"/> components</item>
-    /// <item>Collect <see cref="GLState"/> requirements from each component's OnRender() method</item>
+    /// <item>Collect <see cref="RenderData"/> requirements from each component's OnRender() method</item>
     /// <item>Sort render states using <see cref="IBatchStrategy"/> to group compatible states</item>
     /// <item>Process render states in batches, applying OpenGL state changes only when batch hash codes differ</item>
     /// <item>Query actual GL state before each update to avoid redundant API calls</item>
@@ -395,22 +302,34 @@ public class Renderer : IRenderer, IDisposable
     {
         BeforeRenderFrame?.Invoke(this, new());
 
-        RenderFrame();
+        int count = 0;
+
+        foreach (var renderData in Viewport.OnRender(deltaTime))
+        {
+            count++;
+            Render(renderData);
+        }
+
+        logger.LogDebug("Viewport.OnRender returned {Count} results.", count);
 
         AfterRenderFrame?.Invoke(this, new());
     }
 
-    private unsafe void RenderFrame()
+    private unsafe void Render(RenderData renderData)
     {
         //Clear the color channel.
         GL.Clear((uint)ClearBufferMask.ColorBufferBit);
 
         //Bind the geometry and shader.
-        GL.BindVertexArray(Vao);
-        GL.UseProgram(Shader);
+        GL.BindVertexArray(renderData.Vao);
+        GL.UseProgram(renderData.Shader);
 
         //Draw the geometry.
-        GL.DrawElements(PrimitiveType.Triangles, (uint)Indices.Length, DrawElementsType.UnsignedInt, null);
+        GL.DrawElements(
+            PrimitiveType.Triangles,
+            (uint)GeometryDefinitions.BasicQuad.Indices.Length,
+            DrawElementsType.UnsignedInt,
+            null);
     }
 
     private bool _disposed;
@@ -428,11 +347,11 @@ public class Renderer : IRenderer, IDisposable
             // Clean up all shared resources
             Viewport.Dispose();
 
-            _logger.LogDebug("Renderer disposed successfully");
+            logger.LogDebug("Renderer disposed successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during renderer disposal");
+            logger.LogError(ex, "Error during renderer disposal");
         }
         finally
         {

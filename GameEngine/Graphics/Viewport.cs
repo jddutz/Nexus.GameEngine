@@ -46,7 +46,8 @@ public class Viewport : RuntimeComponent, IViewport
         get => _content;
         set
         {
-            if (_content != value)
+            if (_content == null) _content = value;
+            else if (_content != value)
             {
                 _pendingContent = value;
                 _hasPendingContentChange = true;
@@ -117,25 +118,28 @@ public class Viewport : RuntimeComponent, IViewport
         base.OnUpdate(deltaTime);
     }
 
-    public IEnumerable<GLState> OnRender(double deltaTime)
+    public IEnumerable<RenderData> OnRender(double deltaTime)
     {
+        Logger?.LogDebug("Rendering Viewport.");
+
         if (_content == null)
         {
-            return Enumerable.Empty<GLState>();
+            Logger?.LogDebug("Content is undefined.");
+            yield break;
         }
 
         // Apply all deferred updates before rendering
         ApplyUpdatesRecursively(_content);
 
         // Walk the content tree and collect render states
-        return FindRenderableComponents(_content)
-            .Where(component => component.IsEnabled && component.IsVisible)
-            .SelectMany(c => c.OnRender(this, deltaTime))
-            .Select(rs =>
+        foreach (var component in FindRenderableComponents(_content))
+        {
+            Logger?.LogDebug("Rendering Viewport.Content {ContentName}.", component.Name);
+            foreach (var renderData in component.OnRender(this, deltaTime))
             {
-                rs.SourceViewport = this; // Tag render states with their source viewport
-                return rs;
-            });
+                yield return renderData;
+            }
+        }
     }
 
     /// <summary>
@@ -157,15 +161,19 @@ public class Viewport : RuntimeComponent, IViewport
     /// <summary>
     /// Recursively finds all IRenderable components in the content tree.
     /// </summary>
-    private static IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)
+    private IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)
     {
-        if (component is IRenderable renderable)
-            yield return renderable;
+        Logger?.LogDebug("FindRenderableComponents called on {ComponentName}.", component.Name);
 
-        foreach (var child in component.Children)
+        foreach (var child in component.Children.SelectMany(c => FindRenderableComponents(c)))
         {
-            foreach (var childRenderable in FindRenderableComponents(child))
-                yield return childRenderable;
+            yield return child;
+        }
+
+        if (component is IRenderable renderable)
+        {
+            Logger?.LogDebug("Found IRenderable component {ComponentName}.", renderable.Name);
+            yield return renderable;
         }
     }
 }

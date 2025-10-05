@@ -95,7 +95,7 @@ As for what information IBatchStrategy needs:
 
 We explored the use of GL commands, and discarded that approach already. We were practically rewriting an OpenGL wrapper, which Silk.NET already provides. We re-introduced abstractions, requirements and dependencies that Silk.NET already provides. We don't want to go down that path again.
 
-Instead, we leave it up to the component to declare its requirements. Components define the GL states (GLState) required and provide them to the Renderer. The component doesn't create Framebuffers or compile shaders. Instead, it says `I need to render a new texture`, `Use the 'sprite-ui' shader program`, `Load these textures`, or `Bind this vertex array`. These states tell the Renderer how to set up the GL to render each component. It's not so much a command, but data used by the Renderer for configuration via IBatchStrategy to sort the state requirements into batches.
+Instead, we leave it up to the component to declare its requirements. Components define the GL states (RenderData) required and provide them to the Renderer. The component doesn't create Framebuffers or compile shaders. Instead, it says `I need to render a new texture`, `Use the 'sprite-ui' shader program`, `Load these textures`, or `Bind this vertex array`. These states tell the Renderer how to set up the GL to render each component. It's not so much a command, but data used by the Renderer for configuration via IBatchStrategy to sort the state requirements into batches.
 
 Batches are now implemented by sorting the requirements using IBatchStrategy, updating the current state of the GL for each render state, and outputting to the target Framebuffer when the hash codes from IBatchStrategy change. This avoids some expensive sorting and grouping steps.
 
@@ -106,9 +106,9 @@ Upon closer examination, this is not clearly explained in the code documentation
 
 ```csharp
 // Missing optimization:
-if (GLState.CurrentShaderProgram != newShaderProgram) {
+if (RenderData.CurrentShaderProgram != newShaderProgram) {
     GL.UseProgram(newShaderProgram);
-    GLState.CurrentShaderProgram = newShaderProgram;
+    RenderData.CurrentShaderProgram = newShaderProgram;
 }
 ```
 
@@ -117,18 +117,18 @@ if (GLState.CurrentShaderProgram != newShaderProgram) {
 Correct, these implementations are missing. In the latest version of the code, we have TODOs to address this. We need to check the current GL state, querying the GL itself and check it against the target state. This should avoid having to keep the Renderer and GL in sync.
 
 3. **Memory Allocation Concerns**
-   Creating a new GLState per component is wasteful.
+   Creating a new RenderData per component is wasteful.
 
 **Response**:
 
-Agreed. Components can now optimize, reuse, and mutate a GLState as needed.
+Agreed. Components can now optimize, reuse, and mutate a RenderData as needed.
 
 ## Recommended Implementation Priorities
 
 1. Fix Core Batching Logic (Critical)
    [x] Implement proper batch grouping using IBatchStrategy.Compare()
    [x] Apply batch state once per batch
-   [x] Reuse GLState instances
+   [x] Reuse RenderData instances
 
 2. Implement Render Pass System (High)
    [ ] Process components by RenderPassFlags

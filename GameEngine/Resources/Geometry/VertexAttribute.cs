@@ -1,3 +1,5 @@
+using Silk.NET.OpenGL;
+
 namespace Nexus.GameEngine.Resources.Geometry;
 
 /// <summary>

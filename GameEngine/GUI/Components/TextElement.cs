@@ -259,12 +259,17 @@ public class TextElement : RuntimeComponent, IRenderable, ITextController
         QueueUpdate(() => FontSize = FontSize * scaleFactor);
     }
 
-    public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
     {
-        var GLState = new GLState();
-
         // TODO: Implement text rendering by declaring render state requirements
         // For now, just return empty render state
-        yield return GLState;
+        yield return new RenderData()
+        {
+            // TODO: update these values
+            Vao = 0,
+            Vbo = 0,
+            Ebo = 0,
+            Shader = 0
+        };
     }
 }

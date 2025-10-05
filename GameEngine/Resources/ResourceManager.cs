@@ -173,13 +173,17 @@ public class ResourceManager : IResourceManager
 
     private uint CreateGeometry(GeometryDefinition geometry)
     {
+        // Load the actual geometry data from the sources
+        var vertices = geometry.Vertices;
+        var indices = geometry.Indices;
+
         _logger.LogDebug("Creating geometry '{GeometryName}' with {VertexCount} vertices, {IndexCount} indices",
-            geometry.Name, geometry.Vertices.Length, geometry.Indices?.Length ?? 0);
+            geometry.Name, vertices.Length, indices?.Length ?? 0);
 
         // Debug: Log vertex data
-        if (geometry.Vertices.Length <= 20) // Only log if small array
+        if (vertices.Length <= 20) // Only log if small array
         {
-            _logger.LogDebug("Vertex data: [{VertexData}]", string.Join(", ", geometry.Vertices));
+            _logger.LogDebug("Vertex data: [{VertexData}]", string.Join(", ", vertices));
         }
 
         // Create VAO
@@ -192,7 +196,6 @@ public class ResourceManager : IResourceManager
         GL.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
         _logger.LogDebug("Created VBO {VBOId}", vbo);
 
-        var vertices = geometry.Vertices.ToArray();
         unsafe
         {
             fixed (float* vertexPtr = vertices)
@@ -212,12 +215,10 @@ public class ResourceManager : IResourceManager
 
         // Create EBO if indices are provided
         uint? ebo = null;
-        if (geometry.Indices.HasValue)
+        if (indices != null)
         {
             ebo = GL.GenBuffer();
             GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, ebo.Value);
-
-            var indices = geometry.Indices.Value.ToArray();
             unsafe
             {
                 fixed (uint* indexPtr = indices)
@@ -242,7 +243,7 @@ public class ResourceManager : IResourceManager
                 GL.VertexAttribPointer(
                     attribute.Location,
                     attribute.ComponentCount,
-                    ConvertVertexAttribType(attribute.Type),
+                    attribute.Type,
                     attribute.Normalized,
                     attribute.Stride,
                     (void*)attribute.Offset);
@@ -264,14 +265,16 @@ public class ResourceManager : IResourceManager
 
     private uint CreateShader(ShaderDefinition shader)
     {
-        var vertexShader = CompileShader(ShaderType.VertexShader, shader.VertexSource);
-        var fragmentShader = CompileShader(ShaderType.FragmentShader, shader.FragmentSource);
+        // Load the actual source code from the ShaderSource descriptors
+        var vertexShader = CompileShader(ShaderType.VertexShader, shader.VertexShader.Load());
+        var fragmentShader = CompileShader(ShaderType.FragmentShader, shader.FragmentShader.Load());
         uint? geometryShader = null;
 
-        if (!string.IsNullOrEmpty(shader.GeometrySource))
-        {
-            geometryShader = CompileShader(ShaderType.GeometryShader, shader.GeometrySource);
-        }
+        // TODO: Add GeometryShader property to ShaderDefinition if needed
+        // if (shader.GeometryShader != null)
+        // {
+        //     geometryShader = CompileShader(ShaderType.GeometryShader, shader.GeometryShader.Load());
+        // }
 
         var program = GL.CreateProgram();
         GL.AttachShader(program, vertexShader);
@@ -321,8 +324,8 @@ public class ResourceManager : IResourceManager
     {
         var errors = new List<string>();
 
-        if (geometry.Vertices.IsEmpty)
-            errors.Add("Vertex data is required");
+        if (geometry.Vertices == null)
+            errors.Add("Geometry vertices are required");
 
         if (geometry.Attributes.Count == 0)
             errors.Add("At least one vertex attribute is required");
@@ -340,11 +343,11 @@ public class ResourceManager : IResourceManager
     {
         var errors = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(shader.VertexSource))
-            errors.Add("Vertex shader source is required");
+        if (shader.VertexShader == null)
+            errors.Add("Vertex shader is required");
 
-        if (string.IsNullOrWhiteSpace(shader.FragmentSource))
-            errors.Add("Fragment shader source is required");
+        if (shader.FragmentShader == null)
+            errors.Add("Fragment shader is required");
 
         return errors.Count == 0 ? ResourceValidationResult.Success() : ResourceValidationResult.Failed(errors);
     }
@@ -382,19 +385,6 @@ public class ResourceManager : IResourceManager
         BufferUsageHint.DynamicDraw => BufferUsageARB.DynamicDraw,
         BufferUsageHint.StreamDraw => BufferUsageARB.StreamDraw,
         _ => BufferUsageARB.StaticDraw
-    };
-
-    private static Silk.NET.OpenGL.VertexAttribPointerType ConvertVertexAttribType(Geometry.VertexAttribPointerType type) => type switch
-    {
-        Geometry.VertexAttribPointerType.Byte => Silk.NET.OpenGL.VertexAttribPointerType.Byte,
-        Geometry.VertexAttribPointerType.UnsignedByte => Silk.NET.OpenGL.VertexAttribPointerType.UnsignedByte,
-        Geometry.VertexAttribPointerType.Short => Silk.NET.OpenGL.VertexAttribPointerType.Short,
-        Geometry.VertexAttribPointerType.UnsignedShort => Silk.NET.OpenGL.VertexAttribPointerType.UnsignedShort,
-        Geometry.VertexAttribPointerType.Int => Silk.NET.OpenGL.VertexAttribPointerType.Int,
-        Geometry.VertexAttribPointerType.UnsignedInt => Silk.NET.OpenGL.VertexAttribPointerType.UnsignedInt,
-        Geometry.VertexAttribPointerType.Float => Silk.NET.OpenGL.VertexAttribPointerType.Float,
-        Geometry.VertexAttribPointerType.Double => Silk.NET.OpenGL.VertexAttribPointerType.Double,
-        _ => Silk.NET.OpenGL.VertexAttribPointerType.Float
     };
 
     private void ThrowIfDisposed()

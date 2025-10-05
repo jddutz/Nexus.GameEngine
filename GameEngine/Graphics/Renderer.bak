@@ -13,7 +13,7 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para>The renderer implements efficient batch processing by:</para>
 /// <list type="bullet">
-/// <item>Collecting <see cref="GLState"/> requirements from all renderable components</item>
+/// <item>Collecting <see cref="RenderData"/> requirements from all renderable components</item>
 /// <item>Sorting render states using the configured <see cref="IBatchStrategy"/> to minimize expensive state changes</item>
 /// <item>Applying OpenGL state changes only when batches change (detected via hash code comparison)</item>
 /// <item>Querying actual GL state before each update to avoid redundant glBindXxx() calls</item>
@@ -285,7 +285,7 @@ public class Renderer(
     /// <para>Rendering Pipeline:</para>
     /// <list type="number">
     /// <item>Traverse component tree to find all <see cref="IRenderable"/> components</item>
-    /// <item>Collect <see cref="GLState"/> requirements from each component's OnRender() method</item>
+    /// <item>Collect <see cref="RenderData"/> requirements from each component's OnRender() method</item>
     /// <item>Sort render states using <see cref="IBatchStrategy"/> to group compatible states</item>
     /// <item>Process render states in batches, applying OpenGL state changes only when batch hash codes differ</item>
     /// <item>Query actual GL state before each update to avoid redundant API calls</item>
@@ -345,7 +345,7 @@ public class Renderer(
         var renderStates = Viewport.OnRender(deltaTime);
 
         // Sort the requirements
-        var sorted = new SortedSet<GLState>(BatchStrategy);
+        var sorted = new SortedSet<RenderData>(BatchStrategy);
         foreach (var state in renderStates) sorted.Add(state);
 
         // Store render states in context for middleware

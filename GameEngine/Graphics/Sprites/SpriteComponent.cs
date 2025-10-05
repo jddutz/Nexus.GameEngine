@@ -221,13 +221,18 @@ public class SpriteComponent(IAssetService assetService, IResourceManager resour
     /// </summary>
     public bool ShouldRenderChildren => false;
 
-    public IEnumerable<GLState> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
     {
-        var GLState = new GLState();
-
         // TODO: Implement sprite rendering by declaring render state requirements
         // For now, just return empty render state
-        yield return GLState;
+        yield return new RenderData()
+        {
+            // TODO: update these values
+            Vao = 0,
+            Vbo = 0,
+            Ebo = 0,
+            Shader = 0
+        };
     }
 
     // ISpriteController implementation - all methods use deferred updates

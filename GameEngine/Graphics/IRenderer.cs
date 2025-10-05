@@ -22,8 +22,6 @@ public interface IRenderer
     event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
     event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
 
-    unsafe void OnLoad();
-
     /// <summary>
     /// Handles IWindow.Render events. Walks the component tree.
     /// Calls OnRender() on each IRenderable component to collect RenderStates.

@@ -1,6 +1,8 @@
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.GUI.Components;
 using Nexus.GameEngine.Input.Components;
+using Nexus.GameEngine.Resources;
 using Silk.NET.Input;
 
 namespace TestApp;
@@ -23,6 +25,12 @@ public static partial class Templates
             new TestRunner.Template()
             {
                 Name = "Test Runner"
+            },
+            new HelloQuad.Template()
+            {
+                Name = "HelloQuad",
+                IsVisible = true,
+                BackgroundColor = Colors.Aquamarine
             },
             new KeyBinding.Template()
             {
