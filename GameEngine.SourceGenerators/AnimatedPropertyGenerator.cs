@@ -169,13 +169,13 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
 
         sb.AppendLine($"    // Generated property: {prop.Name} (from field {fieldName})");
 
-        // Create target field to track pending changes
-        sb.AppendLine($"    private {prop.Type} {targetFieldName};");
+        // Create target field to track pending changes - initialize with default! to satisfy nullable analysis
+        sb.AppendLine($"    private {prop.Type} {targetFieldName} = default!;");
 
         if (prop.HasAnimationAttribute && prop.Duration > 0)
         {
             var animFieldName = $"{fieldName}Animation";
-            sb.AppendLine($"    private global::Nexus.GameEngine.Animation.PropertyAnimation<{prop.Type}> {animFieldName} = new()");
+            sb.AppendLine($"    private global::Nexus.GameEngine.Components.PropertyAnimation<{prop.Type}> {animFieldName} = new()");
             sb.AppendLine("    {");
             sb.AppendLine($"        Duration = {prop.Duration}f,");
             sb.AppendLine($"        Interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode){prop.Interpolation}");
@@ -207,7 +207,19 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
 
     private static void GenerateUpdateAnimationsMethod(StringBuilder sb, List<PropertyInfo> properties)
     {
-        sb.AppendLine("    // Generated animation update method");
+        // Generate partial method declarations for property change callbacks
+        foreach (var prop in properties)
+        {
+            sb.AppendLine($"    // Optional callback for {prop.Name} changes");
+            sb.AppendLine($"    partial void On{prop.Name}Changed({prop.Type} oldValue);");
+            sb.AppendLine();
+        }
+
+        // Generate the declaration and implementation of UpdateAnimations for this partial class
+        sb.AppendLine("    // Declaration of the partial method (required in the generated file)");
+        sb.AppendLine("    partial void UpdateAnimations(double deltaTime);");
+        sb.AppendLine();
+        sb.AppendLine("    // Generated animation update implementation");
         sb.AppendLine("    partial void UpdateAnimations(double deltaTime)");
         sb.AppendLine("    {");
 
@@ -222,8 +234,10 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 var animFieldName = $"{fieldName}Animation";
                 sb.AppendLine($"        if ({animFieldName}.IsAnimating)");
                 sb.AppendLine("        {");
+                sb.AppendLine($"            var oldValue = {fieldName};");
                 sb.AppendLine($"            {fieldName} = {animFieldName}.Update(deltaTime);");
                 sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
+                sb.AppendLine($"            On{prop.Name}Changed(oldValue);");
                 sb.AppendLine();
                 sb.AppendLine($"            if (!{animFieldName}.IsAnimating)");
                 sb.AppendLine("            {");
@@ -236,9 +250,11 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 // Instant update property
                 sb.AppendLine($"        if (!global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, {fieldName}))");
                 sb.AppendLine("        {");
+                sb.AppendLine($"            var oldValue = {fieldName};");
                 sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
                 sb.AppendLine($"            {fieldName} = {targetFieldName};");
                 sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
+                sb.AppendLine($"            On{prop.Name}Changed(oldValue);");
                 sb.AppendLine($"            OnPropertyAnimationEnded(nameof({prop.Name}));");
                 sb.AppendLine("        }");
             }

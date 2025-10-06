@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources.Geometry;
@@ -18,7 +19,12 @@ public partial class HelloQuad(IRenderer renderer)
 
     private RenderData? renderData;
 
-    public bool IsVisible => true;
+    // ComponentProperty fields - generator creates public properties with deferred updates
+    [ComponentProperty]
+    private bool _isVisible = true;
+
+    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.CubicEaseInOut)]
+    private Vector4D<float> _backgroundColor = new(0.39f, 0.58f, 0.93f, 1.0f); // CornflowerBlue
 
     public uint RenderPriority => 0;
 
@@ -115,15 +121,32 @@ public partial class HelloQuad(IRenderer renderer)
         renderData = GetRenderData(renderer.GL);
     }
 
-    public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<RenderData> OnRender(RenderContext context)
     {
-        if (renderData == null) yield break;
+        if (!IsVisible || renderData == null) yield break;
 
         yield return renderData;
     }
 
+    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    {
+        base.OnConfigure(componentTemplate);
+
+        if (componentTemplate is Template template)
+        {
+            // Direct field assignment during configuration - no deferred updates needed
+            _isVisible = template.IsVisible;
+            _backgroundColor = template.BackgroundColor;
+        }
+    }
+
     public void SetVisible(bool visible)
     {
-        visible = true;
+        IsVisible = visible;
+    }
+
+    public void SetBackgroundColor(Vector4D<float> color)
+    {
+        BackgroundColor = color;
     }
 }

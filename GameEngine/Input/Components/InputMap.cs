@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Input.Components;
@@ -32,60 +33,24 @@ public partial class InputMap : RuntimeComponent, IInputMapController
         public int Priority { get; init; } = 0;
     }
 
-    private string _name = string.Empty;
-    private string _description = string.Empty;
-    private int _priority = 0;
-    private bool _enabledByDefault = true;
-
     /// <summary>
     /// Description of when this input mapping should be active.
     /// </summary>
-    public string Description
-    {
-        get => _description;
-        private set
-        {
-            var newValue = value ?? string.Empty;
-            if (_description != newValue)
-            {
-                _description = newValue;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private string _description = string.Empty;
 
     /// <summary>
     /// Priority level for this input mapping when multiple mappings are active.
     /// Higher values have higher priority.
     /// </summary>
-    public int Priority
-    {
-        get => _priority;
-        private set
-        {
-            if (_priority != value)
-            {
-                _priority = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private int _priority = 0;
 
     /// <summary>
     /// Whether this input mapping should be enabled by default.
     /// </summary>
-    public bool EnabledByDefault
-    {
-        get => _enabledByDefault;
-        private set
-        {
-            if (_enabledByDefault != value)
-            {
-                _enabledByDefault = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private bool _enabledByDefault = true;
 
     /// <summary>
     /// Configure the input mapping using the provided template.

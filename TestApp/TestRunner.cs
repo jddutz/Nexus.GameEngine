@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using System.Diagnostics;
+using System.Text;
 using TestApp.TestComponents;
 
 namespace TestApp;
@@ -18,6 +19,13 @@ public class TestRunner(
     IWindowService windowService)
     : RuntimeComponent
 {
+    private const string RESULTS_SUMMARY = "\n=== TEST RUN SUMMARY ===\n"
+            + "Test Components Discovered: {TestComponents}\n"
+            + "Number of Test Results: {TotalCount}\n"
+            + "Passed: {PassCount}\n"
+            + "Failed: {FailCount}\n"
+            + "Total Time: {TotalTime:F2}ms\n"
+            + "Overall Result: {OverallResult}";
     /// <summary>
     /// Configuration template for the TestRunner component.
     /// </summary>
@@ -56,14 +64,18 @@ public class TestRunner(
     protected override void OnUpdate(double deltaTime)
     {
         Logger?.LogTrace("TestRunner OnUpdate called. DeltaTime: {DeltaTime}", deltaTime);
-        foreach (var child in GetChildren<ITestComponent>())
+
+        bool isTestStillRunning = false;
+        foreach (var child in Children)
         {
             if (child.IsActive)
             {
                 Logger?.LogTrace("Test component still active: {TypeName}", child.GetType().FullName);
-                return;
+                isTestStillRunning = true;
             }
         }
+
+        if (isTestStillRunning) return;
 
         if (_testComponents.TryDequeue(out Type? t) && t is Type testComponentType)
         {
@@ -91,7 +103,8 @@ public class TestRunner(
         var passed = new List<TestResult>();
         var failed = new List<TestResult>();
 
-        var results = GetChildren<ITestComponent>().SelectMany(t => t.GetTestResults());
+        var components = GetChildren<ITestComponent>().ToList();
+        var results = components.SelectMany(t => t.GetTestResults());
         foreach (var result in results)
         {
             if (!string.IsNullOrEmpty(result.Description))
@@ -117,13 +130,15 @@ public class TestRunner(
             }
         }
 
-        Logger?.LogInformation("=== TEST RUN SUMMARY ===");
-        Logger?.LogInformation("Test Components Discovered: {DiscoveredTests}", discovered);
-        Logger?.LogInformation("Number of Test Results: {TotalCount}", passed.Count + failed.Count);
-        Logger?.LogInformation("Passed: {PassCount}", passed.Count);
-        Logger?.LogInformation("Failed: {FailCount}", failed.Count);
-        Logger?.LogInformation("Total Time: {TotalTime:F2}ms", _stopwatch.Elapsed.TotalMilliseconds);
-        Logger?.LogInformation("Overall Result: {OverallResult}", failed.Count == 0 && passed.Count >= discovered ? "PASSED" : "FAILED");
+        Logger?.LogInformation(
+            RESULTS_SUMMARY,
+            components.Count,
+            passed.Count + failed.Count,
+            passed.Count,
+            failed.Count,
+            _stopwatch.ElapsedMilliseconds,
+            passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]"
+            );
 
         if (failed.Count > 0)
         {

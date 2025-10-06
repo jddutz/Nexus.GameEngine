@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
@@ -17,22 +18,12 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
         public Vector4D<float> BackgroundColor { get; set; }
     }
 
-    // Private fields for deferred updates
+    // ComponentProperty fields - generator creates public properties with deferred updates
+    [ComponentProperty]
     private bool _isVisible = true;
-    private Vector4D<float> _backgroundColor = Colors.CornflowerBlue;
 
-    public bool IsVisible
-    {
-        get => _isVisible;
-        private set
-        {
-            if (_isVisible != value)
-            {
-                _isVisible = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.CubicEaseInOut)]
+    private Vector4D<float> _backgroundColor = Colors.CornflowerBlue;
 
     public uint RenderPriority => 0;
 
@@ -40,20 +31,7 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
 
     public uint RenderPassFlags => 1;
 
-    public Vector4D<float> BackgroundColor
-    {
-        get => _backgroundColor;
-        private set
-        {
-            if (_backgroundColor != value)
-            {
-                _backgroundColor = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
+    public IEnumerable<RenderData> OnRender(RenderContext context)
     {
         Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
 
@@ -80,8 +58,7 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
             Shader = 0,
             ShaderProgram = shaderResource,
             VertexArray = geometryResource,
-            Priority = RenderPriority,
-            SourceViewport = viewport
+            Priority = RenderPriority
             // No uniforms needed for basic orange color shader
         };
     }
@@ -98,52 +75,46 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
         }
     }
 
-    // IBackgroundController implementation - all methods use deferred updates
+    // IBackgroundController implementation - properties are automatically deferred
     public void SetVisible(bool visible)
     {
-        QueueUpdate(() => IsVisible = visible);
+        IsVisible = visible;
     }
 
     public void SetBackgroundColor(Vector4D<float> color)
     {
-        QueueUpdate(() => BackgroundColor = color);
+        BackgroundColor = color;
     }
 
     public void SetBackgroundColor(float r, float g, float b, float a = 1.0f)
     {
-        QueueUpdate(() => BackgroundColor = new Vector4D<float>(r, g, b, a));
+        BackgroundColor = new Vector4D<float>(r, g, b, a);
     }
 
     public void SetBackgroundColor(string colorName)
     {
-        QueueUpdate(() =>
+        // Use reflection to get predefined color from Colors class
+        var colorProperty = typeof(Colors).GetProperty(colorName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        if (colorProperty?.GetValue(null) is Vector4D<float> color)
         {
-            // Use reflection to get predefined color from Colors class
-            var colorProperty = typeof(Colors).GetProperty(colorName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (colorProperty?.GetValue(null) is Vector4D<float> color)
-            {
-                BackgroundColor = color;
-            }
-            else
-            {
-                // Fallback to default color if name not found
-                BackgroundColor = Colors.White;
-            }
-        });
+            BackgroundColor = color;
+        }
+        else
+        {
+            // Fallback to default color if name not found
+            BackgroundColor = Colors.White;
+        }
     }
 
     public void FadeToColor(Vector4D<float> targetColor, float factor)
     {
-        QueueUpdate(() =>
-        {
-            // Linear interpolation between current and target color
-            var current = BackgroundColor;
-            BackgroundColor = new Vector4D<float>(
-                current.X + (targetColor.X - current.X) * factor,
-                current.Y + (targetColor.Y - current.Y) * factor,
-                current.Z + (targetColor.Z - current.Z) * factor,
-                current.W + (targetColor.W - current.W) * factor
-            );
-        });
+        // Linear interpolation between current and target color
+        var current = BackgroundColor;
+        BackgroundColor = new Vector4D<float>(
+            current.X + (targetColor.X - current.X) * factor,
+            current.Y + (targetColor.Y - current.Y) * factor,
+            current.Z + (targetColor.Z - current.Z) * factor,
+            current.W + (targetColor.W - current.W) * factor
+        );
     }
 }

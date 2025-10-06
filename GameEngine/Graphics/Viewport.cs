@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
 using Silk.NET.Maths;
@@ -20,6 +21,7 @@ public partial class Viewport : RuntimeComponent, IViewport
         public int ViewportPriority { get; set; } = 0;
         public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
         public bool RequiresFlushAfterRender { get; set; } = false;
+        public Vector4D<float> BackgroundColor { get; set; } = new Vector4D<float>(0.1f, 0.1f, 0.1f, 1.0f); // Dark gray
     }
 
     private IRuntimeComponent? _content;
@@ -37,6 +39,19 @@ public partial class Viewport : RuntimeComponent, IViewport
     public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
 
     public bool FlushAfterRender { get; set; } = false;
+
+    // ComponentProperty: Animatable background color for smooth transitions
+    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.Linear)]
+    private Vector4D<float> _backgroundColor = new Vector4D<float>(0.1f, 0.1f, 0.1f, 1.0f); // Dark gray
+    // Generates: public Vector4D<float> BackgroundColor { get; set; }
+
+    // Readonly convenience properties derived from ScreenRegion
+    public Vector2D<int> Position => ScreenRegion.Origin;
+    public Vector2D<int> Size => ScreenRegion.Size;
+    public int Left => ScreenRegion.Origin.X;
+    public int Top => ScreenRegion.Origin.Y;
+    public int Right => ScreenRegion.Origin.X + ScreenRegion.Size.X;
+    public int Bottom => ScreenRegion.Origin.Y + ScreenRegion.Size.Y;
 
     /// <summary>
     /// Gets or sets the content tree. Setting schedules a delayed content change.
@@ -89,6 +104,7 @@ public partial class Viewport : RuntimeComponent, IViewport
             ViewportPriority = template.ViewportPriority;
             RenderPasses = template.RenderPasses;
             FlushAfterRender = template.RequiresFlushAfterRender;
+            _backgroundColor = template.BackgroundColor;
         }
     }
 
@@ -118,30 +134,6 @@ public partial class Viewport : RuntimeComponent, IViewport
         base.OnUpdate(deltaTime);
     }
 
-    public IEnumerable<RenderData> OnRender(double deltaTime)
-    {
-        Logger?.LogDebug("Rendering Viewport.");
-
-        if (_content == null)
-        {
-            Logger?.LogDebug("Content is undefined.");
-            yield break;
-        }
-
-        // Apply all deferred updates before rendering
-        ApplyUpdatesRecursively(_content);
-
-        // Walk the content tree and collect render states
-        foreach (var component in FindRenderableComponents(_content))
-        {
-            Logger?.LogDebug("Rendering Viewport.Content {ContentName}.", component.Name);
-            foreach (var renderData in component.OnRender(this, deltaTime))
-            {
-                yield return renderData;
-            }
-        }
-    }
-
     /// <summary>
     /// Recursively applies deferred updates to all components in the content tree.
     /// Called before rendering to ensure temporal consistency.
@@ -155,25 +147,6 @@ public partial class Viewport : RuntimeComponent, IViewport
         foreach (var child in component.Children)
         {
             ApplyUpdatesRecursively(child);
-        }
-    }
-
-    /// <summary>
-    /// Recursively finds all IRenderable components in the content tree.
-    /// </summary>
-    private IEnumerable<IRenderable> FindRenderableComponents(IRuntimeComponent component)
-    {
-        Logger?.LogDebug("FindRenderableComponents called on {ComponentName}.", component.Name);
-
-        foreach (var child in component.Children.SelectMany(c => FindRenderableComponents(c)))
-        {
-            yield return child;
-        }
-
-        if (component is IRenderable renderable)
-        {
-            Logger?.LogDebug("Found IRenderable component {ComponentName}.", renderable.Name);
-            yield return renderable;
         }
     }
 }

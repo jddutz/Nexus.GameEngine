@@ -385,16 +385,18 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         Updating?.Invoke(this, EventArgs.Empty);
 
-        // Apply property animations/updates before update logic
+        // Apply deferred updates  root to leaf
+        // so deferred updates are done before the first OnUpdate()
         UpdateAnimations(deltaTime);
-
-        // Update root to leaf
-        OnUpdate(deltaTime);
 
         foreach (var child in Children)
         {
             child.Update(deltaTime);
         }
+
+        // All children should be up to date when OnUpdate is called
+        // All updates are deferred to the next frame for temporal consistency
+        OnUpdate(deltaTime);
 
         Updated?.Invoke(this, EventArgs.Empty);
         IsUpdating = false;
@@ -606,13 +608,35 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     }
 
     // Tree navigation methods (basic implementations)
-    public virtual IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null)
+    public virtual IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool depthFirst = false)
         where T : IRuntimeComponent
     {
-        var query = Children.OfType<T>();
-        if (filter != null)
-            query = query.Where(c => filter(c));
-        return query;
+        if (depthFirst)
+        {
+            foreach (var child in Children)
+            {
+                foreach (var grandchild in child.GetChildren(filter, depthFirst))
+                {
+                    yield return grandchild;
+                }
+
+                if (child is T result && (filter == null || filter(result)))
+                    yield return result;
+            }
+        }
+        else
+        {
+            foreach (var child in Children)
+            {
+                if (child is T result && (filter == null || filter(result)))
+                    yield return result;
+
+                foreach (var grandchild in child.GetChildren(filter, depthFirst))
+                {
+                    yield return grandchild;
+                }
+            }
+        }
     }
 
     public virtual IEnumerable<T> GetSiblings<T>(Func<T, bool>? filter = null)

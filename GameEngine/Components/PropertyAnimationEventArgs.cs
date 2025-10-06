@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Animation;
+namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Provides data for property animation lifecycle events.

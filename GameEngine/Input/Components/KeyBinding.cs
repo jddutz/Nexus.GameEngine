@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Actions;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 
@@ -38,41 +39,17 @@ public partial class KeyBinding(
         public Key[] ModifierKeys { get; set; } = [];
     }
 
-    // Private fields for deferred updates
-    private Key _key;
-    private Key[] _modifierKeys = [];
-
     /// <summary>
     /// The key that triggers this binding
     /// </summary>
-    public Key Key
-    {
-        get => _key;
-        private set
-        {
-            if (_key != value)
-            {
-                _key = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private Key _key;
 
     /// <summary>
     /// Optional modifier keys required for this binding
     /// </summary>
-    public Key[] ModifierKeys
-    {
-        get => _modifierKeys;
-        private set
-        {
-            if (!_modifierKeys.SequenceEqual(value))
-            {
-                _modifierKeys = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private Key[] _modifierKeys = [];
 
     /// <summary>
     /// Configure the gamepad binding using the provided template.

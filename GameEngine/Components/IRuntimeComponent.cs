@@ -144,7 +144,7 @@ public interface IRuntimeComponent : IDisposable
     /// <typeparam name="T">The type of child components to return.</typeparam>
     /// <param name="filter">Optional predicate to filter child components.</param>
     /// <returns>Enumerable of child components of type <typeparamref name="T"/>.</returns>
-    IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null)
+    IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool depthFirst = false)
         where T : IRuntimeComponent;
 
     /// <summary>

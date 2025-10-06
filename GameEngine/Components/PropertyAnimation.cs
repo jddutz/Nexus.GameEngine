@@ -1,4 +1,6 @@
-namespace Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Animation;
+
+namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Manages interpolation and timing for animated property values.

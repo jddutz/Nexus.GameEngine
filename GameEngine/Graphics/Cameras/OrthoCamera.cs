@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
@@ -39,83 +40,30 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
         public Vector3D<float> Position { get; set; } = Vector3D<float>.Zero;
     }
 
+    // Animated properties for smooth camera movements
+    [ComponentProperty(Duration = AnimationDuration.Normal)]
     private float _width = 10f;
+
+    [ComponentProperty(Duration = AnimationDuration.Normal)]
     private float _height = 10f;
+
+    [ComponentProperty]
     private float _nearPlane = -1000f;
+
+    [ComponentProperty]
     private float _farPlane = 1000f;
+
+    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
     private Vector3D<float> _position = Vector3D<float>.Zero;
+
     private bool _matricesDirty = true;
 
-    // Properties with private setters for deferred updates
-    public float Width
-    {
-        get => _width;
-        private set
-        {
-            if (_width != value)
-            {
-                _width = value;
-                _matricesDirty = true;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public float Height
-    {
-        get => _height;
-        private set
-        {
-            if (_height != value)
-            {
-                _height = value;
-                _matricesDirty = true;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public float NearPlane
-    {
-        get => _nearPlane;
-        private set
-        {
-            if (_nearPlane != value)
-            {
-                _nearPlane = value;
-                _matricesDirty = true;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public float FarPlane
-    {
-        get => _farPlane;
-        private set
-        {
-            if (_farPlane != value)
-            {
-                _farPlane = value;
-                _matricesDirty = true;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public Vector3D<float> Position
-    {
-        get => _position;
-        private set
-        {
-            if (_position != value)
-            {
-                _position = value;
-                _matricesDirty = true;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    // Property change callbacks - set matrices dirty when camera properties change
+    partial void OnWidthChanged(float oldValue) => _matricesDirty = true;
+    partial void OnHeightChanged(float oldValue) => _matricesDirty = true;
+    partial void OnNearPlaneChanged(float oldValue) => _matricesDirty = true;
+    partial void OnFarPlaneChanged(float oldValue) => _matricesDirty = true;
+    partial void OnPositionChanged(Vector3D<float> oldValue) => _matricesDirty = true;
 
     // Fixed orientation for orthographic camera
     public Vector3D<float> Forward { get; } = -Vector3D<float>.UnitZ;
@@ -259,65 +207,43 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
         return new Vector2D<int>(screenX, screenY);
     }
 
-    // ICameraController implementation - all methods use deferred updates
-    public void SetPosition(Vector3D<float> position)
-    {
-        QueueUpdate(() => Position = position);
-    }
+    // ICameraController implementation - properties now handle deferred updates and dirty flag automatically
+    public void SetPosition(Vector3D<float> position) => Position = position;
 
-    public void Translate(Vector3D<float> translation)
-    {
-        QueueUpdate(() => Position += translation);
-    }
+    public void Translate(Vector3D<float> translation) => Position += translation;
 
     public void SetForward(Vector3D<float> forward)
     {
         // OrthoCamera has fixed forward direction (-Z), but we'll allow it for interface compatibility
         // In practice, this would be ignored since Forward is fixed for orthographic cameras
-        // You could log a warning here if needed
     }
 
     public void SetUp(Vector3D<float> up)
     {
         // OrthoCamera has fixed up direction (+Y), but we'll allow it for interface compatibility
         // In practice, this would be ignored since Up is fixed for orthographic cameras
-        // You could log a warning here if needed
     }
 
     public void LookAt(Vector3D<float> target)
     {
         // OrthoCamera has fixed orientation, but we can move to position camera for the target
         // This effectively centers the orthographic view on the target
-        QueueUpdate(() => Position = new Vector3D<float>(target.X, target.Y, Position.Z));
+        Position = new Vector3D<float>(target.X, target.Y, Position.Z);
     }
 
-    // IOrthographicController implementation - all methods use deferred updates
-    public void SetWidth(float width)
-    {
-        QueueUpdate(() => Width = width);
-    }
+    // IOrthographicController implementation - properties now handle deferred updates and dirty flag automatically
+    public void SetWidth(float width) => Width = width;
 
-    public void SetHeight(float height)
-    {
-        QueueUpdate(() => Height = height);
-    }
+    public void SetHeight(float height) => Height = height;
 
     public void SetSize(float width, float height)
     {
-        QueueUpdate(() =>
-        {
-            Width = width;
-            Height = height;
-        });
+        Width = width;
+        Height = height;
     }
 
-    public void SetNearPlane(float nearPlane)
-    {
-        QueueUpdate(() => NearPlane = nearPlane);
-    }
+    public void SetNearPlane(float nearPlane) => NearPlane = nearPlane;
 
-    public void SetFarPlane(float farPlane)
-    {
-        QueueUpdate(() => FarPlane = farPlane);
-    }
+    public void SetFarPlane(float farPlane) => FarPlane = farPlane;
+
 }

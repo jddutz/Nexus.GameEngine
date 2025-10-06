@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Actions;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Input;
@@ -64,24 +65,11 @@ public abstract partial class InputBinding(
 
     protected readonly IActionFactory _actionFactory = actionFactory;
 
-    // Private field for deferred updates
-    private ActionId _actionId = ActionId.None;
-
     /// <summary>
     /// Gets the action that will be executed when input is triggered.
     /// </summary>
-    public ActionId ActionId
-    {
-        get => _actionId;
-        private set
-        {
-            if (_actionId != value)
-            {
-                _actionId = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    [ComponentProperty]
+    private ActionId _actionId = ActionId.None;
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)
     {

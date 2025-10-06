@@ -27,9 +27,7 @@ namespace Nexus.GameEngine.Graphics;
 public class Renderer(
         IWindowService windowService,
         ILoggerFactory loggerFactory,
-        IContentManager contentManager,
-        IResourceManager resourceManager,
-        IBatchStrategy batchStrategy
+        IContentManager contentManager
         ) : IRenderer
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(nameof(Renderer));
@@ -294,15 +292,32 @@ public class Renderer(
     {
         BeforeRenderFrame?.Invoke(this, new());
 
+        var context = new RenderContext()
+        {
+            GL = GL,
+            Viewport = contentManager.Viewport,
+            ElapsedSeconds = deltaTime
+        };
+
+        if (contentManager.Viewport?.Content == null)
+        {
+            logger.LogDebug("Viewport content is null, nothing to render.");
+            return;
+        }
+
+        var onRenderResults = contentManager.Viewport.Content
+            .GetChildren<IRenderable>()
+            .SelectMany(r => r.OnRender(context));
+
         int count = 0;
 
-        foreach (var renderData in contentManager.Viewport.OnRender(deltaTime))
+        foreach (var renderData in onRenderResults)
         {
             count++;
             Render(renderData);
         }
 
-        logger.LogDebug("Viewport.OnRender returned {Count} results.", count);
+        logger.LogDebug("Viewport.GetChildren<IRenderable>() returned {Count} results.", count);
 
         AfterRenderFrame?.Invoke(this, new());
     }
@@ -323,6 +338,4 @@ public class Renderer(
             DrawElementsType.UnsignedInt,
             null);
     }
-
-    private bool _disposed;
 }

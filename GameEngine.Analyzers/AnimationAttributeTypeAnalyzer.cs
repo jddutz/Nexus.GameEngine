@@ -15,9 +15,9 @@ public class AnimationAttributeTypeAnalyzer : DiagnosticAnalyzer
 {
     public const string DiagnosticId = "NX1002";
 
-    private static readonly LocalizableString Title = "ComponentProperty attribute on non-animatable type";
-    private static readonly LocalizableString MessageFormat = "Field '{0}' of type '{1}' cannot be animated. Only numeric, vector, matrix, and quaternion types support animation.";
-    private static readonly LocalizableString Description = "The [ComponentProperty] attribute can only be applied to fields of animatable types (numeric primitives, vectors, matrices, quaternions, or types implementing IInterpolatable<T>).";
+    private static readonly LocalizableString Title = "Incompatible interpolation mode for type";
+    private static readonly LocalizableString MessageFormat = "Field '{0}' of type '{1}' is not compatible with the specified interpolation mode. Use InterpolationMode.Step (default) or InterpolationMode.Hold for non-numeric types like bool, string, enum, etc.";
+    private static readonly LocalizableString Description = "The interpolation mode must be compatible with the field type. Smooth interpolation (Linear, Cubic, Slerp, etc.) requires numeric, vector, matrix, or quaternion types. Non-interpolatable types (bool, string, enum, reference types) must use InterpolationMode.Step or InterpolationMode.Hold.";
     private const string Category = "Usage";
 
     private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
@@ -48,15 +48,29 @@ public class AnimationAttributeTypeAnalyzer : DiagnosticAnalyzer
             if (fieldSymbol is null) continue;
 
             // Check if field has ComponentProperty attribute
-            var hasAnimationAttr = fieldSymbol.GetAttributes()
-                .Any(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
+            var animationAttr = fieldSymbol.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
 
-            if (!hasAnimationAttr) continue;
+            if (animationAttr is null) continue;
 
-            // Check if type is animatable
+            // Get interpolation mode (default is Step = 9)
+            var interpolationMode = 9; // Step
+            var interpolationArg = animationAttr.NamedArguments.FirstOrDefault(a => a.Key == "Interpolation");
+            if (interpolationArg.Value.Value is int interpolationValue)
+            {
+                interpolationMode = interpolationValue;
+            }
+
+            // Check if interpolation mode is appropriate for the type
             var fieldType = fieldSymbol.Type;
+            var isAnimatableType = IsAnimatableType(fieldType);
 
-            if (!IsAnimatableType(fieldType))
+            // Step and Hold work with any type
+            // All other interpolation modes require animatable types
+            const int StepMode = 9;
+            const int HoldMode = 10;
+
+            if (!isAnimatableType && interpolationMode != StepMode && interpolationMode != HoldMode)
             {
                 var diagnostic = Diagnostic.Create(
                     Rule,

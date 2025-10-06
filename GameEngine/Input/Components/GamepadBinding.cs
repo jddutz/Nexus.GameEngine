@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Actions;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 
@@ -60,55 +61,44 @@ public partial class GamepadBinding(
         public Type ActionType { get; init; } = typeof(object);
     }
 
-    private ButtonName _button = ButtonName.A;
-    private GamepadEventType _eventType = GamepadEventType.ButtonDown;
-    private float _threshold = 0.5f;
-    private ThumbstickType _thumbstickType = ThumbstickType.Left;
-    private TriggerType _triggerType = TriggerType.Left;
-
     /// <summary>
     /// The gamepad button that triggers this binding.
     /// </summary>
-    public ButtonName Button
-    {
-        get => _button;
-        set => _button = value;
-    }
+    [ComponentProperty]
+    private ButtonName _button = ButtonName.A;
 
     /// <summary>
     /// The type of gamepad event to listen for.
     /// </summary>
-    public GamepadEventType EventType
-    {
-        get => _eventType;
-        set => _eventType = value;
-    }
+    [ComponentProperty]
+    private GamepadEventType _eventType = GamepadEventType.ButtonDown;
 
     /// <summary>
     /// For analog inputs, the threshold value to trigger the action.
     /// </summary>
-    public float Threshold
-    {
-        get => _threshold;
-        set => _threshold = Math.Clamp(value, 0f, 1f);
-    }
+    [ComponentProperty]
+    private float _threshold = 0.5f;
 
     /// <summary>
     /// For thumbstick inputs, the specific thumbstick to monitor.
     /// </summary>
-    public ThumbstickType ThumbstickType
-    {
-        get => _thumbstickType;
-        set => _thumbstickType = value;
-    }
+    [ComponentProperty]
+    private ThumbstickType _thumbstickType = ThumbstickType.Left;
 
     /// <summary>
     /// For trigger inputs, the specific trigger to monitor.
     /// </summary>
-    public TriggerType TriggerType
+    [ComponentProperty]
+    private TriggerType _triggerType = TriggerType.Left;
+
+    // Property change callback for Threshold to apply clamping
+    partial void OnThresholdChanged(float oldValue)
     {
-        get => _triggerType;
-        set => _triggerType = value;
+        // Clamp the value if it's out of range (source generator already updated _threshold)
+        if (_threshold < 0f || _threshold > 1f)
+        {
+            _threshold = Math.Clamp(_threshold, 0f, 1f);
+        }
     }
 
     /// <summary>

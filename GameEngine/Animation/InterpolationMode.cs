@@ -52,6 +52,14 @@ public enum InterpolationMode
 
     /// <summary>
     /// No interpolation, snap to target immediately.
+    /// Default mode. Works with any type (numeric, bool, string, enum, etc.).
     /// </summary>
-    Step
+    Step,
+
+    /// <summary>
+    /// Hold current value, then switch to target value at end of duration.
+    /// Useful for delayed state changes with non-interpolatable types (bool, string, enum, etc.).
+    /// Example: Delay showing a UI element, or switching a state after a timer.
+    /// </summary>
+    Hold
 }

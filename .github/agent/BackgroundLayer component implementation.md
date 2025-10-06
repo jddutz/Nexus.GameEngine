@@ -83,7 +83,7 @@ public static class Shaders
 ### Resource Access Pattern:
 
 ```csharp
-public IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
+public IEnumerable<RenderData> OnRender(RenderContext context)
 {
     var quadVAO = resourceManager.GetOrCreateResource<uint>(Geometry.FullScreenQuad);
     var shader = resourceManager.GetOrCreateResource<uint>(Shaders.BackgroundSolid);

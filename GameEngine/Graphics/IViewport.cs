@@ -46,12 +46,4 @@ public interface IViewport : IRuntimeComponent
     /// Usually false unless doing multi-pass effects or viewport synchronization.
     /// </summary>
     bool FlushAfterRender { get; }
-
-    /// <summary>
-    /// Render this viewport's content by walking the Content component tree.
-    /// Returns all render states needed to display this viewport.
-    /// </summary>
-    /// <param name="deltaTime">Time elapsed since last frame</param>
-    /// <returns>All render states from components in this viewport</returns>
-    IEnumerable<RenderData> OnRender(double deltaTime);
 }

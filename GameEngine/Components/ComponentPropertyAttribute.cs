@@ -1,4 +1,6 @@
-namespace Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Animation;
+
+namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Marks a backing field for property generation with optional animation support.
@@ -24,7 +26,7 @@ public sealed class ComponentPropertyAttribute : Attribute
 
     /// <summary>
     /// Gets or sets the interpolation mode for the animation.
-    /// Default is Linear.
+    /// Default is Step (instant, works with any type).
     /// </summary>
-    public InterpolationMode Interpolation { get; set; } = InterpolationMode.Linear;
+    public InterpolationMode Interpolation { get; set; } = InterpolationMode.Step;
 }

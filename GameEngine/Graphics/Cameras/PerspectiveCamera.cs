@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
@@ -49,111 +50,32 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
         public Vector3D<float> Up { get; set; } = Vector3D<float>.UnitY;
     }
 
-    private float _fieldOfView = MathF.PI / 4; // 45 degrees
-    private float _nearPlane = 0.1f;
-    private float _farPlane = 1000f;
-    private float _aspectRatio = 16f / 9f;
+    // Animated properties with slow easing for smooth camera movements
+    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
     private Vector3D<float> _position = Vector3D<float>.Zero;
+
+    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
     private Vector3D<float> _forward = -Vector3D<float>.UnitZ;
+
+    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
     private Vector3D<float> _up = Vector3D<float>.UnitY;
+
+    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.CubicEaseOut)]
+    private float _fieldOfView = MathF.PI / 4; // 45 degrees
+
+    // Instant properties (no animation needed for clipping planes and aspect ratio)
+    [ComponentProperty]
+    private float _nearPlane = 0.1f;
+
+    [ComponentProperty]
+    private float _farPlane = 1000f;
+
+    [ComponentProperty]
+    private float _aspectRatio = 16f / 9f;
+
+    // Non-component properties
     private Vector3D<float> _right = Vector3D<float>.UnitX;
     private bool _matricesDirty = true;
-
-    // Properties with private setters for deferred updates
-    public float FieldOfView
-    {
-        get => _fieldOfView;
-        private set
-        {
-            if (_fieldOfView != value)
-            {
-                _fieldOfView = value;
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public float NearPlane
-    {
-        get => _nearPlane;
-        private set
-        {
-            if (_nearPlane != value)
-            {
-                _nearPlane = value;
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public float FarPlane
-    {
-        get => _farPlane;
-        private set
-        {
-            if (_farPlane != value)
-            {
-                _farPlane = value;
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public float AspectRatio
-    {
-        get => _aspectRatio;
-        private set
-        {
-            if (_aspectRatio != value)
-            {
-                _aspectRatio = value;
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public Vector3D<float> Position
-    {
-        get => _position;
-        private set
-        {
-            if (_position != value)
-            {
-                _position = value;
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public Vector3D<float> Forward
-    {
-        get => _forward;
-        private set
-        {
-            var normalized = Vector3D.Normalize(value);
-            if (_forward != normalized)
-            {
-                _forward = normalized;
-                UpdateDirectionVectors();
-                _matricesDirty = true;
-            }
-        }
-    }
-
-    public Vector3D<float> Up
-    {
-        get => _up;
-        private set
-        {
-            var normalized = Vector3D.Normalize(value);
-            if (_up != normalized)
-            {
-                _up = normalized;
-                UpdateDirectionVectors();
-                _matricesDirty = true;
-            }
-        }
-    }
 
     public Vector3D<float> Right => _right;
 
@@ -269,51 +191,51 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
         return new Vector2D<int>(screenX, screenY);
     }
 
-    // ICameraController implementation - all methods use deferred updates
+    // ICameraController implementation - properties are automatically deferred via ComponentProperty
     public void SetPosition(Vector3D<float> position)
     {
-        QueueUpdate(() => Position = position);
+        Position = position;
     }
 
     public void Translate(Vector3D<float> translation)
     {
-        QueueUpdate(() => Position += translation);
+        Position += translation;
     }
 
     public void SetForward(Vector3D<float> forward)
     {
-        QueueUpdate(() => Forward = forward);
+        Forward = forward;
     }
 
     public void SetUp(Vector3D<float> up)
     {
-        QueueUpdate(() => Up = up);
+        Up = up;
     }
 
     public void LookAt(Vector3D<float> target)
     {
-        QueueUpdate(() => Forward = Vector3D.Normalize(target - Position));
+        Forward = Vector3D.Normalize(target - Position);
     }
 
-    // IPerspectiveController implementation - all methods use deferred updates
+    // IPerspectiveController implementation - properties are automatically deferred via ComponentProperty
     public void SetFieldOfView(float fieldOfView)
     {
-        QueueUpdate(() => FieldOfView = fieldOfView);
+        FieldOfView = fieldOfView;
     }
 
     public void SetNearPlane(float nearPlane)
     {
-        QueueUpdate(() => NearPlane = nearPlane);
+        NearPlane = nearPlane;
     }
 
     public void SetFarPlane(float farPlane)
     {
-        QueueUpdate(() => FarPlane = farPlane);
+        FarPlane = farPlane;
     }
 
     public void SetAspectRatio(float aspectRatio)
     {
-        QueueUpdate(() => AspectRatio = aspectRatio);
+        AspectRatio = aspectRatio;
     }
 
     /// <summary>
@@ -331,5 +253,26 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
             Forward = template.Forward;
             Up = template.Up;
         }
+    }
+
+    // Property change callbacks - mark matrices dirty when camera properties change
+    partial void OnFieldOfViewChanged(float oldValue) => _matricesDirty = true;
+    partial void OnNearPlaneChanged(float oldValue) => _matricesDirty = true;
+    partial void OnFarPlaneChanged(float oldValue) => _matricesDirty = true;
+    partial void OnAspectRatioChanged(float oldValue) => _matricesDirty = true;
+    partial void OnPositionChanged(Vector3D<float> oldValue) => _matricesDirty = true;
+
+    partial void OnForwardChanged(Vector3D<float> oldValue)
+    {
+        _forward = Vector3D.Normalize(_forward);
+        UpdateDirectionVectors();
+        _matricesDirty = true;
+    }
+
+    partial void OnUpChanged(Vector3D<float> oldValue)
+    {
+        _up = Vector3D.Normalize(_up);
+        UpdateDirectionVectors();
+        _matricesDirty = true;
     }
 }

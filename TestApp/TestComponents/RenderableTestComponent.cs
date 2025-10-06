@@ -34,7 +34,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
         }
     }
 
-    public virtual IEnumerable<RenderData> OnRender(IViewport viewport, double deltaTime)
+    public virtual IEnumerable<RenderData> OnRender(RenderContext context)
     {
         FramesRendered++;
         return [];

@@ -30,52 +30,10 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
         public float FarPlane { get; set; } = 50000f;
     }
 
-    private float _orthographicSize = 200000f;
-    private float _nearPlane = -50000f;
-    private float _farPlane = 50000f;
-
-    // Properties with private setters for deferred updates
-    public float OrthographicSize
-    {
-        get => _orthographicSize;
-        private set
-        {
-            if (_orthographicSize != value)
-            {
-                _orthographicSize = value;
-                InitializeMatrices();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public float NearPlane
-    {
-        get => _nearPlane;
-        private set
-        {
-            if (_nearPlane != value)
-            {
-                _nearPlane = value;
-                InitializeMatrices();
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public float FarPlane
-    {
-        get => _farPlane;
-        private set
-        {
-            if (_farPlane != value)
-            {
-                _farPlane = value;
-                InitializeMatrices();
-                NotifyPropertyChanged();
-            }
-        }
-    }
+    // Static readonly properties - configured once at initialization
+    public float OrthographicSize { get; private set; } = 200000f;
+    public float NearPlane { get; private set; } = -50000f;
+    public float FarPlane { get; private set; } = 50000f;
 
     // Fixed position at high Z value to avoid conflicts with 3D objects
     public Vector3D<float> Position { get; } = new Vector3D<float>(0, 0, 100000f);
@@ -108,7 +66,7 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
 
         // Create a very large orthographic projection for UI rendering
         // Use a large range to accommodate various UI element depths
-        ProjectionMatrix = Matrix4X4.CreateOrthographic(_orthographicSize, _orthographicSize, _nearPlane, _farPlane);
+        ProjectionMatrix = Matrix4X4.CreateOrthographic(OrthographicSize, OrthographicSize, NearPlane, FarPlane);
     }
 
     public bool IsVisible(Box3D<float> bounds)
@@ -124,8 +82,8 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
         var normalizedY = 1.0f - (2.0f * screenPoint.Y) / screenHeight;
 
         // Calculate world position based on the large orthographic projection
-        var worldX = normalizedX * _orthographicSize * 0.5f;
-        var worldY = normalizedY * _orthographicSize * 0.5f;
+        var worldX = normalizedX * OrthographicSize * 0.5f;
+        var worldY = normalizedY * OrthographicSize * 0.5f;
 
         // Ray origin is at the camera position offset by screen coordinates
         var rayOrigin = Position + (Right * worldX) + (Up * worldY);
@@ -144,8 +102,8 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
         var upProjection = Vector3D.Dot(relativeToCamera, Up);
 
         // Normalize based on the orthographic projection size
-        var normalizedX = rightProjection / (_orthographicSize * 0.5f);
-        var normalizedY = upProjection / (_orthographicSize * 0.5f);
+        var normalizedX = rightProjection / (OrthographicSize * 0.5f);
+        var normalizedY = upProjection / (OrthographicSize * 0.5f);
 
         // Convert to screen coordinates
         var screenX = (int)((normalizedX + 1.0f) * 0.5f * screenWidth);
@@ -156,47 +114,45 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
 
     /// <summary>
     /// Configure the component using the specified template.
+    /// Static camera properties are set once during configuration and never change.
     /// </summary>
     protected override void OnConfigure(IComponentTemplate componentTemplate)
     {
         if (componentTemplate is Template template)
         {
-            _orthographicSize = template.OrthographicSize;
-            _nearPlane = template.NearPlane;
-            _farPlane = template.FarPlane;
+            OrthographicSize = template.OrthographicSize;
+            NearPlane = template.NearPlane;
+            FarPlane = template.FarPlane;
 
-            // Reinitialize matrices with new configuration
+            // Initialize matrices with configured values
             InitializeMatrices();
         }
     }
 
-    // IOrthographicController implementation - all methods use deferred updates
+    // IOrthographicController implementation - no-op for static camera
+    // Static cameras should not change their projection at runtime
     public void SetWidth(float width)
     {
-        // StaticCamera uses square orthographic projection, so set size to match width
-        QueueUpdate(() => OrthographicSize = width);
+        // No-op: StaticCamera projection is fixed
     }
 
     public void SetHeight(float height)
     {
-        // StaticCamera uses square orthographic projection, so set size to match height
-        QueueUpdate(() => OrthographicSize = height);
+        // No-op: StaticCamera projection is fixed
     }
 
     public void SetSize(float width, float height)
     {
-        // StaticCamera uses square orthographic projection, so use the larger dimension
-        var size = Math.Max(width, height);
-        QueueUpdate(() => OrthographicSize = size);
+        // No-op: StaticCamera projection is fixed
     }
 
     public void SetNearPlane(float nearPlane)
     {
-        QueueUpdate(() => NearPlane = nearPlane);
+        // No-op: StaticCamera clipping planes are fixed
     }
 
     public void SetFarPlane(float farPlane)
     {
-        QueueUpdate(() => FarPlane = farPlane);
+        // No-op: StaticCamera clipping planes are fixed
     }
 }

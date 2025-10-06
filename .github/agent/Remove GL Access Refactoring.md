@@ -11,7 +11,7 @@
 ### ✅ **2. Updated IRenderable Interface**
 
 - **Before**: `IEnumerable<RenderData> OnRender(IRenderer renderer, double deltaTime)`
-- **After**: `IEnumerable<RenderData> OnRender(double deltaTime)`
+- **After**: `IEnumerable<RenderData> OnRender(RenderContext context)`
 - **Impact**: Components no longer have access to IRenderer or GL context
 
 ### ✅ **3. Updated All Component Implementations**
