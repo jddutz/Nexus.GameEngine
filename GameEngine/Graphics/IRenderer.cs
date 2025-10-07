@@ -14,8 +14,8 @@ public interface IRenderer
     /// </summary>
     GL GL { get; }
 
-    event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
-    event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
+    event EventHandler<RenderEventArgs>? BeforeRendering;
+    event EventHandler<RenderEventArgs>? AfterRendering;
 
     /// <summary>
     /// Handles IWindow.Render events. Walks the component tree.

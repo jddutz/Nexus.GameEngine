@@ -287,12 +287,12 @@ public class Renderer(
     /// <summary>
     /// Event triggered before rendering a frame.
     /// </summary>
-    public event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
+    public event EventHandler<RenderEventArgs>? BeforeRendering;
 
     /// <summary>
     /// Event triggered after rendering a frame.
     /// </summary>
-    public event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
+    public event EventHandler<RenderEventArgs>? AfterRendering;
 
     /// <summary>
     /// Renders a frame by traversing the component tree and invoking <c>OnRender()</c> on all enabled and visible <see cref="IRenderable"/> components.
@@ -310,8 +310,6 @@ public class Renderer(
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations and time-based rendering</param>
     public void OnRender(double deltaTime)
     {
-        BeforeRenderFrame?.Invoke(this, new());
-
         var context = new RenderContext()
         {
             GL = GL,
@@ -319,28 +317,27 @@ public class Renderer(
             ElapsedSeconds = deltaTime
         };
 
-        var viewport = GetViewport();
-        if (viewport == null || viewport.Content == null)
+        BeforeRendering?.Invoke(this, new(context));
+
+        if (context.Viewport.Content == null)
         {
             logger.LogDebug("Viewport content is null, nothing to render.");
             return;
         }
 
-        var onRenderResults = viewport.Content
-            .GetChildren<IRenderable>()
-            .SelectMany(r => r.OnRender(context));
-
-        int count = 0;
-
         GL.ClearColor(
-            viewport.BackgroundColor.X,
-            viewport.BackgroundColor.Y,
-            viewport.BackgroundColor.Z,
-            viewport.BackgroundColor.W);
+            context.Viewport.BackgroundColor.X,
+            context.Viewport.BackgroundColor.Y,
+            context.Viewport.BackgroundColor.Z,
+            context.Viewport.BackgroundColor.W);
 
         GL.Clear((uint)ClearBufferMask.ColorBufferBit);
 
-        foreach (var renderData in onRenderResults)
+        int count = 0;
+
+        foreach (var renderData in context.Viewport.Content
+            .GetChildren<IRenderable>()
+            .SelectMany(r => r.OnRender(context)))
         {
             count++;
             Draw(renderData);
@@ -348,7 +345,7 @@ public class Renderer(
 
         logger.LogDebug("Viewport.GetChildren<IRenderable>() returned {Count} results.", count);
 
-        AfterRenderFrame?.Invoke(this, new());
+        AfterRendering?.Invoke(this, new(context));
     }
 
     /// <summary>
