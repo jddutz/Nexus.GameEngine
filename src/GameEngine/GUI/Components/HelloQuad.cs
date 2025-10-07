@@ -32,7 +32,7 @@ public partial class HelloQuad(IRenderer renderer)
 
     public uint RenderPassFlags => 1;
 
-    public static unsafe RenderData GetRenderData(GL gl)
+    public static unsafe RenderData GetElements(GL gl, IViewport vp)
     {
         //Creating a vertex array.
         uint vao = gl.GenVertexArray();

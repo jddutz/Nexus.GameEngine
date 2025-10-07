@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
+using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -15,7 +16,7 @@ public interface IRenderable : IRuntimeComponent
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations</param>
     /// <returns>An enumerable collection of render states required to render the component</returns>
-    IEnumerable<RenderData> OnRender(RenderContext context);
+    IEnumerable<RenderData> GetElements(GL gl, IViewport vp);
 
     /// <summary>
     /// Whether the component should be rendered. Read-only property updated via SetVisible().

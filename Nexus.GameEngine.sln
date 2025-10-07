@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine", "GameEngine\GameEngine.csproj", "{D19AAEAB-9A8A-4403-ACFB-C5495D8B820F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine", "src\GameEngine\GameEngine.csproj", "{D19AAEAB-9A8A-4403-ACFB-C5495D8B820F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{7089006E-2772-4E0B-AC98-338ECF1079BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApp", "TestApp\TestApp.csproj", "{EA5913F5-40B3-47A6-B6C8-FAD69628F7D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine.SourceGenerators", "GameEngine.SourceGenerators\GameEngine.SourceGenerators.csproj", "{CEA77927-DC78-409C-B6D8-1994467E1F0E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine.SourceGenerators", "src\GameEngine.SourceGenerators\GameEngine.SourceGenerators.csproj", "{CEA77927-DC78-409C-B6D8-1994467E1F0E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine.Analyzers", "GameEngine.Analyzers\GameEngine.Analyzers.csproj", "{45ECAB28-FBA0-4160-BAF3-1D84315729BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine.Analyzers", "src\GameEngine.Analyzers\GameEngine.Analyzers.csproj", "{45ECAB28-FBA0-4160-BAF3-1D84315729BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

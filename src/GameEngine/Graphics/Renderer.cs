@@ -54,12 +54,6 @@ public class Renderer(
     }
 
     /// <summary>
-    /// Retrieves the current viewport from the content manager.
-    /// </summary>
-    /// <returns>The active <see cref="IViewport"/> instance.</returns>
-    private IViewport GetViewport() => contentManager.Viewport;
-
-    /// <summary>
     /// Updates the current framebuffer binding to match the target render state.
     /// Queries the actual GL state and only performs the GL call if the framebuffer has actually changed.
     /// Used to avoid unnecessary framebuffer switches and improve performance.
@@ -313,39 +307,46 @@ public class Renderer(
         var context = new RenderContext()
         {
             GL = GL,
-            Viewport = GetViewport(),
-            ElapsedSeconds = deltaTime
+            Viewport = contentManager.Viewport
         };
 
         BeforeRendering?.Invoke(this, new(context));
 
-        if (context.Viewport.Content == null)
+        RenderViewport(
+            contentManager.Viewport,
+
+            );
+
+        AfterRendering?.Invoke(this, new(context));
+    }
+
+    private void RenderViewport(IViewport viewport)
+    {
+        if (viewport.Content == null)
         {
             logger.LogDebug("Viewport content is null, nothing to render.");
             return;
         }
 
         GL.ClearColor(
-            context.Viewport.BackgroundColor.X,
-            context.Viewport.BackgroundColor.Y,
-            context.Viewport.BackgroundColor.Z,
-            context.Viewport.BackgroundColor.W);
+            viewport.BackgroundColor.X,
+            viewport.BackgroundColor.Y,
+            viewport.BackgroundColor.Z,
+            viewport.BackgroundColor.W);
 
         GL.Clear((uint)ClearBufferMask.ColorBufferBit);
 
         int count = 0;
 
-        foreach (var renderData in context.Viewport.Content
+        foreach (var element in viewport.Content
             .GetChildren<IRenderable>()
-            .SelectMany(r => r.OnRender(context)))
+            .SelectMany(r => r.OnRender(GL, viewport)))
         {
             count++;
             Draw(renderData);
         }
 
         logger.LogDebug("Viewport.GetChildren<IRenderable>() returned {Count} results.", count);
-
-        AfterRendering?.Invoke(this, new(context));
     }
 
     /// <summary>
