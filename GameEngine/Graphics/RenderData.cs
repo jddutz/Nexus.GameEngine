@@ -52,7 +52,7 @@ public class RenderData
     /// Uniform values to set when this render state is applied.
     /// Key is the uniform name, value is the uniform data.
     /// </summary>
-    public Dictionary<string, object> Uniforms { get; init; } = new();
+    public Dictionary<string, object> Uniforms { get; init; } = [];
 
     /// <summary>
     /// Checks if a texture is already bound to the specified slot.

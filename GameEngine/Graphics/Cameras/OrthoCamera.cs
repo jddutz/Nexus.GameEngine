@@ -92,10 +92,10 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
     /// Render passes that this camera should execute.
     /// Default configuration includes all standard rendering passes.
     /// </summary>
-    public List<RenderPassConfiguration> RenderPasses { get; set; } = new()
-    {
+    public List<RenderPassConfiguration> RenderPasses { get; set; } =
+    [
         new RenderPassConfiguration { Id = 0, Name = "Main", DepthTestEnabled = true, BlendingMode = BlendingMode.Alpha }
-    };
+    ];
 
     private Matrix4X4<float> _viewMatrix;
     private Matrix4X4<float> _projectionMatrix;

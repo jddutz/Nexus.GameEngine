@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using System.Diagnostics;
-using System.Text;
 using TestApp.TestComponents;
 
 namespace TestApp;

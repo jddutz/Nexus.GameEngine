@@ -48,10 +48,10 @@ public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicCont
     /// Render passes that this camera should execute.
     /// Static cameras typically render UI elements with specific pass configuration.
     /// </summary>
-    public List<RenderPassConfiguration> RenderPasses { get; set; } = new()
-    {
+    public List<RenderPassConfiguration> RenderPasses { get; set; } =
+    [
         new RenderPassConfiguration { Id = 1, Name = "UI", DepthTestEnabled = false, BlendingMode = BlendingMode.Alpha }
-    };
+    ];
 
     public StaticCamera()
     {

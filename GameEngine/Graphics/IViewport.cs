@@ -5,45 +5,57 @@ using Silk.NET.Maths;
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
-/// Represents a viewport that renders a component tree through a camera to a screen region or framebuffer.
-/// Viewports manage their own content and can pass camera/viewport context to components during rendering.
+/// Defines a viewport, which is a distinct screen region or framebuffer responsible for rendering a specific camera and component tree.
+/// Viewports manage their own content, camera, and rendering passes, and can be used for split screens, overlays, or off-screen rendering.
 /// </summary>
 public interface IViewport : IRuntimeComponent
 {
     /// <summary>
-    /// Screen region in pixels where this viewport renders. Full screen is typically (0, 0, screenWidth, screenHeight).
+    /// Gets the screen region in pixels where this viewport renders its content.
+    /// For full screen, this is typically (0, 0, screenWidth, screenHeight).
     /// </summary>
     Rectangle<int> ScreenRegion { get; }
 
     /// <summary>
-    /// Camera that defines the view transformation (position, orientation, projection).
+    /// Gets the camera instance that defines the view transformation (position, orientation, projection) for this viewport.
+    /// Assigning a camera determines the perspective and view for all rendered content.
     /// </summary>
     ICamera? Camera { get; }
 
     /// <summary>
-    /// Framebuffer target for off-screen rendering. Null for default framebuffer (screen).
+    /// Gets the framebuffer target for off-screen rendering. If null, the default framebuffer (screen) is used.
+    /// Useful for post-processing effects or rendering to textures.
     /// </summary>
     uint? FramebufferTarget { get; }
 
     /// <summary>
-    /// Rendering priority. Lower values render first (background), higher values render last (overlays).
+    /// Gets the rendering priority for this viewport. Lower values render first (background), higher values render last (overlays).
+    /// Used to control draw order when multiple viewports are present.
     /// </summary>
     int ViewportPriority { get; }
 
     /// <summary>
-    /// Render passes that this viewport executes. Each pass can have different GL state configuration.
+    /// Gets the list of render passes that this viewport executes. Each pass can have different OpenGL state configuration.
+    /// Enables advanced rendering techniques such as multi-pass effects and custom state management.
     /// </summary>
     List<RenderPassConfiguration> RenderPasses { get; }
 
     /// <summary>
-    /// Component tree to render in this viewport. This allows different viewports to have completely separate content.
+    /// Gets or sets the root runtime component tree to render in this viewport.
+    /// Allows different viewports to have completely separate content.
     /// Setting this property schedules a content change for the next update cycle to avoid state conflicts.
     /// </summary>
     IRuntimeComponent? Content { get; set; }
 
     /// <summary>
-    /// Whether this viewport requires a GL flush after rendering completes.
+    /// Gets a value indicating whether this viewport requires a GL flush after rendering completes.
     /// Usually false unless doing multi-pass effects or viewport synchronization.
     /// </summary>
     bool FlushAfterRender { get; }
+
+    /// <summary>
+    /// Gets or sets the background color used to clear the viewport before rendering its content.
+    /// This color is rendered behind all other content in the viewport.
+    /// </summary>
+    Vector4D<float> BackgroundColor { get; set; }
 }

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
+using Nexus.GameEngine.Resources;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.Graphics;
@@ -19,9 +20,9 @@ public partial class Viewport : RuntimeComponent, IViewport
         public Rectangle<int> ScreenRegion { get; set; }
         public uint? FramebufferTarget { get; set; }
         public int ViewportPriority { get; set; } = 0;
-        public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
+        public List<RenderPassConfiguration> RenderPasses { get; set; } = [];
         public bool RequiresFlushAfterRender { get; set; } = false;
-        public Vector4D<float> BackgroundColor { get; set; } = new Vector4D<float>(0.1f, 0.1f, 0.1f, 1.0f); // Dark gray
+        public Vector4D<float> BackgroundColor { get; set; } = Colors.Green;
     }
 
     private IRuntimeComponent? _content;
@@ -36,13 +37,13 @@ public partial class Viewport : RuntimeComponent, IViewport
 
     public int ViewportPriority { get; set; } = 0;
 
-    public List<RenderPassConfiguration> RenderPasses { get; set; } = new();
+    public List<RenderPassConfiguration> RenderPasses { get; set; } = [];
 
     public bool FlushAfterRender { get; set; } = false;
 
     // ComponentProperty: Animatable background color for smooth transitions
     [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.Linear)]
-    private Vector4D<float> _backgroundColor = new Vector4D<float>(0.1f, 0.1f, 0.1f, 1.0f); // Dark gray
+    private Vector4D<float> _backgroundColor = Colors.CornflowerBlue;
     // Generates: public Vector4D<float> BackgroundColor { get; set; }
 
     // Readonly convenience properties derived from ScreenRegion

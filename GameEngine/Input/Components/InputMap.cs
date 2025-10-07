@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Logging;
-
-using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Input.Components;

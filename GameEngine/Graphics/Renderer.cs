@@ -1,28 +1,26 @@
 using Microsoft.Extensions.Logging;
 using Silk.NET.OpenGL;
-using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
-using System.Resources;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Shaders;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.GUI.Components;
+using System.Drawing;
 
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
-/// Provides rendering functionality for the component tree, traversing all <see cref="IRenderable"/> components and invoking their <c>OnRender()</c> methods.
-/// Components are processed in <see cref="IRenderable.RenderPriority"/> order using a sophisticated batching system to minimize OpenGL state changes.
-/// 
-/// <para>The renderer implements efficient batch processing by:</para>
+/// The main renderer responsible for traversing the component tree and rendering all <see cref="IRenderable"/> components.
+/// Implements efficient batch processing to minimize OpenGL state changes, sorts components by <see cref="IRenderable.RenderPriority"/>, and manages render passes, shared resources, and GL state queries.
+/// <para>
+/// Key features:
 /// <list type="bullet">
-/// <item>Collecting <see cref="RenderData"/> requirements from all renderable components</item>
-/// <item>Sorting render states using the configured <see cref="IBatchStrategy"/> to minimize expensive state changes</item>
-/// <item>Applying OpenGL state changes only when batches change (detected via hash code comparison)</item>
-/// <item>Querying actual GL state before each update to avoid redundant glBindXxx() calls</item>
+/// <item>Collects <see cref="RenderData"/> from all renderable components</item>
+/// <item>Sorts render states using <see cref="IBatchStrategy"/> to minimize state changes</item>
+/// <item>Applies OpenGL state changes only when batch hash codes differ</item>
+/// <item>Queries actual GL state before updates to avoid redundant API calls</item>
 /// </list>
-/// 
-/// <para>Exposes direct OpenGL access and manages render passes, shared resources, and direct GL state queries.</para>
+/// </para>
+/// <para>
+/// Exposes direct OpenGL access and manages render passes, shared resources, and GL state queries for advanced rendering scenarios.
+/// </para>
 /// </summary>
 public class Renderer(
         IWindowService windowService,
@@ -35,6 +33,10 @@ public class Renderer(
     /// <summary>
     /// Gets the Silk.NET OpenGL interface for use by components during rendering.
     /// Lazily initializes the GL context on first access using the window service.
+    /// Provides direct access to OpenGL functions for advanced rendering operations.
+    /// </summary>
+    /// <summary>
+    /// Backing field for the Silk.NET OpenGL interface. Lazily initialized.
     /// </summary>
     private GL? _gl;
     public GL GL
@@ -52,10 +54,17 @@ public class Renderer(
     }
 
     /// <summary>
+    /// Retrieves the current viewport from the content manager.
+    /// </summary>
+    /// <returns>The active <see cref="IViewport"/> instance.</returns>
+    private IViewport GetViewport() => contentManager.Viewport;
+
+    /// <summary>
     /// Updates the current framebuffer binding to match the target render state.
     /// Queries the actual GL state and only performs the GL call if the framebuffer has actually changed.
+    /// Used to avoid unnecessary framebuffer switches and improve performance.
     /// </summary>
-    /// <param name="targetFramebuffer">Target framebuffer ID, or null for default framebuffer</param>
+    /// <param name="targetFramebuffer">Target framebuffer ID, or null for default framebuffer (screen)</param>
     private void UpdateFramebuffer(uint? targetFramebuffer)
     {
         // Query current GL framebuffer state
@@ -79,6 +88,7 @@ public class Renderer(
     /// <summary>
     /// Updates the current shader program to match the target render state.
     /// Queries the actual GL state and only performs the GL call if the shader program has actually changed.
+    /// Used to avoid unnecessary shader switches and improve rendering efficiency.
     /// </summary>
     /// <param name="targetProgram">Target shader program ID, or null for no program</param>
     private void UpdateShaderProgram(uint? targetProgram)
@@ -102,8 +112,9 @@ public class Renderer(
     }
 
     /// <summary>
-    /// Updates the current vertex array object binding to match the target render state.
+    /// Updates the current vertex array object (VAO) binding to match the target render state.
     /// Queries the actual GL state and only performs the GL call if the VAO has actually changed.
+    /// Used to avoid unnecessary VAO switches and improve rendering efficiency.
     /// </summary>
     /// <param name="targetVAO">Target vertex array object ID, or null for no VAO</param>
     private void UpdateVertexArray(uint? targetVAO)
@@ -127,8 +138,9 @@ public class Renderer(
     }
 
     /// <summary>
-    /// Updates texture bindings to match the target render state.
-    /// Queries the actual GL state for each texture unit and only updates slots that have changed.
+    /// Updates texture bindings to match the target render state for each texture unit.
+    /// Queries the actual GL state for each unit and only updates slots that have changed.
+    /// Used to minimize texture binding operations and improve performance.
     /// </summary>
     /// <param name="targetTextures">Target texture array with IDs for each texture unit</param>
     private void UpdateTextures(uint?[] targetTextures)
@@ -166,7 +178,8 @@ public class Renderer(
     }
 
     /// <summary>
-    /// Applies uniform values to the currently active shader program.
+    /// Applies a set of uniform values to the currently active shader program.
+    /// Supports multiple types including float, int, and vector types.
     /// </summary>
     /// <param name="uniforms">Dictionary of uniform names and values to apply</param>
     private void ApplyUniforms(Dictionary<string, object> uniforms)
@@ -189,7 +202,8 @@ public class Renderer(
     }
 
     /// <summary>
-    /// Applies a single uniform value based on its type.
+    /// Applies a single uniform value to the currently active shader program, based on its type.
+    /// Supports float, int, and Silk.NET vector types.
     /// </summary>
     /// <param name="name">Uniform name</param>
     /// <param name="value">Uniform value</param>
@@ -246,6 +260,7 @@ public class Renderer(
 
     /// <summary>
     /// Loads shader source code from embedded resources.
+    /// Used to retrieve GLSL shader files packaged within the assembly.
     /// </summary>
     /// <param name="resourceName">The name of the shader file (e.g., "basic-quad-vert.glsl")</param>
     /// <returns>The shader source code as a string</returns>
@@ -269,13 +284,19 @@ public class Renderer(
         return reader.ReadToEnd();
     }
 
+    /// <summary>
+    /// Event triggered before rendering a frame.
+    /// </summary>
     public event EventHandler<PreRenderEventArgs>? BeforeRenderFrame;
+
+    /// <summary>
+    /// Event triggered after rendering a frame.
+    /// </summary>
     public event EventHandler<PostRenderEventArgs>? AfterRenderFrame;
 
     /// <summary>
     /// Renders a frame by traversing the component tree and invoking <c>OnRender()</c> on all enabled and visible <see cref="IRenderable"/> components.
-    /// Uses an efficient batching system to minimize OpenGL state changes:
-    /// 
+    /// Uses an efficient batching system to minimize OpenGL state changes and sorts render states for optimal performance.
     /// <para>Rendering Pipeline:</para>
     /// <list type="number">
     /// <item>Traverse component tree to find all <see cref="IRenderable"/> components</item>
@@ -284,7 +305,6 @@ public class Renderer(
     /// <item>Process render states in batches, applying OpenGL state changes only when batch hash codes differ</item>
     /// <item>Query actual GL state before each update to avoid redundant API calls</item>
     /// </list>
-    /// 
     /// <para>This approach significantly reduces expensive GL state transitions such as framebuffer switches, shader program changes, and texture bindings.</para>
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations and time-based rendering</param>
@@ -295,26 +315,35 @@ public class Renderer(
         var context = new RenderContext()
         {
             GL = GL,
-            Viewport = contentManager.Viewport,
+            Viewport = GetViewport(),
             ElapsedSeconds = deltaTime
         };
 
-        if (contentManager.Viewport?.Content == null)
+        var viewport = GetViewport();
+        if (viewport == null || viewport.Content == null)
         {
             logger.LogDebug("Viewport content is null, nothing to render.");
             return;
         }
 
-        var onRenderResults = contentManager.Viewport.Content
+        var onRenderResults = viewport.Content
             .GetChildren<IRenderable>()
             .SelectMany(r => r.OnRender(context));
 
         int count = 0;
 
+        GL.ClearColor(
+            viewport.BackgroundColor.X,
+            viewport.BackgroundColor.Y,
+            viewport.BackgroundColor.Z,
+            viewport.BackgroundColor.W);
+
+        GL.Clear((uint)ClearBufferMask.ColorBufferBit);
+
         foreach (var renderData in onRenderResults)
         {
             count++;
-            Render(renderData);
+            Draw(renderData);
         }
 
         logger.LogDebug("Viewport.GetChildren<IRenderable>() returned {Count} results.", count);
@@ -322,16 +351,22 @@ public class Renderer(
         AfterRenderFrame?.Invoke(this, new());
     }
 
-    private unsafe void Render(RenderData renderData)
+    /// <summary>
+    /// Renders a single batch of geometry using the provided <see cref="RenderData"/>.
+    /// Clears the color buffer, binds the geometry and shader, and issues the draw call.
+    /// </summary>
+    /// <param name="renderData">The render data containing VAO, shader, and geometry information</param>
+    /// <summary>
+    /// Issues OpenGL draw calls for the provided render data, including clearing the color buffer, binding geometry, and drawing elements.
+    /// </summary>
+    /// <param name="renderData">The render data containing VAO, shader, and geometry information.</param>
+    private unsafe void Draw(RenderData renderData)
     {
-        //Clear the color channel.
-        GL.Clear((uint)ClearBufferMask.ColorBufferBit);
-
-        //Bind the geometry and shader.
+        // Bind the geometry and shader.
         GL.BindVertexArray(renderData.Vao);
         GL.UseProgram(renderData.Shader);
 
-        //Draw the geometry.
+        // Draw the geometry.
         GL.DrawElements(
             PrimitiveType.Triangles,
             (uint)GeometryDefinitions.BasicQuad.Indices.Length,

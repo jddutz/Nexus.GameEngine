@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Silk.NET.OpenGL;
-using System.Collections.Concurrent;
-
 namespace Nexus.GameEngine.Resources;
 
 public class ResourceData

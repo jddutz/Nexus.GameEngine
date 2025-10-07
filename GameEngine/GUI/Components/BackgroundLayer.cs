@@ -4,7 +4,6 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;

@@ -1,8 +1,4 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Animation;
-using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Components;
 
