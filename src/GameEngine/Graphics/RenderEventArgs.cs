@@ -1,6 +1,9 @@
+using Silk.NET.OpenGL;
+
 namespace Nexus.GameEngine.Graphics;
 
-public class RenderEventArgs(RenderContext context) : EventArgs
+public class RenderEventArgs(GL gl, IViewport viewport) : EventArgs
 {
-    public RenderContext Context { get; set; } = context;
+    public GL GL { get; set; } = gl;
+    public IViewport Viewport { get; set; } = viewport;
 }

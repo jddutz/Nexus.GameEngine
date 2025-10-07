@@ -1,10 +1,11 @@
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
-/// Defines rendering requirements for a component without direct OpenGL access.
+/// Defines rendering requirements for a single renderable element without direct OpenGL access.
 /// Used by the renderer to determine what GL state changes are needed for batched rendering.
+/// Components return collections of ElementData via IRenderable.GetElements().
 /// </summary>
-public class RenderData
+public class ElementData
 {
     public required uint Vbo { get; init; }
     public required uint Ebo { get; init; }

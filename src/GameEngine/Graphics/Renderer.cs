@@ -12,7 +12,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <para>
 /// Key features:
 /// <list type="bullet">
-/// <item>Collects <see cref="RenderData"/> from all renderable components</item>
+/// <item>Collects <see cref="ElementData"/> from all renderable components</item>
 /// <item>Sorts render states using <see cref="IBatchStrategy"/> to minimize state changes</item>
 /// <item>Applies OpenGL state changes only when batch hash codes differ</item>
 /// <item>Queries actual GL state before updates to avoid redundant API calls</item>
@@ -294,7 +294,7 @@ public class Renderer(
     /// <para>Rendering Pipeline:</para>
     /// <list type="number">
     /// <item>Traverse component tree to find all <see cref="IRenderable"/> components</item>
-    /// <item>Collect <see cref="RenderData"/> requirements from each component's OnRender() method</item>
+    /// <item>Collect <see cref="ElementData"/> elements from each component's GetElements() method</item>
     /// <item>Sort render states using <see cref="IBatchStrategy"/> to group compatible states</item>
     /// <item>Process render states in batches, applying OpenGL state changes only when batch hash codes differ</item>
     /// <item>Query actual GL state before each update to avoid redundant API calls</item>
@@ -302,26 +302,12 @@ public class Renderer(
     /// <para>This approach significantly reduces expensive GL state transitions such as framebuffer switches, shader program changes, and texture bindings.</para>
     /// </summary>
     /// <param name="deltaTime">Time elapsed since the last frame, used for animations and time-based rendering</param>
-    public void OnRender(double deltaTime)
-    {
-        var context = new RenderContext()
-        {
-            GL = GL,
-            Viewport = contentManager.Viewport
-        };
-
-        BeforeRendering?.Invoke(this, new(context));
-
-        RenderViewport(
-            contentManager.Viewport,
-
-            );
-
-        AfterRendering?.Invoke(this, new(context));
-    }
+    public void OnRender(double deltaTime) => RenderViewport(contentManager.Viewport);
 
     private void RenderViewport(IViewport viewport)
     {
+        BeforeRendering?.Invoke(this, new(GL, viewport));
+
         if (viewport.Content == null)
         {
             logger.LogDebug("Viewport content is null, nothing to render.");
@@ -340,29 +326,31 @@ public class Renderer(
 
         foreach (var element in viewport.Content
             .GetChildren<IRenderable>()
-            .SelectMany(r => r.OnRender(GL, viewport)))
+            .SelectMany(r => r.GetElements(GL, viewport)))
         {
             count++;
-            Draw(renderData);
+            Draw(element);
         }
 
         logger.LogDebug("Viewport.GetChildren<IRenderable>() returned {Count} results.", count);
+
+        AfterRendering?.Invoke(this, new(GL, viewport));
     }
 
     /// <summary>
-    /// Renders a single batch of geometry using the provided <see cref="RenderData"/>.
+    /// Renders a single element of geometry using the provided <see cref="ElementData"/>.
     /// Clears the color buffer, binds the geometry and shader, and issues the draw call.
     /// </summary>
-    /// <param name="renderData">The render data containing VAO, shader, and geometry information</param>
+    /// <param name="element">The element data containing VAO, shader, and geometry information</param>
     /// <summary>
-    /// Issues OpenGL draw calls for the provided render data, including clearing the color buffer, binding geometry, and drawing elements.
+    /// Issues OpenGL draw calls for the provided element, including clearing the color buffer, binding geometry, and drawing elements.
     /// </summary>
-    /// <param name="renderData">The render data containing VAO, shader, and geometry information.</param>
-    private unsafe void Draw(RenderData renderData)
+    /// <param name="element">The element data containing VAO, shader, and geometry information.</param>
+    private unsafe void Draw(ElementData element)
     {
         // Bind the geometry and shader.
-        GL.BindVertexArray(renderData.Vao);
-        GL.UseProgram(renderData.Shader);
+        GL.BindVertexArray(element.Vao);
+        GL.UseProgram(element.Shader);
 
         // Draw the geometry.
         GL.DrawElements(

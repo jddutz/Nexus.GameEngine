@@ -3,6 +3,7 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Nexus.GameEngine.Graphics;
+using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 
@@ -204,11 +205,18 @@ public abstract partial class LayoutBase : RuntimeComponent, IRenderable
     /// </summary>
     public bool ShouldRenderChildren => true;
 
-    public IEnumerable<RenderData> OnRender(RenderContext context)
+    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
     {
-        // Layout components typically don't render themselves, just manage child positioning
-        // Return empty collection since layouts don't have visual representation
-        return System.Linq.Enumerable.Empty<RenderData>();
+        // TODO: Implement sprite rendering by declaring render state requirements
+        // For now, just return empty render state
+        yield return new ElementData()
+        {
+            // TODO: update these values
+            Vao = 0,
+            Vbo = 0,
+            Ebo = 0,
+            Shader = 0
+        };
     }
 
     protected override void OnDeactivate()

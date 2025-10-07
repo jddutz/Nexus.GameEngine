@@ -5,51 +5,54 @@ using Silk.NET.OpenGL;
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
-/// Interface for components that can be rendered directly using OpenGL calls.
-/// Eliminates command pattern complexity in favor of direct GL operations.
+/// Interface for components that declare their rendering requirements to the engine.
+/// Components implementing this interface provide collections of <see cref="ElementData"/> describing how they should be rendered.
+/// This enables declarative, batch-friendly rendering without direct OpenGL calls in component code.
 /// </summary>
 public interface IRenderable : IRuntimeComponent
 {
     /// <summary>
-    /// Provides a set of rendering state requirements for the component.
-    /// Components declare what they need to render without direct OpenGL access.
+    /// Returns a collection of <see cref="ElementData"/> objects describing the rendering requirements for this component.
+    /// Each <see cref="ElementData"/> specifies geometry, shader, textures, and other state needed for a single draw call.
+    /// Components do not perform OpenGL calls directly; instead, they declare what is needed and the renderer executes the draw logic.
     /// </summary>
-    /// <param name="deltaTime">Time elapsed since the last frame, used for animations</param>
-    /// <returns>An enumerable collection of render states required to render the component</returns>
-    IEnumerable<RenderData> GetElements(GL gl, IViewport vp);
+    /// <param name="gl">The OpenGL context for resource creation and queries</param>
+    /// <param name="vp">The current viewport context</param>
+    /// <returns>An enumerable collection of <see cref="ElementData"/> objects for this component</returns>
+    IEnumerable<ElementData> GetElements(GL gl, IViewport vp);
 
     /// <summary>
-    /// Whether the component should be rendered. Read-only property updated via SetVisible().
+    /// Indicates whether the component is currently visible and should be rendered.
+    /// This property is read-only; use <see cref="SetVisible(bool)"/> to change visibility.
     /// </summary>
     bool IsVisible { get; }
 
     /// <summary>
-    /// Set the visibility of the renderable component. Change is applied at next frame boundary.
+    /// Sets the visibility of the renderable component. The change is applied at the next frame boundary for consistency.
     /// </summary>
-    /// <param name="visible">True to show the component, false to hide it</param>
+    /// <param name="visible">True to show the component, false to hide it.</param>
     void SetVisible(bool visible);
 
     /// <summary>
-    /// Render priority for sorting (lower values render first)
-    /// Background=0, 3D Objects=100-299, Transparent=300-399, UI=400+
+    /// Render priority for sorting components during batching. Lower values render first.
+    /// Recommended values: Background=0, 3D Objects=100-299, Transparent=300-399, UI=400+.
     /// </summary>
     uint RenderPriority { get; }
 
     /// <summary>
-    /// Bounding box for frustum culling. Components outside camera view are automatically culled.
-    /// Return Box3D.Empty if component should never be culled (e.g., UI elements, skybox).
+    /// Bounding box for frustum culling. Components outside the camera view are automatically culled.
+    /// Return <see cref="Box3D{float}.Empty"/> if the component should never be culled (e.g., UI elements, skybox).
     /// </summary>
     Box3D<float> BoundingBox { get; }
 
     /// <summary>
     /// Bit flags indicating which render passes this component participates in.
-    /// Uses RenderPassConfiguration.Id as bit positions (1 << passId).
+    /// Uses <see cref="RenderPassConfiguration.Id"/> as bit positions (1 &lt;&lt; passId).
     /// Default: All passes (0xFFFFFFFF). Set to 0 to exclude from all passes.
     /// </summary>
     /// <example>
     /// // Include in passes 0, 1, and 3
     /// RenderPassFlags = (1 << 0) | (1 << 1) | (1 << 3);
-    /// 
     /// // Exclude from shadow pass (pass 2) but include others
     /// RenderPassFlags = 0xFFFFFFFF & ~(1 << 2);
     /// </example>

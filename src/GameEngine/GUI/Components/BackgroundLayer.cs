@@ -5,6 +5,7 @@ using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
 using Silk.NET.Maths;
+using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.GUI.Components;
 
@@ -30,7 +31,7 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
 
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<RenderData> OnRender(RenderContext context)
+    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
     {
         Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
 
@@ -48,7 +49,7 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
 
         Logger?.LogDebug("Created geometry resource: {GeometryResource}, shader resource: {ShaderResource}", geometryResource, shaderResource);
 
-        yield return new RenderData()
+        yield return new ElementData()
         {
             // TODO: update these values
             Vao = 0,

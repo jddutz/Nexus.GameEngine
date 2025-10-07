@@ -6,15 +6,15 @@ namespace Nexus.GameEngine.Graphics;
 /// Provides an abstraction for batching strategies in the rendering pipeline.
 /// Implementations define how renderable components are grouped into batches to minimize OpenGL state changes and improve rendering performance.
 /// </summary>
-public interface IBatchStrategy : IComparer<RenderData>
+public interface IBatchStrategy : IComparer<ElementData>
 {
     /// <summary>
-    /// Computes a stable hash code for the specified <see cref="RenderData"/> to facilitate efficient batch grouping.
+    /// Computes a stable hash code for the specified <see cref="ElementData"/> to facilitate efficient batch grouping.
     /// Render states with the same hash code are considered part of the same batch.
     /// </summary>
-    /// <param name="state">The <see cref="RenderData"/> to compute the hash code for.</param>
+    /// <param name="state">The <see cref="ElementData"/> to compute the hash code for.</param>
     /// <returns>An integer hash code representing the batchable aspects of the render state.</returns>
-    int GetHashCode(RenderData state);
+    int GetHashCode(ElementData state);
 
     /// <summary>
     /// Computes a stable hash code for the specified <see cref="GL"/> to facilitate efficient batch grouping.

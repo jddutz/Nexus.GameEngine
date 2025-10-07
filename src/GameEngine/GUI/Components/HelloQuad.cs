@@ -8,16 +8,13 @@ using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class HelloQuad(IRenderer renderer)
-    : RuntimeComponent, IRenderable
+public partial class HelloQuad : RuntimeComponent, IRenderable
 {
     public new record Template : RuntimeComponent.Template
     {
         public bool IsVisible { get; set; }
         public Vector4D<float> BackgroundColor { get; set; }
     }
-
-    private RenderData? renderData;
 
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]
@@ -32,7 +29,7 @@ public partial class HelloQuad(IRenderer renderer)
 
     public uint RenderPassFlags => 1;
 
-    public static unsafe RenderData GetElements(GL gl, IViewport vp)
+    public unsafe ElementData GetRenderData(GL gl)
     {
         //Creating a vertex array.
         uint vao = gl.GenVertexArray();
@@ -116,16 +113,9 @@ public partial class HelloQuad(IRenderer renderer)
         };
     }
 
-    protected override void OnActivate()
+    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
     {
-        renderData = GetRenderData(renderer.GL);
-    }
-
-    public IEnumerable<RenderData> OnRender(RenderContext context)
-    {
-        if (!IsVisible || renderData == null) yield break;
-
-        yield return renderData;
+        yield return GetRenderData(gl);
     }
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)

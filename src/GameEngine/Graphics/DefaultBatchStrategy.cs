@@ -20,14 +20,14 @@ namespace Nexus.GameEngine.Graphics;
 public class DefaultBatchStrategy : IBatchStrategy
 {
     /// <summary>
-    /// Compares two render states for batch priority ordering.
+    /// Compares two render elements for batch priority ordering.
     /// Prioritizes by framebuffer first (off-screen before main), then by shader program.
     /// This minimizes the most expensive state changes.
     /// </summary>
-    /// <param name="x">First render state to compare</param>
-    /// <param name="y">Second render state to compare</param>
+    /// <param name="x">First render element to compare</param>
+    /// <param name="y">Second render element to compare</param>
     /// <returns>-1 if x should render before y, 1 if y should render before x, 0 if equal priority</returns>
-    public int Compare(RenderData? x, RenderData? y)
+    public int Compare(ElementData? x, ElementData? y)
     {
         if (x == null && y == null) return 0;
         if (x == null) return -1;
@@ -53,13 +53,13 @@ public class DefaultBatchStrategy : IBatchStrategy
     }
 
     /// <summary>
-    /// Gets a stable hash code for the render state to enable efficient batch grouping.
+    /// Gets a stable hash code for the render element to enable efficient batch grouping.
     /// Hash includes framebuffer, shader program, VAO, and bound textures.
-    /// States with the same hash can potentially be batched together.
+    /// Elements with the same hash can potentially be batched together.
     /// </summary>
-    /// <param name="state">Render state to hash</param>
-    /// <returns>Hash code representing the batchable aspects of the render state</returns>
-    public int GetHashCode(RenderData state)
+    /// <param name="state">Render element to hash</param>
+    /// <returns>Hash code representing the batchable aspects of the render element</returns>
+    public int GetHashCode(ElementData state)
     {
         if (state == null)
             return 0;
@@ -76,7 +76,7 @@ public class DefaultBatchStrategy : IBatchStrategy
     /// Computes a stable hash code for the current OpenGL state to facilitate efficient batch grouping.
     /// Queries the GL context for current framebuffer, shader program, VAO, and active textures.
     /// This allows the renderer to detect when GL state changes are needed between batches.
-    /// Uses the same hashing algorithm as GetHashCode(RenderData) to ensure consistency.
+    /// Uses the same hashing algorithm as GetHashCode(ElementData) to ensure consistency.
     /// </summary>
     /// <param name="gl">The OpenGL context to query for current state</param>
     /// <returns>Hash code representing the current GL state that affects batching</returns>
@@ -98,10 +98,10 @@ public class DefaultBatchStrategy : IBatchStrategy
         gl.GetInteger(GLEnum.ActiveTexture, out int activeTextureUnit);
         int originalTextureSlot = activeTextureUnit - (int)GLEnum.Texture0;
 
-        // Create texture array matching RenderData.BoundTextures size
-        var boundTextures = new uint?[16]; // Match RenderData.BoundTextures length
+        // Create texture array matching ElementData.BoundTextures size
+        var boundTextures = new uint?[16]; // Match ElementData.BoundTextures length
 
-        // Query all texture units to match RenderData behavior
+        // Query all texture units to match ElementData behavior
         for (int i = 0; i < boundTextures.Length; i++)
         {
             gl.ActiveTexture(TextureUnit.Texture0 + i);
@@ -117,7 +117,7 @@ public class DefaultBatchStrategy : IBatchStrategy
 
     /// <summary>
     /// Computes a consistent hash code for the given GL state parameters.
-    /// This method ensures that both GetHashCode(RenderData) and GetHashCode(GL) 
+    /// This method ensures that both GetHashCode(ElementData) and GetHashCode(GL) 
     /// produce identical hash codes when the states are equivalent.
     /// </summary>
     /// <param name="framebuffer">Framebuffer ID or null for default framebuffer</param>

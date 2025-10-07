@@ -5,6 +5,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Graphics.Textures;
 using Silk.NET.Maths;
+using Silk.NET.OpenGL;
 
 namespace Nexus.GameEngine.Graphics.Sprites;
 
@@ -155,11 +156,11 @@ public partial class SpriteComponent(IAssetService assetService, IResourceManage
     /// </summary>
     public bool ShouldRenderChildren => false;
 
-    public IEnumerable<RenderData> OnRender(RenderContext context)
+    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
     {
         // TODO: Implement sprite rendering by declaring render state requirements
         // For now, just return empty render state
-        yield return new RenderData()
+        yield return new ElementData()
         {
             // TODO: update these values
             Vao = 0,
