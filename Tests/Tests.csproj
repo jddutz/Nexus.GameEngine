@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GameEngine\GameEngine.csproj" />
+    <ProjectReference Include="..\src\GameEngine\GameEngine.csproj" />
   </ItemGroup>
 
 </Project>
