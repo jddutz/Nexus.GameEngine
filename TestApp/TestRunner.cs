@@ -90,7 +90,7 @@ public class TestRunner(
             _stopwatch.Stop();
             OutputTestResults();
             Logger?.LogInformation("Closing application window after test run.");
-            windowService.GetOrCreateWindow().Close();
+            windowService.GetWindow().Close();
         }
     }
 
@@ -154,7 +154,7 @@ public class TestRunner(
         // Exit the application by closing the window
         try
         {
-            var window = windowService.GetOrCreateWindow();
+            var window = windowService.GetWindow();
             window.Close();
         }
         catch (Exception ex)

@@ -7,6 +7,10 @@ using Silk.NET.Windowing;
 namespace Nexus.GameEngine.Runtime;
 
 /// <inheritdoc/>
+/// <summary>
+/// Implements the main application entry point for the Nexus Game Engine runtime.
+/// Manages window creation, event loop, and startup content initialization.
+/// </summary>
 public class Application(IServiceProvider services) : IApplication
 {
     private readonly ILogger logger = services
@@ -22,9 +26,15 @@ public class Application(IServiceProvider services) : IApplication
     public IComponentTemplate? StartupTemplate { get; set; }
 
     /// <inheritdoc/>
-    public void Run()
+    /// <summary>
+    /// Starts the main application event loop with the specified window options.
+    /// Creates the window, attaches event handlers, and initializes content from <see cref="StartupTemplate"/>.
+    /// This method blocks until the window is closed.
+    /// </summary>
+    /// <param name="windowOptions">The configuration options for the main application window.</param>
+    public void Run(WindowOptions windowOptions)
     {
-        window = windowService.GetOrCreateWindow();
+        window = windowService.GetOrCreateWindow(windowOptions);
 
         window.Load += Window_OnLoad;
         window.Update += OnUpdate;
@@ -34,7 +44,7 @@ public class Application(IServiceProvider services) : IApplication
     }
 
     /// <summary>
-    /// Handles the window load event. Called after window.GL is loaded.
+    /// Handles the window load event. Called after the window and graphics context are initialized.
     /// Initializes the application content using the configured <see cref="StartupTemplate"/>.
     /// Sets the renderer's viewport content and triggers renderer initialization.
     /// Logs errors if content creation fails.

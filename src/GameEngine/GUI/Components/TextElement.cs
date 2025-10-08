@@ -4,7 +4,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
 
@@ -188,17 +188,8 @@ public partial class TextElement : RuntimeComponent, IRenderable, ITextControlle
         FontSize = FontSize * scaleFactor;
     }
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<ElementData> GetElements()
     {
-        // TODO: Implement text rendering by declaring render state requirements
-        // For now, just return empty render state
-        yield return new ElementData()
-        {
-            // TODO: update these values
-            Vao = 0,
-            Vbo = 0,
-            Ebo = 0,
-            Shader = 0
-        };
+        throw new NotImplementedException();
     }
 }

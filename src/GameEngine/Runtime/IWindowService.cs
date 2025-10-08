@@ -13,7 +13,7 @@ public interface IWindowService
     /// Gets the singleton application window
     /// Throws InvalidOperationException if it does not exist
     /// </summary>
-    IWindow? GetWindow();
+    IWindow GetWindow();
 
     /// <summary>
     /// Gets the singleton application window, creating it if it doesn't exist
@@ -22,7 +22,7 @@ public interface IWindowService
     /// This returns the same IWindow instance throughout the application lifecycle.
     /// Use this method to access window properties and events directly from Silk.NET.
     /// </remarks>
-    IWindow GetOrCreateWindow();
+    IWindow GetOrCreateWindow(WindowOptions options);
 
     /// <summary>
     /// Gets the input context for the window

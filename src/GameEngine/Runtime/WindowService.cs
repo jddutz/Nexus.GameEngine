@@ -24,11 +24,24 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
     public IWindow GetWindow() => _window ??
         throw new InvalidOperationException("Application Window has not been initialized yet.");
 
-    public IWindow GetOrCreateWindow()
+    private void CreateWindow(WindowOptions options)
+    {
+        // Create the window
+        _window = Window.Create(options);
+
+        // Set up window event handlers
+        _window.Load += OnWindowLoad;
+        _window.Closing += OnWindowClosing;
+        _window.Resize += OnWindowResize;
+
+        _logger.LogDebug("Window created - {Width}x{Height} (Fullscreen)", options.Size.X, options.Size.Y);
+    }
+
+    public IWindow GetOrCreateWindow(WindowOptions options)
     {
         if (_window == null)
         {
-            CreateWindow();
+            CreateWindow(options);
         }
         return _window!;
     }
@@ -37,7 +50,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
     {
         if (_inputContext == null)
         {
-            var window = GetOrCreateWindow();
+            var window = GetWindow();
             if (window != null)
             {
                 _inputContext = window.CreateInput();
@@ -51,7 +64,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
     {
         if (_isInitialized) return;
 
-        GetOrCreateWindow(); // Ensure window is created
+        GetWindow(); // Ensure window is created
         _isInitialized = true;
 
         _logger.LogDebug("Window service initialized");
@@ -60,7 +73,7 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
 
     public void Run()
     {
-        var window = GetOrCreateWindow();
+        var window = GetWindow();
         window.Run();
     }
 
@@ -124,27 +137,6 @@ public class WindowService(ILoggerFactory loggerFactory) : IWindowService
         {
             _logger.LogError(ex, "Error during window service cleanup");
         }
-    }
-
-    private void CreateWindow()
-    {
-        // Create window options for the application
-        var options = WindowOptions.Default;
-        options.Size = new Vector2D<int>(1920, 1080);
-        options.Title = "NexusRealms. - Prelude";
-        options.WindowBorder = WindowBorder.Hidden;
-        options.WindowState = WindowState.Fullscreen; // Start in fullscreen
-        options.VSync = true;
-
-        // Create the window
-        _window = Window.Create(options);
-
-        // Set up window event handlers
-        _window.Load += OnWindowLoad;
-        _window.Closing += OnWindowClosing;
-        _window.Resize += OnWindowResize;
-
-        _logger.LogDebug("Window created - {Width}x{Height} (Fullscreen)", options.Size.X, options.Size.Y);
     }
 
     private void OnWindowLoad()

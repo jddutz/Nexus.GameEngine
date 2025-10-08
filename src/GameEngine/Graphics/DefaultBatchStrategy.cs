@@ -1,4 +1,4 @@
-using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -33,20 +33,6 @@ public class DefaultBatchStrategy : IBatchStrategy
         if (x == null) return -1;
         if (y == null) return 1;
 
-        // Sort by Framebuffer (render off-screen targets first)
-        // null framebuffer = default framebuffer = main screen (render last)
-        var framebufferComparison = CompareFramebuffers(x.Framebuffer, y.Framebuffer);
-        if (framebufferComparison != 0)
-            return framebufferComparison;
-
-        // Sort by Priority (layer sets of objects: background, world view, UI)
-        if (x.Priority != y.Priority) return x.Priority > y.Priority ? -1 : 1;
-
-        // Sort by Shader Program (group by shader to minimize program switches)
-        var shaderComparison = CompareNullableUInt(x.ShaderProgram, y.ShaderProgram);
-        if (shaderComparison != 0)
-            return shaderComparison;
-
         // If framebuffer and shader are the same, they should batch together
         // so the specific order doesn't matter much
         return 0;
@@ -64,55 +50,7 @@ public class DefaultBatchStrategy : IBatchStrategy
         if (state == null)
             return 0;
 
-        return ComputeStateHash(
-            state.Framebuffer,
-            state.ShaderProgram,
-            state.VertexArray,
-            state.BoundTextures
-        );
-    }
-
-    /// <summary>
-    /// Computes a stable hash code for the current OpenGL state to facilitate efficient batch grouping.
-    /// Queries the GL context for current framebuffer, shader program, VAO, and active textures.
-    /// This allows the renderer to detect when GL state changes are needed between batches.
-    /// Uses the same hashing algorithm as GetHashCode(ElementData) to ensure consistency.
-    /// </summary>
-    /// <param name="gl">The OpenGL context to query for current state</param>
-    /// <returns>Hash code representing the current GL state that affects batching</returns>
-    public int GetHashCode(GL gl)
-    {
-        // Query current framebuffer (most expensive state change)
-        gl.GetInteger(GLEnum.FramebufferBinding, out int currentFramebuffer);
-        var framebuffer = currentFramebuffer == 0 ? (uint?)null : (uint)currentFramebuffer;
-
-        // Query current shader program (second most expensive)
-        gl.GetInteger(GLEnum.CurrentProgram, out int currentProgram);
-        var shaderProgram = currentProgram == 0 ? (uint?)null : (uint)currentProgram;
-
-        // Query current vertex array object
-        gl.GetInteger(GLEnum.VertexArrayBinding, out int currentVAO);
-        var vertexArray = currentVAO == 0 ? (uint?)null : (uint)currentVAO;
-
-        // Query active texture unit and bound textures
-        gl.GetInteger(GLEnum.ActiveTexture, out int activeTextureUnit);
-        int originalTextureSlot = activeTextureUnit - (int)GLEnum.Texture0;
-
-        // Create texture array matching ElementData.BoundTextures size
-        var boundTextures = new uint?[16]; // Match ElementData.BoundTextures length
-
-        // Query all texture units to match ElementData behavior
-        for (int i = 0; i < boundTextures.Length; i++)
-        {
-            gl.ActiveTexture(TextureUnit.Texture0 + i);
-            gl.GetInteger(GLEnum.TextureBinding2D, out int boundTexture);
-            boundTextures[i] = boundTexture == 0 ? (uint?)null : (uint)boundTexture;
-        }
-
-        // Restore original active texture unit
-        gl.ActiveTexture((TextureUnit)(GLEnum.Texture0 + originalTextureSlot));
-
-        return ComputeStateHash(framebuffer, shaderProgram, vertexArray, boundTextures);
+        return 0;
     }
 
     /// <summary>

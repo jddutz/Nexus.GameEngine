@@ -1,8 +1,9 @@
+using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.Graphics.Cameras;
 
-public interface ICamera
+public interface ICamera : IRuntimeComponent
 {
     /// <summary>
     /// Gets the view matrix representing the camera's transformation in world space.
@@ -34,13 +35,6 @@ public interface ICamera
     /// Gets the right direction vector of the camera in world space.
     /// </summary>
     Vector3D<float> Right { get; }
-
-    /// <summary>
-    /// Render passes that this camera should execute.
-    /// The component tree will be walked once per camera, and batches collected for these passes.
-    /// Empty array means camera doesn't render (useful for shadow mapping light cameras).
-    /// </summary>
-    List<RenderPassConfiguration> RenderPasses { get; }
 
     /// <summary>
     /// Determines if the specified 3D bounding box is visible within the camera's view frustum.

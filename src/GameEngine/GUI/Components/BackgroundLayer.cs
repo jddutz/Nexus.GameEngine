@@ -5,11 +5,11 @@ using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class BackgroundLayer(IResourceManager resourceManager)
+public partial class BackgroundLayer()
     : RuntimeComponent, IRenderable, IBackgroundController
 {
     public new record Template : RuntimeComponent.Template
@@ -31,8 +31,10 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
 
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<ElementData> GetElements()
     {
+        throw new NotImplementedException();
+        /*
         Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
 
         if (!IsVisible)
@@ -61,6 +63,7 @@ public partial class BackgroundLayer(IResourceManager resourceManager)
             Priority = RenderPriority
             // No uniforms needed for basic orange color shader
         };
+        */
     }
 
     protected override void OnConfigure(IComponentTemplate componentTemplate)

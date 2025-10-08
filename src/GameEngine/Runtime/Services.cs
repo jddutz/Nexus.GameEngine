@@ -112,10 +112,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IComponentFactory, ComponentFactory>();
         services.AddSingleton<IWindowService, WindowService>();
 
-        // Register renderer with window service dependency
+        // Register Vulkan context (lazy initialized on first access)
+        services.AddSingleton<VulkanContext>();
+
+        // Register renderer with Vulkan context dependency
         services.AddSingleton<IRenderer, Renderer>();
         services.AddSingleton<IContentManager, ContentManager>();
-        services.AddSingleton<IResourceManager, ResourceManager>();
+        //services.AddSingleton<IResourceManager, ResourceManager>();
 
         // Temporary: Provide stub IAssetService until real implementation
         services.AddSingleton<IAssetService, StubAssetService>();

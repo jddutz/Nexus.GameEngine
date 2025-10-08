@@ -3,6 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Runtime;
+using Silk.NET.Maths;
+using Silk.NET.Windowing;
 
 namespace TestApp;
 
@@ -41,7 +43,15 @@ class Program
             StartupTemplate = Templates.MainMenu
         };
 
+        // Create window options for the application
+        var windowOptions = WindowOptions.Default;
+        windowOptions.Size = new Vector2D<int>(1920, 1080);
+        windowOptions.Title = "Nexus.GameEngine.TestApp";
+        windowOptions.WindowBorder = WindowBorder.Hidden;
+        windowOptions.WindowState = WindowState.Fullscreen;
+        windowOptions.VSync = true;
+
         // Run
-        application.Run();
+        application.Run(windowOptions);
     }
 }

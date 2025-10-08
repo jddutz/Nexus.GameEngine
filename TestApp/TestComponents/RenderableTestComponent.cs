@@ -1,7 +1,7 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Maths;
-using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 
 namespace TestApp.TestComponents;
 
@@ -35,7 +35,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
         }
     }
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<ElementData> GetElements()
     {
         FramesRendered++;
         return [];

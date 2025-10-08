@@ -1,4 +1,4 @@
-using Silk.NET.OpenGL;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -15,12 +15,4 @@ public interface IBatchStrategy : IComparer<ElementData>
     /// <param name="state">The <see cref="ElementData"/> to compute the hash code for.</param>
     /// <returns>An integer hash code representing the batchable aspects of the render state.</returns>
     int GetHashCode(ElementData state);
-
-    /// <summary>
-    /// Computes a stable hash code for the specified <see cref="GL"/> to facilitate efficient batch grouping.
-    /// Render states with the same hash code are considered part of the same batch.
-    /// </summary>
-    /// <param name="gl">The <see cref="GL"/> to compute the hash code for.</param>
-    /// <returns>An integer hash code representing the batchable aspects of the GL state.</returns>
-    int GetHashCode(GL gl);
 }
