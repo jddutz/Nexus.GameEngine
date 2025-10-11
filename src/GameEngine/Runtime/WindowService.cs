@@ -1,206 +1,54 @@
-using Microsoft.Extensions.Logging;
 using Silk.NET.Input;
-using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
 namespace Nexus.GameEngine.Runtime;
 
 /// <summary>
-/// Window service implementation using Silk.NET
-/// Manages the singleton application window lifecycle
+/// Provides a singleton factory for the Silk.NET application window.
+/// Handles window creation, access, and disposal for the application lifecycle.
 /// </summary>
-public class WindowService(ILoggerFactory loggerFactory) : IWindowService
+public class WindowService : IWindowService, IDisposable
 {
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(WindowService));
     private IWindow? _window;
     private IInputContext? _inputContext;
-    private bool _isInitialized = false;
 
-    public bool IsWindowCreated => _window != null;
-
-    public event EventHandler? WindowLoaded;
-    public event EventHandler? WindowClosing;
-
+    /// <summary>
+    /// Gets the singleton application window instance.
+    /// Throws <see cref="InvalidOperationException"/> if the window has not been created.
+    /// </summary>
+    /// <returns>The initialized Silk.NET <see cref="IWindow"/> instance.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the window has not been created.</exception>
     public IWindow GetWindow() => _window ??
         throw new InvalidOperationException("Application Window has not been initialized yet.");
 
-    private void CreateWindow(WindowOptions options)
-    {
-        // Create the window
-        _window = Window.Create(options);
-
-        // Set up window event handlers
-        _window.Load += OnWindowLoad;
-        _window.Closing += OnWindowClosing;
-        _window.Resize += OnWindowResize;
-
-        _logger.LogDebug("Window created - {Width}x{Height} (Fullscreen)", options.Size.X, options.Size.Y);
-    }
-
+    /// <summary>
+    /// Gets the singleton application window, creating it if it does not already exist.
+    /// </summary>
+    /// <param name="options">The Silk.NET window options to use for creation.</param>
+    /// <returns>The Silk.NET <see cref="IWindow"/> instance.</returns>
     public IWindow GetOrCreateWindow(WindowOptions options)
     {
-        if (_window == null)
-        {
-            CreateWindow(options);
-        }
+        _window ??= Window.Create(options);
         return _window!;
     }
 
-    public IInputContext GetInputContext()
+    public IInputContext InputContext
     {
-        if (_inputContext == null)
+        get
         {
-            var window = GetWindow();
-            if (window != null)
-            {
-                _inputContext = window.CreateInput();
-                _logger.LogDebug("Input context created");
-            }
-        }
-        return _inputContext!;
-    }
-
-    public async Task InitializeAsync()
-    {
-        if (_isInitialized) return;
-
-        GetWindow(); // Ensure window is created
-        _isInitialized = true;
-
-        _logger.LogDebug("Window service initialized");
-        await Task.CompletedTask;
-    }
-
-    public void Run()
-    {
-        var window = GetWindow();
-        window.Run();
-    }
-
-    public void Close()
-    {
-        _window?.Close();
-    }
-
-    public async Task CleanupAsync()
-    {
-        try
-        {
-            // Prevent double cleanup
-            if (!_isInitialized && _window == null)
-            {
-                _logger.LogDebug("Window service already cleaned up, skipping");
-                return;
-            }
-
-            _logger.LogDebug("Starting window service cleanup...");
-
-            // Dispose input context first, before closing window
-            // This prevents GLFW callback issues during disposal
-            if (_inputContext != null)
-            {
-                try
-                {
-                    _inputContext.Dispose();
-                    _logger.LogDebug("Input context disposed");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error disposing input context");
-                }
-                _inputContext = null;
-            }
-
-            // Give a brief moment for any pending input operations to complete
-            await Task.Delay(10);
-
-            // Close and dispose window
-            if (_window != null)
-            {
-                try
-                {
-                    _window.Close();
-                    _window.Dispose();
-                    _logger.LogDebug("Window closed and disposed");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error disposing window");
-                }
-                _window = null;
-            }
-
-            _isInitialized = false;
-            _logger.LogDebug("Window service cleaned up successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during window service cleanup");
+            _inputContext ??= GetWindow().CreateInput();
+            return _inputContext;
         }
     }
 
-    private void OnWindowLoad()
+    /// <summary>
+    /// Disposes the window service and the underlying Silk.NET window instance.
+    /// Calls <see cref="GC.SuppressFinalize(object)"/> to prevent finalization if derived types introduce a finalizer.
+    /// </summary>
+    public void Dispose()
     {
-        _logger.LogDebug("Window loaded");
-        WindowLoaded?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void OnWindowClosing()
-    {
-        _logger.LogDebug("Window closing");
-        WindowClosing?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void OnWindowResize(Vector2D<int> newSize)
-    {
-        _logger.LogDebug("Window resized to {Width}x{Height}", newSize.X, newSize.Y);
-        // Note: Consumers should subscribe to _window.Resize directly if they need resize events
-    }
-
-    public void ToggleFullscreen()
-    {
-        if (_window != null)
-        {
-            var isCurrentlyFullscreen = _window.WindowState == WindowState.Fullscreen;
-
-            if (isCurrentlyFullscreen)
-            {
-                // Switch to windowed mode - set properties in correct order
-                _window.WindowState = WindowState.Normal;
-                _window.WindowBorder = WindowBorder.Resizable;
-                _window.Size = new Vector2D<int>(1280, 720);
-                _logger.LogDebug("Switched to windowed mode - 1280x720");
-            }
-            else
-            {
-                // Switch to fullscreen mode - set border first, then state
-                _window.WindowBorder = WindowBorder.Hidden;
-                _window.WindowState = WindowState.Fullscreen;
-                _logger.LogDebug("Switched to fullscreen mode");
-            }
-        }
-    }
-
-    public async Task SetFullscreenAsync(bool fullscreen)
-    {
-        if (_window != null)
-        {
-            if (fullscreen)
-            {
-                _window.WindowBorder = WindowBorder.Hidden;
-                _window.WindowState = WindowState.Fullscreen;
-            }
-            else
-            {
-                _window.Size = new Vector2D<int>(1280, 720);
-                _window.WindowBorder = WindowBorder.Resizable;
-                _window.WindowState = WindowState.Normal;
-            }
-
-            // Give the window system time to process the state change
-            await Task.Delay(50);
-
-            _logger.LogDebug("Fullscreen mode set to: {Fullscreen}", fullscreen);
-        }
+        _window?.Dispose();
+        _window = null;
+        GC.SuppressFinalize(this);
     }
 }

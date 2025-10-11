@@ -1,4 +1,6 @@
-namespace Nexus.GameEngine.Runtime.Settings;
+using Nexus.GameEngine.Graphics;
+
+namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
 /// Graphics and display settings.
@@ -13,4 +15,5 @@ public class GraphicsSettings
     public string GraphicsQuality { get; set; } = "High";
     public bool ShowParticleEffects { get; set; } = true;
     public float RenderScale { get; set; } = 1.0f;
+    public VkSettings Vulkan { get; set; } = new();
 }

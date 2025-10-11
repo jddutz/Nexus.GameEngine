@@ -271,26 +271,31 @@ Component calls: renderer.VulkanContext.Device
 ## Key Design Decisions
 
 ### 1. Lazy Initialization ✅
+
 - **Why**: Window must exist before Vulkan surface creation
 - **Benefit**: No timing dependencies in DI registration
 - **Trade-off**: Small one-time cost on first access
 
 ### 2. Thread-Safe Double-Check Locking ✅
+
 - **Why**: Multiple threads might access properties simultaneously
 - **Benefit**: Fast path for already-initialized case
 - **Trade-off**: Slight complexity in implementation
 
 ### 3. Dependency Injection ✅
+
 - **Why**: Clear dependencies, testable, lifecycle managed
 - **Benefit**: Compiler-enforced availability, easy testing
 - **Trade-off**: None - pure improvement
 
 ### 4. Singleton Lifetime ✅
+
 - **Why**: One Vulkan context per application
 - **Benefit**: Shared resources, centralized state
 - **Trade-off**: None for this use case
 
 ### 5. Property-Based Initialization ✅
+
 - **Why**: Any property access triggers initialization
 - **Benefit**: Can't accidentally use uninitialized context
 - **Trade-off**: Every property has a getter method (not auto-property)

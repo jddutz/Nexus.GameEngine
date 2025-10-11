@@ -89,8 +89,16 @@ public class TestRunner(
             Logger?.LogInformation("All test components executed. Stopping stopwatch and outputting results.");
             _stopwatch.Stop();
             OutputTestResults();
-            Logger?.LogInformation("Closing application window after test run.");
-            windowService.GetWindow().Close();
+
+            if (Debugger.IsAttached)
+            {
+                Logger?.LogInformation("Debugger detected; keeping window open. Press ESC to close.");
+            }
+            else
+            {
+                Logger?.LogInformation("Closing application window after test run.");
+                windowService.GetWindow().Close();
+            }
         }
     }
 
@@ -154,8 +162,7 @@ public class TestRunner(
         // Exit the application by closing the window
         try
         {
-            var window = windowService.GetWindow();
-            window.Close();
+            windowService.GetWindow().Close();
         }
         catch (Exception ex)
         {

@@ -3,7 +3,6 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Nexus.GameEngine.Graphics;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 

@@ -24,7 +24,7 @@ public class QuitGameAction(IWindowService windowService, ILoggerFactory loggerF
         try
         {
             _logger.LogDebug("Quit game action executed - closing window");
-            _windowService.Close();
+            _windowService.GetWindow().Close();
             return Task.FromResult(ActionResult.Successful(null, "Application quit requested"));
         }
         catch (Exception ex)

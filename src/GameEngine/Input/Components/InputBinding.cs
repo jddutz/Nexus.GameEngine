@@ -45,7 +45,7 @@ public abstract partial class InputBinding(
 
             try
             {
-                _inputContext = windowService.GetInputContext();
+                _inputContext = windowService.InputContext;
                 return _inputContext;
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("view was not initialized"))

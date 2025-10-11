@@ -4,7 +4,7 @@ namespace Nexus.GameEngine.Assets;
 /// Temporary stub implementation of IAssetService for dependency injection.
 /// This will be replaced with a proper implementation later.
 /// </summary>
-public class StubAssetService : IAssetService
+public class AssetService : IAssetService
 {
     public T? Load<T>(string assetPath) where T : class
     {

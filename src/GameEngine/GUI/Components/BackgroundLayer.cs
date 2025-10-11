@@ -1,11 +1,8 @@
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Geometry;
 using Silk.NET.Maths;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
 

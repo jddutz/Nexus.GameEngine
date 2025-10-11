@@ -12,6 +12,7 @@ Converted `VulkanContext` from a two-phase initialization pattern to a **singlet
 ### 1. VulkanContext.cs - Lazy Initialization Pattern
 
 **Before**: Two-phase initialization requiring manual `InitializeWithSurface()` call
+
 ```csharp
 public VulkanContext()
 {
@@ -29,6 +30,7 @@ public void InitializeWithSurface(nint windowHandle, nint displayHandle)
 ```
 
 **After**: Single constructor with lazy initialization
+
 ```csharp
 public VulkanContext(IWindowService windowService)
 {
@@ -40,31 +42,32 @@ public VulkanContext(IWindowService windowService)
 private void EnsureInitialized()
 {
     if (_initialized) return;
-    
+
     lock (_initLock)
     {
         if (_initialized) return;
-        
+
         // Step 1: Create Vulkan Instance
         CreateInstance();
-        
+
         // Step 2: Get window handle and create surface
         var window = _windowService.GetWindow();
         var windowHandle = window.Native!.Win32!.Value.Hwnd;
         CreateSurface(windowHandle, 0);
-        
+
         // Step 3: Select physical device
         SelectPhysicalDevice();
-        
+
         // Step 4: Create logical device and queues
         CreateDeviceAndQueues();
-        
+
         _initialized = true;
     }
 }
 ```
 
 **Key Changes**:
+
 - ✅ Constructor now accepts `IWindowService` for window access
 - ✅ All properties call `EnsureInitialized()` before returning
 - ✅ Thread-safe double-check locking pattern
@@ -74,6 +77,7 @@ private void EnsureInitialized()
 ### 2. Public Properties with Lazy Init Guards
 
 All public properties now trigger initialization:
+
 ```csharp
 public Vk Vk
 {
@@ -104,6 +108,7 @@ public Instance Instance
 ### 3. Renderer.cs - Constructor Injection
 
 **Before**: Lazy-loaded VulkanContext
+
 ```csharp
 private VulkanContext? _vulkanContext;
 
@@ -118,6 +123,7 @@ public VulkanContext VulkanContext
 ```
 
 **After**: Injected via constructor
+
 ```csharp
 public class Renderer(
     VulkanContext vulkanContext,
@@ -132,6 +138,7 @@ public class Renderer(
 ### 4. Services.cs - DI Registration
 
 Added `VulkanContext` as a singleton service:
+
 ```csharp
 // Register core runtime services
 services.AddSingleton<IComponentFactory, ComponentFactory>();
@@ -149,6 +156,7 @@ services.AddSingleton<IRenderer, Renderer>();
 ### ✅ Simplified Initialization Flow
 
 **Old Pattern** (manual, error-prone):
+
 ```
 1. Create VulkanContext (partial init)
 2. Create Window
@@ -157,6 +165,7 @@ services.AddSingleton<IRenderer, Renderer>();
 ```
 
 **New Pattern** (automatic, foolproof):
+
 ```
 1. Register VulkanContext as singleton
 2. Create Window (via WindowService)
@@ -196,6 +205,7 @@ This occurs **after** `Window.Load` event, ensuring the window exists.
 ## Platform Support
 
 Currently implemented for **Windows only**:
+
 ```csharp
 var window = _windowService.GetWindow();
 var windowHandle = window.Native!.Win32!.Value.Hwnd;
@@ -203,6 +213,7 @@ CreateSurface(windowHandle, 0);
 ```
 
 **TODO**: Add platform detection and support for:
+
 - Linux (X11/XCB/Wayland)
 - macOS (MoltenVK)
 - Android
@@ -220,6 +231,7 @@ CreateSurface(windowHandle, 0);
 ## Testing
 
 To verify initialization:
+
 1. Run TestApp
 2. VulkanContext should initialize on first render frame
 3. Check logs for Vulkan instance creation

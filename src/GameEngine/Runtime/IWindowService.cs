@@ -25,73 +25,9 @@ public interface IWindowService
     IWindow GetOrCreateWindow(WindowOptions options);
 
     /// <summary>
-    /// Gets the input context for the window
+    /// Gets or creates input context associated with the application window.
+    /// Throws InvalidOperationException if the window does not exist
     /// </summary>
-    IInputContext GetInputContext();
-
-    /// <summary>
-    /// Whether the window has been created and is available
-    /// </summary>
-    bool IsWindowCreated { get; }
-
-    /// <summary>
-    /// Event raised when the window is loaded and ready
-    /// </summary>
-    /// <remarks>
-    /// This is a convenience event that wraps the IWindow.Load event
-    /// </remarks>
-    event EventHandler? WindowLoaded;
-
-    /// <summary>
-    /// Event raised when the window is closing
-    /// </summary>
-    /// <remarks>
-    /// This is a convenience event that wraps the IWindow.Closing event
-    /// </remarks>
-    event EventHandler? WindowClosing;
-
-    /// <summary>
-    /// Initialize the window service
-    /// </summary>
-    Task InitializeAsync();
-
-    /// <summary>
-    /// Toggle between fullscreen and windowed mode
-    /// </summary>
-    /// <remarks>
-    /// This is a convenience method for common fullscreen toggling.
-    /// For more control, use GetOrCreateWindow().WindowState directly.
-    /// </remarks>
-    void ToggleFullscreen();
-
-    /// <summary>
-    /// Set fullscreen mode
-    /// </summary>
-    /// <param name="fullscreen">True for fullscreen, false for windowed</param>
-    /// <remarks>
-    /// This is a convenience method for setting fullscreen state.
-    /// For more control, use GetOrCreateWindow().WindowState directly.
-    /// </remarks>
-    Task SetFullscreenAsync(bool fullscreen);
-
-    /// <summary>
-    /// Run the window's main loop
-    /// </summary>
-    /// <remarks>
-    /// This delegates to the underlying IWindow.Run() method
-    /// </remarks>
-    void Run();
-
-    /// <summary>
-    /// Close the window
-    /// </summary>
-    /// <remarks>
-    /// This delegates to the underlying IWindow.Close() method
-    /// </remarks>
-    void Close();
-
-    /// <summary>
-    /// Cleanup resources
-    /// </summary>
-    Task CleanupAsync();
+    /// <returns></returns>
+    IInputContext InputContext { get; }
 }

@@ -11,7 +11,7 @@ public interface IRenderer
     /// Access to Vulkan context for component rendering.
     /// Components use this to access Vulkan resources during their render phase.
     /// </summary>
-    VulkanContext VulkanContext { get; }
+    IVkContext VK { get; }
 
     /// <summary>
     /// Event fired before rendering begins for the frame

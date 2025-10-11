@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Runtime;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -9,16 +8,13 @@ namespace Nexus.GameEngine.Graphics;
 /// This will be rebuilt from scratch to use Vulkan instead of OpenGL.
 /// </summary>
 public class Renderer(
-    VulkanContext vulkanContext,
-#pragma warning disable CS9113 // Parameter is unread - will be used in future implementation
-    IWindowService windowService,
-#pragma warning restore CS9113
+    IVkContext vk,
     ILoggerFactory loggerFactory,
     IContentManager contentManager) : IRenderer
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
 
-    public VulkanContext VulkanContext => vulkanContext;
+    public IVkContext VK => vk;
 
     public event EventHandler? BeforeRendering;
     public event EventHandler? AfterRendering;

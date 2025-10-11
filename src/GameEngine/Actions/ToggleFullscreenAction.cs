@@ -22,7 +22,7 @@ public class ToggleFullscreenAction(IWindowService windowService) : IAction
     {
         try
         {
-            _windowService.ToggleFullscreen();
+            _windowService.GetWindow().ToggleFullscreen();
 
             // Get the current fullscreen state from the window directly
             var window = _windowService.GetWindow();

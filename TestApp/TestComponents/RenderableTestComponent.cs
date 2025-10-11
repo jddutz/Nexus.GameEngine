@@ -1,7 +1,6 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Maths;
-using Silk.NET.Vulkan;
 
 namespace TestApp.TestComponents;
 
