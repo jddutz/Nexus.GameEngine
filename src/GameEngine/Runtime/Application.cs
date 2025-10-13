@@ -42,12 +42,10 @@ public class Application(IServiceProvider services) : IApplication
             var content = contentManager.Create(startupTemplate);
             if (content == null)
             {
-                Console.WriteLine("Failed to create content from StartupTemplate {StartupTemplate.Name}");
+                Console.WriteLine("Failed to create startup template {StartupTemplate.Name}");
                 return;
             }
-
-            Console.WriteLine("Created startup content from StartupTemplate {content.Name}");
-
+            
             contentManager.Viewport.Content = content;
         };
 

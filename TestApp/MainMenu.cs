@@ -26,12 +26,6 @@ public static partial class Templates
             {
                 Name = "Test Runner"
             },
-            new HelloQuad.Template()
-            {
-                Name = "HelloQuad",
-                IsVisible = true,
-                BackgroundColor = Colors.Aquamarine
-            },
             new KeyBinding.Template()
             {
                 Name = "Toggle FullScreen (F12)",

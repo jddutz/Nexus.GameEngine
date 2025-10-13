@@ -47,8 +47,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         _deferredUpdates.Add(update);
 
-        Logger?.LogTrace("{ComponentType} '{Name}' queued deferred update. Total pending: {PendingCount}",
-            GetType().Name, Name, _deferredUpdates.Count);
+        Logger?.LogTrace("Queued deferred update. Total pending: {PendingCount}", _deferredUpdates.Count);
     }
 
     /// <summary>
@@ -59,8 +58,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (_deferredUpdates.Count == 0) return;
 
-        Logger?.LogTrace("{ComponentType} '{Name}' applying {UpdateCount} deferred updates",
-            GetType().Name, Name, _deferredUpdates.Count);
+        Logger?.LogTrace("Applying {UpdateCount} deferred updates", _deferredUpdates.Count);
 
         foreach (var update in _deferredUpdates)
         {
@@ -70,8 +68,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             }
             catch (Exception ex)
             {
-                Logger?.LogError(ex, "{ComponentType} '{Name}' error applying deferred update",
-                    GetType().Name, Name);
+                Logger?.LogError(ex, "Error applying deferred update");
             }
         }
 
@@ -80,8 +77,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Trigger validation after all updates have been applied
         Validate();
 
-        Logger?.LogTrace("{ComponentType} '{Name}' finished applying deferred updates",
-            GetType().Name, Name);
+        Logger?.LogTrace("Finished applying deferred updates");
     }
 
     #endregion
@@ -173,7 +169,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         AfterConfiguration?.Invoke(this, new(componentTemplate));
 
-        Logger?.LogDebug("{ComponentType} '{Name}' configuration completed", GetType().Name, Name);
+        Logger?.LogDebug("Configuration completed");
     }
 
     #endregion
@@ -226,12 +222,12 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Return cached results if available
         if (!ignoreCached && _validationState != null)
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' using cached validation result: {IsValid}", GetType().Name, Name, IsValid);
+            Logger?.LogDebug("Using cached validation result: {IsValid}", IsValid);
 
             // Always log validation errors when using cached results, especially for failed validation
             if (!IsValid && ValidationErrors.Any())
             {
-                Logger?.LogDebug("{ComponentType} '{Name}' cached validation errors:", GetType().Name, Name);
+                Logger?.LogDebug("Cached validation errors:");
                 foreach (var error in ValidationErrors)
                 {
                     Logger?.LogDebug("  - {ErrorMessage} (Severity: {Severity})", error.Message, error.Severity);
@@ -240,8 +236,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
             return IsValid;
         }
-
-        Logger?.LogDebug("{ComponentType} '{Name}' validating...", GetType().Name, Name);
 
         Validating?.Invoke(this, EventArgs.Empty);
 
@@ -252,18 +246,13 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         _validationState = _validationErrors.Count == 0; // true when no errors (valid), false when errors exist (invalid)
         if (_validationState == false)
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' validation failed with {ErrorCount} errors", GetType().Name, Name, _validationErrors.Count);
             ValidationFailed?.Invoke(this, EventArgs.Empty);
-        }
-        else
-        {
-            Logger?.LogDebug("{ComponentType} '{Name}' validation passed", GetType().Name, Name);
         }
 
         // Log validation errors for debugging
         if (ValidationErrors.Any())
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' validation errors:", GetType().Name, Name);
+            Logger?.LogDebug("validation errors:");
             foreach (var error in ValidationErrors)
             {
                 Logger?.LogDebug(
@@ -319,11 +308,9 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Validate before activation (uses cached results if available)
         if (!Validate())
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' failed validation, cannot activate", GetType().Name, Name);
+            Logger?.LogDebug("Validation failed, cannot be activated");
             return;
         }
-
-        Logger?.LogDebug("{ComponentType} '{Name}' activating...", GetType().Name, Name);
 
         Activating?.Invoke(this, EventArgs.Empty);
 
@@ -332,14 +319,12 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         foreach (var child in Children)
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' activating child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Activating child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
             child.Activate();
         }
 
         // Set active state after successful activation
         IsActive = true;
-
-        Logger?.LogDebug("{ComponentType} '{Name}' activated successfully. IsActive: {IsActive}", GetType().Name, Name, IsActive);
 
         Activated?.Invoke(this, EventArgs.Empty);
     }
@@ -371,13 +356,11 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (!IsActive)
         {
-            Logger?.LogTrace("{ComponentType} '{Name}' skipping update - not active", GetType().Name, Name);
+            Logger?.LogTrace("Skipping update - not active");
             return;
         }
 
         IsUpdating = true;
-
-        Logger?.LogTrace("{ComponentType} '{Name}' updating with deltaTime: {DeltaTime:F4}s", GetType().Name, Name, deltaTime);
 
         Updating?.Invoke(this, EventArgs.Empty);
 
@@ -466,11 +449,9 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (IsUnloaded)
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' already deactivated", GetType().Name, Name);
+            Logger?.LogDebug("Already deactivated");
             return; // Already inactive
         }
-
-        Logger?.LogDebug("{ComponentType} '{Name}' deactivating...", GetType().Name, Name);
 
         Deactivating?.Invoke(this, EventArgs.Empty);
 
@@ -480,7 +461,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Deactivate leaf to root
         foreach (var child in Children)
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' deactivating child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Deactivating child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
             child.Deactivate();
         }
 
@@ -489,8 +470,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         Deactivated?.Invoke(this, EventArgs.Empty);
 
         IsUnloaded = true;
-
-        Logger?.LogDebug("{ComponentType} '{Name}' deactivated successfully. IsUnloaded: {IsUnloaded}", GetType().Name, Name, IsUnloaded);
     }
 
     #endregion
@@ -518,7 +497,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         {
             if (string.IsNullOrEmpty(child.Name)) child.Name = child.GetType().Name;
 
-            Logger?.LogDebug("{ComponentType} '{Name}' adding child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Adding child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
 
             _children.Add(child);
 
@@ -533,11 +512,11 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
                 Added = [child]
             });
 
-            Logger?.LogDebug("{ComponentType} '{Name}' child added successfully. Total children: {ChildCount}", GetType().Name, Name, _children.Count);
+            Logger?.LogDebug("Child added successfully. Total children: {ChildCount}", _children.Count);
         }
         else
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' child already exists: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Child already exists: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
         }
     }
 
@@ -582,7 +561,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (_children.Remove(child))
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' removing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Removing child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
 
             // Clear parent using concrete type to access internal setter
             if (child is RuntimeComponent runtimeChild)
@@ -595,11 +574,11 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
                 Removed = [child]
             });
 
-            Logger?.LogDebug("{ComponentType} '{Name}' child removed successfully. Total children: {ChildCount}", GetType().Name, Name, _children.Count);
+            Logger?.LogDebug("Child removed successfully. Total children: {ChildCount}", _children.Count);
         }
         else
         {
-            Logger?.LogDebug("{ComponentType} '{Name}' child not found for removal: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, child.Name);
+            Logger?.LogDebug("Child not found for removal: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
         }
     }
 
@@ -664,7 +643,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
     public void Dispose()
     {
-        Logger?.LogDebug("{ComponentType} '{Name}' disposing...", GetType().Name, Name);
+        Logger?.LogDebug("Disposing...");
 
         // Dispose children first (leaf to root)
         foreach (var child in Children.OfType<IDisposable>().ToArray()) // ToArray to avoid collection modification during iteration
@@ -672,7 +651,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             if (child is IDisposable disposableChild)
             {
                 var childName = child is IRuntimeComponent runtimeChild ? runtimeChild.Name : "Unknown";
-                Logger?.LogDebug("{ComponentType} '{Name}' disposing child: {ChildType} '{ChildName}'", GetType().Name, Name, child.GetType().Name, childName);
+                Logger?.LogDebug("Disposing child: {ChildType} '{ChildName}'", child.GetType().Name, childName);
                 disposableChild.Dispose();
             }
         }
@@ -683,7 +662,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Call component-specific disposal logic
         OnDispose();
 
-        Logger?.LogDebug("{ComponentType} '{Name}' disposed successfully", GetType().Name, Name);
+        Logger?.LogDebug("Disposed successfully");
     }
 
     #endregion

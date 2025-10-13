@@ -267,26 +267,26 @@ Standard validation plus extra threading validation.
 The validation layer system logs detailed information about layer selection:
 
 ```
-[DEBUG] VkValidationLayers: Available validation layers on system: VK_LAYER_KHRONOS_validation, VK_LAYER_LUNARG_monitor
-[DEBUG] VkValidationLayers: Wildcard '*' detected - using priority-based layer selection
-[INFO]  VkValidationLayers: Selected validation layers (priority match): VK_LAYER_KHRONOS_validation
-[INFO]  VkValidationLayers: Debug messenger created (Handle: 1234567890)
+[DEBUG] Validation: Available validation layers on system: VK_LAYER_KHRONOS_validation, VK_LAYER_LUNARG_monitor
+[DEBUG] Validation: Wildcard '*' detected - using priority-based layer selection
+[INFO]  Validation: Selected validation layers (priority match): VK_LAYER_KHRONOS_validation
+[INFO]  Validation: Debug messenger created (Handle: 1234567890)
 ```
 
 ### Pattern Matching Logs
 
 ```
-[DEBUG] VkValidationLayers: Pattern 'VK_LAYER_KHRONOS_*' converted to regex: ^VK_LAYER_KHRONOS_.*$
-[DEBUG] VkValidationLayers: Pattern 'VK_LAYER_KHRONOS_*' matched 2 layer(s): VK_LAYER_KHRONOS_validation, VK_LAYER_KHRONOS_synchronization2
-[INFO]  VkValidationLayers: Selected validation layers (pattern match): VK_LAYER_KHRONOS_validation, VK_LAYER_KHRONOS_synchronization2
+[DEBUG] Validation: Pattern 'VK_LAYER_KHRONOS_*' converted to regex: ^VK_LAYER_KHRONOS_.*$
+[DEBUG] Validation: Pattern 'VK_LAYER_KHRONOS_*' matched 2 layer(s): VK_LAYER_KHRONOS_validation, VK_LAYER_KHRONOS_synchronization2
+[INFO]  Validation: Selected validation layers (pattern match): VK_LAYER_KHRONOS_validation, VK_LAYER_KHRONOS_synchronization2
 ```
 
 ### Error Cases
 
 ```
-[WARNING] VkValidationLayers: Requested layer 'VK_LAYER_DOES_NOT_EXIST' not available on this system
-[WARNING] VkValidationLayers: Pattern 'VK_LAYER_FAKE_*' did not match any available layers
-[ERROR]   VkValidationLayers: Invalid regex pattern 'VK_LAYER_[': Unterminated [] set
+[WARNING] Validation: Requested layer 'VK_LAYER_DOES_NOT_EXIST' not available on this system
+[WARNING] Validation: Pattern 'VK_LAYER_FAKE_*' did not match any available layers
+[ERROR]   Validation: Invalid regex pattern 'VK_LAYER_[': Unterminated [] set
 ```
 
 ---
@@ -320,7 +320,7 @@ Validation layers add overhead:
 ### No Validation Layers Available
 
 ```
-[WARNING] VkValidationLayers: Validation layers requested but none are available. Install Vulkan SDK for validation support.
+[WARNING] Validation: Validation layers requested but none are available. Install Vulkan SDK for validation support.
 ```
 
 **Solution:** Install the Vulkan SDK from https://vulkan.lunarg.com/
@@ -330,7 +330,7 @@ Validation layers add overhead:
 ### Debug Messenger Not Created
 
 ```
-[WARNING] VkValidationLayers: VK_EXT_debug_utils extension not available - validation messages will not be captured
+[WARNING] Validation: VK_EXT_debug_utils extension not available - validation messages will not be captured
 ```
 
 **Solution:** Ensure Vulkan instance was created with validation layers enabled. This is automatically handled by `VkContext`.
@@ -340,7 +340,7 @@ Validation layers add overhead:
 ### Pattern Not Matching
 
 ```
-[WARNING] VkValidationLayers: Pattern 'VK_LAYER_MY_*' did not match any available layers
+[WARNING] Validation: Pattern 'VK_LAYER_MY_*' did not match any available layers
 ```
 
 **Solutions:**

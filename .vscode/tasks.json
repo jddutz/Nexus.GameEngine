@@ -53,7 +53,9 @@
             "args": [
                 "run",
                 "--project",
-                "${workspaceFolder}/TestApp/TestApp.csproj"
+                "${workspaceFolder}/TestApp/TestApp.csproj",
+                "--configuration",
+                "Debug"
             ],
             "group": "test",
             "presentation": {

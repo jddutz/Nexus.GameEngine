@@ -173,12 +173,12 @@ private unsafe uint DebugCallback(
 
 Based on Silk.NET's capabilities and the example code:
 
-#### 1. **IVkValidationLayers** (New - Priority 1)
+#### 1. **IValidation** (New - Priority 1)
 
 **Responsibility:** Validation layer management and debug messaging
 
 ```csharp
-interface IVkValidationLayers : IDisposable
+interface IValidation : IDisposable
 {
     bool AreEnabled { get; }
     string[] EnabledLayers { get; }
@@ -306,7 +306,7 @@ interface IVkSwapchain : IDisposable
 
 ### Phase 1: Validation Layers (Do First)
 
-1. Create `IVkValidationLayers` service
+1. Create `IValidation` service
 2. Move validation layer detection from example
 3. Create debug messenger with ILogger integration
 4. Add to VkContext initialization
@@ -364,4 +364,4 @@ We must build our own service layer following the architecture plan:
 - ✅ Create testable, reusable components
 - ✅ Follow single responsibility principle
 
-**Next Step:** Implement `IVkValidationLayers` service to enable validation before building other services.
+**Next Step:** Implement `IValidation` service to enable validation before building other services.

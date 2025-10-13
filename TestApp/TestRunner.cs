@@ -82,7 +82,19 @@ public class TestRunner(
             var testComponent = CreateChild(testComponentType);
 
             if (testComponent != null)
+            {
                 testComponent.Name = testComponentType.Name;
+                Logger?.LogInformation("Test component created: {TypeName} with name '{Name}'", testComponent.GetType().FullName, testComponent.Name);
+                
+                // CRITICAL: Activate the component so it participates in the update lifecycle
+                Logger?.LogInformation("Activating test component: {Name}", testComponent.Name);
+                testComponent.Activate();
+                Logger?.LogInformation("Test component activation complete. IsActive: {IsActive}", testComponent.IsActive);
+            }
+            else
+            {
+                Logger?.LogError("Failed to create test component: {TypeName}", testComponentType.FullName);
+            }
         }
         else
         {

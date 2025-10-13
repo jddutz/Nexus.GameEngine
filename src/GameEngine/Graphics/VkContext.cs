@@ -30,13 +30,13 @@ namespace Nexus.GameEngine.Graphics;
 public unsafe class VkContext : IVkContext
 {
     private readonly ILogger _logger;
-    private readonly IVkValidationLayers? _validationLayers;
+    private readonly IValidation? _validationLayers;
 
     public VkContext(
         IWindowService windowService,
         IOptions<ApplicationSettings> options,
         ILoggerFactory loggerFactory,
-        IVkValidationLayers? validationLayers = null)
+        IValidation? validationLayers = null)
     {
         _logger = loggerFactory.CreateLogger(nameof(VkContext));
         _validationLayers = validationLayers;
@@ -153,7 +153,7 @@ public unsafe class VkContext : IVkContext
         Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
         Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
 
-        // Initialize validation layers debug messenger after instance creation
+        // Initialize validation layers (always call to provide debugger feedback)
         _validationLayers?.Initialize(_vk, _instance);
 
         // Step 4: Create surface - platform-agnostic abstraction for rendering to the window

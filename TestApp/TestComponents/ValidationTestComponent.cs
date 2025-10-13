@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
@@ -6,86 +5,159 @@ using Silk.NET.Vulkan;
 namespace TestApp.TestComponents;
 
 /// <summary>
-/// Test component that intentionally triggers Vulkan validation errors to verify validation layers are working.
-/// Tests that the validation layer debug callback properly captures and logs Vulkan validation errors.
+/// Unit test component that verifies validation layers are working by triggering specific validation scenarios
+/// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetElements (Act), GetTestResults (Assert).
 /// </summary>
-public class ValidationTestComponent(IRenderer renderer)
-     : RuntimeComponent, IRenderable, ITestComponent
+public class ValidationTestComponent(IVkContext vkContext)
+    : RuntimeComponent, IRenderable, ITestComponent
 {
-    private bool _hasTriggeredError = false;
-    private bool _validationErrorCaptured = false;
-    private int _framesRendered = 0;
+    private record TestData
+    {
+        public string Name = "";
+        public string Regex = "";
+        public bool Passed = false;
+    }
 
+    private int frameCount = 0;
     public uint RenderPriority => 0;
 
-    protected override void OnUpdate(double deltaTime)
+    private static readonly TestData[] testData = [
+        new() {
+            Name = "Validation layer should detect zero-size buffer creation",
+            Regex = @"\[ERROR\]\s+VULKAN\s+\[.*\]\s+vkCreateBuffer\(\).*size.*zero"
+        },
+        new() {
+            Name = "Validation layer should detect invalid queue family index",
+            Regex = @"\[ERROR\]\s+VULKAN\s+\[.*\]\s+vkCreateCommandPool\(\).*queueFamilyIndex"
+        },
+        new() {
+            Name = "Validation layer should detect double destruction of command pool",
+            Regex = @"\[ERROR\]\s+VULKAN\s+\[.*\]\s+vkDestroyCommandPool\(\).*Invalid.*VkCommandPool"
+        }
+    ];
+
+    protected override void OnActivate()
     {
-        // Run test for 1 frame, then deactivate
-        if (_framesRendered >= 1)
+        foreach (var test in testData)
         {
-            IsTestComplete = true;
-            Deactivate();
+            TestLogger.Capture(test.Regex);
         }
     }
 
     public IEnumerable<ElementData> GetElements()
     {
-        _framesRendered++;
+        if (!IsActive)
+            yield break;
 
-        // Trigger a validation error on first render
-        if (!_hasTriggeredError)
+        switch (frameCount)
         {
-            Logger?.LogInformation("=== VALIDATION TEST: Attempting to trigger validation error ===");
-
-            try
-            {
-                // Trigger a validation error by calling vkQueueSubmit with invalid parameters
-                // This should definitely trigger validation: submitting to a queue with null submit info
-                unsafe
-                {
-                    var submitInfo = new Silk.NET.Vulkan.SubmitInfo
-                    {
-                        SType = Silk.NET.Vulkan.StructureType.SubmitInfo,
-                        CommandBufferCount = 1,  // Say we have 1 command buffer
-                        PCommandBuffers = null   // But provide null pointer - VALIDATION ERROR!
-                    };
-
-                    var result = renderer.VK.Vk.QueueSubmit(renderer.VK.GraphicsQueue, 1, &submitInfo, default);
-
-                    Logger?.LogInformation("=== VALIDATION TEST: QueueSubmit returned: {Result} ===", result);
-                }
-
-                // If we get here, check if validation logged an error
-                _validationErrorCaptured = true;
-            }
-            catch (Exception ex)
-            {
-                Logger?.LogError(ex, "=== VALIDATION TEST: Exception: {Message} ===", ex.Message);
-                _validationErrorCaptured = false;
-            }
-
-            _hasTriggeredError = true;
+            case 0:
+                ActZeroSizeBuffer();
+                break;
+            case 1:
+                ActInvalidQueueFamily();
+                break;
+            case 2:
+                ActDoubleDestroy();
+                break;
+            default:
+                // No more tests to run
+                break;
         }
 
-        return Enumerable.Empty<ElementData>();
+        frameCount++;
+        
+        if (frameCount >= 3) Deactivate();
     }
 
-    public bool IsTestComplete { get; private set; }
+    private unsafe void ActZeroSizeBuffer()
+    {
+        try
+        {
+            // Create a buffer with zero size - this should trigger validation layer warning
+            var bufferCreateInfo = new BufferCreateInfo
+            {
+                SType = StructureType.BufferCreateInfo,
+                Size = 0, // Zero size should trigger validation warning
+                Usage = BufferUsageFlags.VertexBufferBit,
+                SharingMode = SharingMode.Exclusive
+            };
+
+            Silk.NET.Vulkan.Buffer buffer;
+            var result = vkContext.Vk.CreateBuffer(vkContext.Device, &bufferCreateInfo, null, &buffer);
+
+            if (result == Result.Success)
+            {
+                // Clean up the buffer if it was created
+                vkContext.Vk.DestroyBuffer(vkContext.Device, buffer, null);
+            }
+        }
+        catch { }
+    }
+
+    private unsafe void ActInvalidQueueFamily()
+    {
+        try
+        {
+            // Try to create a command pool with an invalid queue family index
+            var poolCreateInfo = new CommandPoolCreateInfo
+            {
+                SType = StructureType.CommandPoolCreateInfo,
+                Flags = CommandPoolCreateFlags.TransientBit,
+                QueueFamilyIndex = 9999 // Invalid queue family index should trigger validation error
+            };
+
+            CommandPool commandPool;
+            var result = vkContext.Vk.CreateCommandPool(vkContext.Device, &poolCreateInfo, null, &commandPool);
+
+            if (result == Result.Success)
+            {
+                // Clean up if somehow created
+                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+            }
+        }
+        catch { }
+    }
+
+    private unsafe void ActDoubleDestroy()
+    {
+        try
+        {
+            // Create a command pool first
+            var poolCreateInfo = new CommandPoolCreateInfo
+            {
+                SType = StructureType.CommandPoolCreateInfo,
+                Flags = CommandPoolCreateFlags.TransientBit,
+                QueueFamilyIndex = 0 // Use a valid queue family (graphics queue family)
+            };
+
+            CommandPool commandPool;
+            var result = vkContext.Vk.CreateCommandPool(vkContext.Device, &poolCreateInfo, null, &commandPool);
+
+            if (result == Result.Success)
+            {
+                // Destroy it once (valid)
+                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+
+                // Destroy it again (invalid) - this should trigger validation error
+                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+            }
+        }
+        catch { }
+    }
 
     public IEnumerable<TestResult> GetTestResults()
     {
-        yield return new TestResult
+        foreach (var test in testData)
         {
-            TestName = "Vulkan validation layers should be enabled and capture errors",
-            Passed = _hasTriggeredError && _validationErrorCaptured,
-            Description = "This test intentionally triggers a Vulkan validation error by calling DestroyCommandPool with an invalid handle. " +
-                         "Check the log output for validation error messages from the debug callback. " +
-                         "Look for '[Vulkan ValidationBit]' or similar validation layer messages.",
-            ErrorMessage = !_hasTriggeredError
-                ? "Test did not execute - validation error was not triggered"
-                : !_validationErrorCaptured
-                    ? "Exception was thrown instead of validation callback being invoked"
-                    : null
-        };
+            test.Passed = TestLogger.StopCapture(test.Regex).Any();
+            yield return new()
+            {
+                TestName = test.Name,
+                Description = "Testing VkValidationLayer implementation",
+                Passed = test.Passed,
+                ErrorMessage = test.Passed ? "" : "Expected log output was not captured."
+            };
+        }
     }
 }

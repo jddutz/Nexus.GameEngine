@@ -40,22 +40,27 @@ class Program
             })
             .Build();
 
+        // Configure logging
+        var loggerConfig = new TestLoggerConfiguration();
+        var testLoggerFactory = new TestLoggerFactory(loggerConfig);
+        
+        // Create a wrapper that implements ILoggerFactory and delegates to our TestLoggerFactory
+        var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.ClearProviders();
+            builder.SetMinimumLevel(LogLevel.Trace);
+            builder.AddProvider(testLoggerFactory);
+        });
+        
         // Build service container
         var services = new ServiceCollection()
-            .AddLogging(builder =>
-            {
-                builder.ClearProviders();
-                builder.SetMinimumLevel(LogLevel.Trace);
-
-                var loggerConfig = new TestLoggerConfiguration();
-                var loggerFactory = new TestLoggerFactory(loggerConfig);
-                builder.AddProvider(new TestLoggerFactory(loggerConfig));
-            })
+            .AddSingleton(loggerFactory)
+            .AddSingleton(testLoggerFactory)
             .Configure<ApplicationSettings>(configuration.GetSection("Application"))
             .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
             .Configure<VkSettings>(configuration.GetSection("Graphics:Vulkan"))
             .AddSingleton<IWindowService, WindowService>()
-            .AddSingleton<IVkValidationLayers, VkValidationLayers>()
+            .AddSingleton<IValidation, Validation>()
             .AddSingleton<IVkContext, VkContext>()
             .AddSingleton<IRenderer, Renderer>()
             .AddSingleton<IEventBus, EventBus>()

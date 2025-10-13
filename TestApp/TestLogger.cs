@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace TestApp;
@@ -13,7 +14,7 @@ public sealed class TestLogger(
     TestLoggerConfiguration config)
     : ILogger
 {
-    private readonly Queue<string> _history = new();
+    private static readonly Dictionary<string, List<string>> _capture = [];
 
     /// <summary>
     /// Determines whether the specified log level is enabled.
@@ -75,19 +76,40 @@ public sealed class TestLogger(
             Console.WriteLine(logMessage);
         }
 
-        // Maintain fixed-size history
-        if (_history.Count >= config.HistoryLimit)
-            _history.Dequeue();
-        _history.Enqueue(logMessage);
+        foreach (var key in _capture.Keys)
+        {
+            var match = Regex.Match(logMessage, key);
+            if (match.Success) _capture[key].Add(logMessage);
+        }
     }
 
     /// <summary>
-    /// Gets the log history.
+    /// Captures log messages matching the specified pattern.
     /// </summary>
-    public IEnumerable<string> GetHistory() => _history.ToList();
+    /// <param name="regex">Pattern used to match log messages.</param>
+    /// <returns>A list of messages captured since the first call.</returns>
+    public static IEnumerable<string> Capture(string regex)
+    {
+        if (_capture.ContainsKey(regex)) return _capture[regex];
 
+        _capture[regex] = [];
+        return _capture[regex];
+    }
+    
     /// <summary>
-    /// Clears the log history.
+    /// Stops capturing log messages matching the specified pattern.
     /// </summary>
-    public void ClearHistory() => _history.Clear();
+    /// <param name="regex">Pattern used to match log messages.</param>
+    /// <returns>The list of messages captured since the first Capture call.</returns>
+    public static IEnumerable<string> StopCapture(string regex)
+    {
+        if (_capture.ContainsKey(regex))
+        {
+            var result = _capture[regex];
+            _capture.Remove(regex);
+            return result;
+        }
+
+        return [];
+    }
 }
