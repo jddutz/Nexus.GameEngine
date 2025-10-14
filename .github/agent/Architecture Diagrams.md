@@ -24,7 +24,7 @@
 │    ❌ gl.CreateProgram()                                        │
 │    ❌ gl.LinkProgram()                                          │
 │    ❌ gl.VertexAttribPointer()                                  │
-│    return ElementData { Vao, Vbo, Ebo, Shader }                │
+│    return DrawCommand { Vao, Vbo, Ebo, Shader }                │
 │                                                                  │
 │  Problems:                                                       │
 │  - Creates resources every frame                                │
@@ -54,8 +54,8 @@
 │  Responsibility: Orchestrate rendering                          │
 │  - Walks component tree                                         │
 │  - Calls GetElements() on each IRenderable                      │
-│  - Applies uniforms from ElementData                            │
-│  - Issues GL.DrawElements() using ElementData properties        │
+│  - Applies uniforms from DrawCommand                            │
+│  - Issues GL.DrawElements() using DrawCommand properties        │
 │  - NO hardcoded geometry references                             │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
@@ -71,7 +71,7 @@
 │  GetElements(vp):                                               │
 │    ✅ geometry = resourceManager.GetOrCreateGeometry(...)       │
 │    ✅ shader = resourceManager.GetOrCreateShader(...)           │
-│    ✅ return ElementData {                                       │
+│    ✅ return DrawCommand {                                       │
 │         Vao = geometry.VaoId,                                   │
 │         Shader = shader.ProgramId,                              │
 │         IndexCount = geometry.IndexCount,                       │
@@ -123,7 +123,7 @@ Frame N:
   Renderer.OnRender()
     → HelloQuad.GetElements(gl, vp)
         → ❌ Create VAO/VBO/EBO/Shader (100+ lines of GL code)
-        → return ElementData { newly created IDs }
+        → return DrawCommand { newly created IDs }
     → Renderer.Draw(element)
         → GL.DrawElements(hardcoded BasicQuad.Indices.Length)
 
@@ -131,7 +131,7 @@ Frame N+1:
   Renderer.OnRender()
     → HelloQuad.GetElements(gl, vp)
         → ❌ Create VAO/VBO/EBO/Shader AGAIN! (resource leak)
-        → return ElementData { different IDs }
+        → return DrawCommand { different IDs }
     → Renderer.Draw(element)
         → GL.DrawElements(hardcoded BasicQuad.Indices.Length)
 
@@ -150,7 +150,7 @@ Frame N:
         → resourceManager.GetOrCreateShader(BasicQuad)
             → ✅ Cache miss - compile shader, store in cache
             → return ShaderResource { ProgramId }
-        → return ElementData { VaoId, ProgramId, IndexCount, Uniforms }
+        → return DrawCommand { VaoId, ProgramId, IndexCount, Uniforms }
     → Renderer.Draw(element)
         → GL.UseProgram(element.Shader)
         → ApplyUniforms(element.Uniforms)
@@ -163,7 +163,7 @@ Frame N+1:
             → ✅ Cache hit - return cached GeometryResource
         → resourceManager.GetOrCreateShader(BasicQuad)
             → ✅ Cache hit - return cached ShaderResource
-        → return ElementData { same VaoId, same ProgramId, ... }
+        → return DrawCommand { same VaoId, same ProgramId, ... }
     → Renderer.Draw(element)
         → GL.DrawElements(element.IndexCount)
 
@@ -223,12 +223,12 @@ Result: No leaks, minimal overhead, proper caching
 
 ```csharp
 // ~150 lines, high complexity
-public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
 {
     yield return GetRenderData(gl);
 }
 
-public unsafe ElementData GetRenderData(GL gl)
+public unsafe DrawCommand GetRenderData(GL gl)
 {
     // Create VAO (3 lines)
     uint vao = gl.GenVertexArray();
@@ -306,7 +306,7 @@ public unsafe ElementData GetRenderData(GL gl)
 
 ```csharp
 // ~15 lines, low complexity
-public IEnumerable<ElementData> GetElements(IViewport vp)
+public IEnumerable<DrawCommand> GetElements(IViewport vp)
 {
     if (!IsVisible)
         yield break;
@@ -316,7 +316,7 @@ public IEnumerable<ElementData> GetElements(IViewport vp)
     var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.BasicQuad);
 
     // Declare what to render (10 lines)
-    yield return new ElementData
+    yield return new DrawCommand
     {
         Vao = geometry.VaoId,
         Shader = shader.ProgramId,
@@ -390,7 +390,7 @@ public void HelloQuad_GetElements_RequestsCorrectResources()
         m => m.GetOrCreateGeometry(GeometryDefinitions.BasicQuad),
         Times.Once);
 
-    // ✅ Verify ElementData is correct
+    // ✅ Verify DrawCommand is correct
     Assert.Equal(1u, elements[0].Vao);
     Assert.Equal(2u, elements[0].Shader);
     Assert.Equal(6u, elements[0].IndexCount);

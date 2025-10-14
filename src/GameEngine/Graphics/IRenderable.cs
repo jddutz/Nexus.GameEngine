@@ -9,15 +9,10 @@ namespace Nexus.GameEngine.Graphics;
 public interface IRenderable : IRuntimeComponent
 {
     /// <summary>
-    /// Render priority. Lower values render first (e.g., backgrounds=0, UI=1000)
-    /// </summary>
-    uint RenderPriority { get; }
-
-    /// <summary>
-    /// Gets elements for this component.
+    /// Gets draw commands for this component.
     /// Called by the renderer during the render phase.
+    /// Each DrawCommand specifies which render passes it participates in via RenderMask.
     /// </summary>
-    /// <param name="viewport">The viewport being rendered to</param>
-    /// <returns>Collection of render elements describing what to draw</returns>
-    IEnumerable<ElementData> GetElements();
+    /// <returns>Collection of Vulkan draw commands describing what to render</returns>
+    IEnumerable<DrawCommand> GetDrawCommands();
 }

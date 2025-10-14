@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
@@ -6,10 +7,10 @@ namespace TestApp.TestComponents;
 
 /// <summary>
 /// Unit test component that verifies validation layers are working by triggering specific validation scenarios
-/// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetElements (Act), GetTestResults (Assert).
+/// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetDrawCommands (Act), GetTestResults (Assert).
 /// </summary>
-public class ValidationTestComponent(IVkContext vkContext)
-    : RuntimeComponent, IRenderable, ITestComponent
+public class ValidationTestComponent(IGraphicsContext context, IOptions<VulkanSettings> vulkanSettings)
+    : RenderableBase(vulkanSettings), IRenderable, ITestComponent
 {
     private record TestData
     {
@@ -19,7 +20,6 @@ public class ValidationTestComponent(IVkContext vkContext)
     }
 
     private int frameCount = 0;
-    public uint RenderPriority => 0;
 
     private static readonly TestData[] testData = [
         new() {
@@ -44,7 +44,7 @@ public class ValidationTestComponent(IVkContext vkContext)
         }
     }
 
-    public IEnumerable<ElementData> GetElements()
+    public override IEnumerable<DrawCommand> GetDrawCommands()
     {
         if (!IsActive)
             yield break;
@@ -84,12 +84,12 @@ public class ValidationTestComponent(IVkContext vkContext)
             };
 
             Silk.NET.Vulkan.Buffer buffer;
-            var result = vkContext.Vk.CreateBuffer(vkContext.Device, &bufferCreateInfo, null, &buffer);
+            var result = context.VulkanApi.CreateBuffer(context.Device, &bufferCreateInfo, null, &buffer);
 
             if (result == Result.Success)
             {
                 // Clean up the buffer if it was created
-                vkContext.Vk.DestroyBuffer(vkContext.Device, buffer, null);
+                context.VulkanApi.DestroyBuffer(context.Device, buffer, null);
             }
         }
         catch { }
@@ -108,12 +108,12 @@ public class ValidationTestComponent(IVkContext vkContext)
             };
 
             CommandPool commandPool;
-            var result = vkContext.Vk.CreateCommandPool(vkContext.Device, &poolCreateInfo, null, &commandPool);
+            var result = context.VulkanApi.CreateCommandPool(context.Device, &poolCreateInfo, null, &commandPool);
 
             if (result == Result.Success)
             {
                 // Clean up if somehow created
-                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+                context.VulkanApi.DestroyCommandPool(context.Device, commandPool, null);
             }
         }
         catch { }
@@ -132,15 +132,15 @@ public class ValidationTestComponent(IVkContext vkContext)
             };
 
             CommandPool commandPool;
-            var result = vkContext.Vk.CreateCommandPool(vkContext.Device, &poolCreateInfo, null, &commandPool);
+            var result = context.VulkanApi.CreateCommandPool(context.Device, &poolCreateInfo, null, &commandPool);
 
             if (result == Result.Success)
             {
                 // Destroy it once (valid)
-                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+                context.VulkanApi.DestroyCommandPool(context.Device, commandPool, null);
 
                 // Destroy it again (invalid) - this should trigger validation error
-                vkContext.Vk.DestroyCommandPool(vkContext.Device, commandPool, null);
+                context.VulkanApi.DestroyCommandPool(context.Device, commandPool, null);
             }
         }
         catch { }

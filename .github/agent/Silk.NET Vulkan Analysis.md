@@ -197,7 +197,7 @@ vk.CreateInstance(instanceCreateInfo, null, out var instance);
 **Do this:**
 
 1. ✅ Upgrade to GLSL 4.30 (explicit uniform locations)
-2. ✅ Fix ElementData (immutable, location-based)
+2. ✅ Fix DrawCommand (immutable, location-based)
 3. ✅ Implement separation of concerns refactoring
 4. ✅ Get comfortable with graphics concepts
 
@@ -308,7 +308,7 @@ public class VulkanBackend : IGraphicsBackend { } // Add later
 **Now (0-2 weeks):**
 
 1. ✅ Finish OpenGL 4.3 optimization (GLSL 4.30, explicit locations)
-2. ✅ Complete ElementData refactoring
+2. ✅ Complete DrawCommand refactoring
 3. ✅ Build working renderer with good architecture
 
 **Soon (2-8 weeks):**
@@ -357,6 +357,6 @@ Should we:
 2. **Design IGraphicsBackend abstraction** (prepare for Vulkan)
 3. **Start Vulkan implementation** (jump in deep end)
 
-I recommend **Option 1** - finish the OpenGL optimization (GLSL 4.30, ElementData refactoring), then move to abstraction and Vulkan. You'll have a working renderer in days instead of weeks, and the concepts you learn will transfer directly to Vulkan.
+I recommend **Option 1** - finish the OpenGL optimization (GLSL 4.30, DrawCommand refactoring), then move to abstraction and Vulkan. You'll have a working renderer in days instead of weeks, and the concepts you learn will transfer directly to Vulkan.
 
 What do you think?

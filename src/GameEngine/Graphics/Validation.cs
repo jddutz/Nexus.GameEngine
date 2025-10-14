@@ -15,7 +15,7 @@ namespace Nexus.GameEngine.Graphics;
 public unsafe class Validation : IValidation
 {
     private readonly ILogger logger;
-    private readonly VkSettings settings;
+    private readonly VulkanSettings _vkSettings;
     private readonly string[] _layerNames;
 
     private Vk? _vk;
@@ -24,10 +24,10 @@ public unsafe class Validation : IValidation
     private DebugUtilsMessengerEXT _debugMessenger;
     private bool _isInitialized;
 
-    public Validation(ILoggerFactory loggerFactory, IOptions<VkSettings> options)
+    public Validation(ILoggerFactory loggerFactory, IOptions<VulkanSettings> options)
     {
         logger = loggerFactory.CreateLogger(nameof(Validation));
-        settings = options.Value;
+        _vkSettings = options.Value;
         _layerNames = DetectValidationLayers();
     }
 
@@ -45,7 +45,7 @@ public unsafe class Validation : IValidation
         ]
     ];
 
-    public bool AreEnabled => settings.ValidationEnabled && _layerNames.Length > 0;
+    public bool AreEnabled => _vkSettings.EnableValidationLayers && _layerNames.Length > 0;
     public string[] LayerNames => _layerNames;
     public bool IsInitialized => _isInitialized;
     public DebugUtilsMessengerEXT DebugMessenger => _debugMessenger;
@@ -55,7 +55,7 @@ public unsafe class Validation : IValidation
         bool debuggerAttached = Debugger.IsAttached;
         
         // Handle validation disabled case
-        if (!settings.ValidationEnabled)
+        if (!_vkSettings.EnableValidationLayers)
         {
             if (debuggerAttached)
             {
@@ -63,7 +63,7 @@ public unsafe class Validation : IValidation
                 .AppendLine("=== VULKAN VALIDATION LAYERS DISABLED IN DEBUG MODE ===")
                 .AppendLine("OPTIONAL: For development, enabling validation layers is recommended")
                 .AppendLine("Your application will run fine without validation layers enabled")
-                .AppendLine("\nTo enable validation layers, set 'ValidationEnabled: true' in VkSettings configuration");
+                .AppendLine("\nTo enable validation layers, set 'EnableValidationLayers: true' in GraphicsSettings configuration");
 
                 if (_layerNames.Length == 0)
                 {
@@ -84,14 +84,14 @@ public unsafe class Validation : IValidation
         }
 
         // Handle validation enabled case
-        if (settings.ValidationEnabled)
+        if (_vkSettings.EnableValidationLayers)
         {
             if (!debuggerAttached)
             {
                 logger.LogWarning("=== VALIDATION LAYERS ENABLED (NO DEBUGGER) ===");
                 logger.LogWarning("Performance impact: Validation layers cause significant performance degradation");
                 logger.LogWarning("For production deployment, disable validation layers:");
-                logger.LogWarning("1. Set 'ValidationEnabled: false' in VkSettings configuration");
+                logger.LogWarning("1. Set 'EnableValidationLayers: false' in GraphicsSettings configuration");
                 logger.LogWarning("2. This improves runtime performance substantially");
             }
             else
@@ -165,13 +165,13 @@ public unsafe class Validation : IValidation
         bool debuggerAttached = Debugger.IsAttached;
         
         // Only be verbose if validation is enabled OR if debugger is attached
-        bool shouldLogDetails = settings.ValidationEnabled || debuggerAttached;
+        bool shouldLogDetails = _vkSettings.EnableValidationLayers || debuggerAttached;
         
         if (shouldLogDetails)
         {
             logger.LogInformation("=== VULKAN SDK VALIDATION LAYER DETECTION ===");
-            logger.LogInformation("Configuration: ValidationEnabled={ValidationEnabled}", settings.ValidationEnabled);
-            logger.LogInformation("Requested layer patterns: [{Patterns}]", string.Join(", ", settings.EnabledValidationLayers));
+            logger.LogInformation("Configuration: EnableValidationLayers={EnableValidationLayers}", _vkSettings.EnableValidationLayers);
+            logger.LogInformation("Requested layer patterns: [{Patterns}]", string.Join(", ", _vkSettings.EnabledValidationLayers));
         }
 
         var vk = Vk.GetApi();
@@ -186,7 +186,7 @@ public unsafe class Validation : IValidation
 
         if (layerCount == 0)
         {
-            if (settings.ValidationEnabled)
+            if (_vkSettings.EnableValidationLayers)
             {
                 logger.LogError("[X] NO VULKAN LAYERS FOUND - SDK installation required for validation");
                 logger.LogError("To install the Vulkan SDK:");
@@ -262,7 +262,7 @@ public unsafe class Validation : IValidation
         {
             logger.LogInformation("[+] VULKAN SDK DETECTED: Standard validation layers are available");
         }
-        else if (settings.ValidationEnabled)
+        else if (_vkSettings.EnableValidationLayers)
         {
             // Only warn about missing SDK when validation is enabled
             logger.LogWarning("[!] VULKAN SDK NOT DETECTED: Only GPU driver layers found");
@@ -271,7 +271,7 @@ public unsafe class Validation : IValidation
         // Be completely quiet if validation disabled and no debugger
 
         // Handle wildcard "*" - use priority-based selection
-        if (settings.EnabledValidationLayers.Length == 1 && settings.EnabledValidationLayers[0] == "*")
+        if (_vkSettings.EnabledValidationLayers.Length == 1 && _vkSettings.EnabledValidationLayers[0] == "*")
         {
             if (shouldLogDetails)
             {
@@ -310,7 +310,7 @@ public unsafe class Validation : IValidation
                 priorityIndex++;
             }
 
-            if (settings.ValidationEnabled)
+            if (_vkSettings.EnableValidationLayers)
             {
                 logger.LogWarning("[-] NO PRIORITY VALIDATION LAYER SET FOUND");
                 logger.LogWarning("Available layers: [{Available}]", string.Join(", ", availableLayerNames));
@@ -321,11 +321,11 @@ public unsafe class Validation : IValidation
         }
 
         // Handle pattern matching for configured layers
-        if (settings.EnabledValidationLayers.Length > 0)
+        if (_vkSettings.EnabledValidationLayers.Length > 0)
         {
             var selectedLayers = new List<string>();
 
-            foreach (var pattern in settings.EnabledValidationLayers)
+            foreach (var pattern in _vkSettings.EnabledValidationLayers)
             {
                 // Convert wildcard pattern to regex if it contains '*'
                 string regexPattern;

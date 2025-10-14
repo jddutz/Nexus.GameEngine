@@ -1,6 +1,6 @@
-# ElementData Refactoring - Performance Analysis
+# DrawCommand Refactoring - Performance Analysis
 
-## Question: Should ElementData be a struct?
+## Question: Should DrawCommand be a struct?
 
 ### Answer: **No - Keep it as a class**
 
@@ -22,7 +22,7 @@
 
 3. **Boxing concerns**
 
-   - Used with `IEnumerable<ElementData>` (LINQ operations)
+   - Used with `IEnumerable<DrawCommand>` (LINQ operations)
    - Would be boxed when passed to methods
    - Boxing negates all struct performance benefits
 
@@ -40,7 +40,7 @@
 
 ### Better optimization: Simplify as an immutable class
 
-Instead of making it a struct, we **simplified ElementData** by:
+Instead of making it a struct, we **simplified DrawCommand** by:
 
 ✅ **Removed unused fields:**
 
@@ -82,7 +82,7 @@ Instead of making it a struct, we **simplified ElementData** by:
 ### Before (Complex, Stateful)
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     public required uint Vbo { get; init; }         // ❌ Unused
     public required uint Ebo { get; init; }         // ❌ Unused
@@ -108,7 +108,7 @@ public class ElementData
 ### After (Simple, Immutable Data Carrier)
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     // Resource IDs (what to render)
     public required uint Vao { get; init; }
@@ -154,7 +154,7 @@ public class ElementData
 
 ## Conclusion
 
-**ElementData should remain a class** but be simplified to a pure data carrier. The refactored version:
+**DrawCommand should remain a class** but be simplified to a pure data carrier. The refactored version:
 
 ✅ Removes ~40 bytes per instance
 ✅ Eliminates unused fields and confusing duplicates  
@@ -178,7 +178,7 @@ public class ElementData
 **Why this is necessary (for now):**
 
 1. **OpenGL API requirement:** `glGetUniformLocation(program, name)` requires the uniform name as a string
-2. **Per-draw variability:** Each ElementData can have different uniform values (colors, transforms, etc.)
+2. **Per-draw variability:** Each DrawCommand can have different uniform values (colors, transforms, etc.)
 3. **Flexibility:** Components can set arbitrary uniforms without pre-registration
 
 **Performance characteristics:**

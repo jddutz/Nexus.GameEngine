@@ -6,13 +6,13 @@ The Vulkan validation layers system supports flexible pattern matching for layer
 
 ## Configuration
 
-Validation layers are configured via `VkSettings` in your application settings:
+Validation layers are configured via `GraphicsSettings` in your application settings:
 
 ```json
 {
   "Graphics": {
     "Vulkan": {
-      "ValidationEnabled": true,
+      "EnableValidationLayers": true,
       "MinLogSeverity": "Warning",
       "EnabledValidationLayers": ["*"]
     }
@@ -24,7 +24,7 @@ Validation layers are configured via `VkSettings` in your application settings:
 
 | Property                  | Type       | Default | Description                                    |
 | ------------------------- | ---------- | ------- | ---------------------------------------------- |
-| `ValidationEnabled`       | `bool`     | `false` | Master switch to enable/disable validation     |
+| `EnableValidationLayers`       | `bool`     | `false` | Master switch to enable/disable validation     |
 | `MinLogSeverity`          | `LogLevel` | `Trace` | Minimum severity level for validation messages |
 | `EnabledValidationLayers` | `string[]` | `["*"]` | Patterns to match validation layers            |
 
@@ -180,7 +180,7 @@ You can specify multiple patterns - all matching layers will be enabled:
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Trace",
   "EnabledValidationLayers": ["*"]
 }
@@ -194,7 +194,7 @@ Enables all available validation with verbose output.
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Warning",
   "EnabledValidationLayers": ["VK_LAYER_KHRONOS_validation"]
 }
@@ -208,7 +208,7 @@ Modern validation layer only, warnings and errors only.
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Error",
   "EnabledValidationLayers": ["VK_LAYER_KHRONOS_validation"]
 }
@@ -222,7 +222,7 @@ Errors only for production debugging.
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Warning",
   "EnabledValidationLayers": [
     "VK_LAYER_KHRONOS_validation",
@@ -239,7 +239,7 @@ Falls back to legacy layer if modern one isn't available.
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Debug",
   "EnabledValidationLayers": [
     "VK_LAYER_KHRONOS_validation",
@@ -311,7 +311,7 @@ Validation layers add overhead:
 | Warning  | ~5-10%   | Production debugging |
 | Error    | ~3-5%    | Minimal impact       |
 
-**Recommendation:** Disable validation in production (`ValidationEnabled: false`) or use `Error` level only.
+**Recommendation:** Disable validation in production (`EnableValidationLayers: false`) or use `Error` level only.
 
 ---
 
@@ -333,7 +333,7 @@ Validation layers add overhead:
 [WARNING] Validation: VK_EXT_debug_utils extension not available - validation messages will not be captured
 ```
 
-**Solution:** Ensure Vulkan instance was created with validation layers enabled. This is automatically handled by `VkContext`.
+**Solution:** Ensure Vulkan instance was created with validation layers enabled. This is automatically handled by `Context`.
 
 ---
 
@@ -357,7 +357,7 @@ Validation layers add overhead:
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Trace",
   "EnabledValidationLayers": ["*"]
 }
@@ -367,7 +367,7 @@ Validation layers add overhead:
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Debug",
   "EnabledValidationLayers": [
     "VK_LAYER_KHRONOS_validation",
@@ -380,7 +380,7 @@ Validation layers add overhead:
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Warning",
   "EnabledValidationLayers": ["VK_LAYER_KHRONOS_validation"]
 }
@@ -390,7 +390,7 @@ Validation layers add overhead:
 
 ```json
 {
-  "ValidationEnabled": true,
+  "EnableValidationLayers": true,
   "MinLogSeverity": "Warning",
   "EnabledValidationLayers": ["VK_LAYER_KHRONOS_validation"]
 }

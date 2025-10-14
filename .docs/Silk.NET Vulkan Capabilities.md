@@ -194,12 +194,12 @@ interface IValidation : IDisposable
 
 ---
 
-#### 2. **IVkSwapchain** (Original Plan)
+#### 2. **ISwapChain** (Original Plan)
 
 **Responsibility:** Swapchain lifecycle and presentation
 
 ```csharp
-interface IVkSwapchain : IDisposable
+interface ISwapChain : IDisposable
 {
     SwapchainKHR Swapchain { get; }
     Format Format { get; }
@@ -309,7 +309,7 @@ interface IVkSwapchain : IDisposable
 1. Create `IValidation` service
 2. Move validation layer detection from example
 3. Create debug messenger with ILogger integration
-4. Add to VkContext initialization
+4. Add to Context initialization
 
 **Benefit:** Catch errors in all future services as we build them
 
@@ -318,7 +318,7 @@ interface IVkSwapchain : IDisposable
 ### Phase 2: Core Rendering Services
 
 1. `IVkRenderPass` - Simple, no dependencies
-2. `IVkSwapchain` - Depends on render pass
+2. `ISwapChain` - Depends on render pass
 3. `IVkCommandPool` - Independent
 4. `IVkSyncManager` - Independent
 

@@ -2,7 +2,7 @@
 
 ## Current Problem
 
-**ElementData.Uniforms is `Dictionary<string, object>`**
+**DrawCommand.Uniforms is `Dictionary<string, object>`**
 
 Issues:
 
@@ -189,7 +189,7 @@ public readonly struct UniformBinding
     }
 }
 
-public class ElementData
+public class DrawCommand
 {
     // Cache locations at ResourceManager level, store only location + value
     public UniformBinding[] Uniforms { get; init; } = [];
@@ -234,7 +234,7 @@ public enum UniformFlags
     TextureSlot = 16
 }
 
-public class ElementData
+public class DrawCommand
 {
     public UniformData Uniforms { get; init; }
 }
@@ -275,7 +275,7 @@ public readonly struct UniformValue
     public readonly float Float;
 }
 
-public class ElementData
+public class DrawCommand
 {
     // Fixed array of uniform values indexed by location
     // Most shaders use < 8 uniforms
@@ -307,7 +307,7 @@ public readonly struct UniformValue
     public ReadOnlySpan<byte> Data => _data.Span;
 }
 
-public class ElementData
+public class DrawCommand
 {
     // Truly immutable dictionary
     public ImmutableDictionary<string, UniformValue> Uniforms { get; init; }
@@ -345,7 +345,7 @@ public readonly struct UniformValue
     }
 }
 
-public class ElementData
+public class DrawCommand
 {
     // ImmutableArray is truly immutable and efficient
     public ImmutableArray<UniformValue> Uniforms { get; init; }
@@ -395,7 +395,7 @@ public static class UniformLocations
     public const int TextureSlot = 4;
 }
 
-public class ElementData
+public class DrawCommand
 {
     // Direct array indexed by location - no lookup needed
     public UniformValue[] UniformsByLocation { get; init; } = new UniformValue[8];
@@ -404,7 +404,7 @@ public class ElementData
 
 ## Immediate Action
 
-Update ElementData to use cached locations:
+Update DrawCommand to use cached locations:
 
 ```csharp
 using System.Collections.Immutable;
@@ -421,7 +421,7 @@ public readonly struct UniformValue
     }
 }
 
-public class ElementData
+public class DrawCommand
 {
     // ... other properties ...
 

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 
@@ -6,7 +7,8 @@ namespace TestApp.TestComponents;
 /// <summary>
 /// Service responsible for discovering integration tests in assemblies.
 /// </summary>
-public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestComponent
+public class RenderableTestComponent(IOptions<VulkanSettings> vulkanSettings)
+    : RenderableBase(vulkanSettings), IRenderable, ITestComponent
 {
     public int FramesRendered { get; private set; } = 0;
     public int FrameCount { get; set; } = 1;
@@ -21,7 +23,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
         }
     }
 
-    public IEnumerable<ElementData> GetElements()
+    public override IEnumerable<DrawCommand> GetDrawCommands()
     {
         FramesRendered++;
         return [];
@@ -33,7 +35,7 @@ public class RenderableTestComponent : RuntimeComponent, IRenderable, ITestCompo
 
         var result = new TestResult()
         {
-            TestName = "GetElements() should be called at least once",
+            TestName = "GetDrawCommands() should be called at least once",
             Passed = passed
         };
 

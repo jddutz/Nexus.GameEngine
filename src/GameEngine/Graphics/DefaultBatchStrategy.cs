@@ -18,42 +18,54 @@ namespace Nexus.GameEngine.Graphics;
 public class DefaultBatchStrategy : IBatchStrategy
 {
     /// <summary>
-    /// Compares two render elements for batch priority ordering.
-    /// Prioritizes by framebuffer first (off-screen before main), then by shader program.
-    /// This minimizes the most expensive state changes.
+    /// Compares two draw commands for batch priority ordering.
+    /// Sorts by pipeline first (most expensive), then descriptor sets, then buffers.
+    /// This minimizes Vulkan state changes.
     /// </summary>
-    /// <param name="x">First render element to compare</param>
-    /// <param name="y">Second render element to compare</param>
+    /// <param name="x">First draw command to compare</param>
+    /// <param name="y">Second draw command to compare</param>
     /// <returns>-1 if x should render before y, 1 if y should render before x, 0 if equal priority</returns>
-    public int Compare(ElementData? x, ElementData? y)
+    public int Compare(DrawCommand x, DrawCommand y)
     {
-        if (x == null && y == null) return 0;
-        if (x == null) return -1;
-        if (y == null) return 1;
-
-        // If framebuffer and shader are the same, they should batch together
-        // so the specific order doesn't matter much
-        return 0;
+        // Sort by pipeline first (most expensive to change)
+        var pipelineCompare = x.PipelineHandle.CompareTo(y.PipelineHandle);
+        if (pipelineCompare != 0) return pipelineCompare;
+        
+        // Then by descriptor set (textures/uniforms)
+        var descriptorCompare = x.DescriptorSetHandle.CompareTo(y.DescriptorSetHandle);
+        if (descriptorCompare != 0) return descriptorCompare;
+        
+        // Then by vertex buffer
+        var vertexCompare = x.VertexBufferHandle.CompareTo(y.VertexBufferHandle);
+        if (vertexCompare != 0) return vertexCompare;
+        
+        // Finally by index buffer
+        return x.IndexBufferHandle.CompareTo(y.IndexBufferHandle);
     }
 
     /// <summary>
-    /// Gets a stable hash code for the render element to enable efficient batch grouping.
-    /// Hash includes framebuffer, shader program, VAO, and bound textures.
-    /// Elements with the same hash can potentially be batched together.
+    /// Gets a stable hash code for the draw command to enable efficient batch grouping.
+    /// Hash encodes state change costs: pipeline (most expensive) to buffers (least expensive).
+    /// Commands with similar hashes will batch together.
     /// </summary>
-    /// <param name="state">Render element to hash</param>
-    /// <returns>Hash code representing the batchable aspects of the render element</returns>
-    public int GetHashCode(ElementData state)
+    /// <param name="state">Draw command to hash</param>
+    /// <returns>Hash code representing the batchable aspects of the draw command</returns>
+    public int GetHashCode(DrawCommand state)
     {
-        if (state == null)
-            return 0;
-
-        return 0;
+        var hash = new HashCode();
+        
+        // Add in order of state change cost (most expensive first)
+        hash.Add(state.PipelineHandle);
+        hash.Add(state.DescriptorSetHandle);
+        hash.Add(state.VertexBufferHandle);
+        hash.Add(state.IndexBufferHandle);
+        
+        return hash.ToHashCode();
     }
 
     /// <summary>
     /// Computes a consistent hash code for the given GL state parameters.
-    /// This method ensures that both GetHashCode(ElementData) and GetHashCode(GL) 
+    /// This method ensures that both GetHashCode(DrawCommand) and GetHashCode(GL) 
     /// produce identical hash codes when the states are equivalent.
     /// </summary>
     /// <param name="framebuffer">Framebuffer ID or null for default framebuffer</param>

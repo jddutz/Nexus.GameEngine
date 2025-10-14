@@ -3,6 +3,7 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Nexus.GameEngine.Graphics;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 
@@ -11,7 +12,7 @@ namespace Nexus.GameEngine.GUI.Abstractions;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract partial class LayoutBase : RuntimeComponent, IRenderable
+public abstract partial class LayoutBase : RenderableBase, IRenderable
 {
 
     /// <summary>
@@ -32,8 +33,8 @@ public abstract partial class LayoutBase : RuntimeComponent, IRenderable
     private bool _needsLayout = true;
     private Vector2D<float> _size = new(0, 0);
 
-    protected LayoutBase(IWindowService windowService)
-        : base()
+    protected LayoutBase(IWindowService windowService, IOptions<VulkanSettings> vulkanSettings)
+        : base(vulkanSettings)
     {
         // Subscribe to window resize events if we have a window service
         _window = windowService.GetWindow();
@@ -203,11 +204,6 @@ public abstract partial class LayoutBase : RuntimeComponent, IRenderable
     /// Layout components should render their children.
     /// </summary>
     public bool ShouldRenderChildren => true;
-
-    public IEnumerable<ElementData> GetElements()
-    {
-        throw new NotImplementedException();
-    }
 
     protected override void OnDeactivate()
     {

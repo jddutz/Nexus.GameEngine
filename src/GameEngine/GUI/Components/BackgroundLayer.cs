@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -6,8 +7,8 @@ using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class BackgroundLayer()
-    : RuntimeComponent, IRenderable, IBackgroundController
+public partial class BackgroundLayer(IOptions<VulkanSettings> vulkanSettings)
+        : RenderableBase(vulkanSettings), IRenderable, IBackgroundController
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -28,7 +29,7 @@ public partial class BackgroundLayer()
 
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements()
+    public IEnumerable<DrawCommand> GetElements()
     {
         throw new NotImplementedException();
         /*
@@ -48,7 +49,7 @@ public partial class BackgroundLayer()
 
         Logger?.LogDebug("Created geometry resource: {GeometryResource}, shader resource: {ShaderResource}", geometryResource, shaderResource);
 
-        yield return new ElementData()
+        yield return new DrawCommand()
         {
             // TODO: update these values
             Vao = 0,

@@ -15,12 +15,12 @@
 **Current Implementation** (c:\Users\jddut\Source\Nexus.GameEngine\src\GameEngine\GUI\Components\HelloQuad.cs):
 
 ```csharp
-public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
 {
     yield return GetRenderData(gl);
 }
 
-public unsafe ElementData GetRenderData(GL gl)
+public unsafe DrawCommand GetRenderData(GL gl)
 {
     // ❌ CREATES OpenGL resources directly
     uint vao = gl.GenVertexArray();
@@ -48,7 +48,7 @@ public unsafe ElementData GetRenderData(GL gl)
     gl.VertexAttribPointer(...);
     gl.EnableVertexAttribArray(0);
 
-    return new ElementData { Vao = vao, Vbo = vbo, Ebo = ebo, Shader = shader };
+    return new DrawCommand { Vao = vao, Vbo = vbo, Ebo = ebo, Shader = shader };
 }
 ```
 
@@ -65,13 +65,13 @@ public unsafe ElementData GetRenderData(GL gl)
 **Expected Declarative Pattern:**
 
 ```csharp
-public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
 {
     // Should look something like:
     var geometryId = resourceManager.GetOrCreateResource(GeometryDefinitions.BasicQuad);
     var shaderId = resourceManager.GetOrCreateResource(ShaderDefinitions.BasicQuad);
 
-    yield return new ElementData
+    yield return new DrawCommand
     {
         Vao = geometryId,
         Shader = shaderId,
@@ -115,7 +115,7 @@ public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
 **Current Implementation** (c:\Users\jddut\Source\Nexus.GameEngine\src\GameEngine\Graphics\Renderer.cs:358):
 
 ```csharp
-private unsafe void Draw(ElementData element)
+private unsafe void Draw(DrawCommand element)
 {
     GL.BindVertexArray(element.Vao);
     GL.UseProgram(element.Shader);
@@ -132,33 +132,33 @@ private unsafe void Draw(ElementData element)
 **Problems:**
 
 - ✘ Can only draw BasicQuad geometry
-- ✘ ElementData should contain the index count, not hardcode it
+- ✘ DrawCommand should contain the index count, not hardcode it
 - ✘ Renderer shouldn't know about specific geometry definitions
 
 **Expected Pattern:**
 
 ```csharp
-private unsafe void Draw(ElementData element)
+private unsafe void Draw(DrawCommand element)
 {
     GL.BindVertexArray(element.Vao);
     GL.UseProgram(element.Shader);
 
     GL.DrawElements(
         element.PrimitiveType,
-        element.IndexCount,  // Should be in ElementData
-        element.IndexType,   // Should be in ElementData
+        element.IndexCount,  // Should be in DrawCommand
+        element.IndexType,   // Should be in DrawCommand
         null);
 }
 ```
 
 ---
 
-### 4. **ElementData Missing Critical Properties** ⚠️ MODERATE VIOLATION
+### 4. **DrawCommand Missing Critical Properties** ⚠️ MODERATE VIOLATION
 
-**Current ElementData** (c:\Users\jddut\Source\Nexus.GameEngine\src\GameEngine\Graphics\ElementData.cs):
+**Current DrawCommand** (c:\Users\jddut\Source\Nexus.GameEngine\src\GameEngine\Graphics\DrawCommand.cs):
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     public required uint Vbo { get; init; }
     public required uint Ebo { get; init; }
@@ -183,7 +183,7 @@ public class ElementData
 **Expected Structure:**
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     // Resource references (what to render)
     public required uint Vao { get; init; }
@@ -230,7 +230,7 @@ private void RenderViewport(IViewport viewport)
     }
 }
 
-private unsafe void Draw(ElementData element)
+private unsafe void Draw(DrawCommand element)
 {
     GL.BindVertexArray(element.Vao);  // ⚠️ Doesn't use UpdateVertexArray()
     GL.UseProgram(element.Shader);     // ⚠️ Doesn't use UpdateShaderProgram()
@@ -296,15 +296,15 @@ public record GeometryResource
 
    - Remove all GL resource creation code
    - Use `resourceManager.GetOrCreateResource()` for geometry and shaders
-   - Return ElementData with resource IDs only
+   - Return DrawCommand with resource IDs only
 
-2. **Enhance ElementData** to include draw call parameters
+2. **Enhance DrawCommand** to include draw call parameters
 
    - Add `IndexCount`, `PrimitiveType`, `IndexType`
    - Remove redundant fields (`Vbo`, `Ebo`, duplicate shader references)
    - Clarify separation between "resource IDs" and "GL state tracking"
 
-3. **Fix Renderer.Draw()** to use ElementData properties
+3. **Fix Renderer.Draw()** to use DrawCommand properties
    - Remove hardcoded `GeometryDefinitions.BasicQuad.Indices.Length`
    - Use `element.IndexCount`, `element.PrimitiveType`, etc.
 
@@ -325,9 +325,9 @@ public record GeometryResource
 
    - Use the `Update*` methods that already exist
    - Apply uniforms using `ApplyUniforms()`
-   - Sort ElementData by state to minimize GL calls
+   - Sort DrawCommand by state to minimize GL calls
 
-7. **Remove unused state tracking from ElementData**
+7. **Remove unused state tracking from DrawCommand**
    - `BoundTextures`, `ActiveTextureUnit`, `Framebuffer` aren't used
    - Or implement them properly if needed for batching
 
@@ -340,20 +340,20 @@ public record GeometryResource
 Current signature:
 
 ```csharp
-IEnumerable<ElementData> GetElements(GL gl, IViewport vp);
+IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp);
 ```
 
 If we use ResourceManager properly, components don't need direct GL access. They just need to:
 
 1. Reference resource definitions (already have via static classes)
 2. Call ResourceManager to get resource IDs
-3. Return ElementData with those IDs
+3. Return DrawCommand with those IDs
 
 **Recommendation:** Remove GL parameter, inject IResourceManager instead.
 
 ```csharp
 // New signature:
-IEnumerable<ElementData> GetElements(IViewport vp);
+IEnumerable<DrawCommand> GetElements(IViewport vp);
 
 // Component constructor:
 public HelloQuad(IResourceManager resourceManager) { ... }

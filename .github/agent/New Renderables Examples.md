@@ -49,7 +49,7 @@ public partial class YourRenderable : RuntimeComponent, IRenderable
     public uint RenderPassFlags => 1; // Participate in default render pass
 
     // Declare what to render (declarative, no GL code!)
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         if (!IsVisible)
             yield break;
@@ -59,7 +59,7 @@ public partial class YourRenderable : RuntimeComponent, IRenderable
         var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.YourShader);
 
         // Return render request with all needed information
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = geometry.VaoId,
             Shader = shader.ProgramId,
@@ -134,7 +134,7 @@ public partial class HelloQuad : RuntimeComponent, IRenderable
     public Box3D<float> BoundingBox => Box3D<float>.Empty;
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         if (!IsVisible)
             yield break;
@@ -142,7 +142,7 @@ public partial class HelloQuad : RuntimeComponent, IRenderable
         var geometry = _resourceManager.GetOrCreateGeometry(GeometryDefinitions.BasicQuad);
         var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.BasicQuad);
 
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = geometry.VaoId,
             Shader = shader.ProgramId,
@@ -213,7 +213,7 @@ public partial class Sprite : RuntimeComponent, IRenderable
     public Box3D<float> BoundingBox => CalculateBoundingBox();
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         // Get resources
         var geometry = _resourceManager.GetOrCreateGeometry(GeometryDefinitions.TexturedQuad);
@@ -223,7 +223,7 @@ public partial class Sprite : RuntimeComponent, IRenderable
         // Calculate model matrix
         var modelMatrix = CalculateModelMatrix();
 
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = geometry.VaoId,
             Shader = shader.ProgramId,
@@ -304,7 +304,7 @@ public partial class ParticleSystem : RuntimeComponent, IRenderable
     public Box3D<float> BoundingBox => CalculateParticleBounds();
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         var geometry = _resourceManager.GetOrCreateGeometry(GeometryDefinitions.ParticleQuad);
         var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.ParticleShader);
@@ -313,7 +313,7 @@ public partial class ParticleSystem : RuntimeComponent, IRenderable
         // Emit one render call per particle (could be instanced for performance)
         foreach (var particle in _particles.Where(p => p.IsAlive))
         {
-            yield return new ElementData
+            yield return new DrawCommand
             {
                 Vao = geometry.VaoId,
                 Shader = shader.ProgramId,
@@ -382,7 +382,7 @@ public partial class MeshRenderer : RuntimeComponent, IRenderable
     public Box3D<float> BoundingBox => _meshBounds;
     public uint RenderPassFlags => 0b0011; // Render in passes 0 and 1
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         // Load mesh (could have multiple sub-meshes)
         var meshData = AssetLoader.LoadMesh(_meshPath);
@@ -396,7 +396,7 @@ public partial class MeshRenderer : RuntimeComponent, IRenderable
             var geometry = _resourceManager.GetOrCreateGeometry(subMesh.GeometryDefinition);
             var material = LoadMaterial(materialPath);
 
-            yield return new ElementData
+            yield return new DrawCommand
             {
                 Vao = geometry.VaoId,
                 Shader = material.Shader.ProgramId,
@@ -468,13 +468,13 @@ public partial class Button : RuntimeComponent, IRenderable
     public Box3D<float> BoundingBox => Box3D<float>.Empty; // Never cull UI
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         var geometry = _resourceManager.GetOrCreateGeometry(GeometryDefinitions.UIQuad);
         var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.UIShader);
 
         // Render button background
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = geometry.VaoId,
             Shader = shader.ProgramId,
@@ -494,7 +494,7 @@ public partial class Button : RuntimeComponent, IRenderable
         var textShader = _resourceManager.GetOrCreateShader(ShaderDefinitions.TextShader);
         var fontTexture = _resourceManager.GetOrCreateTexture(TextureDefinitions.Font);
 
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = textGeometry.VaoId,
             Shader = textShader.ProgramId,
@@ -534,7 +534,7 @@ public partial class Button : RuntimeComponent, IRenderable
 
 1. **Inject IResourceManager** in constructor
 2. **Get resources** using `GetOrCreateGeometry/Shader/Texture`
-3. **Return ElementData** with resource IDs and uniforms
+3. **Return DrawCommand** with resource IDs and uniforms
 4. **No GL code** - focus on game logic
 
 ### Benefits

@@ -14,7 +14,7 @@ Draw frames by acquiring images, submitting the right draw command buffer and re
 # System Architecture
 
 1. Create `IVkRenderPass` interface and implementation
-2. Create `IVkSwapchain` interface and implementation
+2. Create `ISwapChain` interface and implementation
 3. Create `IVkCommandPool` interface and implementation
 4. Create `IVkSyncManager` interface and implementation
 5. Create `IVkPipelineManager` interface and implementation

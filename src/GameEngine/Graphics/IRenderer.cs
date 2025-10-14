@@ -8,12 +8,6 @@ namespace Nexus.GameEngine.Graphics;
 public interface IRenderer
 {
     /// <summary>
-    /// Access to Vulkan context for component rendering.
-    /// Components use this to access Vulkan resources during their render phase.
-    /// </summary>
-    IVkContext VK { get; }
-
-    /// <summary>
     /// Event fired before rendering begins for the frame
     /// </summary>
     event EventHandler? BeforeRendering;

@@ -1,8 +1,8 @@
-# ElementData Refactoring Summary
+# DrawCommand Refactoring Summary
 
 ## Changes Made
 
-### 1. ElementData is now **completely immutable**
+### 1. DrawCommand is now **completely immutable**
 
 - All properties use `{ get; init; }` - no mutation after creation
 - Removed all methods (IsTextureBound, SetBoundTexture, ClearBoundTexture, Reset)
@@ -36,10 +36,10 @@
 | `Framebuffer`    | `uint?`      | `uint` (default 0) | Zero is screen framebuffer    |
 | `Priority`       | `uint?`      | `uint` (default 0) | Always has priority           |
 
-## New ElementData Definition
+## New DrawCommand Definition
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     // Resource IDs (what to render)
     public required uint Vao { get; init; }
@@ -78,14 +78,14 @@ public class ElementData
 
 ### Tests
 
-7. **RenderableTestComponent.cs** - Update ElementData creation
+7. **RenderableTestComponent.cs** - Update DrawCommand creation
 
 ## Migration Pattern
 
 ### Before (Broken)
 
 ```csharp
-yield return new ElementData()
+yield return new DrawCommand()
 {
     Vbo = vbo,                    // ❌ Remove
     Ebo = ebo,                    // ❌ Remove
@@ -100,7 +100,7 @@ yield return new ElementData()
 ### After (Fixed)
 
 ```csharp
-yield return new ElementData
+yield return new DrawCommand
 {
     Vao = vao,
     Shader = shader,
@@ -129,11 +129,11 @@ OpenGL requires uniform names via `glGetUniformLocation(program, name)`. Diction
 - ✅ Cached by GL driver (fast)
 - ✅ Can be optimized later with UBOs if needed
 
-See "ElementData Performance Analysis.md" for full details on struct vs. class decision and uniform optimization options.
+See "DrawCommand Performance Analysis.md" for full details on struct vs. class decision and uniform optimization options.
 
 ## Next Steps
 
 1. Fix compilation errors in 7 files listed above
-2. Update tests to use new ElementData structure
+2. Update tests to use new DrawCommand structure
 3. Verify Renderer.Draw() uses new IndexCount property
 4. Run tests to ensure everything works

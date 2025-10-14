@@ -2,7 +2,7 @@
 
 ## Current State
 
-### Completed: VkContext (Foundation Layer)
+### Completed: Context (Foundation Layer)
 
 **Responsibility:** Core Vulkan infrastructure and device lifecycle management
 
@@ -38,7 +38,7 @@ Vulkan validation layers are debug utilities that intercept API calls to check f
 
 #### Phase 1: Enable Standard Validation (Immediate)
 
-**Modify VkContext constructor to enable validation layers in Debug builds:**
+**Modify Context constructor to enable validation layers in Debug builds:**
 
 ```csharp
 #if DEBUG
@@ -222,7 +222,7 @@ Since this is a learning project, validation layers help us:
 
 **Now (Before next service):**
 
-1. ✅ Enable `VK_LAYER_KHRONOS_validation` in VkContext
+1. ✅ Enable `VK_LAYER_KHRONOS_validation` in Context
 2. ✅ Verify layers load correctly
 3. ✅ See validation output in console
 
@@ -299,7 +299,7 @@ IVkRenderer
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ IVkContext (Foundation)                             │
+│ IGraphicsContext (Foundation)                             │
 │ - Instance, Device, Queues, Surface                 │
 └─────────────────────────────────────────────────────┘
                         ▲
@@ -307,7 +307,7 @@ IVkRenderer
         ┌───────────────┼───────────────┐
         │               │               │
 ┌───────┴───────┐ ┌────┴──────┐ ┌──────┴─────────┐
-│ IVkSwapchain  │ │ IVkRender │ │ IVkCommandPool │
+│ ISwapChain  │ │ IVkRender │ │ IVkCommandPool │
 │               │ │ Pass      │ │                │
 │ - Swapchain   │ │           │ │ - Allocates    │
 │ - Image views │ │ - Defines │ │   command      │
@@ -333,14 +333,14 @@ IVkRenderer
 
 ## Proposed Service Breakdown
 
-### 1. IVkSwapchain
+### 1. ISwapChain
 
 **Responsibility:** Presentation infrastructure management
 
 **Provides:**
 
 ```csharp
-interface IVkSwapchain : IDisposable
+interface ISwapChain : IDisposable
 {
     SwapchainKHR Swapchain { get; }
     Image[] SwapchainImages { get; }
@@ -359,7 +359,7 @@ interface IVkSwapchain : IDisposable
 
 - Created once on startup
 - Recreated on window resize
-- Depends on: `IVkContext`, `IVkRenderPass`
+- Depends on: `IGraphicsContext`, `IVkRenderPass`
 
 **Why separate?**
 
@@ -553,11 +553,11 @@ interface IVkRenderer : IDisposable
 ## Initialization Order
 
 ```
-1. IVkContext (already complete)
+1. IGraphicsContext (already complete)
    ↓
 2. IVkRenderPass (defines render targets)
    ↓
-3. IVkSwapchain (creates swap chain + framebuffers using render pass)
+3. ISwapChain (creates swap chain + framebuffers using render pass)
    ↓
 4. IVkCommandPool (allocates command buffers)
    ↓
@@ -574,8 +574,8 @@ interface IVkRenderer : IDisposable
 
 | Service           | Primary Responsibility      | Secondary Concerns          |
 | ----------------- | --------------------------- | --------------------------- |
-| VkContext         | Device lifecycle            | ✅ None                     |
-| VkSwapchain       | Presentation infrastructure | Image acquisition, resizing |
+| Context         | Device lifecycle            | ✅ None                     |
+| Swapchain       | Presentation infrastructure | Image acquisition, resizing |
 | VkRenderPass      | Define render operations    | ✅ Single concern           |
 | VkCommandPool     | Command buffer allocation   | Thread safety               |
 | VkPipelineManager | Pipeline lifecycle          | Shader compilation, caching |
@@ -591,7 +591,7 @@ Each service has one clear primary responsibility. ✅
 **Unit Tests:**
 
 - Each service can be tested in isolation with mocked dependencies
-- VkContext already provides the foundation for OpenGL-style tests
+- Context already provides the foundation for OpenGL-style tests
 
 **Integration Tests:**
 
@@ -623,7 +623,7 @@ These are critical but can be added after the core rendering loop works.
 **Next Steps:**
 
 1. Create `IVkRenderPass` interface and implementation
-2. Create `IVkSwapchain` interface and implementation
+2. Create `ISwapChain` interface and implementation
 3. Create `IVkCommandPool` interface and implementation
 4. Create `IVkSyncManager` interface and implementation
 5. Create `IVkPipelineManager` interface and implementation

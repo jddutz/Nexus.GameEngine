@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -5,7 +6,8 @@ using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class HelloQuad : RuntimeComponent, IRenderable
+public partial class HelloQuad(IOptions<VulkanSettings> vulkanSettings)
+    : RenderableBase(vulkanSettings), IRenderable
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -26,7 +28,7 @@ public partial class HelloQuad : RuntimeComponent, IRenderable
 
     public uint RenderPassFlags => 1;
 
-    public IEnumerable<ElementData> GetElements()
+    public IEnumerable<DrawCommand> GetElements()
     {
         return [];
     }

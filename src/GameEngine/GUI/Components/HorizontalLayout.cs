@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
@@ -9,8 +11,8 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A layout component that arranges its children horizontally.
 /// Child components are positioned side by side with configurable spacing and alignment.
 /// </summary>
-public partial class HorizontalLayout(IWindowService windowService)
-    : LayoutBase(windowService)
+public partial class HorizontalLayout(IWindowService windowService, IOptions<VulkanSettings> vulkanSettings)
+    : LayoutBase(windowService, vulkanSettings)
 {
 
     /// <summary>

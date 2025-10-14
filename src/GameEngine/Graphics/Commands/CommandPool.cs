@@ -1,0 +1,296 @@
+using Microsoft.Extensions.Logging;
+using VkCommandPool = Silk.NET.Vulkan.CommandPool;
+using Silk.NET.Vulkan;
+
+namespace Nexus.GameEngine.Graphics.Commands;
+
+/// <summary>
+/// Vulkan command pool implementation for command buffer allocation and management.
+/// Thread-specific pool for allocating command buffers from a specific queue family.
+/// </summary>
+/// <remarks>
+/// <para><strong>Design Notes:</strong></para>
+/// <list type="bullet">
+/// <item>One instance per thread for thread safety</item>
+/// <item>Optimized for single-use command buffers (transient flag)</item>
+/// <item>Tracks allocations for statistics and debugging</item>
+/// <item>Supports both primary and secondary command buffers</item>
+/// </list>
+/// </remarks>
+public unsafe class CommandPool : ICommandPool
+{
+    private readonly ILogger _logger;
+    private readonly IGraphicsContext _context;
+    private readonly Vk _vk;
+    private readonly uint _queueFamilyIndex;
+    private readonly bool _allowIndividualReset;
+
+    private VkCommandPool _pool;
+    private readonly DateTime _createdAt;
+    private DateTime? _lastResetAt;
+
+    // Statistics tracking
+    private int _totalAllocatedBuffers;
+    private int _primaryBufferCount;
+    private int _secondaryBufferCount;
+    private int _totalAllocationRequests;
+    private int _totalFreeRequests;
+    private int _resetCount;
+    private int _trimCount;
+
+    // Track allocated buffers for cleanup
+    private readonly List<CommandBuffer> _allocatedBuffers = new();
+    private bool _disposed;
+
+    /// <summary>
+    /// Creates a new command pool for the specified queue family.
+    /// </summary>
+    /// <param name="context">Graphics context providing Vulkan device access</param>
+    /// <param name="queueFamilyIndex">Queue family index for this pool</param>
+    /// <param name="allowIndividualReset">Whether individual command buffers can be reset</param>
+    /// <param name="transient">Whether buffers are short-lived (optimization hint)</param>
+    /// <param name="loggerFactory">Logger factory for diagnostic output</param>
+    public CommandPool(
+        IGraphicsContext context,
+        uint queueFamilyIndex,
+        bool allowIndividualReset,
+        bool transient,
+        ILoggerFactory loggerFactory)
+    {
+        _logger = loggerFactory.CreateLogger($"{nameof(CommandPool)}:QF{queueFamilyIndex}");
+        _context = context;
+        _vk = context.VulkanApi;
+        _queueFamilyIndex = queueFamilyIndex;
+        _allowIndividualReset = allowIndividualReset;
+        _createdAt = DateTime.UtcNow;
+
+        CreateCommandPool(transient);
+
+        _logger.LogDebug(
+            "Command pool created: QueueFamily={QueueFamily}, IndividualReset={AllowReset}, Transient={Transient}",
+            queueFamilyIndex, allowIndividualReset, transient);
+    }
+
+    /// <inheritdoc/>
+    public VkCommandPool Pool => _pool;
+
+    /// <inheritdoc/>
+    public uint QueueFamilyIndex => _queueFamilyIndex;
+
+    /// <inheritdoc/>
+    public bool AllowIndividualReset => _allowIndividualReset;
+
+    /// <inheritdoc/>
+    public CommandBuffer[] AllocateCommandBuffers(uint count, CommandBufferLevel level = CommandBufferLevel.Primary)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (count == 0)
+        {
+            _logger.LogWarning("Attempted to allocate 0 command buffers");
+            return Array.Empty<CommandBuffer>();
+        }
+
+        _totalAllocationRequests++;
+
+        var allocInfo = new CommandBufferAllocateInfo
+        {
+            SType = StructureType.CommandBufferAllocateInfo,
+            CommandPool = _pool,
+            Level = level,
+            CommandBufferCount = count
+        };
+
+        var commandBuffers = new CommandBuffer[count];
+        fixed (CommandBuffer* pCommandBuffers = commandBuffers)
+        {
+            var result = _vk.AllocateCommandBuffers(_context.Device, &allocInfo, pCommandBuffers);
+            if (result != Result.Success)
+            {
+                _logger.LogError(
+                    "Failed to allocate {Count} {Level} command buffers: {Result}",
+                    count, level, result);
+                throw new InvalidOperationException($"Failed to allocate command buffers: {result}");
+            }
+        }
+
+        // Track allocations
+        _totalAllocatedBuffers += (int)count;
+        if (level == CommandBufferLevel.Primary)
+            _primaryBufferCount += (int)count;
+        else
+            _secondaryBufferCount += (int)count;
+
+        lock (_allocatedBuffers)
+        {
+            _allocatedBuffers.AddRange(commandBuffers);
+        }
+
+        _logger.LogTrace(
+            "Allocated {Count} {Level} command buffers (Total: {Total})",
+            count, level, _totalAllocatedBuffers);
+
+        return commandBuffers;
+    }
+
+    /// <inheritdoc/>
+    public void FreeCommandBuffers(CommandBuffer[] commandBuffers)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (commandBuffers == null || commandBuffers.Length == 0)
+        {
+            _logger.LogWarning("Attempted to free null or empty command buffer array");
+            return;
+        }
+
+        _totalFreeRequests++;
+
+        fixed (CommandBuffer* pCommandBuffers = commandBuffers)
+        {
+            _vk.FreeCommandBuffers(_context.Device, _pool, (uint)commandBuffers.Length, pCommandBuffers);
+        }
+
+        // Update tracking
+        _totalAllocatedBuffers -= commandBuffers.Length;
+        
+        lock (_allocatedBuffers)
+        {
+            foreach (var buffer in commandBuffers)
+            {
+                _allocatedBuffers.Remove(buffer);
+            }
+        }
+
+        _logger.LogTrace(
+            "Freed {Count} command buffers (Remaining: {Remaining})",
+            commandBuffers.Length, _totalAllocatedBuffers);
+    }
+
+    /// <inheritdoc/>
+    public void Reset(CommandPoolResetFlags flags = CommandPoolResetFlags.None)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var result = _vk.ResetCommandPool(_context.Device, _pool, flags);
+        if (result != Result.Success)
+        {
+            _logger.LogError("Failed to reset command pool: {Result}", result);
+            throw new InvalidOperationException($"Failed to reset command pool: {result}");
+        }
+
+        _resetCount++;
+        _lastResetAt = DateTime.UtcNow;
+
+        var memoryReleased = flags.HasFlag(CommandPoolResetFlags.ReleaseResourcesBit);
+        _logger.LogTrace(
+            "Command pool reset (Flags={Flags}, MemoryReleased={MemoryReleased}, ResetCount={ResetCount})",
+            flags, memoryReleased, _resetCount);
+    }
+
+    /// <inheritdoc/>
+    public void Trim()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // vkTrimCommandPool is a Vulkan 1.1 feature
+        // For now, just track the call - actual implementation requires checking feature support
+        _trimCount++;
+
+        _logger.LogTrace("Command pool trimmed (TrimCount={TrimCount})", _trimCount);
+    }
+
+    /// <inheritdoc/>
+    public CommandPoolStatistics GetStatistics()
+    {
+        return new CommandPoolStatistics
+        {
+            TotalAllocatedBuffers = _totalAllocatedBuffers,
+            PrimaryBufferCount = _primaryBufferCount,
+            SecondaryBufferCount = _secondaryBufferCount,
+            TotalAllocationRequests = _totalAllocationRequests,
+            TotalFreeRequests = _totalFreeRequests,
+            ResetCount = _resetCount,
+            TrimCount = _trimCount,
+            EstimatedMemoryUsageBytes = _totalAllocatedBuffers * 1024, // Rough estimate
+            QueueFamilyIndex = _queueFamilyIndex,
+            AllowsIndividualReset = _allowIndividualReset,
+            CreatedAt = _createdAt,
+            LastResetAt = _lastResetAt
+        };
+    }
+
+    /// <summary>
+    /// Creates the native Vulkan command pool.
+    /// </summary>
+    private void CreateCommandPool(bool transient)
+    {
+        var flags = CommandPoolCreateFlags.None;
+
+        if (_allowIndividualReset)
+            flags |= CommandPoolCreateFlags.ResetCommandBufferBit;
+
+        if (transient)
+            flags |= CommandPoolCreateFlags.TransientBit;
+
+        var poolInfo = new CommandPoolCreateInfo
+        {
+            SType = StructureType.CommandPoolCreateInfo,
+            QueueFamilyIndex = _queueFamilyIndex,
+            Flags = flags
+        };
+
+        VkCommandPool pool;
+        var result = _vk.CreateCommandPool(_context.Device, &poolInfo, null, &pool);
+        if (result != Result.Success)
+        {
+            _logger.LogError(
+                "Failed to create command pool for queue family {QueueFamily}: {Result}",
+                _queueFamilyIndex, result);
+            throw new InvalidOperationException($"Failed to create command pool: {result}");
+        }
+
+        _pool = pool;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _logger.LogDebug(
+            "Disposing command pool: QueueFamily={QueueFamily}, AllocatedBuffers={BufferCount}",
+            _queueFamilyIndex, _totalAllocatedBuffers);
+
+        // Free all tracked command buffers
+        if (_allocatedBuffers.Count > 0)
+        {
+            _logger.LogDebug("Freeing {Count} remaining command buffers", _allocatedBuffers.Count);
+            
+            lock (_allocatedBuffers)
+            {
+                var buffers = _allocatedBuffers.ToArray();
+                if (buffers.Length > 0)
+                {
+                    fixed (CommandBuffer* pBuffers = buffers)
+                    {
+                        _vk.FreeCommandBuffers(_context.Device, _pool, (uint)buffers.Length, pBuffers);
+                    }
+                }
+                _allocatedBuffers.Clear();
+            }
+        }
+
+        // Destroy the command pool
+        if (_pool.Handle != 0)
+        {
+            _vk.DestroyCommandPool(_context.Device, _pool, null);
+            _pool = default;
+        }
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
+
+        _logger.LogDebug("Command pool disposed");
+    }
+}

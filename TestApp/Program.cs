@@ -6,6 +6,8 @@ using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Commands;
+using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Runtime.Settings;
@@ -36,7 +38,8 @@ class Program
                 ["Application:General:ApplicationVersion"] = "1.0.0",
                 ["Application:General:EngineName"] = "Nexus Game Engine",
                 ["Application:General:EngineVersion"] = "1.0.0",
-                ["Graphics:Vulkan:ValidationEnabled"] = "true"
+                ["Graphics:Fullscree"] = "false",
+                ["Graphics:Vulkan:EnableValidationLayers"] = "true"
             })
             .Build();
 
@@ -58,10 +61,14 @@ class Program
             .AddSingleton(testLoggerFactory)
             .Configure<ApplicationSettings>(configuration.GetSection("Application"))
             .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
-            .Configure<VkSettings>(configuration.GetSection("Graphics:Vulkan"))
+            .Configure<GraphicsSettings>(configuration.GetSection("Graphics:Vulkan"))
             .AddSingleton<IWindowService, WindowService>()
             .AddSingleton<IValidation, Validation>()
-            .AddSingleton<IVkContext, VkContext>()
+            .AddSingleton<IGraphicsContext, Context>()
+            .AddSingleton<ISwapChain, SwapChain>()
+            .AddSingleton<ISyncManager, SyncManager>()
+            .AddSingleton<ICommandPoolManager, CommandPoolManager>()
+            .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
             .AddSingleton<IRenderer, Renderer>()
             .AddSingleton<IEventBus, EventBus>()
             .AddSingleton<IAssetService, AssetService>()

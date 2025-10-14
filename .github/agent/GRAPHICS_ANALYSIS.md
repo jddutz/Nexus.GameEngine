@@ -125,7 +125,7 @@ Out of ~60 files in Graphics/, approximately:
 - `RenderContext.cs` - **DELETE** (GL context wrapper)
 - `RenderEventArgs.cs` - **DELETE** (exposes GL object)
 - `IRenderer.cs` - **REDESIGN** (currently exposes GL, needs Vk equivalent)
-- `ElementData.cs` - **REDESIGN** (has GL enums like PrimitiveType, DrawElementsType)
+- `DrawCommand.cs` - **REDESIGN** (has GL enums like PrimitiveType, DrawElementsType)
 - `DrawBatch.cs` - **REDESIGN** (concept is good, but GL-specific impl)
 - `DefaultBatchStrategy.cs` - **REDESIGN** (queries GL state)
 - `IBatchStrategy.cs` - 🟡 **CONCEPT KEEP** (interface is okay, impl is GL)
@@ -281,7 +281,7 @@ Here's what each "Keep" file needs:
 
 ```csharp
 // BEFORE (OpenGL):
-IEnumerable<ElementData> GetElements(GL gl, IViewport vp);
+IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp);
 
 // AFTER (Vulkan):
 IEnumerable<RenderElement> GetRenderElements(VulkanContext context, IViewport vp);

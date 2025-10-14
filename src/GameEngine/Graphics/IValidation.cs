@@ -47,7 +47,7 @@ public interface IValidation : IDisposable
 
     /// <summary>
     /// Initializes the debug messenger after the Vulkan instance is created.
-    /// Must be called by VkContext after instance creation if AreEnabled is true.
+    /// Must be called by Context after instance creation if AreEnabled is true.
     /// </summary>
     /// <param name="vk">The Vulkan API instance</param>
     /// <param name="instance">The Vulkan instance handle with validation layers enabled</param>

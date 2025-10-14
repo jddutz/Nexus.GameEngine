@@ -25,7 +25,7 @@ These need to be completely rebuilt for Vulkan:
 2. **Graphics/Renderer.cs** - Main renderer implementation
 3. **Graphics/RenderContext.cs** - Render context management
 4. **Graphics/IRenderable.cs** - Renderable component interface
-5. **Graphics/ElementData.cs** - Render element data structure
+5. **Graphics/DrawCommand.cs** - Render element data structure
 6. **Graphics/IBatchStrategy.cs** - Batching strategy interface
 7. **Graphics/DefaultBatchStrategy.cs** - Default batching implementation
 8. **Graphics/RenderEventArgs.cs** - Render event arguments
@@ -231,7 +231,7 @@ Files with `GL` type parameters/fields that need Vulkan equivalents:
 
 Missing OpenGL-specific enums:
 
-- `PrimitiveType`, `DrawElementsType` (ElementData.cs)
+- `PrimitiveType`, `DrawElementsType` (DrawCommand.cs)
 - `InternalFormat`, `PixelFormat`, `PixelType` (TextureManager.cs)
 - `TextureMinFilter`, `TextureMagFilter`, `TextureWrapMode`
 - `TextureTarget`, `TextureParameterName`

@@ -145,7 +145,7 @@ layout(location = 2) in vec3 aNormal;
 
 ### Target: GLSL 4.30 (OpenGL 4.3)
 
-**Benefits for ElementData:**
+**Benefits for DrawCommand:**
 
 ```csharp
 // With GLSL 4.30 - can use simple array indexed by location
@@ -158,7 +158,7 @@ public readonly struct UniformValue
     public readonly int Int;
 }
 
-public class ElementData
+public class DrawCommand
 {
     // Direct indexing, no boxing, no lookup
     public UniformValue[] UniformsByLocation { get; init; } = new UniformValue[16];
@@ -198,7 +198,7 @@ foreach (var uniform in element.UniformsByLocation)
    layout(location = 1) uniform mat4 modelMatrix;
    ```
 
-3. **Update ElementData to use location-based arrays**
+3. **Update DrawCommand to use location-based arrays**
 
 4. **Update Renderer to use direct locations**
 
@@ -234,13 +234,13 @@ foreach (var uniform in element.UniformsByLocation)
 1. Update all `.glsl` files to `#version 430 core`
 2. Add explicit uniform locations to all shaders
 3. Document standard uniform locations
-4. Update ElementData to use location-indexed arrays
+4. Update DrawCommand to use location-indexed arrays
 5. Update Renderer to use direct location access
 
 **Timeline:**
 
 - Shader updates: 30 minutes
-- ElementData refactor: 1 hour
+- DrawCommand refactor: 1 hour
 - Renderer updates: 1 hour
 - Testing: 1 hour
 - **Total: ~3-4 hours**
@@ -292,7 +292,7 @@ public static class StandardUniformLocations
 
 **YES - Upgrade to GLSL 4.30**
 
-The performance benefits (75-90% faster uniforms) and code simplification far outweigh the minimal risk. Hardware support is universal for any computer made in the last 12 years, and explicit uniform locations are exactly what we need to make ElementData truly immutable with no boxing.
+The performance benefits (75-90% faster uniforms) and code simplification far outweigh the minimal risk. Hardware support is universal for any computer made in the last 12 years, and explicit uniform locations are exactly what we need to make DrawCommand truly immutable with no boxing.
 
 Silk.NET examples use 3.30 because:
 

@@ -74,7 +74,7 @@ Graphics/
   - Used by ICamera interface
   - **Fix**: Create new Vulkan render pass type or remove
 
-- `ElementData` (6 errors in GUI components)
+- `DrawCommand` (6 errors in GUI components)
 
   - Old OpenGL render data structure
   - **Fix**: Update to use `RenderElement`

@@ -15,5 +15,5 @@ public class GraphicsSettings
     public string GraphicsQuality { get; set; } = "High";
     public bool ShowParticleEffects { get; set; } = true;
     public float RenderScale { get; set; } = 1.0f;
-    public VkSettings Vulkan { get; set; } = new();
+    public VulkanSettings Vulkan { get; set; } = new();
 }

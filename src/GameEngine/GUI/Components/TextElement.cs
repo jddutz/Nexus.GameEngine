@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -10,7 +11,8 @@ namespace Nexus.GameEngine.GUI.Components;
 /// <summary>
 /// A UI component that displays text.
 /// </summary>
-public partial class TextElement : RuntimeComponent, IRenderable, ITextController
+public partial class TextElement(IOptions<VulkanSettings> vulkanSettings)
+    : RenderableBase(vulkanSettings), IRenderable, ITextController
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -187,7 +189,7 @@ public partial class TextElement : RuntimeComponent, IRenderable, ITextControlle
         FontSize = FontSize * scaleFactor;
     }
 
-    public IEnumerable<ElementData> GetElements()
+    public IEnumerable<DrawCommand> GetElements()
     {
         throw new NotImplementedException();
     }

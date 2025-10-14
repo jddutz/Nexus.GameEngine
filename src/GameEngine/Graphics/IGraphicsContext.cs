@@ -18,12 +18,12 @@ namespace Nexus.GameEngine.Graphics;
 /// All properties trigger lazy initialization if not already initialized.
 /// Thread-safe initialization using double-check locking pattern.
 /// </remarks>
-public interface IVkContext : IDisposable
+public interface IGraphicsContext : IDisposable
 {
     /// <summary>
     /// Gets the Vulkan API instance for making Vulkan calls.
     /// </summary>
-    Vk Vk { get; }
+    Vk VulkanApi { get; }
 
     /// <summary>
     /// Gets the Vulkan instance handle.
@@ -59,4 +59,16 @@ public interface IVkContext : IDisposable
     /// Gets whether the Vulkan context has been initialized.
     /// </summary>
     bool IsInitialized { get; }
+
+    /// <summary>
+    /// Queries swap chain support details for the selected physical device.
+    /// Returns surface capabilities, supported formats, and present modes.
+    /// </summary>
+    SwapChainSupportDetails QuerySwapChainSupport();
+
+    /// <summary>
+    /// Finds a queue family index that supports the specified queue flags.
+    /// Returns null if no suitable queue family is found.
+    /// </summary>
+    uint? FindQueueFamily(QueueFlags flags);
 }

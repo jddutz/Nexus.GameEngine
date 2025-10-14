@@ -4,14 +4,14 @@
 
 Enable creation of new IRenderable components with minimal complexity in GetElements() implementation by properly separating concerns between Renderer, ResourceManager, and Renderables.
 
-## Phase 1: Enhance ElementData (Foundation)
+## Phase 1: Enhance DrawCommand (Foundation)
 
-### Changes to `ElementData.cs`
+### Changes to `DrawCommand.cs`
 
 **Add missing draw call properties:**
 
 ```csharp
-public class ElementData
+public class DrawCommand
 {
     // Resource references (KEEP)
     public required uint Vao { get; init; }
@@ -41,7 +41,7 @@ public class ElementData
 
 **Impact:**
 
-- ✓ ElementData becomes pure "render request" data
+- ✓ DrawCommand becomes pure "render request" data
 - ✓ Contains everything needed for a single draw call
 - ✓ No redundant fields
 - ✓ Renderer can use this directly without hardcoded references
@@ -168,7 +168,7 @@ public partial class HelloQuad : RuntimeComponent, IRenderable
 **Simplify GetElements():**
 
 ```csharp
-public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
 {
     if (!IsVisible)
         yield break;
@@ -178,7 +178,7 @@ public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
     var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.BasicQuad);
 
     // Return declarative render request
-    yield return new ElementData
+    yield return new DrawCommand
     {
         Vao = geometry.VaoId,
         Shader = shader.ProgramId,
@@ -199,7 +199,7 @@ public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
 
 ```csharp
 // ❌ DELETE THIS METHOD - no longer needed
-// public unsafe ElementData GetRenderData(GL gl) { ... }
+// public unsafe DrawCommand GetRenderData(GL gl) { ... }
 ```
 
 **Impact:**
@@ -212,14 +212,14 @@ public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
 
 ---
 
-## Phase 4: Fix Renderer.Draw() (Use ElementData Properly)
+## Phase 4: Fix Renderer.Draw() (Use DrawCommand Properly)
 
 ### Changes to `Renderer.cs`
 
 **Update Draw() method:**
 
 ```csharp
-private unsafe void Draw(ElementData element)
+private unsafe void Draw(DrawCommand element)
 {
     // Bind the geometry and shader
     GL.BindVertexArray(element.Vao);
@@ -231,7 +231,7 @@ private unsafe void Draw(ElementData element)
         ApplyUniforms(element.Uniforms);  // Already exists but unused
     }
 
-    // Draw with ElementData parameters (not hardcoded!)
+    // Draw with DrawCommand parameters (not hardcoded!)
     GL.DrawElements(
         element.PrimitiveType,
         element.IndexCount,
@@ -256,13 +256,13 @@ private unsafe void Draw(ElementData element)
 **Current signature:**
 
 ```csharp
-IEnumerable<ElementData> GetElements(GL gl, IViewport vp);
+IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp);
 ```
 
 **Proposed signature:**
 
 ```csharp
-IEnumerable<ElementData> GetElements(IViewport vp);
+IEnumerable<DrawCommand> GetElements(IViewport vp);
 ```
 
 **Rationale:**
@@ -284,7 +284,7 @@ IEnumerable<ElementData> GetElements(IViewport vp);
 
 ## Implementation Order
 
-1. **Step 1:** Update ElementData
+1. **Step 1:** Update DrawCommand
 
    - Add IndexCount, PrimitiveType, IndexType
    - Remove Vbo, Ebo, duplicate ShaderProgram fields
@@ -335,12 +335,12 @@ IEnumerable<ElementData> GetElements(IViewport vp);
 
    - Test GetElements() with mocked IResourceManager
    - Verify correct resource definitions are requested
-   - Verify correct ElementData is returned
+   - Verify correct DrawCommand is returned
    - Test uniform values match component properties
 
 3. **Renderer Tests:**
-   - Test Draw() with various ElementData configurations
-   - Verify GL calls use ElementData properties
+   - Test Draw() with various DrawCommand configurations
+   - Verify GL calls use DrawCommand properties
    - Test uniform application
 
 ### Integration Tests
@@ -368,14 +368,14 @@ public partial class TexturedQuad : RuntimeComponent, IRenderable
         _resourceManager = resourceManager;
     }
 
-    public IEnumerable<ElementData> GetElements(GL gl, IViewport vp)
+    public IEnumerable<DrawCommand> GetElements(GL gl, IViewport vp)
     {
         // Simple, declarative, no GL code!
         var geometry = _resourceManager.GetOrCreateGeometry(GeometryDefinitions.TexturedQuad);
         var shader = _resourceManager.GetOrCreateShader(ShaderDefinitions.TexturedShader);
         var texture = _resourceManager.GetOrCreateTexture(TextureDefinitions.FromFile(_texturePath));
 
-        yield return new ElementData
+        yield return new DrawCommand
         {
             Vao = geometry.VaoId,
             Shader = shader.ProgramId,
@@ -411,7 +411,7 @@ public partial class TexturedQuad : RuntimeComponent, IRenderable
 
 - Must inject IResourceManager
 - Must use GetOrCreateGeometry/Shader methods
-- ElementData requires new properties
+- DrawCommand requires new properties
 
 ### For Renderer Users
 
@@ -428,7 +428,7 @@ public partial class TexturedQuad : RuntimeComponent, IRenderable
 1. **Batching Implementation**
 
    - Use existing Update\* methods in Renderer
-   - Sort ElementData by state
+   - Sort DrawCommand by state
    - Minimize state changes
 
 2. **Resource Handle System**
@@ -455,7 +455,7 @@ public partial class TexturedQuad : RuntimeComponent, IRenderable
 ✅ HelloQuad.GetElements() is < 20 lines
 ✅ No direct GL resource creation in components
 ✅ ResourceManager is used for all resources
-✅ Renderer.Draw() uses ElementData properties
+✅ Renderer.Draw() uses DrawCommand properties
 ✅ All existing tests pass
 ✅ New renderables can follow same simple pattern
 ✅ No resource leaks

@@ -17,29 +17,38 @@ namespace Nexus.GameEngine.Graphics;
 /// Vulkan context implementation that initializes all Vulkan resources in the constructor.
 /// </summary>
 /// <remarks>
-/// Initialization sequence:
-/// 1. Create Vulkan instance with required extensions
-/// 2. Create surface from the window
-/// 3. Select appropriate physical device (GPU)
-/// 4. Create logical device with required queues
-/// 5. Set up queue handles for graphics and present operations
+/// Initialization sequence (based on Vulkan tutorial):
+/// [x] Create Instance
+/// [x] Setup Debug Messenger
+/// [x] Create Surface
+/// [x] Pick Physical Device
+/// [x] Create Logical Device
+/// [x] Create Swap Chain
+/// [x] Create Image Views
+/// [x] Create Render Pass
+/// [x] Create Framebuffers
+/// [ ] Create Graphics Pipeline
+/// [ ] Create Command Pool
 /// 
 /// All initialization happens in the constructor because the new startup sequence ensures
 /// the window exists before VulkanContext is resolved from the DI container.
 /// </remarks>
-public unsafe class VkContext : IVkContext
+public unsafe class Context : IGraphicsContext
 {
     private readonly ILogger _logger;
     private readonly IValidation? _validationLayers;
+    private readonly VulkanSettings _vkSettings;
 
-    public VkContext(
+    public Context(
         IWindowService windowService,
         IOptions<ApplicationSettings> options,
+        IOptions<VulkanSettings> vkSettings,
         ILoggerFactory loggerFactory,
         IValidation? validationLayers = null)
     {
-        _logger = loggerFactory.CreateLogger(nameof(VkContext));
+        _logger = loggerFactory.CreateLogger(nameof(Context));
         _validationLayers = validationLayers;
+        _vkSettings = vkSettings.Value;
 
         // Step 1: Get the window - it's guaranteed to exist at this point
         var window = windowService.GetWindow();
@@ -50,7 +59,7 @@ public unsafe class VkContext : IVkContext
         }
 
         // Step 2: Load Vulkan API - provides access to all Vulkan functions
-        _vk = Vk.GetApi();
+        _vulkanApi = Vk.GetApi();
 
         // Step 3: Create Vulkan instance - the connection between app and Vulkan library
         _logger.LogDebug("Creating Vulkan instance: App={AppName}, Engine={EngineName}, API=1.2",
@@ -117,7 +126,7 @@ public unsafe class VkContext : IVkContext
             createInfo.EnabledLayerCount = (uint)layerNames.Length;
             createInfo.PpEnabledLayerNames = layerNameBytePtrs;
 
-            var result = _vk.CreateInstance(in createInfo, null, out _instance);
+            var result = _vulkanApi.CreateInstance(in createInfo, null, out _instance);
 
             // Cleanup layer name pointers
             for (int i = 0; i < layerNames.Length; i++)
@@ -134,7 +143,7 @@ public unsafe class VkContext : IVkContext
         else
         {
             createInfo.EnabledLayerCount = 0;
-            var result = _vk.CreateInstance(in createInfo, null, out _instance);
+            var result = _vulkanApi.CreateInstance(in createInfo, null, out _instance);
             if (result != Result.Success)
             {
                 _logger.LogError("Failed to create Vulkan instance: {Result}", result);
@@ -154,7 +163,7 @@ public unsafe class VkContext : IVkContext
         Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
 
         // Initialize validation layers (always call to provide debugger feedback)
-        _validationLayers?.Initialize(_vk, _instance);
+        _validationLayers?.Initialize(_vulkanApi, _instance);
 
         // Step 4: Create surface - platform-agnostic abstraction for rendering to the window
         Surface = CreateSurface(window);
@@ -178,8 +187,8 @@ public unsafe class VkContext : IVkContext
     /// Gets the Vulkan API object that provides access to all Vulkan functions.
     /// This is the main entry point for calling Vulkan API methods.
     /// </summary>
-    private Vk _vk;
-    public Vk Vk => _vk;
+    private Vk _vulkanApi;
+    public Vk VulkanApi => _vulkanApi;
 
     /// <summary>
     /// Gets the Vulkan instance, which is the connection between the application and the Vulkan library.
@@ -242,8 +251,11 @@ public unsafe class VkContext : IVkContext
         var vkSurface = window.VkSurface;
         if (vkSurface is null)
         {
-            _logger.LogError("Window VkSurface is null - window not configured for Vulkan");
-            throw new InvalidOperationException("Window was not created with a Vulkan surface. Ensure the window API is configured for Vulkan before constructing VulkanContext.");
+            var errorMessage = "Window.VkSurface is null. Window is not configured for Vulkan. "
+            + "Ensure the window API is configured for Vulkan before constructing VulkanContext.";
+
+            _logger.LogError(errorMessage);
+            throw new InvalidOperationException(errorMessage);
         }
 
         // Create the Vulkan surface handle - connects Vulkan to native windowing system (Win32, X11, Wayland, etc.)
@@ -266,7 +278,7 @@ public unsafe class VkContext : IVkContext
     {
         // First call: Get the count of available physical devices (GPUs)
         uint deviceCount = 0;
-        var result = Vk.EnumeratePhysicalDevices(Instance, &deviceCount, null);
+        var result = VulkanApi.EnumeratePhysicalDevices(Instance, &deviceCount, null);
 
         if (deviceCount == 0)
         {
@@ -276,33 +288,194 @@ public unsafe class VkContext : IVkContext
 
         // Second call: Retrieve the actual device handles
         var devices = stackalloc PhysicalDevice[(int)deviceCount];
-        result = Vk.EnumeratePhysicalDevices(Instance, &deviceCount, devices);
+        result = VulkanApi.EnumeratePhysicalDevices(Instance, &deviceCount, devices);
         _logger.LogDebug("Found {DeviceCount} Vulkan-capable GPU(s)", deviceCount);
 
-        // Log all available devices to help understand hardware options
+        // Log all available devices
         for (uint i = 0; i < deviceCount; i++)
         {
             PhysicalDeviceProperties props;
-            Vk.GetPhysicalDeviceProperties(devices[i], &props);
+            VulkanApi.GetPhysicalDeviceProperties(devices[i], &props);
             var name = Marshal.PtrToStringAnsi((nint)props.DeviceName);
             _logger.LogDebug("- GPU {Index}: {Name} (Type: {Type})", i, name, props.DeviceType);
         }
 
-        // For now, just pick the first device
-        // TODO: Implement device suitability scoring based on:
-        // - Device type (discrete GPU preferred over integrated)
-        // - Available memory
-        // - Supported features and extensions
-        // - Queue family capabilities
-        var selectedDevice = devices[0];
+        // Score all suitable devices
+        var suitableDevices = new List<(PhysicalDevice device, int score)>();
 
-        PhysicalDeviceProperties properties;
-        Vk.GetPhysicalDeviceProperties(selectedDevice, &properties);
-        var deviceName = Marshal.PtrToStringAnsi((nint)properties.DeviceName);
-        _logger.LogDebug("Selected: {DeviceName} (Type: {Type}, API Version: {Version})",
-            deviceName, properties.DeviceType, properties.ApiVersion);
+        for (uint i = 0; i < deviceCount; i++)
+        {
+            var device = devices[i];
 
-        return selectedDevice;
+            // Check if device meets requirements
+            if (!IsDeviceSuitable(device, out int score))
+            {
+                PhysicalDeviceProperties props;
+                VulkanApi.GetPhysicalDeviceProperties(device, &props);
+                var name = Marshal.PtrToStringAnsi((nint)props.DeviceName);
+                _logger.LogDebug("GPU {Index} ({Name}) is not suitable", i, name);
+                continue;
+            }
+
+            suitableDevices.Add((device, score));
+
+            PhysicalDeviceProperties properties;
+            VulkanApi.GetPhysicalDeviceProperties(device, &properties);
+            var deviceName = Marshal.PtrToStringAnsi((nint)properties.DeviceName);
+            _logger.LogDebug("GPU {Index} ({Name}) is suitable (score: {Score})", i, deviceName, score);
+        }
+
+        if (suitableDevices.Count == 0)
+        {
+            _logger.LogError("No suitable GPU found that meets requirements");
+            throw new Exception("Failed to find a suitable GPU");
+        }
+
+        // Select highest-scored device
+        var selected = suitableDevices.OrderByDescending(d => d.score).First();
+
+        PhysicalDeviceProperties selectedProps;
+        VulkanApi.GetPhysicalDeviceProperties(selected.device, &selectedProps);
+        var selectedName = Marshal.PtrToStringAnsi((nint)selectedProps.DeviceName);
+        _logger.LogInformation("Selected GPU: {Name} (Score: {Score})", selectedName, selected.score);
+
+        return selected.device;
+    }
+
+    private bool IsDeviceSuitable(PhysicalDevice device, out int score)
+    {
+        score = 0;
+
+        // 1. Check queue families
+        if (!HasRequiredQueueFamilies(device))
+        {
+            return false;
+        }
+
+        // 2. Check required extensions (from GraphicsSettings)
+        if (!HasRequiredExtensions(device))
+        {
+            return false;
+        }
+
+        // 3. Check swap chain support
+        var swapChainSupport = QuerySwapChainSupportInternal(device);
+        if (!swapChainSupport.IsAdequate)
+        {
+            return false;
+        }
+
+        // 4. Score device based on capabilities
+        score = ScoreDevice(device);
+
+        return true;
+    }
+
+    private bool HasRequiredQueueFamilies(PhysicalDevice device)
+    {
+        uint queueFamilyCount = 0;
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, null);
+
+        var queueFamilies = stackalloc QueueFamilyProperties[(int)queueFamilyCount];
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies);
+
+        if (!VulkanApi.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
+        {
+            return false;
+        }
+
+        bool hasGraphics = false;
+        bool hasPresent = false;
+
+        for (uint i = 0; i < queueFamilyCount; i++)
+        {
+            if ((queueFamilies[i].QueueFlags & QueueFlags.GraphicsBit) != 0)
+            {
+                hasGraphics = true;
+            }
+
+            Bool32 presentSupport = false;
+            khrSurface.GetPhysicalDeviceSurfaceSupport(device, i, Surface, &presentSupport);
+            if (presentSupport)
+            {
+                hasPresent = true;
+            }
+
+            if (hasGraphics && hasPresent)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasRequiredExtensions(PhysicalDevice device)
+    {
+        uint extensionCount;
+        VulkanApi.EnumerateDeviceExtensionProperties(device, (byte*)null, &extensionCount, null);
+
+        var availableExtensions = new ExtensionProperties[extensionCount];
+        fixed (ExtensionProperties* pExtensions = availableExtensions)
+        {
+            VulkanApi.EnumerateDeviceExtensionProperties(device, (byte*)null, &extensionCount, pExtensions);
+        }
+
+        var availableExtensionNames = availableExtensions
+            .Select(ext => Marshal.PtrToStringAnsi((nint)ext.ExtensionName))
+            .ToHashSet();
+
+        // Check all required extensions from settings
+        foreach (var required in _vkSettings.RequiredDeviceExtensions)
+        {
+            if (!availableExtensionNames.Contains(required))
+            {
+                _logger.LogDebug("Device missing required extension: {Extension}", required);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private int ScoreDevice(PhysicalDevice device)
+    {
+        PhysicalDeviceProperties props;
+        VulkanApi.GetPhysicalDeviceProperties(device, &props);
+
+        int score = 0;
+
+        // Prefer discrete GPU if configured
+        if (_vkSettings.PreferDiscreteGpu && props.DeviceType == PhysicalDeviceType.DiscreteGpu)
+        {
+            score += 1000;
+        }
+
+        // Higher maximum texture size is better
+        score += (int)props.Limits.MaxImageDimension2D;
+
+        // Bonus points for optional extensions
+        uint extensionCount;
+        VulkanApi.EnumerateDeviceExtensionProperties(device, (byte*)null, &extensionCount, null);
+        var availableExtensions = new ExtensionProperties[extensionCount];
+        fixed (ExtensionProperties* pExtensions = availableExtensions)
+        {
+            VulkanApi.EnumerateDeviceExtensionProperties(device, (byte*)null, &extensionCount, pExtensions);
+        }
+
+        var availableExtensionNames = availableExtensions
+            .Select(ext => Marshal.PtrToStringAnsi((nint)ext.ExtensionName))
+            .ToHashSet();
+
+        foreach (var optional in _vkSettings.OptionalDeviceExtensions)
+        {
+            if (availableExtensionNames.Contains(optional))
+            {
+                score += 100;
+            }
+        }
+
+        return score;
     }
 
     /// <summary>
@@ -321,11 +494,11 @@ public unsafe class VkContext : IVkContext
     private (Device, Queue, Queue) CreateDeviceAndQueues()
     {
         uint queueFamilyCount = 0;
-        Vk.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, null);
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, null);
         _logger.LogDebug("Query returned {QueueFamilyCount} queue families available", queueFamilyCount);
 
         var queueFamilies = stackalloc QueueFamilyProperties[(int)queueFamilyCount];
-        Vk.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, queueFamilies);
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, queueFamilies);
 
         _logger.LogDebug("Physical device has {QueueFamilyCount} queue families", queueFamilyCount);
         for (uint i = 0; i < queueFamilyCount; i++)
@@ -337,7 +510,7 @@ public unsafe class VkContext : IVkContext
         uint? graphicsFamily = null;
         uint? presentFamily = null;
 
-        if (!Vk.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
+        if (!VulkanApi.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
         {
             _logger.LogError("KHR_surface extension not available");
             throw new Exception("KHR_surface extension not available");
@@ -420,7 +593,7 @@ public unsafe class VkContext : IVkContext
 
         // Creating the logical device using selected physical device and queues
         Device device;
-        var result = Vk.CreateDevice(PhysicalDevice, &createInfo, null, &device);
+        var result = VulkanApi.CreateDevice(PhysicalDevice, &createInfo, null, &device);
 
         SilkMarshal.Free((nint)extensionName[0]);
 
@@ -432,11 +605,11 @@ public unsafe class VkContext : IVkContext
         _logger.LogDebug("Logical device created successfully (Handle: {Handle})", device.Handle);
 
         Queue graphicsQueue, presentQueue;
-        Vk.GetDeviceQueue(device, graphicsFamily.Value, 0, &graphicsQueue);
+        VulkanApi.GetDeviceQueue(device, graphicsFamily.Value, 0, &graphicsQueue);
         _logger.LogDebug("Graphics queue retrieved: Family={Family}, Index=0, Handle={Handle}",
             graphicsFamily.Value, graphicsQueue.Handle);
 
-        Vk.GetDeviceQueue(device, presentFamily.Value, 0, &presentQueue);
+        VulkanApi.GetDeviceQueue(device, presentFamily.Value, 0, &presentQueue);
         _logger.LogDebug("Present queue retrieved: Family={Family}, Index=0, Handle={Handle}",
             presentFamily.Value, presentQueue.Handle);
 
@@ -463,17 +636,17 @@ public unsafe class VkContext : IVkContext
         // Critical: ensures no commands are executing when we destroy resources
         if (Device.Handle != 0)
         {
-            Vk.DeviceWaitIdle(Device);
+            VulkanApi.DeviceWaitIdle(Device);
         }
 
         // 2. Destroy logical device (also implicitly destroys all associated queues)
         if (Device.Handle != 0)
         {
-            Vk.DestroyDevice(Device, null);
+            VulkanApi.DestroyDevice(Device, null);
         }
 
         // 3. Destroy surface (must be before destroying the instance)
-        if (Surface.Handle != 0 && Vk.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
+        if (Surface.Handle != 0 && VulkanApi.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
         {
             khrSurface.DestroySurface(Instance, Surface, null);
         }
@@ -481,12 +654,88 @@ public unsafe class VkContext : IVkContext
         // 4. Destroy instance (created first, destroyed last)
         if (Instance.Handle != 0)
         {
-            Vk.DestroyInstance(Instance, null);
+            VulkanApi.DestroyInstance(Instance, null);
         }
 
         // 5. Unload Vulkan library and free function pointers
-        Vk.Dispose();
+        VulkanApi.Dispose();
 
         _logger.LogDebug("Vulkan context disposed");
+    }
+
+    /// <summary>
+    /// Public API for Swapchain to query swap chain capabilities.
+    /// </summary>
+    public SwapChainSupportDetails QuerySwapChainSupport()
+    {
+        return QuerySwapChainSupportInternal(PhysicalDevice);
+    }
+
+    /// <summary>
+    /// Finds a queue family index that supports the specified queue flags.
+    /// </summary>
+    public uint? FindQueueFamily(QueueFlags flags)
+    {
+        uint queueFamilyCount = 0;
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, null);
+
+        var queueFamilies = stackalloc QueueFamilyProperties[(int)queueFamilyCount];
+        VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, queueFamilies);
+
+        for (uint i = 0; i < queueFamilyCount; i++)
+        {
+            if ((queueFamilies[i].QueueFlags & flags) == flags)
+            {
+                return i;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Internal method used during device selection to query swap chain support.
+    /// </summary>
+    private SwapChainSupportDetails QuerySwapChainSupportInternal(PhysicalDevice device)
+    {
+        if (!VulkanApi.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
+        {
+            throw new Exception("KHR_surface extension not available");
+        }
+
+        // Query capabilities
+        SurfaceCapabilitiesKHR capabilities;
+        khrSurface.GetPhysicalDeviceSurfaceCapabilities(device, Surface, &capabilities);
+
+        // Query formats
+        uint formatCount;
+        khrSurface.GetPhysicalDeviceSurfaceFormats(device, Surface, &formatCount, null);
+        var formats = new SurfaceFormatKHR[formatCount];
+        if (formatCount > 0)
+        {
+            fixed (SurfaceFormatKHR* pFormats = formats)
+            {
+                khrSurface.GetPhysicalDeviceSurfaceFormats(device, Surface, &formatCount, pFormats);
+            }
+        }
+
+        // Query present modes
+        uint presentModeCount;
+        khrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount, null);
+        var presentModes = new PresentModeKHR[presentModeCount];
+        if (presentModeCount > 0)
+        {
+            fixed (PresentModeKHR* pPresentModes = presentModes)
+            {
+                khrSurface.GetPhysicalDeviceSurfacePresentModes(device, Surface, &presentModeCount, pPresentModes);
+            }
+        }
+
+        return new SwapChainSupportDetails
+        {
+            Capabilities = capabilities,
+            Formats = formats,
+            PresentModes = presentModes
+        };
     }
 }
