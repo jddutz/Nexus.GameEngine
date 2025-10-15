@@ -10,11 +10,10 @@ namespace TestApp.TestComponents;
 public class RenderableTestComponent(IOptions<VulkanSettings> vulkanSettings)
     : RenderableBase(vulkanSettings), IRenderable, ITestComponent
 {
+    public uint RenderPriority { get; set; } = 0;
     public int FramesRendered { get; private set; } = 0;
     public int FrameCount { get; set; } = 1;
-
-    public virtual uint RenderPriority => 0;
-
+    
     protected override void OnUpdate(double deltaTime)
     {
         if (FramesRendered >= FrameCount)

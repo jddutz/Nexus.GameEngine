@@ -19,18 +19,19 @@ namespace Nexus.GameEngine.Graphics;
 /// <para>✅ Render pass execution (empty pass for layout transitions)</para>
 /// <para>❌ Pipeline binding (pending IPipelineManager)</para>
 /// </remarks>
-public class Renderer(
+public unsafe class Renderer(
     IGraphicsContext context,
     ISwapChain swapChain,
     ISyncManager syncManager,
     ICommandPoolManager commandPoolManager,
     ILoggerFactory loggerFactory,
     IContentManager contentManager,
-    IBatchStrategy batchStrategy) : IRenderer
+    VulkanSettings vulkanSettings) : IRenderer
 {    
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
+    private readonly Dictionary<RenderPass, IBatchStrategy> _batchStrategies = BuildBatchStrategyMapping(swapChain, vulkanSettings);
 
     public event EventHandler? BeforeRendering;
     public event EventHandler? AfterRendering;
@@ -80,9 +81,8 @@ public class Renderer(
         var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
         var cmd = commandBuffers[0];
 
-        var drawCommands = GetDrawCommandsFromComponents(contentManager.Viewport.Content)
-            .OrderBy(batchStrategy.GetHashCode)
-            .ToList();
+        // Collect all draw commands from scene graph (unsorted)
+        var allDrawCommands = GetDrawCommandsFromComponents(contentManager.Viewport.Content).ToList();
 
         // Record commands
         unsafe
@@ -109,6 +109,13 @@ public class Renderer(
                 var renderPass = swapChain.RenderPasses[passIndex];
                 var framebuffer = swapChain.Framebuffers[renderPass][imageIndex];
                 var clearValues = swapChain.ClearValues[renderPass];
+                var batchStrategy = _batchStrategies[renderPass];
+
+                // Filter and sort draw commands for this pass
+                var passDrawCommands = allDrawCommands
+                    .Where(cmd => (cmd.RenderMask & passMask) != 0)
+                    .OrderBy(cmd => cmd, batchStrategy)
+                    .ToList();
 
                 // Begin render pass
                 var renderPassInfo = new RenderPassBeginInfo
@@ -127,13 +134,10 @@ public class Renderer(
 
                 context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
 
-                // Draw all commands for this pass (filter by bit mask)
-                foreach (var drawCommand in drawCommands)
+                // Draw sorted commands for this pass
+                foreach (var drawCommand in passDrawCommands)
                 {
-                    if ((drawCommand.RenderMask & passMask) != 0)
-                    {
-                        Draw(cmd, drawCommand);
-                    }
+                    Draw(cmd, drawCommand);
                 }
 
                 // End render pass
@@ -205,14 +209,34 @@ public class Renderer(
         }
     }
 
-    private void Draw(CommandBuffer cmd, DrawCommand element)
+    private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
     {
-        // TODO: Implement actual drawing using command buffers and pipelines
-        // This will involve:
-        // 1. Selecting appropriate pipeline from IVkPipelineManager
-        // 2. Binding pipeline to command buffer
-        // 3. Binding vertex/index buffers
-        // 4. Binding descriptor sets (uniforms, textures)
-        // 5. Recording draw command
+        context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline);
+        
+        var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
+        var offsets = stackalloc ulong[] { 0 };
+        context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        
+        context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
+    }
+
+    /// <summary>
+    /// Builds the mapping from RenderPass handles to their configured batch strategies.
+    /// Uses array indices to pair swapChain.RenderPasses with vulkanSettings.RenderPasses.
+    /// </summary>
+    private static Dictionary<RenderPass, IBatchStrategy> BuildBatchStrategyMapping(
+        ISwapChain swapChain,
+        VulkanSettings vulkanSettings)
+    {
+        var mapping = new Dictionary<RenderPass, IBatchStrategy>();
+        
+        for (int i = 0; i < swapChain.RenderPasses.Length; i++)
+        {
+            var renderPass = swapChain.RenderPasses[i];
+            var config = vulkanSettings.RenderPasses[i];
+            mapping[renderPass] = config.BatchStrategy;
+        }
+        
+        return mapping;
     }
 }

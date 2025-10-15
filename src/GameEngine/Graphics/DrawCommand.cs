@@ -1,4 +1,5 @@
 using Silk.NET.Maths;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -8,63 +9,39 @@ namespace Nexus.GameEngine.Graphics;
 /// </summary>
 public readonly struct DrawCommand
 {
-    // === RENDER PASS FILTERING ===
-    
-    /// <summary>
-    /// Bit mask indicating which render passes this command participates in.
-    /// Each bit corresponds to a render pass index (bit 0 = pass 0, bit 1 = pass 1, etc.).
-    /// Used by renderer to filter commands per pass.
-    /// </summary>
+    // REQUIRED
     public required uint RenderMask { get; init; }
-    
-    // === BATCHING KEYS (sorted by cost to change) ===
-    
-    /// <summary>
-    /// Vulkan pipeline handle. Different pipelines = different shaders, blend modes, etc.
-    /// Switching pipelines is expensive - batch strategy groups by this first.
-    /// </summary>
-    public required ulong PipelineHandle { get; init; }
-    
-    /// <summary>
-    /// Descriptor set handle (textures, uniforms, samplers).
-    /// Switching descriptor sets requires vkCmdBindDescriptorSets.
-    /// </summary>
-    public required ulong DescriptorSetHandle { get; init; }
-    
-    /// <summary>
-    /// Vertex buffer handle.
-    /// Switching vertex buffers requires vkCmdBindVertexBuffers.
-    /// </summary>
-    public required ulong VertexBufferHandle { get; init; }
-    
-    /// <summary>
-    /// Index buffer handle. Set to 0 for non-indexed rendering.
-    /// Switching index buffers requires vkCmdBindIndexBuffer.
-    /// </summary>
-    public ulong IndexBufferHandle { get; init; }
-    
-    // === DRAW PARAMETERS ===
-    
-    /// <summary>Number of vertices to draw (for non-indexed) or indices to draw (for indexed).</summary>
-    public uint VertexCount { get; init; }
-    
-    /// <summary>Number of indices to draw (indexed rendering only).</summary>
-    public uint IndexCount { get; init; }
-    
-    /// <summary>Number of instances to draw (instanced rendering). Default: 1.</summary>
+    public required Pipeline Pipeline { get; init; }
+    public required Silk.NET.Vulkan.Buffer VertexBuffer { get; init; }
+    public required uint VertexCount { get; init; }
+
+    // OPTIONAL with sensible defaults
+    public Silk.NET.Vulkan.Buffer IndexBuffer { get; init; }
+    public DescriptorSet DescriptorSet { get; init; }
+    public uint FirstVertex { get; init; }
     public uint InstanceCount { get; init; }
-    
-    // === PER-DRAW DATA (push constants) ===
-    
+
+    // RENDER ORDERING
     /// <summary>
-    /// Model transformation matrix.
-    /// Typically pushed via vkCmdPushConstants for per-draw uniqueness.
+    /// Priority for render ordering within a RenderPass.
+    /// Lower values render first. Use this for layering (e.g., background=0, scene=100, UI=1000).
     /// </summary>
-    public Matrix4X4<float> ModelMatrix { get; init; }
-    
+    public int RenderPriority { get; init; }
+
     /// <summary>
-    /// Optional tint/color modulation for sprites and UI.
-    /// Typically pushed via vkCmdPushConstants.
+    /// Distance from camera for depth sorting (typically for transparency).
+    /// Higher values render first (back-to-front for correct alpha blending).
+    /// Only used when batch strategy performs depth sorting.
     /// </summary>
-    public Vector4D<float> TintColor { get; init; }
+    public float DepthSortKey { get; init; }
+
+    /// <summary>
+    /// Constructor with default values for optional fields.
+    /// </summary>
+    public DrawCommand()
+    {
+        InstanceCount = 1;
+        RenderPriority = 0;
+        DepthSortKey = 0f;
+    }
 }

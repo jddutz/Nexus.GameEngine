@@ -55,6 +55,24 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
+    public Pipeline Get(string name)
+    {
+        // Try to get from cache
+        if (_pipelines.TryGetValue(name, out var cached))
+        {
+            Interlocked.Increment(ref _cacheHits);
+            cached.AccessCount++;
+            cached.LastAccessedAt = DateTime.UtcNow;
+            _logger.LogTrace("Pipeline cache hit: {PipelineName}", name);
+            return cached.Handle;
+        }
+        else
+        {
+            throw new InvalidOperationException($"Pipeline '{name}' is undefined.");
+        }
+    }
+
+    /// <inheritdoc/>
     public Pipeline GetOrCreatePipeline(PipelineDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);

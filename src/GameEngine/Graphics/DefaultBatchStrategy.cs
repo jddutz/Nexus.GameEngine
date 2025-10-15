@@ -19,34 +19,42 @@ public class DefaultBatchStrategy : IBatchStrategy
 {
     /// <summary>
     /// Compares two draw commands for batch priority ordering.
-    /// Sorts by pipeline first (most expensive), then descriptor sets, then buffers.
-    /// This minimizes Vulkan state changes.
+    /// Sorts by render priority first (correctness), then by state changes (performance).
+    /// This ensures correct layering while minimizing Vulkan state changes.
     /// </summary>
     /// <param name="x">First draw command to compare</param>
     /// <param name="y">Second draw command to compare</param>
     /// <returns>-1 if x should render before y, 1 if y should render before x, 0 if equal priority</returns>
     public int Compare(DrawCommand x, DrawCommand y)
     {
-        // Sort by pipeline first (most expensive to change)
-        var pipelineCompare = x.PipelineHandle.CompareTo(y.PipelineHandle);
+        // Sort by render priority first (lower priority renders first)
+        // This ensures correct layering (e.g., background → scene → UI)
+        var priorityCompare = x.RenderPriority.CompareTo(y.RenderPriority);
+        if (priorityCompare != 0) return priorityCompare;
+        
+        // Within the same priority, optimize for batching to minimize state changes
+        
+        // Sort by pipeline (most expensive to change)
+        var pipelineCompare = x.Pipeline.Handle.CompareTo(y.Pipeline.Handle);
         if (pipelineCompare != 0) return pipelineCompare;
         
         // Then by descriptor set (textures/uniforms)
-        var descriptorCompare = x.DescriptorSetHandle.CompareTo(y.DescriptorSetHandle);
+        var descriptorCompare = x.DescriptorSet.Handle.CompareTo(y.DescriptorSet.Handle);
         if (descriptorCompare != 0) return descriptorCompare;
         
         // Then by vertex buffer
-        var vertexCompare = x.VertexBufferHandle.CompareTo(y.VertexBufferHandle);
+        var vertexCompare = x.VertexBuffer.Handle.CompareTo(y.VertexBuffer.Handle);
         if (vertexCompare != 0) return vertexCompare;
         
         // Finally by index buffer
-        return x.IndexBufferHandle.CompareTo(y.IndexBufferHandle);
+        return x.IndexBuffer.Handle.CompareTo(y.IndexBuffer.Handle);
     }
 
     /// <summary>
     /// Gets a stable hash code for the draw command to enable efficient batch grouping.
-    /// Hash encodes state change costs: pipeline (most expensive) to buffers (least expensive).
+    /// Hash encodes render priority and state change costs.
     /// Commands with similar hashes will batch together.
+    /// Note: DepthSortKey is NOT included as it changes per-frame based on camera position.
     /// </summary>
     /// <param name="state">Draw command to hash</param>
     /// <returns>Hash code representing the batchable aspects of the draw command</returns>
@@ -54,11 +62,16 @@ public class DefaultBatchStrategy : IBatchStrategy
     {
         var hash = new HashCode();
         
-        // Add in order of state change cost (most expensive first)
-        hash.Add(state.PipelineHandle);
-        hash.Add(state.DescriptorSetHandle);
-        hash.Add(state.VertexBufferHandle);
-        hash.Add(state.IndexBufferHandle);
+        // Add RenderPriority first (correctness requirement)
+        hash.Add(state.RenderPriority);
+        
+        // Then add in order of state change cost (most expensive first)
+        hash.Add(state.Pipeline);
+        hash.Add(state.DescriptorSet);
+        hash.Add(state.VertexBuffer);
+        hash.Add(state.IndexBuffer);
+        
+        // NOTE: DepthSortKey deliberately excluded - it's camera-relative and changes every frame
         
         return hash.ToHashCode();
     }

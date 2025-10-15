@@ -74,40 +74,12 @@ public interface IPipelineManager : IDisposable
     Pipeline GetOrCreatePipeline(PipelineDescriptor descriptor);
 
     /// <summary>
-    /// Gets a specialized pipeline for sprite rendering (2D textured quads).
-    /// Convenience method that creates a standard sprite pipeline with:
-    /// - Triangle list topology
-    /// - Alpha blending enabled
-    /// - No depth testing
-    /// - Standard sprite vertex format (pos, uv, color)
+    /// Retrieves a handle for the specified pipeline from the cache
+    /// or throws <see cref="NotFoundException"/>
     /// </summary>
-    /// <param name="renderPass">Target render pass for the pipeline</param>
-    /// <returns>Cached sprite pipeline</returns>
-    Pipeline GetSpritePipeline(RenderPass renderPass);
-
-    /// <summary>
-    /// Gets a specialized pipeline for 3D mesh rendering.
-    /// Convenience method that creates a standard mesh pipeline with:
-    /// - Triangle list topology
-    /// - Depth testing enabled
-    /// - Back-face culling
-    /// - Standard mesh vertex format (pos, normal, uv, tangent)
-    /// </summary>
-    /// <param name="renderPass">Target render pass for the pipeline</param>
-    /// <returns>Cached mesh pipeline</returns>
-    Pipeline GetMeshPipeline(RenderPass renderPass);
-
-    /// <summary>
-    /// Gets a specialized pipeline for UI rendering.
-    /// Convenience method that creates a standard UI pipeline with:
-    /// - Triangle list topology
-    /// - Alpha blending enabled
-    /// - No depth testing
-    /// - Screen-space coordinates (no projection)
-    /// </summary>
-    /// <param name="renderPass">Target render pass for the pipeline</param>
-    /// <returns>Cached UI pipeline</returns>
-    Pipeline GetUIPipeline(RenderPass renderPass);
+    /// <param name="name">The name of the pipeline to be retrieved from the cache.</param>
+    /// <returns>The specified pipeline handle.</returns>
+    Pipeline Get(string name);
 
     /// <summary>
     /// Invalidates and removes a specific pipeline from the cache.

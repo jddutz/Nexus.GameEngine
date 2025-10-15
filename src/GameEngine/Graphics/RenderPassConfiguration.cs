@@ -67,4 +67,11 @@ public class RenderPassConfiguration
     /// Number of MSAA samples.
     /// </summary>
     public SampleCountFlags SampleCount { get; set; } = SampleCountFlags.Count1Bit;
+    
+    /// <summary>
+    /// Batch strategy for sorting draw commands in this render pass.
+    /// Controls how draw commands are ordered for performance optimization and correctness.
+    /// Default uses standard batching without depth sorting.
+    /// </summary>
+    public IBatchStrategy BatchStrategy { get; set; } = new DefaultBatchStrategy();
 }
