@@ -39,33 +39,32 @@ public interface ISwapChain : IDisposable
     ImageView[] SwapchainImageViews { get; }
     
     /// <summary>
-    /// Gets all render passes created from VulkanSettings.RenderPasses[] configuration.
+    /// Gets all render passes indexed by bit position (0-10 corresponding to RenderPasses constants).
     /// These survive window resize since format doesn't change.
     /// </summary>
     /// <remarks>
-    /// Array index corresponds to VulkanSettings.RenderPasses[] index.
-    /// Typically index 0 is the "Main" render pass for primary rendering.
-    /// Use these with Framebuffers and ClearValues dictionaries.
+    /// Array index corresponds to bit position in RenderPasses constants.
+    /// Example: swapChain.Passes[0] = Shadow pass, swapChain.Passes[3] = Main pass
     /// </remarks>
-    RenderPass[] RenderPasses { get; }
+    RenderPass[] Passes { get; }
     
     /// <summary>
-    /// Gets framebuffers for each render pass, indexed by RenderPass handle.
+    /// Gets framebuffers for each render pass, indexed by bit position.
     /// Each render pass has N framebuffers (one per swapchain image).
     /// Recreated on window resize.
     /// </summary>
     /// <remarks>
     /// <para><strong>Usage:</strong></para>
     /// <code>
-    /// var framebuffer = swapChain.Framebuffers[renderPass][imageIndex];
+    /// var framebuffer = swapChain.Framebuffers[bitPos][imageIndex];
     /// </code>
     /// 
     /// <para>Framebuffers bind specific ImageViews to RenderPass attachments.</para>
     /// </remarks>
-    IReadOnlyDictionary<RenderPass, Framebuffer[]> Framebuffers { get; }
+    Framebuffer[][] Framebuffers { get; }
     
     /// <summary>
-    /// Gets clear values for each render pass, indexed by RenderPass handle.
+    /// Gets clear values for each render pass, indexed by bit position.
     /// Clear values define what to clear attachments to when LoadOp is Clear.
     /// </summary>
     /// <remarks>
@@ -75,11 +74,11 @@ public interface ISwapChain : IDisposable
     /// 
     /// <para><strong>Usage:</strong></para>
     /// <code>
-    /// var clearValues = swapChain.ClearValues[renderPass];
+    /// var clearValues = swapChain.ClearValues[bitPos];
     /// renderPassInfo.PClearValues = clearValues;
     /// </code>
     /// </remarks>
-    IReadOnlyDictionary<RenderPass, ClearValue[]> ClearValues { get; }
+    ClearValue[][] ClearValues { get; }
 
     /// <summary>
     /// Recreates the swapchain on window resize.

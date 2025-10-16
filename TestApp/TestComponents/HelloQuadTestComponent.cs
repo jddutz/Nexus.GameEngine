@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Silk.NET.Maths;
@@ -7,10 +6,9 @@ using Silk.NET.Vulkan;
 namespace TestApp.TestComponents;
 
 public class HelloQuad(
-    IOptions<VulkanSettings> vulkanSettings,
     IGraphicsContext context,
     IPipelineManager pipelineManager)
-    : RenderableBase(vulkanSettings), IRenderable, ITestComponent
+    : RenderableBase(), IRenderable, ITestComponent
 {    
     private Silk.NET.Vulkan.Buffer _vertexBuffer;
     private DeviceMemory _vertexBufferMemory;
@@ -108,7 +106,7 @@ public class HelloQuad(
         throw new Exception("Failed to find suitable memory type");
     }
     
-    public override IEnumerable<DrawCommand> GetDrawCommands()
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (!_initialized) yield break;
         

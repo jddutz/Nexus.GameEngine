@@ -11,8 +11,8 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A layout component that arranges its children horizontally.
 /// Child components are positioned side by side with configurable spacing and alignment.
 /// </summary>
-public partial class HorizontalLayout(IWindowService windowService, IOptions<VulkanSettings> vulkanSettings)
-    : LayoutBase(windowService, vulkanSettings)
+public partial class HorizontalLayout(IWindowService windowService)
+    : LayoutBase(windowService)
 {
 
     /// <summary>

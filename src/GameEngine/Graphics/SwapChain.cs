@@ -18,7 +18,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <list type="bullet">
 /// <item>Swapchain → Images (owned by Vulkan)</item>
 /// <item>ImageViews → Views into swapchain images</item>
-/// <item>RenderPasses → Created from VulkanSettings configuration (survive resize)</item>
+/// <item>RenderPasses → Created from RenderPasses.Configurations static array (survive resize)</item>
 /// <item>Framebuffers → Bind ImageViews to RenderPasses (recreated on resize)</item>
 /// <item>ClearValues → Per-RenderPass clear values</item>
 /// </list>
@@ -32,7 +32,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <item>Create swap chain with chosen parameters</item>
 /// <item>Retrieve swap chain images (N images)</item>
 /// <item>Create image views for each swap chain image</item>
-/// <item>Create render passes from VulkanSettings.RenderPasses[] configuration</item>
+/// <item>Create render passes from RenderPasses.Configurations static array</item>
 /// <item>Create N framebuffers per render pass</item>
 /// </list>
 /// 
@@ -71,9 +71,10 @@ public unsafe class SwapChain : ISwapChain
     private Format _depthFormat;
     private bool _hasDepthAttachment;
     
-    private RenderPass[] _renderPasses = [];
-    private readonly Dictionary<RenderPass, Framebuffer[]> _framebuffers = new();
-    private readonly Dictionary<RenderPass, ClearValue[]> _clearValues = new();
+    private const int PassCount = 11; // RenderPasses has 11 passes (0-10)
+    private readonly RenderPass[] _renderPasses = new RenderPass[PassCount];
+    private readonly Framebuffer[][] _framebuffers = new Framebuffer[PassCount][];
+    private readonly ClearValue[][] _clearValues = new ClearValue[PassCount][];
 
     private KhrSwapchain? _khrSwapchain;
 
@@ -102,7 +103,7 @@ public unsafe class SwapChain : ISwapChain
         CreateDepthResources(); // Create depth buffer if any render pass needs it
         CreateAllFramebuffers();
         
-        _logger.LogDebug("Swap chain initialization complete with {RenderPassCount} render passes", _renderPasses.Length);
+        _logger.LogDebug("Swap chain initialization complete with {RenderPassCount} render passes", PassCount);
     }
 
     public SwapchainKHR Swapchain => _swapchain;
@@ -110,9 +111,9 @@ public unsafe class SwapChain : ISwapChain
     public Extent2D SwapchainExtent => _swapchainExtent;
     public Image[] SwapchainImages => _swapchainImages;
     public ImageView[] SwapchainImageViews => _swapchainImageViews;
-    public RenderPass[] RenderPasses => _renderPasses;
-    public IReadOnlyDictionary<RenderPass, Framebuffer[]> Framebuffers => _framebuffers;
-    public IReadOnlyDictionary<RenderPass, ClearValue[]> ClearValues => _clearValues;
+    public RenderPass[] Passes => _renderPasses;
+    public Framebuffer[][] Framebuffers => _framebuffers;
+    public ClearValue[][] ClearValues => _clearValues;
 
     /// <summary>
     /// Creates the swap chain with optimal settings based on device capabilities and preferences.
@@ -398,33 +399,31 @@ public unsafe class SwapChain : ISwapChain
     }
 
     /// <summary>
-    /// Creates all render passes from VulkanSettings.RenderPasses[] configuration.
+    /// Creates all render passes from RenderPasses.Configurations array.
     /// Each render pass survives window resize since format doesn't change.
     /// </summary>
     /// <remarks>
     /// For each configuration:
     /// - Creates Vulkan RenderPass with color and optional depth attachments
+    /// - Stores in dictionary keyed by bit flag (1 << bitPosition)
     /// - Stores clear values for use during rendering
     /// - Logs creation details for debugging
     /// </remarks>
     private void CreateRenderPasses()
     {
-        if (_settings.RenderPasses == null || _settings.RenderPasses.Length == 0)
-        {
-            _logger.LogWarning("No render passes configured in VulkanSettings");
-            return;
-        }
-
-        _renderPasses = new Silk.NET.Vulkan.RenderPass[_settings.RenderPasses.Length];
+        var configs = RenderPasses.Configurations;
         
-        for (int i = 0; i < _settings.RenderPasses.Length; i++)
+        for (int i = 0; i < configs.Length; i++)
         {
-            var config = _settings.RenderPasses[i];
-            _renderPasses[i] = CreateRenderPass(config);
-            _clearValues[_renderPasses[i]] = CreateClearValues(config);
+            var config = configs[i];
             
-            _logger.LogDebug("Created render pass '{Name}': Format={Format}, Depth={Depth}", 
-                config.Name, 
+            var renderPass = CreateRenderPass(config);
+            _renderPasses[i] = renderPass;
+            _clearValues[i] = CreateClearValues(config);
+            
+            _logger.LogDebug("Created render pass '{Name}' (bit {Bit}): Format={Format}, Depth={Depth}", 
+                config.Name,
+                i,
                 config.ColorFormat == Format.Undefined ? _swapchainFormat : config.ColorFormat,
                 config.DepthFormat);
             
@@ -707,8 +706,9 @@ public unsafe class SwapChain : ISwapChain
     /// </remarks>
     private void CreateAllFramebuffers()
     {
-        foreach (var renderPass in _renderPasses)
+        for (int passIndex = 0; passIndex < PassCount; passIndex++)
         {
+            var renderPass = _renderPasses[passIndex];
             var framebuffers = new Framebuffer[_swapchainImages.Length];
             
             for (int i = 0; i < _swapchainImages.Length; i++)
@@ -716,11 +716,11 @@ public unsafe class SwapChain : ISwapChain
                 framebuffers[i] = CreateFramebuffer(renderPass, i);
             }
             
-            _framebuffers[renderPass] = framebuffers;
+            _framebuffers[passIndex] = framebuffers;
         }
         
         _logger.LogDebug("Created framebuffers for {RenderPassCount} render passes ({ImageCount} per pass)", 
-            _renderPasses.Length, _swapchainImages.Length);
+            PassCount, _swapchainImages.Length);
     }
 
     /// <summary>
@@ -903,17 +903,20 @@ public unsafe class SwapChain : ISwapChain
     private void CleanupSwapchain()
     {
         // Destroy all framebuffers for all render passes
-        foreach (var framebufferArray in _framebuffers.Values)
+        foreach (var framebufferArray in _framebuffers)
         {
-            foreach (var framebuffer in framebufferArray)
+            if (framebufferArray != null)
             {
-                if (framebuffer.Handle != 0)
+                foreach (var framebuffer in framebufferArray)
                 {
-                    _vk.DestroyFramebuffer(_context.Device, framebuffer, null);
+                    if (framebuffer.Handle != 0)
+                    {
+                        _vk.DestroyFramebuffer(_context.Device, framebuffer, null);
+                    }
                 }
             }
         }
-        _framebuffers.Clear();
+        Array.Clear(_framebuffers, 0, _framebuffers.Length);
 
         // Destroy image views
         foreach (var imageView in _swapchainImageViews)
@@ -980,8 +983,8 @@ public unsafe class SwapChain : ISwapChain
                 _vk.DestroyRenderPass(_context.Device, renderPass, null);
             }
         }
-        _renderPasses = [];
-        _clearValues.Clear();
+        Array.Clear(_renderPasses, 0, _renderPasses.Length);
+        Array.Clear(_clearValues, 0, _clearValues.Length);
 
         _logger.LogDebug("Swap chain disposed");
     }

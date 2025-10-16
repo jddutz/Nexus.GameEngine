@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Graphics;
@@ -31,12 +30,10 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
         public string[]? RenderPasses { get; init; }
     }
     
-    private readonly VulkanSettings _vulkanSettings;
     private uint? _cachedRenderMask;
     
-    protected RenderableBase(IOptions<VulkanSettings> vulkanSettings)
+    protected RenderableBase()
     {
-        _vulkanSettings = vulkanSettings.Value;
     }
     
     /// <summary>
@@ -98,7 +95,8 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
     }
     
     /// <summary>
-    /// Computes render mask from array of pass names by looking up indices in VulkanSettings.
+    /// Computes render mask from array of pass names by looking up in RenderPasses static class.
+    /// Supports both individual pass names (e.g., "Main", "Shadow") and combined masks (e.g., "All", "Opaque").
     /// </summary>
     private uint ComputeRenderMaskFromNames(string[] passNames)
     {
@@ -106,15 +104,20 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
         
         foreach (var passName in passNames)
         {
-            var index = Array.FindIndex(_vulkanSettings.RenderPasses, p => p.Name == passName);
-            if (index >= 0)
+            // Try to get the constant value using reflection on the static RenderPasses class
+            var field = typeof(RenderPasses).GetField(passName, 
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            
+            if (field?.GetValue(null) is uint passValue)
             {
-                mask |= (1u << index);
-                Logger?.LogTrace("Found render pass '{PassName}' at index {Index}", passName, index);
+                mask |= passValue;
+                Logger?.LogTrace("Found render pass constant '{PassName}': 0x{Value:X}", passName, passValue);
             }
             else
             {
-                Logger?.LogWarning("Render pass '{PassName}' not found in VulkanSettings configuration", passName);
+                Logger?.LogWarning("Render pass '{PassName}' not found in RenderPasses constants. " +
+                    "Available: Shadow, Depth, Background, Main, Lighting, Transparent, PostProcess, Sky, Particles, UI, Debug, " +
+                    "All, Opaque, AlphaBlended, Scene", passName);
             }
         }
         
@@ -129,6 +132,9 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
     /// <summary>
     /// Override this to provide draw commands for rendering.
     /// Use the RenderMask property to populate DrawCommand.RenderMask.
+    /// Use context.Camera for depth calculations, frustum culling, etc.
     /// </summary>
-    public virtual IEnumerable<DrawCommand> GetDrawCommands() => [];
+    /// <param name="context">Rendering context containing camera, viewport, and pass information</param>
+    /// <returns>Collection of draw commands for this component</returns>
+    public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context) => [];
 }

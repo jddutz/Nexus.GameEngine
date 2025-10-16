@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -7,8 +6,8 @@ using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class BackgroundLayer(IOptions<VulkanSettings> vulkanSettings)
-        : RenderableBase(vulkanSettings), IRenderable, IBackgroundController
+public partial class BackgroundLayer()
+        : RenderableBase(), IRenderable, IBackgroundController
 {
     public new record Template : RuntimeComponent.Template
     {

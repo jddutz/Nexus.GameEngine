@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
@@ -9,8 +8,8 @@ namespace TestApp.TestComponents;
 /// Unit test component that verifies validation layers are working by triggering specific validation scenarios
 /// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetDrawCommands (Act), GetTestResults (Assert).
 /// </summary>
-public class ValidationTestComponent(IGraphicsContext context, IOptions<VulkanSettings> vulkanSettings)
-    : RenderableBase(vulkanSettings), IRenderable, ITestComponent
+public class ValidationTestComponent(IGraphicsContext context)
+    : RenderableBase(), IRenderable, ITestComponent
 {
     private record TestData
     {
@@ -44,7 +43,7 @@ public class ValidationTestComponent(IGraphicsContext context, IOptions<VulkanSe
         }
     }
 
-    public override IEnumerable<DrawCommand> GetDrawCommands()
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (!IsActive)
             yield break;

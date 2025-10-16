@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Actions;
@@ -7,6 +8,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Commands;
+using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
@@ -30,70 +32,78 @@ class Program
     /// <param name="args">Command-line arguments.</param>
     private static void Main(string[] args)
     {
-        // Create configuration with application settings
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
+        try
+        {
+            // Create configuration with application settings
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Application:General:ApplicationName"] = APPLICATION_NAME,
+                    ["Application:General:ApplicationVersion"] = "1.0.0",
+                    ["Application:General:EngineName"] = "Nexus Game Engine",
+                    ["Application:General:EngineVersion"] = "1.0.0",
+                    ["Graphics:Fullscree"] = "false",
+                    ["Graphics:Vulkan:EnableValidationLayers"] = "true"
+                })
+                .Build();
+
+            // Configure logging
+            var loggerConfig = new TestLoggerConfiguration();
+            var testLoggerFactory = new TestLoggerFactory(loggerConfig);
+
+            // Create a wrapper that implements ILoggerFactory and delegates to our TestLoggerFactory
+            var loggerFactory = LoggerFactory.Create(builder =>
             {
-                ["Application:General:ApplicationName"] = APPLICATION_NAME,
-                ["Application:General:ApplicationVersion"] = "1.0.0",
-                ["Application:General:EngineName"] = "Nexus Game Engine",
-                ["Application:General:EngineVersion"] = "1.0.0",
-                ["Graphics:Fullscree"] = "false",
-                ["Graphics:Vulkan:EnableValidationLayers"] = "true"
-            })
-            .Build();
+                builder.ClearProviders();
+                builder.SetMinimumLevel(LogLevel.Trace);
+                builder.AddProvider(testLoggerFactory);
+            });
 
-        // Configure logging
-        var loggerConfig = new TestLoggerConfiguration();
-        var testLoggerFactory = new TestLoggerFactory(loggerConfig);
-        
-        // Create a wrapper that implements ILoggerFactory and delegates to our TestLoggerFactory
-        var loggerFactory = LoggerFactory.Create(builder =>
+            // Build service container
+            var services = new ServiceCollection()
+                .AddSingleton(loggerFactory)
+                .AddSingleton(testLoggerFactory)
+                .Configure<ApplicationSettings>(configuration.GetSection("Application"))
+                .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
+                .Configure<GraphicsSettings>(configuration.GetSection("Graphics:Vulkan"))
+                .AddSingleton<IWindowService, WindowService>()
+                .AddSingleton<IValidation, Validation>()
+                .AddSingleton<IGraphicsContext, Context>()
+                .AddSingleton<ISwapChain, SwapChain>()
+                .AddSingleton<ISyncManager, SyncManager>()
+                .AddSingleton<ICommandPoolManager, CommandPoolManager>()
+                .AddSingleton<IPipelineManager, PipelineManager>()
+                .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
+                .AddSingleton<IRenderer, Renderer>()
+                .AddSingleton<IEventBus, EventBus>()
+                .AddSingleton<IAssetService, AssetService>()
+                .AddSingleton<IResourceManager, ResourceManager>()
+                .AddSingleton<IContentManager, ContentManager>()
+                .AddSingleton<IComponentFactory, ComponentFactory>()
+                .AddSingleton<IActionFactory, ActionFactory>()
+                .AddDiscoveredServices<IRuntimeComponent>()
+                .AddDiscoveredServices<IAction>()
+                .BuildServiceProvider();
+
+            // Get Application from DI
+            var application = new Application(services);
+
+            // Create window options for the application
+            var windowOptions = WindowOptions.DefaultVulkan with
+            {
+                Size = new Vector2D<int>(1920, 1080),
+                Title = APPLICATION_NAME,
+                WindowBorder = WindowBorder.Hidden,
+                WindowState = WindowState.Fullscreen,
+                VSync = true
+            };
+
+            // Run
+            application.Run(windowOptions, Templates.MainMenu);
+        }
+        catch (Exception ex)
         {
-            builder.ClearProviders();
-            builder.SetMinimumLevel(LogLevel.Trace);
-            builder.AddProvider(testLoggerFactory);
-        });
-        
-        // Build service container
-        var services = new ServiceCollection()
-            .AddSingleton(loggerFactory)
-            .AddSingleton(testLoggerFactory)
-            .Configure<ApplicationSettings>(configuration.GetSection("Application"))
-            .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
-            .Configure<GraphicsSettings>(configuration.GetSection("Graphics:Vulkan"))
-            .AddSingleton<IWindowService, WindowService>()
-            .AddSingleton<IValidation, Validation>()
-            .AddSingleton<IGraphicsContext, Context>()
-            .AddSingleton<ISwapChain, SwapChain>()
-            .AddSingleton<ISyncManager, SyncManager>()
-            .AddSingleton<ICommandPoolManager, CommandPoolManager>()
-            .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
-            .AddSingleton<IRenderer, Renderer>()
-            .AddSingleton<IEventBus, EventBus>()
-            .AddSingleton<IAssetService, AssetService>()
-            .AddSingleton<IResourceManager, ResourceManager>()
-            .AddSingleton<IContentManager, ContentManager>()
-            .AddSingleton<IComponentFactory, ComponentFactory>()
-            .AddSingleton<IActionFactory, ActionFactory>()
-            .AddDiscoveredServices<IRuntimeComponent>()
-            .AddDiscoveredServices<IAction>()
-            .BuildServiceProvider();
-
-        // Get Application from DI
-        var application = new Application(services);
-
-        // Create window options for the application
-        var windowOptions = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(1920, 1080),
-            Title = APPLICATION_NAME,
-            WindowBorder = WindowBorder.Hidden,
-            WindowState = WindowState.Fullscreen,
-            VSync = true
-        };
-
-        // Run
-        application.Run(windowOptions, Templates.MainMenu);
+            Debug.WriteLine("Program Error: " + ex.Message + "\n" + ex.StackTrace);
+        }
     }
 }

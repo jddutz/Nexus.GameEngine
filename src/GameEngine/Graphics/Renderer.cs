@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
@@ -25,13 +26,12 @@ public unsafe class Renderer(
     ISyncManager syncManager,
     ICommandPoolManager commandPoolManager,
     ILoggerFactory loggerFactory,
-    IContentManager contentManager,
-    VulkanSettings vulkanSettings) : IRenderer
+    IContentManager contentManager)
+    : IRenderer
 {    
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
-    private readonly Dictionary<RenderPass, IBatchStrategy> _batchStrategies = BuildBatchStrategyMapping(swapChain, vulkanSettings);
 
     public event EventHandler? BeforeRendering;
     public event EventHandler? AfterRendering;
@@ -45,8 +45,6 @@ public unsafe class Renderer(
 
         BeforeRendering?.Invoke(this, EventArgs.Empty);
 
-        _logger.LogTrace("Render frame - deltaTime: {DeltaTime:F4}s", deltaTime);
-
         // Get synchronization primitives for current frame
         var frameSync = syncManager.GetFrameSync(_currentFrameIndex);
 
@@ -59,7 +57,6 @@ public unsafe class Renderer(
 
         if (acquireResult == Result.ErrorOutOfDateKhr)
         {
-            _logger.LogInformation("Swap chain out of date during acquire, recreating");
             swapChain.Recreate();
             return; // Skip this frame, will render with new swapchain next frame
         }
@@ -67,8 +64,6 @@ public unsafe class Renderer(
         {
             throw new Exception($"Failed to acquire swap chain image: {acquireResult}");
         }
-
-        _logger.LogTrace("Acquired image {ImageIndex}", imageIndex);
 
         // Get per-image render semaphore
         var imageSync = syncManager.GetImageSync(imageIndex);
@@ -81,8 +76,60 @@ public unsafe class Renderer(
         var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
         var cmd = commandBuffers[0];
 
-        // Collect all draw commands from scene graph (unsorted)
-        var allDrawCommands = GetDrawCommandsFromComponents(contentManager.Viewport.Content).ToList();
+        // Create render context with camera and viewport information
+        var renderContext = new RenderContext
+        {
+            Camera = contentManager.Viewport.Camera,
+            Viewport = contentManager.Viewport,
+            AvailableRenderPasses = RenderPasses.All,
+            RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
+            DeltaTime = deltaTime
+        };
+
+        // OPTIMIZATION: Pre-allocate per-pass sorted sets (11 passes = indices 0-10)
+        // Commands are automatically sorted on insertion using batch strategy comparer
+        // Note: RenderPasses.Configurations is static, so BatchStrategy instances are already cached
+        const int PassCount = 11;
+        var passCommandSets = new SortedSet<DrawCommand>[PassCount];
+        for (int i = 0; i < PassCount; i++)
+        {
+            passCommandSets[i] = new SortedSet<DrawCommand>(RenderPasses.Configurations[i].BatchStrategy);
+        }
+        
+        // OPTIMIZATION: Collect and sort draw commands into per-pass buckets in single traversal
+        uint activePasses = 0;
+        var componentStack = new Stack<IRuntimeComponent>();
+        componentStack.Push(contentManager.Viewport.Content);
+        
+        while (componentStack.Count > 0)
+        {
+            var component = componentStack.Pop();
+            
+            // Collect draw commands and distribute to pass-specific lists
+            if (component is IRenderable renderable)
+            {
+                foreach (var drawCommand in renderable.GetDrawCommands(renderContext))
+                {
+                    activePasses |= drawCommand.RenderMask;  // HOT PATH: Bitwise OR accumulation
+                    
+                    // Add command to all passes it participates in (auto-sorted on insertion)
+                    for (int bitPos = 0; bitPos < PassCount; bitPos++)
+                    {
+                        uint passMask = 1u << bitPos;
+                        if ((drawCommand.RenderMask & passMask) != 0)
+                        {
+                            passCommandSets[bitPos].Add(drawCommand);  // O(log N) insertion, maintains sort
+                        }
+                    }
+                }
+            }
+            
+            // Push children onto stack for traversal
+            foreach (var child in component.Children)
+            {
+                componentStack.Push(child);
+            }
+        }
 
         // Record commands
         unsafe
@@ -100,36 +147,33 @@ public unsafe class Renderer(
                 throw new InvalidOperationException($"Failed to begin command buffer: {result}");
             }
 
-            // Render each configured pass
-            for (uint passIndex = 0, passMask = 1;
-                passIndex < swapChain.RenderPasses.Length;
-                passIndex++, passMask <<= 1)
-            {                
-                // Get render pass resources
-                var renderPass = swapChain.RenderPasses[passIndex];
-                var framebuffer = swapChain.Framebuffers[renderPass][imageIndex];
-                var clearValues = swapChain.ClearValues[renderPass];
-                var batchStrategy = _batchStrategies[renderPass];
+            // Iterate all 11 passes in order (pass index corresponds to bit position)
+            for (uint passMask = 1u, p = 0; p < PassCount; passMask <<= 1, p++)
+            {
+                // Skip inactive passes
+                if ((activePasses & passMask) == 0)
+                    continue;
+                
+                var passDrawCommands = passCommandSets[p];
 
-                // Filter and sort draw commands for this pass
-                var passDrawCommands = allDrawCommands
-                    .Where(cmd => (cmd.RenderMask & passMask) != 0)
-                    .OrderBy(cmd => cmd, batchStrategy)
-                    .ToList();
+                // Skip empty passes (defensive check)
+                if (passDrawCommands.Count == 0)
+                    continue;
 
                 // Begin render pass
                 var renderPassInfo = new RenderPassBeginInfo
                 {
                     SType = StructureType.RenderPassBeginInfo,
-                    RenderPass = renderPass,
-                    Framebuffer = framebuffer,
+                    RenderPass = swapChain.Passes[p],
+                    Framebuffer = swapChain.Framebuffers[p][imageIndex],
                     RenderArea = new Rect2D
                     {
                         Offset = new Offset2D(0, 0),
                         Extent = swapChain.SwapchainExtent
                     },
-                    ClearValueCount = (uint)clearValues.Length,
-                    PClearValues = (ClearValue*)System.Runtime.CompilerServices.Unsafe.AsPointer(ref System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference(clearValues))
+                    ClearValueCount = (uint)swapChain.ClearValues[p].Length,
+                    PClearValues = (ClearValue*)System.Runtime.CompilerServices.Unsafe.AsPointer(
+                        ref System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference(swapChain.ClearValues[p]))
                 };
 
                 context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
@@ -183,7 +227,6 @@ public unsafe class Renderer(
         }
         catch (Exception ex) when (ex.Message.Contains("out of date") || ex.Message.Contains("suboptimal"))
         {
-            _logger.LogInformation("Swap chain needs recreation after present");
             swapChain.Recreate();
         }
 
@@ -191,22 +234,6 @@ public unsafe class Renderer(
 
         // Move to next frame
         _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
-    }
-    
-    private IEnumerable<DrawCommand> GetDrawCommandsFromComponents(IRuntimeComponent component)
-    {
-        if (component is IRenderable renderable)
-        {
-            foreach (var drawCommand in renderable.GetDrawCommands())
-            {
-                yield return drawCommand;
-            }
-        }
-        
-        foreach (var drawCommand in component.Children.SelectMany(GetDrawCommandsFromComponents))
-        {
-            yield return drawCommand;
-        }
     }
 
     private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
@@ -218,25 +245,5 @@ public unsafe class Renderer(
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
-    }
-
-    /// <summary>
-    /// Builds the mapping from RenderPass handles to their configured batch strategies.
-    /// Uses array indices to pair swapChain.RenderPasses with vulkanSettings.RenderPasses.
-    /// </summary>
-    private static Dictionary<RenderPass, IBatchStrategy> BuildBatchStrategyMapping(
-        ISwapChain swapChain,
-        VulkanSettings vulkanSettings)
-    {
-        var mapping = new Dictionary<RenderPass, IBatchStrategy>();
-        
-        for (int i = 0; i < swapChain.RenderPasses.Length; i++)
-        {
-            var renderPass = swapChain.RenderPasses[i];
-            var config = vulkanSettings.RenderPasses[i];
-            mapping[renderPass] = config.BatchStrategy;
-        }
-        
-        return mapping;
     }
 }

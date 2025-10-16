@@ -13,6 +13,7 @@ public interface IRenderable : IRuntimeComponent
     /// Called by the renderer during the render phase.
     /// Each DrawCommand specifies which render passes it participates in via RenderMask.
     /// </summary>
+    /// <param name="context">Rendering context containing camera, viewport, and pass information</param>
     /// <returns>Collection of Vulkan draw commands describing what to render</returns>
-    IEnumerable<DrawCommand> GetDrawCommands();
+    IEnumerable<DrawCommand> GetDrawCommands(RenderContext context);
 }

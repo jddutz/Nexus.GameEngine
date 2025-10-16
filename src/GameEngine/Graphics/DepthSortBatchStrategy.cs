@@ -13,6 +13,26 @@ namespace Nexus.GameEngine.Graphics;
 /// <item><b>Pipeline/DescriptorSet/Buffers</b> - Batching optimization within same priority/depth</item>
 /// </list>
 /// 
+/// <para><strong>Component Usage:</strong></para>
+/// Components should calculate DepthSortKey in GetDrawCommands(RenderContext) using the camera position:
+/// <code>
+/// public override IEnumerable&lt;DrawCommand&gt; GetDrawCommands(RenderContext context)
+/// {
+///     float depthSortKey = 0f;
+///     if (context.Camera != null)
+///     {
+///         // Calculate distance squared from camera for depth sorting
+///         depthSortKey = Vector3D.DistanceSquared(myPosition, context.Camera.Position);
+///     }
+///     
+///     yield return new DrawCommand 
+///     { 
+///         DepthSortKey = depthSortKey,
+///         // ... other properties
+///     };
+/// }
+/// </code>
+/// 
 /// <para><strong>Performance Note:</strong></para>
 /// Depth sorting prevents efficient batching since objects are sorted by distance rather than state.
 /// Only use this strategy for render passes that require transparency.

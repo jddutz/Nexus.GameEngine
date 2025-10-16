@@ -33,8 +33,8 @@ public abstract partial class LayoutBase : RenderableBase, IRenderable
     private bool _needsLayout = true;
     private Vector2D<float> _size = new(0, 0);
 
-    protected LayoutBase(IWindowService windowService, IOptions<VulkanSettings> vulkanSettings)
-        : base(vulkanSettings)
+    protected LayoutBase(IWindowService windowService)
+        : base()
     {
         // Subscribe to window resize events if we have a window service
         _window = windowService.GetWindow();

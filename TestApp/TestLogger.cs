@@ -66,6 +66,26 @@ public sealed class TestLogger(
 
         var logMessage = $"{timestamp}|{tag}|{categoryName}|{formatter(state, exception)}";
 
+        // Append exception details if present
+        if (exception is not null)
+        {
+            logMessage += Environment.NewLine + 
+                         $"Exception: {exception.GetType().FullName}: {exception.Message}" + 
+                         Environment.NewLine + 
+                         $"Stack Trace:{Environment.NewLine}{exception.StackTrace}";
+            
+            // Include inner exceptions if present
+            var innerException = exception.InnerException;
+            while (innerException is not null)
+            {
+                logMessage += Environment.NewLine + 
+                             $"Inner Exception: {innerException.GetType().FullName}: {innerException.Message}" + 
+                             Environment.NewLine + 
+                             $"Stack Trace:{Environment.NewLine}{innerException.StackTrace}";
+                innerException = innerException.InnerException;
+            }
+        }
+
         // Output to Debug Console when debugging, Console otherwise
         if (Debugger.IsAttached)
         {

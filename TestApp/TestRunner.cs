@@ -101,16 +101,6 @@ public class TestRunner(
             Logger?.LogInformation("All test components executed. Stopping stopwatch and outputting results.");
             _stopwatch.Stop();
             OutputTestResults();
-
-            if (Debugger.IsAttached)
-            {
-                Logger?.LogInformation("Debugger detected; keeping window open. Press ESC to close.");
-            }
-            else
-            {
-                Logger?.LogInformation("Closing application window after test run.");
-                windowService.GetWindow().Close();
-            }
         }
     }
 

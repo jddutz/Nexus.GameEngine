@@ -74,25 +74,4 @@ public class VulkanSettings
     /// Set to false if validation layers cause performance issues during profiling.
     /// </summary>
     public string[] EnabledValidationLayers { get; set; } = ["*"];
-    
-    /// <summary>
-    /// Render pass configurations. Defines the render passes and their properties.
-    /// Default: Single forward rendering pass with color + depth.
-    /// </summary>
-    public RenderPassConfiguration[] RenderPasses { get; set; } = 
-    [
-        new RenderPassConfiguration 
-        { 
-            Name = "Main",
-            ColorFormat = Format.Undefined, // Use swapchain format
-            DepthFormat = Format.D32Sfloat,
-            ColorLoadOp = AttachmentLoadOp.Clear,
-            ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Clear,
-            DepthStoreOp = AttachmentStoreOp.DontCare,
-            ColorFinalLayout = ImageLayout.PresentSrcKhr,
-            ClearColorValue = new Silk.NET.Maths.Vector4D<float>(0.1f, 0.1f, 0.1f, 1.0f),
-            SampleCount = SampleCountFlags.Count1Bit
-        }
-    ];
 }

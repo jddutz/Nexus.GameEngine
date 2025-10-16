@@ -32,6 +32,8 @@ public readonly struct DrawCommand
     /// Distance from camera for depth sorting (typically for transparency).
     /// Higher values render first (back-to-front for correct alpha blending).
     /// Only used when batch strategy performs depth sorting.
+    /// Components calculate this using RenderContext.Camera.Position in GetDrawCommands().
+    /// Example: DepthSortKey = Vector3D.DistanceSquared(myPosition, context.Camera.Position)
     /// </summary>
     public float DepthSortKey { get; init; }
 

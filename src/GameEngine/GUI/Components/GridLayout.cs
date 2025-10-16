@@ -11,8 +11,8 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A layout component that arranges its children in a grid pattern.
 /// Child components are positioned in rows and columns with configurable spacing and alignment.
 /// </summary>
-public partial class GridLayout(IWindowService windowService, IOptions<VulkanSettings> vulkanSettings)
-    : LayoutBase(windowService, vulkanSettings)
+public partial class GridLayout(IWindowService windowService)
+    : LayoutBase(windowService)
 {
     /// <summary>
     /// Template for configuring GridLayout components.
