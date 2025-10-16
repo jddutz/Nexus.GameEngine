@@ -45,6 +45,12 @@ public unsafe class Renderer(
 
         BeforeRendering?.Invoke(this, EventArgs.Empty);
 
+        // Skip rendering if window is minimized (swapchain extent is 0x0)
+        if (swapChain.SwapchainExtent.Width == 0 || swapChain.SwapchainExtent.Height == 0)
+        {
+            return;
+        }
+
         // Get synchronization primitives for current frame
         var frameSync = syncManager.GetFrameSync(_currentFrameIndex);
 
@@ -147,6 +153,69 @@ public unsafe class Renderer(
                 throw new InvalidOperationException($"Failed to begin command buffer: {result}");
             }
 
+            // Transition swapchain image from UNDEFINED to COLOR_ATTACHMENT_OPTIMAL before rendering
+            var imageMemoryBarrier = new ImageMemoryBarrier
+            {
+                SType = StructureType.ImageMemoryBarrier,
+                OldLayout = ImageLayout.Undefined,
+                NewLayout = ImageLayout.ColorAttachmentOptimal,
+                SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                Image = swapChain.SwapchainImages[imageIndex],
+                SubresourceRange = new ImageSubresourceRange
+                {
+                    AspectMask = ImageAspectFlags.ColorBit,
+                    BaseMipLevel = 0,
+                    LevelCount = 1,
+                    BaseArrayLayer = 0,
+                    LayerCount = 1
+                },
+                SrcAccessMask = 0,
+                DstAccessMask = AccessFlags.ColorAttachmentWriteBit
+            };
+
+            context.VulkanApi.CmdPipelineBarrier(
+                cmd,
+                PipelineStageFlags.TopOfPipeBit,
+                PipelineStageFlags.ColorAttachmentOutputBit,
+                0,
+                0, null,
+                0, null,
+                1, &imageMemoryBarrier);
+
+            // Transition depth image from UNDEFINED to DEPTH_STENCIL_ATTACHMENT_OPTIMAL if depth is used
+            if (swapChain.HasDepthAttachment)
+            {
+                var depthBarrier = new ImageMemoryBarrier
+                {
+                    SType = StructureType.ImageMemoryBarrier,
+                    OldLayout = ImageLayout.Undefined,
+                    NewLayout = ImageLayout.DepthStencilAttachmentOptimal,
+                    SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                    DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                    Image = swapChain.DepthImage,
+                    SubresourceRange = new ImageSubresourceRange
+                    {
+                        AspectMask = ImageAspectFlags.DepthBit,
+                        BaseMipLevel = 0,
+                        LevelCount = 1,
+                        BaseArrayLayer = 0,
+                        LayerCount = 1
+                    },
+                    SrcAccessMask = 0,
+                    DstAccessMask = AccessFlags.DepthStencilAttachmentReadBit | AccessFlags.DepthStencilAttachmentWriteBit
+                };
+
+                context.VulkanApi.CmdPipelineBarrier(
+                    cmd,
+                    PipelineStageFlags.TopOfPipeBit,
+                    PipelineStageFlags.EarlyFragmentTestsBit,
+                    0,
+                    0, null,
+                    0, null,
+                    1, &depthBarrier);
+            }
+
             // Iterate all 11 passes in order (pass index corresponds to bit position)
             for (uint passMask = 1u, p = 0; p < PassCount; passMask <<= 1, p++)
             {
@@ -155,6 +224,8 @@ public unsafe class Renderer(
                     continue;
                 
                 var passDrawCommands = passCommandSets[p];
+                
+                _logger.LogDebug("Pass {PassIndex} (mask {PassMask}): {CommandCount} draw commands", p, passMask, passDrawCommands.Count);
 
                 // Skip empty passes (defensive check)
                 if (passDrawCommands.Count == 0)
@@ -178,6 +249,13 @@ public unsafe class Renderer(
 
                 context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
 
+                // Set dynamic viewport and scissor state from the current viewport
+                var viewport = renderContext.Viewport.VulkanViewport;
+                context.VulkanApi.CmdSetViewport(cmd, 0, 1, &viewport);
+
+                var scissor = renderContext.Viewport.VulkanScissor;
+                context.VulkanApi.CmdSetScissor(cmd, 0, 1, &scissor);
+
                 // Draw sorted commands for this pass
                 foreach (var drawCommand in passDrawCommands)
                 {
@@ -187,6 +265,36 @@ public unsafe class Renderer(
                 // End render pass
                 context.VulkanApi.CmdEndRenderPass(cmd);
             }
+
+            // Transition swapchain image from COLOR_ATTACHMENT_OPTIMAL to PRESENT_SRC_KHR after rendering
+            var presentBarrier = new ImageMemoryBarrier
+            {
+                SType = StructureType.ImageMemoryBarrier,
+                OldLayout = ImageLayout.ColorAttachmentOptimal,
+                NewLayout = ImageLayout.PresentSrcKhr,
+                SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+                Image = swapChain.SwapchainImages[imageIndex],
+                SubresourceRange = new ImageSubresourceRange
+                {
+                    AspectMask = ImageAspectFlags.ColorBit,
+                    BaseMipLevel = 0,
+                    LevelCount = 1,
+                    BaseArrayLayer = 0,
+                    LayerCount = 1
+                },
+                SrcAccessMask = AccessFlags.ColorAttachmentWriteBit,
+                DstAccessMask = 0
+            };
+
+            context.VulkanApi.CmdPipelineBarrier(
+                cmd,
+                PipelineStageFlags.ColorAttachmentOutputBit,
+                PipelineStageFlags.BottomOfPipeBit,
+                0,
+                0, null,
+                0, null,
+                1, &presentBarrier);
 
             // End command buffer
             result = context.VulkanApi.EndCommandBuffer(cmd);
@@ -238,6 +346,9 @@ public unsafe class Renderer(
 
     private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
     {
+        _logger.LogDebug("Draw() called - Pipeline: {Pipeline}, VertexBuffer: {VertexBuffer}, VertexCount: {VertexCount}, InstanceCount: {InstanceCount}", 
+            drawCommand.Pipeline.Handle, drawCommand.VertexBuffer.Handle, drawCommand.VertexCount, drawCommand.InstanceCount);
+        
         context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline);
         
         var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
@@ -245,5 +356,7 @@ public unsafe class Renderer(
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
+        
+        _logger.LogDebug("Draw() completed - CmdDraw executed");
     }
 }

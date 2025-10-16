@@ -37,6 +37,9 @@ public unsafe class PipelineManager : IPipelineManager
     // Error pipeline for visual debugging
     private Pipeline? _errorPipeline;
 
+    // Temporary GC handles for vertex input descriptions during pipeline creation
+    private readonly List<GCHandle> _tempGCHandles = new();
+
     public PipelineManager(
         IGraphicsContext context,
         IWindowService windowService,
@@ -503,6 +506,9 @@ public unsafe class PipelineManager : IPipelineManager
 
             // Cleanup shader modules (no longer needed after pipeline creation)
             CleanupShaderModules(vertShaderModule, fragShaderModule, shaderStages);
+            
+            // Free temporary GC handles for vertex input descriptions
+            CleanupTempGCHandles();
 
             if (result != Result.Success)
             {
@@ -517,24 +523,44 @@ public unsafe class PipelineManager : IPipelineManager
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception while creating pipeline: {PipelineName}", descriptor.Name);
+            CleanupTempGCHandles();
             return default;
         }
     }
 
     /// <summary>
     /// Creates a Vulkan shader module from a SPIR-V file.
+    /// Loads shaders from embedded resources in the GameEngine assembly.
     /// </summary>
     private ShaderModule CreateShaderModule(string shaderPath)
     {
         try
         {
-            if (!File.Exists(shaderPath))
+            // Convert path to embedded resource name
+            // "Shaders/vert.spv" -> "Nexus.GameEngine.Shaders.vert.spv"
+            var resourceName = $"Nexus.GameEngine.{shaderPath.Replace('/', '.')}";
+            
+            var assembly = typeof(PipelineManager).Assembly;
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            
+            if (stream == null)
             {
-                _logger.LogError("Shader file not found: {ShaderPath}", shaderPath);
+                _logger.LogError("Shader resource not found: {ResourceName} (from path: {ShaderPath})", 
+                    resourceName, shaderPath);
+                _logger.LogDebug("Available resources: {Resources}", 
+                    string.Join(", ", assembly.GetManifestResourceNames()));
                 return default;
             }
 
-            var code = File.ReadAllBytes(shaderPath);
+            var code = new byte[stream.Length];
+            var bytesRead = stream.Read(code, 0, code.Length);
+            
+            if (bytesRead != code.Length)
+            {
+                _logger.LogError("Failed to read complete shader data: read {BytesRead} of {TotalBytes}", 
+                    bytesRead, code.Length);
+                return default;
+            }
             
             fixed (byte* codePtr = code)
             {
@@ -555,6 +581,7 @@ public unsafe class PipelineManager : IPipelineManager
                     return default;
                 }
 
+                _logger.LogDebug("Created shader module from embedded resource: {ResourceName}", resourceName);
                 return shaderModule;
             }
         }
@@ -568,15 +595,34 @@ public unsafe class PipelineManager : IPipelineManager
     /// <summary>
     /// Creates vertex input state from descriptor.
     /// </summary>
-    private PipelineVertexInputStateCreateInfo CreateVertexInputState(VertexInputDescription vertexInput)
+    private unsafe PipelineVertexInputStateCreateInfo CreateVertexInputState(VertexInputDescription vertexInput)
     {
-        // TODO: Properly allocate and pin binding/attribute descriptions
-        // For now, return empty state
+        if (vertexInput == null || vertexInput.Bindings.Length == 0)
+        {
+            // No vertex input required
+            return new PipelineVertexInputStateCreateInfo
+            {
+                SType = StructureType.PipelineVertexInputStateCreateInfo,
+                VertexBindingDescriptionCount = 0,
+                VertexAttributeDescriptionCount = 0
+            };
+        }
+
+        // Pin the binding and attribute arrays so they don't get moved by GC
+        var bindingsHandle = GCHandle.Alloc(vertexInput.Bindings, GCHandleType.Pinned);
+        var attributesHandle = GCHandle.Alloc(vertexInput.Attributes, GCHandleType.Pinned);
+        
+        // Store handles so we can free them later (after pipeline creation)
+        _tempGCHandles.Add(bindingsHandle);
+        _tempGCHandles.Add(attributesHandle);
+
         return new PipelineVertexInputStateCreateInfo
         {
             SType = StructureType.PipelineVertexInputStateCreateInfo,
-            VertexBindingDescriptionCount = 0,
-            VertexAttributeDescriptionCount = 0
+            VertexBindingDescriptionCount = (uint)vertexInput.Bindings.Length,
+            PVertexBindingDescriptions = (VertexInputBindingDescription*)bindingsHandle.AddrOfPinnedObject(),
+            VertexAttributeDescriptionCount = (uint)vertexInput.Attributes.Length,
+            PVertexAttributeDescriptions = (VertexInputAttributeDescription*)attributesHandle.AddrOfPinnedObject()
         };
     }
 
@@ -646,6 +692,19 @@ public unsafe class PipelineManager : IPipelineManager
             SilkMarshal.Free((nint)stages[0].PName);
             SilkMarshal.Free((nint)stages[1].PName);
         }
+    }
+
+    /// <summary>
+    /// Cleans up temporary GC handles used for vertex input descriptions.
+    /// </summary>
+    private void CleanupTempGCHandles()
+    {
+        foreach (var handle in _tempGCHandles)
+        {
+            if (handle.IsAllocated)
+                handle.Free();
+        }
+        _tempGCHandles.Clear();
     }
 
     /// <summary>

@@ -114,9 +114,12 @@ public unsafe class SwapChain : ISwapChain
     public RenderPass[] Passes => _renderPasses;
     public Framebuffer[][] Framebuffers => _framebuffers;
     public ClearValue[][] ClearValues => _clearValues;
+    public Image DepthImage => _depthImage;
+    public bool HasDepthAttachment => _hasDepthAttachment;
 
     /// <summary>
     /// Creates the swap chain with optimal settings based on device capabilities and preferences.
+    /// Skips creation if window is minimized (extent 0x0) to avoid Vulkan validation errors.
     /// </summary>
     private void CreateSwapchain()
     {
@@ -126,6 +129,15 @@ public unsafe class SwapChain : ISwapChain
         var surfaceFormat = ChooseSurfaceFormat(swapChainSupport.Formats);
         var presentMode = ChoosePresentMode(swapChainSupport.PresentModes);
         var extent = ChooseExtent(swapChainSupport.Capabilities);
+
+        // Skip swapchain creation if window is minimized (0x0 extent)
+        if (extent.Width == 0 || extent.Height == 0)
+        {
+            _logger.LogDebug("Skipping swapchain creation: Window is minimized (extent {Width}x{Height})", 
+                extent.Width, extent.Height);
+            _swapchainExtent = extent;
+            return;
+        }
 
         // Determine image count (request one more than minimum for triple buffering potential)
         uint imageCount = swapChainSupport.Capabilities.MinImageCount + 1;
@@ -274,6 +286,7 @@ public unsafe class SwapChain : ISwapChain
 
     /// <summary>
     /// Chooses the swap chain extent (resolution) based on window size and surface capabilities.
+    /// Returns 0x0 extent when window is minimized to signal that swapchain should not be created.
     /// </summary>
     private Extent2D ChooseExtent(SurfaceCapabilitiesKHR capabilities)
     {
@@ -554,7 +567,7 @@ public unsafe class SwapChain : ISwapChain
     /// <para><strong>Dependencies:</strong></para>
     /// External → Subpass 0 dependency for color and depth synchronization.
     /// </remarks>
-    private Silk.NET.Vulkan.RenderPass CreateRenderPass(RenderPassConfiguration config)
+    private RenderPass CreateRenderPass(RenderPassConfiguration config)
     {
         var attachments = new List<AttachmentDescription>();
         var colorReferences = new List<AttachmentReference>();
@@ -570,7 +583,7 @@ public unsafe class SwapChain : ISwapChain
             StoreOp = config.ColorStoreOp,
             StencilLoadOp = AttachmentLoadOp.DontCare,
             StencilStoreOp = AttachmentStoreOp.DontCare,
-            InitialLayout = ImageLayout.Undefined,
+            InitialLayout = config.ColorInitialLayout,
             FinalLayout = config.ColorFinalLayout
         });
         colorReferences.Add(new AttachmentReference
@@ -590,7 +603,7 @@ public unsafe class SwapChain : ISwapChain
                 StoreOp = config.DepthStoreOp,
                 StencilLoadOp = AttachmentLoadOp.DontCare,
                 StencilStoreOp = AttachmentStoreOp.DontCare,
-                InitialLayout = ImageLayout.Undefined,
+                InitialLayout = config.DepthInitialLayout,
                 FinalLayout = config.DepthFinalLayout
             });
             depthReference = new AttachmentReference
@@ -641,7 +654,7 @@ public unsafe class SwapChain : ISwapChain
                 PDependencies = &dependency
             };
 
-            Silk.NET.Vulkan.RenderPass renderPass;
+            RenderPass renderPass;
             var result = _vk.CreateRenderPass(_context.Device, &renderPassInfo, null, &renderPass);
             if (result != Result.Success)
             {
@@ -706,14 +719,17 @@ public unsafe class SwapChain : ISwapChain
     /// </remarks>
     private void CreateAllFramebuffers()
     {
+        var configs = RenderPasses.Configurations;
+        
         for (int passIndex = 0; passIndex < PassCount; passIndex++)
         {
             var renderPass = _renderPasses[passIndex];
+            var config = configs[passIndex];
             var framebuffers = new Framebuffer[_swapchainImages.Length];
             
             for (int i = 0; i < _swapchainImages.Length; i++)
             {
-                framebuffers[i] = CreateFramebuffer(renderPass, i);
+                framebuffers[i] = CreateFramebuffer(renderPass, config, i);
             }
             
             _framebuffers[passIndex] = framebuffers;
@@ -728,23 +744,25 @@ public unsafe class SwapChain : ISwapChain
     /// Binds the specified ImageView to the RenderPass attachments.
     /// </summary>
     /// <param name="renderPass">The render pass this framebuffer will be used with.</param>
+    /// <param name="config">Configuration for this render pass to determine attachment count.</param>
     /// <param name="imageIndex">Index of the swapchain image/imageview to bind.</param>
     /// <returns>Native Vulkan Framebuffer handle.</returns>
     /// <remarks>
-    /// <para><strong>Current Implementation:</strong></para>
-    /// Only binds color attachment (swapchain ImageView). Depth attachment support is TODO.
+    /// <para><strong>Attachment Configuration:</strong></para>
+    /// Binds color attachment (swapchain ImageView) and optionally depth attachment based on config.DepthFormat.
     /// 
     /// <para><strong>Framebuffer Dimensions:</strong></para>
     /// Width/Height match swapchain extent. Layers = 1 (not using array textures).
     /// </remarks>
-    private Framebuffer CreateFramebuffer(Silk.NET.Vulkan.RenderPass renderPass, int imageIndex)
+    private Framebuffer CreateFramebuffer(RenderPass renderPass, RenderPassConfiguration config, int imageIndex)
     {
-        // Include color attachment + depth attachment (if render pass uses depth)
-        var attachmentCount = _hasDepthAttachment ? 2u : 1u;
+        // Determine attachment count based on this specific render pass configuration
+        var hasDepth = config.DepthFormat != Format.Undefined;
+        var attachmentCount = hasDepth ? 2u : 1u;
         var attachments = stackalloc ImageView[(int)attachmentCount];
         attachments[0] = _swapchainImageViews[imageIndex];
         
-        if (_hasDepthAttachment)
+        if (hasDepth)
         {
             attachments[1] = _depthImageView;
         }
@@ -872,6 +890,14 @@ public unsafe class SwapChain : ISwapChain
 
         // Recreate swap chain and image views
         CreateSwapchain();
+        
+        // If window is minimized (extent 0x0), CreateSwapchain returns early
+        // Skip depth and framebuffer creation until window is restored
+        if (_swapchainExtent.Width == 0 || _swapchainExtent.Height == 0)
+        {
+            _logger.LogDebug("Skipping depth and framebuffer recreation: Window is minimized");
+            return;
+        }
         
         // Recreate depth resources with new dimensions
         CreateDepthResources();

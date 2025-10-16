@@ -44,9 +44,21 @@ public class RenderPassConfiguration
     public AttachmentStoreOp DepthStoreOp { get; set; } = AttachmentStoreOp.DontCare;
     
     /// <summary>
+    /// Initial layout for color attachment.
+    /// Must not be Undefined if ColorLoadOp is Load.
+    /// </summary>
+    public ImageLayout ColorInitialLayout { get; set; } = ImageLayout.Undefined;
+    
+    /// <summary>
     /// Final layout for color attachment.
     /// </summary>
     public ImageLayout ColorFinalLayout { get; set; } = ImageLayout.PresentSrcKhr;
+    
+    /// <summary>
+    /// Initial layout for depth attachment.
+    /// Must not be Undefined if DepthLoadOp is Load.
+    /// </summary>
+    public ImageLayout DepthInitialLayout { get; set; } = ImageLayout.Undefined;
     
     /// <summary>
     /// Final layout for depth attachment.

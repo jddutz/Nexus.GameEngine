@@ -32,10 +32,6 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
     
     private uint? _cachedRenderMask;
     
-    protected RenderableBase()
-    {
-    }
-    
     /// <summary>
     /// Gets the render mask for this component. Computed from template on first access.
     /// </summary>

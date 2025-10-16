@@ -81,6 +81,17 @@ public interface ISwapChain : IDisposable
     ClearValue[][] ClearValues { get; }
 
     /// <summary>
+    /// Gets the depth image if any render pass uses depth attachment, otherwise default.
+    /// Used for layout transitions in the renderer.
+    /// </summary>
+    Image DepthImage { get; }
+
+    /// <summary>
+    /// Gets whether any render pass uses a depth attachment.
+    /// </summary>
+    bool HasDepthAttachment { get; }
+
+    /// <summary>
     /// Recreates the swapchain on window resize.
     /// Destroys and recreates: swapchain, image views, and framebuffers.
     /// Preserves: render passes (format doesn't change).

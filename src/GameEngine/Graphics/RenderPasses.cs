@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-
+using Nexus.GameEngine.Resources;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
@@ -209,7 +209,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.DontCare,
             DepthLoadOp = AttachmentLoadOp.Clear,
             DepthStoreOp = AttachmentStoreOp.Store,  // Save shadow map
-            ColorFinalLayout = ImageLayout.Undefined,
+            ColorInitialLayout = ImageLayout.Undefined,
+            ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,
             DepthFinalLayout = ImageLayout.DepthStencilReadOnlyOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -226,7 +228,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.DontCare,
             DepthLoadOp = AttachmentLoadOp.Clear,
             DepthStoreOp = AttachmentStoreOp.Store,  // Save for main pass
-            ColorFinalLayout = ImageLayout.Undefined,
+            ColorInitialLayout = ImageLayout.Undefined,
+            ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -241,11 +245,13 @@ public static class RenderPasses
             DepthFormat = Format.D32Sfloat,
             ColorLoadOp = AttachmentLoadOp.Clear,  // Clear to background
             ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Load,  // Load from depth pass
+            DepthLoadOp = AttachmentLoadOp.Clear,  // CLEAR depth for testing (normally Load from depth pass)
             DepthStoreOp = AttachmentStoreOp.Store,
+            ColorInitialLayout = ImageLayout.Undefined,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,  // Changed from DepthStencilAttachmentOptimal since we're clearing
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearColorValue = new(0.1f, 0.1f, 0.1f, 1.0f),  // Dark gray
+            ClearColorValue = Colors.CornflowerBlue,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
@@ -261,7 +267,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.Load,  // Keep depth from prepass
             DepthStoreOp = AttachmentStoreOp.Store,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -278,7 +286,10 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.DontCare,
             DepthStoreOp = AttachmentStoreOp.DontCare,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,
+            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
@@ -294,7 +305,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.Load,  // Need depth for SSR
             DepthStoreOp = AttachmentStoreOp.Store,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -311,7 +324,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.Load,  // Test against opaque depth
             DepthStoreOp = AttachmentStoreOp.DontCare,  // Don't write depth
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -328,7 +343,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.Load,  // Soft particles need depth
             DepthStoreOp = AttachmentStoreOp.DontCare,  // Don't write depth
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
@@ -345,7 +362,10 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.DontCare,
             DepthStoreOp = AttachmentStoreOp.DontCare,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,
+            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
         },
@@ -360,7 +380,10 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.DontCare,
             DepthStoreOp = AttachmentStoreOp.DontCare,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.PresentSrcKhr,  // Ready for present
+            DepthInitialLayout = ImageLayout.Undefined,
+            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()  // Painter's algorithm
         },
@@ -375,7 +398,9 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.Store,
             DepthLoadOp = AttachmentLoadOp.Load,
             DepthStoreOp = AttachmentStoreOp.DontCare,
+            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
             ColorFinalLayout = ImageLayout.PresentSrcKhr,  // Final pass
+            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,

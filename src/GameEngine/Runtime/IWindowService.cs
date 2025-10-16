@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Graphics;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
 
@@ -30,4 +31,12 @@ public interface IWindowService
     /// </summary>
     /// <returns></returns>
     IInputContext InputContext { get; }
+
+    // TODO: Determine proper timing for SwapChain creation based on window event testing
+    // /// <summary>
+    // /// Gets the swapchain associated with the application window.
+    // /// The swapchain is created when GetOrCreateWindow() is first called.
+    // /// Throws InvalidOperationException if the window (and thus swapchain) does not exist.
+    // /// </summary>
+    // ISwapChain SwapChain { get; }
 }

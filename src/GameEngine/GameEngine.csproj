@@ -39,8 +39,7 @@
 
   <!-- Embedded Resources -->
   <ItemGroup>
-    <EmbeddedResource Include="Resources\Geometry\**\*.mesh" />
-    <EmbeddedResource Include="Resources\Shaders\**\*.glsl" />
+    <EmbeddedResource Include="Shaders\**\*.spv" />
   </ItemGroup>
 
   <!-- Source Generators and Analyzers -->

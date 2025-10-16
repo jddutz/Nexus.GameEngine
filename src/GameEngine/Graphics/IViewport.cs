@@ -1,6 +1,7 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
 using Silk.NET.Maths;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -43,4 +44,16 @@ public interface IViewport : IRuntimeComponent
     /// Background color for clearing the viewport (RGBA values 0-1)
     /// </summary>
     Vector4D<float> BackgroundColor { get; set; }
+
+    /// <summary>
+    /// Gets the Vulkan viewport structure for this viewport.
+    /// Converts normalized coordinates to pixel coordinates based on swapchain extent.
+    /// </summary>
+    Silk.NET.Vulkan.Viewport VulkanViewport { get; }
+
+    /// <summary>
+    /// Gets the Vulkan scissor rectangle for this viewport.
+    /// Converts normalized coordinates to pixel coordinates based on swapchain extent.
+    /// </summary>
+    Rect2D VulkanScissor { get; }
 }

@@ -26,12 +26,36 @@ public class Application(IServiceProvider services) : IApplication
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
 
+        // Log window events to understand initialization timing
+        logger.LogDebug("Window created");
+        
+        window.Resize += size =>
+        {
+            logger.LogDebug("Window.Resize event. Size: {Width}x{Height}, FramebufferSize: {FbWidth}x{FbHeight}", 
+                size.X, size.Y, window.FramebufferSize.X, window.FramebufferSize.Y);
+        };
+        
+        window.FramebufferResize += size =>
+        {
+            logger.LogDebug("Window.FramebufferResize event. FramebufferSize: {Width}x{Height}", size.X, size.Y);
+        };
+        
+        window.StateChanged += state =>
+        {
+            logger.LogDebug("Window.StateChanged event. State: {State}, FramebufferSize: {Width}x{Height}", 
+                state, window.FramebufferSize.X, window.FramebufferSize.Y);
+        };
+
         window.Load += () =>
         {
+            logger.LogDebug("Window.Load event. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
+            
             try
             {
+                logger.LogDebug("Creating ContentManager and Renderer...");
                 var contentManager = services.GetRequiredService<IContentManager>();
                 var renderer = services.GetRequiredService<IRenderer>();
+                logger.LogDebug("Renderer created. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
 
                 if (startupTemplate == null)
                 {
@@ -80,7 +104,9 @@ public class Application(IServiceProvider services) : IApplication
 
         try
         {
+            logger.LogDebug("Calling window.Run()...");
             window.Run();
+            logger.LogDebug("window.Run() completed.");
         }
         catch (Exception ex)
         {
