@@ -51,7 +51,7 @@ public interface IPipelineManager : IDisposable
     /// Thread-safe for concurrent access during multi-threaded loading.
     /// </summary>
     /// <param name="descriptor">Complete description of the pipeline to create</param>
-    /// <returns>Vulkan pipeline handle, or error pipeline on failure</returns>
+    /// <returns>Pipeline handle containing Pipeline and PipelineLayout, or error pipeline on failure</returns>
     /// <exception cref="ArgumentNullException">If descriptor is null</exception>
     /// <remarks>
     /// <para>Pipelines are expensive to create (~10-50ms). This method:</para>
@@ -71,7 +71,7 @@ public interface IPipelineManager : IDisposable
     /// <item>Optional: blend state, depth state, rasterization state</item>
     /// </list>
     /// </remarks>
-    Pipeline GetOrCreatePipeline(PipelineDescriptor descriptor);
+    PipelineHandle GetOrCreatePipeline(PipelineDescriptor descriptor);
 
     /// <summary>
     /// Creates a new pipeline builder for fluent pipeline configuration.
@@ -95,7 +95,7 @@ public interface IPipelineManager : IDisposable
     /// </summary>
     /// <param name="name">The name of the pipeline to be retrieved from the cache.</param>
     /// <returns>The specified pipeline handle.</returns>
-    Pipeline Get(string name);
+    PipelineHandle Get(string name);
 
     /// <summary>
     /// Invalidates and removes a specific pipeline from the cache.
@@ -176,6 +176,6 @@ public interface IPipelineManager : IDisposable
     /// Renders geometry in bright pink/magenta for visual debugging.
     /// </summary>
     /// <param name="renderPass">Target render pass</param>
-    /// <returns>Error pipeline that renders everything pink</returns>
-    Pipeline GetErrorPipeline(RenderPass renderPass);
+    /// <returns>Error pipeline handle that renders everything pink</returns>
+    PipelineHandle GetErrorPipeline(RenderPass renderPass);
 }

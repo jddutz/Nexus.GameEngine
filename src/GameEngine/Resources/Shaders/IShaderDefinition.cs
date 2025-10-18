@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources.Geometry;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Resources.Shaders;
 
@@ -24,6 +25,12 @@ public interface IShaderDefinition : IResourceDefinition
     /// Defines locations, formats, and offsets of vertex attributes.
     /// </summary>
     VertexInputDescription InputDescription { get; }
+    
+    /// <summary>
+    /// Push constant ranges used by this shader.
+    /// Null or empty if shader doesn't use push constants.
+    /// </summary>
+    PushConstantRange[]? PushConstantRanges { get; }
     
     /// <summary>
     /// Validates that geometry is compatible with this shader's input requirements.

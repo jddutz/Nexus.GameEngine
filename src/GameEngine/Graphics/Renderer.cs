@@ -1,8 +1,10 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
+using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Vulkan;
+using System.Runtime.InteropServices;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -348,12 +350,35 @@ public unsafe class Renderer(
 
     private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
     {
-        context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline);
+        context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline.Pipeline);
+        
+        // Push constants if provided
+        if (drawCommand.PushConstants != null && drawCommand.Pipeline.Layout.Handle != 0)
+        {
+            PushConstantsToShader(commandBuffer, drawCommand.Pipeline.Layout, drawCommand.PushConstants);
+        }
         
         var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
         var offsets = stackalloc ulong[] { 0 };
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
+    }
+
+    private unsafe void PushConstantsToShader(CommandBuffer commandBuffer, PipelineLayout pipelineLayout, object pushConstants)
+    {
+        // Currently only supporting VertexColorsPushConstants
+        if (pushConstants is VertexColorsPushConstants colors)
+        {
+            var size = (uint)Marshal.SizeOf<VertexColorsPushConstants>();
+            var dataPtr = &colors;
+            context.VulkanApi.CmdPushConstants(
+                commandBuffer,
+                pipelineLayout,
+                ShaderStageFlags.VertexBit,
+                0,  // offset
+                size,
+                dataPtr);
+        }
     }
 }

@@ -35,7 +35,7 @@ public class DefaultBatchStrategy : IBatchStrategy
         // Within the same priority, optimize for batching to minimize state changes
         
         // Sort by pipeline (most expensive to change)
-        var pipelineCompare = x.Pipeline.Handle.CompareTo(y.Pipeline.Handle);
+        var pipelineCompare = x.Pipeline.Pipeline.Handle.CompareTo(y.Pipeline.Pipeline.Handle);
         if (pipelineCompare != 0) return pipelineCompare;
         
         // Then by descriptor set (textures/uniforms)

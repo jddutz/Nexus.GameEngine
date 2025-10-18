@@ -1,12 +1,16 @@
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
+using Silk.NET.Vulkan;
+using System.Runtime.CompilerServices;
 
 namespace Nexus.GameEngine.Resources.Shaders.Definitions;
 
 /// <summary>
-/// Shader definition for colored geometry (position + color vertex format).
-/// Used by HelloQuad test component.
+/// Shader definition for colored geometry using push constants.
+/// Vertex format: Position (vec2) only
+/// Colors: Provided via push constants (4 x vec4 for quad vertices)
 /// </summary>
 public class ColoredGeometryShader : IShaderDefinition
 {
@@ -14,13 +18,24 @@ public class ColoredGeometryShader : IShaderDefinition
     public string Name => "ColoredGeometryShader";
     
     /// <inheritdoc/>
-    public string VertexShaderPath => "Shaders/vert.spv";
+    public string VertexShaderPath => "Shaders/shader.vert.spv";
     
     /// <inheritdoc/>
-    public string FragmentShaderPath => "Shaders/frag.spv";
+    public string FragmentShaderPath => "Shaders/shader.frag.spv";
     
     /// <inheritdoc/>
     public VertexInputDescription InputDescription => ColorQuad.GetVertexInputDescription();
+    
+    /// <inheritdoc/>
+    public PushConstantRange[]? PushConstantRanges =>
+    [
+        new PushConstantRange
+        {
+            StageFlags = ShaderStageFlags.VertexBit,
+            Offset = 0,
+            Size = (uint)Unsafe.SizeOf<VertexColorsPushConstants>() // 64 bytes (4 x vec4)
+        }
+    ];
     
     /// <inheritdoc/>
     public void ValidateGeometry(GeometryResource geometry)

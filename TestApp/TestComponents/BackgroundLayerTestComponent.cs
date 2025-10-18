@@ -21,7 +21,7 @@ public class BackgroundLayerTestComponent(IPixelSampler pixelSampler, IWindowSer
 {
     private IWindow window = windowService.GetWindow();
 
-    public int FrameCount { get; set; } = 400;
+    public int FrameCount { get; set; } = 1200;
     public int FramesRendered { get; private set; } = 0;
 
     private System.Diagnostics.Stopwatch? _fpsStopwatch;
@@ -30,22 +30,19 @@ public class BackgroundLayerTestComponent(IPixelSampler pixelSampler, IWindowSer
 
     private const int offset = 2;
     private Vector2D<int>[] sampleCoords = [];
-    private Vector4D<float>[] expectedPixels = [];
+    private Vector4D<float>[] startPixels = [];  // Frame 0 colors
+    private Vector4D<float>[] endPixels = [];    // Frame 40 colors
     private Vector4D<float>?[][] sampledPixelSets = [];
 
-    private float tolerance = 0.01f;
+    private float tolerance = 0.05f;  // Increased tolerance for edge sampling with bilinear filtering
     private bool _testComplete = false;
 
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
         
-        Logger?.LogInformation("BackgroundLayerTest.OnConfigure called - creating BackgroundLayer child component");
-        
         // Create BackgroundLayer as a child component
         var background = CreateChild(typeof(BackgroundLayer));
-        Logger?.LogInformation("BackgroundLayer child created: {Result}", 
-            background != null ? "SUCCESS" : "FAILED");
     }
 
     protected override void OnActivate()
@@ -59,11 +56,20 @@ public class BackgroundLayerTestComponent(IPixelSampler pixelSampler, IWindowSer
             new(window.Size.X - offset, window.Size.Y - offset),  // Bottom-right corner
         ];
 
-        expectedPixels = [
+        // Frame 0 - start colors (Red on left, Green on right)
+        startPixels = [
             Colors.Red,    // Top-left
+            Colors.Red,    // Bottom-left
+            Colors.Green,  // Top-right
+            Colors.Green   // Bottom-right
+        ];
+
+        // Frame 1200 - end colors (swapped: Green on left, Red on right)
+        endPixels = [
+            Colors.Green,  // Top-left
             Colors.Green,  // Bottom-left
-            Colors.Black,  // Top-right
-            Colors.Blue    // Bottom-right
+            Colors.Red,    // Top-right
+            Colors.Red     // Bottom-right
         ];
 
         // Configure and enable pixel sampler
@@ -119,38 +125,69 @@ public class BackgroundLayerTestComponent(IPixelSampler pixelSampler, IWindowSer
             Passed = FramesRendered >= FrameCount
         };
 
-        // Use the stored results from OnDeactivate (don't call GetResults again - it clears the list!)
-        Logger?.LogDebug("Sampled pixel sets: {Count}", sampledPixelSets.Length);
-
-        var sampledPixels = sampledPixelSets.Length > 0 ? sampledPixelSets[^1] : [];
-        Logger?.LogDebug("Sampled pixels: {Count}", sampledPixels.Length);
-
-        for(int i = 0; i < 4; i++)
+        // Validate frame 0 (start colors)
+        if (sampledPixelSets.Length > 0)
         {
-            var testName = $"Pixel at {sampleCoords[i]} should match expected color";
-            var expectedResult = PixelAssertions.DescribeColor(expectedPixels[i]);
-
-            var actualColor = i < sampledPixels.Length ? sampledPixels[i] : null;
-
-            if (sampledPixelSets.Length == 0 || actualColor == null)
+            var frame0Pixels = sampledPixelSets[0];
+            for(int i = 0; i < 4; i++)
             {
-                yield return new()
+                var testName = $"Frame 0: Pixel at {sampleCoords[i]} should match start color";
+                var expectedResult = PixelAssertions.DescribeColor(startPixels[i]);
+                var actualColor = i < frame0Pixels.Length ? frame0Pixels[i] : null;
+
+                if (actualColor == null)
                 {
-                    TestName = testName,
-                    ExpectedResult = expectedResult,
-                    ActualResult = "null",
-                    Passed = false
-                };
+                    yield return new()
+                    {
+                        TestName = testName,
+                        ExpectedResult = expectedResult,
+                        ActualResult = "null",
+                        Passed = false
+                    };
+                }
+                else
+                {
+                    yield return new TestResult
+                    {
+                        TestName = testName,
+                        ExpectedResult = expectedResult,
+                        ActualResult = PixelAssertions.DescribeColor(actualColor),
+                        Passed = Vector4D.Distance(startPixels[i], actualColor!.Value) < tolerance
+                    };
+                }
             }
-            else
+        }
+
+        // Validate frame 40 (end colors)
+        if (sampledPixelSets.Length > 0)
+        {
+            var lastFrame = sampledPixelSets[^1];
+            for(int i = 0; i < 4; i++)
             {
-                yield return new TestResult
+                var testName = $"Frame {FrameCount}: Pixel at {sampleCoords[i]} should match end color";
+                var expectedResult = PixelAssertions.DescribeColor(endPixels[i]);
+                var actualColor = i < lastFrame.Length ? lastFrame[i] : null;
+
+                if (actualColor == null)
                 {
-                    TestName = testName,
-                    ExpectedResult = expectedResult,
-                    ActualResult = PixelAssertions.DescribeColor(actualColor),
-                    Passed = Vector4D.Distance(expectedPixels[i], actualColor!.Value) < tolerance
-                };
+                    yield return new()
+                    {
+                        TestName = testName,
+                        ExpectedResult = expectedResult,
+                        ActualResult = "null",
+                        Passed = false
+                    };
+                }
+                else
+                {
+                    yield return new TestResult
+                    {
+                        TestName = testName,
+                        ExpectedResult = expectedResult,
+                        ActualResult = PixelAssertions.DescribeColor(actualColor),
+                        Passed = Vector4D.Distance(endPixels[i], actualColor!.Value) < tolerance
+                    };
+                }
             }
         }
     }

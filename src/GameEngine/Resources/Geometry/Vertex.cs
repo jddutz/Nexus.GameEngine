@@ -3,6 +3,7 @@ namespace Nexus.GameEngine.Resources.Geometry;
 /// <summary>
 /// Generic vertex structure with position and one attribute.
 /// Use for simple geometry like colored vertices (position + color).
+/// Note: For position-only geometry, just use the position type directly (e.g., Vector2D&lt;float&gt;[])
 /// </summary>
 /// <typeparam name="TPosition">Position type (Vector2D, Vector3D, etc.)</typeparam>
 /// <typeparam name="TAttr1">First attribute type (color, texcoord, normal, etc.)</typeparam>

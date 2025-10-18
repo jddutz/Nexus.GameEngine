@@ -26,7 +26,7 @@ public class PipelineBuilder(IPipelineManager manager, ISwapChain swapChain, IRe
     internal uint Subpass { get; set; } = 0;
     
     /// <inheritdoc/>
-    public Pipeline Build(string? name)
+    public PipelineHandle Build(string? name)
     {
         // Get shader resource from definition if needed
         if (Shader == null && ShaderDefinition != null)
@@ -47,6 +47,7 @@ public class PipelineBuilder(IPipelineManager manager, ISwapChain swapChain, IRe
             VertexShaderPath = Shader.Definition.VertexShaderPath,
             FragmentShaderPath = Shader.Definition.FragmentShaderPath,
             VertexInputDescription = Shader.Definition.InputDescription,
+            PushConstantRanges = Shader.Definition.PushConstantRanges,
             RenderPass = RenderPass.Value,
             Topology = Topology,
             CullMode = CullMode,

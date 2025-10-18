@@ -65,7 +65,7 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
-    public Pipeline Get(string name)
+    public PipelineHandle Get(string name)
     {
         // Try to get from cache
         if (_pipelines.TryGetValue(name, out var cached))
@@ -74,7 +74,7 @@ public unsafe class PipelineManager : IPipelineManager
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
             _logger.LogTrace("Pipeline cache hit: {PipelineName}", name);
-            return cached.Handle;
+            return new PipelineHandle(cached.Handle, cached.Layout);
         }
         else
         {
@@ -89,7 +89,7 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
-    public Pipeline GetOrCreatePipeline(PipelineDescriptor descriptor)
+    public PipelineHandle GetOrCreatePipeline(PipelineDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
@@ -102,7 +102,7 @@ public unsafe class PipelineManager : IPipelineManager
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
             _logger.LogTrace("Pipeline cache hit: {PipelineName}", descriptor.Name);
-            return cached.Handle;
+            return new PipelineHandle(cached.Handle, cached.Layout);
         }
 
         // Cache miss - create new pipeline
@@ -110,7 +110,7 @@ public unsafe class PipelineManager : IPipelineManager
         _logger.LogDebug("Creating new pipeline: {PipelineName}", descriptor.Name);
 
         var stopwatch = Stopwatch.StartNew();
-        var pipeline = CreatePipeline(descriptor);
+        var (pipeline, pipelineLayout) = CreatePipeline(descriptor);
         stopwatch.Stop();
 
         _totalCreationTimeMs += stopwatch.Elapsed.TotalMilliseconds;
@@ -127,6 +127,7 @@ public unsafe class PipelineManager : IPipelineManager
         {
             Descriptor = descriptor,
             Handle = pipeline,
+            Layout = pipelineLayout,
             CreatedAt = DateTime.UtcNow,
             LastAccessedAt = DateTime.UtcNow,
             AccessCount = 1
@@ -144,11 +145,11 @@ public unsafe class PipelineManager : IPipelineManager
             "Pipeline created: {PipelineName} in {CreationTimeMs:F2}ms (Total: {CacheMisses} created, {CacheHits} cached)",
             descriptor.Name, stopwatch.Elapsed.TotalMilliseconds, _cacheMisses, _cacheHits);
 
-        return pipeline;
+        return new PipelineHandle(pipeline, pipelineLayout);
     }
 
     /// <inheritdoc/>
-    public Pipeline GetSpritePipeline(RenderPass renderPass)
+    public PipelineHandle GetSpritePipeline(RenderPass renderPass)
     {
         var descriptor = new PipelineDescriptor
         {
@@ -170,7 +171,7 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
-    public Pipeline GetMeshPipeline(RenderPass renderPass)
+    public PipelineHandle GetMeshPipeline(RenderPass renderPass)
     {
         var descriptor = new PipelineDescriptor
         {
@@ -191,7 +192,7 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
-    public Pipeline GetUIPipeline(RenderPass renderPass)
+    public PipelineHandle GetUIPipeline(RenderPass renderPass)
     {
         var descriptor = new PipelineDescriptor
         {
@@ -345,15 +346,15 @@ public unsafe class PipelineManager : IPipelineManager
     }
 
     /// <inheritdoc/>
-    public Pipeline GetErrorPipeline(RenderPass renderPass)
+    public PipelineHandle GetErrorPipeline(RenderPass renderPass)
     {
         // TODO: Create actual error pipeline with pink/magenta shader
-        // For now, return null handle
+        // For now, return invalid handle
         if (_errorPipeline == null || _errorPipeline.Value.Handle == 0)
         {
             _logger.LogWarning("Error pipeline not yet implemented");
         }
-        return _errorPipeline ?? default;
+        return _errorPipeline != null ? new PipelineHandle(_errorPipeline.Value, default) : PipelineHandle.Invalid;
     }
 
     /// <summary>
@@ -373,7 +374,8 @@ public unsafe class PipelineManager : IPipelineManager
     /// <summary>
     /// Creates a Vulkan graphics pipeline from a descriptor.
     /// </summary>
-    private Pipeline CreatePipeline(PipelineDescriptor descriptor)
+    /// <returns>Tuple containing the Pipeline handle and its associated PipelineLayout</returns>
+    private (Pipeline pipeline, PipelineLayout layout) CreatePipeline(PipelineDescriptor descriptor)
     {
         if (!ValidatePipelineDescriptor(descriptor))
         {
@@ -471,13 +473,25 @@ public unsafe class PipelineManager : IPipelineManager
                 PDynamicStates = dynamicStates
             };
 
-            // Pipeline layout (TODO: Add descriptor sets and push constants)
+            // Pipeline layout with push constants support
             var pipelineLayoutInfo = new PipelineLayoutCreateInfo
             {
                 SType = StructureType.PipelineLayoutCreateInfo,
                 SetLayoutCount = 0,
                 PushConstantRangeCount = 0
             };
+
+            // Add push constant ranges if specified
+            if (descriptor.PushConstantRanges != null && descriptor.PushConstantRanges.Length > 0)
+            {
+                var pushConstantRanges = stackalloc PushConstantRange[descriptor.PushConstantRanges.Length];
+                for (int i = 0; i < descriptor.PushConstantRanges.Length; i++)
+                {
+                    pushConstantRanges[i] = descriptor.PushConstantRanges[i];
+                }
+                pipelineLayoutInfo.PushConstantRangeCount = (uint)descriptor.PushConstantRanges.Length;
+                pipelineLayoutInfo.PPushConstantRanges = pushConstantRanges;
+            }
 
             PipelineLayout pipelineLayout;
             var result = _vk.CreatePipelineLayout(_context.Device, &pipelineLayoutInfo, null, &pipelineLayout);
@@ -531,7 +545,7 @@ public unsafe class PipelineManager : IPipelineManager
             }
 
             _logger.LogDebug("Successfully created pipeline: {PipelineName}", descriptor.Name);
-            return pipeline;
+            return (pipeline, pipelineLayout);
         }
         catch (Exception ex)
         {
@@ -825,6 +839,7 @@ public unsafe class PipelineManager : IPipelineManager
     {
         public required PipelineDescriptor Descriptor { get; init; }
         public required Pipeline Handle { get; init; }
+        public required PipelineLayout Layout { get; init; }
         public DateTime CreatedAt { get; init; }
         public DateTime LastAccessedAt { get; set; }
         public int AccessCount { get; set; }

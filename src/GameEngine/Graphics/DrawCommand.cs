@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Graphics.Pipelines;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
@@ -10,7 +11,7 @@ public readonly struct DrawCommand
 {
     // REQUIRED
     public required uint RenderMask { get; init; }
-    public required Pipeline Pipeline { get; init; }
+    public required PipelineHandle Pipeline { get; init; }
     public required Silk.NET.Vulkan.Buffer VertexBuffer { get; init; }
     public required uint VertexCount { get; init; }
 
@@ -19,6 +20,14 @@ public readonly struct DrawCommand
     public DescriptorSet DescriptorSet { get; init; }
     public uint FirstVertex { get; init; }
     public uint InstanceCount { get; init; }
+
+    // PUSH CONSTANTS
+    /// <summary>
+    /// Push constant data to send to shaders before drawing.
+    /// Push constants are small amounts of data (typically up to 128 bytes) that can be
+    /// updated very efficiently between draw calls.
+    /// </summary>
+    public object? PushConstants { get; init; }
 
     // RENDER ORDERING
     /// <summary>
