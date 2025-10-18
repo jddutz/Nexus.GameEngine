@@ -29,7 +29,7 @@ public class ToggleFullscreenAction(IWindowService windowService) : IAction
             var newState = window.WindowState == WindowState.Fullscreen ? "Fullscreen" : "Windowed";
             return Task.FromResult(ActionResult.Successful(message: $"Window state changed to {newState}"));
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             return Task.FromResult(ActionResult.Failed(ex));
         }

@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
@@ -10,7 +12,10 @@ namespace Nexus.GameEngine.Graphics;
 /// <summary>
 /// Viewport manages a rendering region with an associated camera and content tree.
 /// </summary>
-public partial class Viewport(IWindowService windowService) : RuntimeComponent, IViewport
+public partial class Viewport(
+    IWindowService windowService,
+    IOptions<GraphicsSettings> settings)
+    : RuntimeComponent, IViewport
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -20,6 +25,7 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
         public float Y { get; init; } = 0f;
         public float Width { get; init; } = 1f;
         public float Height { get; init; } = 1f;
+        public Vector4D<float> BackgroundColor = Colors.DarkSlateBlue;
     }
 
     private ICamera? _camera;
@@ -38,12 +44,15 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
     private float _height = 1f;
 
     [ComponentProperty]
-    private Vector4D<float> _backgroundColor = new(0.0f, 0.0f, 0.2f, 1.0f); // Dark blue default
+    private Vector4D<float> _backgroundColor = settings.Value.BackgroundColor ?? Colors.DarkBlue;
 
     // Cached Vulkan viewport and scissor - computed lazily on first access or after window resize
     private Silk.NET.Vulkan.Viewport? _vulkanViewport;
     private Rect2D? _vulkanScissor;
     private bool _vulkanStateNeedsUpdate = true;
+    
+    // Cached clear color value - updated when BackgroundColor changes
+    private ClearValue _clearColorValue;
 
     public ICamera? Camera
     {
@@ -86,6 +95,12 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
 
     // Note: All properties (X, Y, Width, Height, BackgroundColor) are auto-generated from [ComponentProperty] attributes
 
+    /// <summary>
+    /// Gets the cached Vulkan clear color value.
+    /// This is updated automatically when BackgroundColor changes (in OnUpdate phase).
+    /// </summary>
+    public ClearValue ClearColorValue => _clearColorValue;
+
     public Silk.NET.Vulkan.Viewport VulkanViewport
     {
         get
@@ -110,7 +125,7 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
         }
     }
 
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         if (componentTemplate is Template template)
         {
@@ -120,9 +135,26 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
             Y = template.Y;
             Width = template.Width;
             Height = template.Height;
+            BackgroundColor = template.BackgroundColor;
             
             // Compute Vulkan viewport and scissor from normalized coordinates
             UpdateVulkanViewportAndScissor();
+            
+            // Initialize clear color value
+            UpdateClearColorValue();
+        }
+    }
+    
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        
+        // Ensure clear color value is initialized even if OnConfigure wasn't called with a template
+        // This happens when ContentManager creates Viewport using componentFactory.Create<Viewport>()
+        if (_clearColorValue.Color.Float32_0 == 0 && _clearColorValue.Color.Float32_1 == 0 &&
+            _clearColorValue.Color.Float32_2 == 0 && _clearColorValue.Color.Float32_3 == 0)
+        {
+            UpdateClearColorValue();
         }
     }
 
@@ -161,5 +193,32 @@ public partial class Viewport(IWindowService windowService) : RuntimeComponent, 
         
         Logger?.LogDebug("Updated Vulkan viewport: ({X}, {Y}, {Width}x{Height})", 
             _vulkanViewport.Value.X, _vulkanViewport.Value.Y, _vulkanViewport.Value.Width, _vulkanViewport.Value.Height);
+    }
+    
+    /// <summary>
+    /// Updates the cached clear color value from BackgroundColor.
+    /// Called when BackgroundColor changes (via property change callback).
+    /// </summary>
+    private void UpdateClearColorValue()
+    {
+        _clearColorValue = new ClearValue
+        {
+            Color = new ClearColorValue
+            {
+                Float32_0 = BackgroundColor.X,
+                Float32_1 = BackgroundColor.Y,
+                Float32_2 = BackgroundColor.Z,
+                Float32_3 = BackgroundColor.W
+            }
+        };
+    }
+    
+    /// <summary>
+    /// Property change callback - updates clear color when background color changes.
+    /// This happens during the Update phase, so conversion is done once per change, not per frame.
+    /// </summary>
+    partial void OnBackgroundColorChanged(Vector4D<float> oldValue)
+    {
+        UpdateClearColorValue();
     }
 }

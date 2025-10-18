@@ -62,7 +62,7 @@ public partial class RenderableBase : RuntimeComponent, IRenderable
     /// <summary>
     /// Configures the component from template, computing render mask from template data.
     /// </summary>
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
         

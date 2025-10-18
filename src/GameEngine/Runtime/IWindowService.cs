@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Graphics;
 using Silk.NET.Input;
 using Silk.NET.Windowing;
 

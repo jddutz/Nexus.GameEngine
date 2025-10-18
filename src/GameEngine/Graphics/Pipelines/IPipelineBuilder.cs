@@ -1,0 +1,18 @@
+using Silk.NET.Vulkan;
+
+namespace Nexus.GameEngine.Graphics.Pipelines;
+
+/// <summary>
+/// Interface for fluent pipeline configuration.
+/// Implement this interface to create custom pipeline builders.
+/// </summary>
+public interface IPipelineBuilder
+{
+    /// <summary>
+    /// Builds the pipeline using the configured settings and returns the Vulkan pipeline handle.
+    /// The pipeline is registered with the pipeline manager and cached for reuse.
+    /// </summary>
+    /// <returns>Vulkan pipeline handle ready for use in draw commands.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if required fields are missing.</exception>
+    Pipeline Build(string name);
+}

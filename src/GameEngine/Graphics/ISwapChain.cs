@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Graphics;
 /// </summary>
 /// <remarks>
 /// <para><strong>Ownership:</strong></para>
-/// SwapChain owns Swapchain → Images → ImageViews → RenderPasses → Framebuffers → ClearValues.
+/// SwapChain owns Swapchain → Images → ImageViews → RenderPasses → Framebuffers.
 /// All resources are created from VulkanSettings configuration during initialization.
 /// 
 /// <para><strong>Lifecycle:</strong></para>
@@ -19,7 +19,8 @@ namespace Nexus.GameEngine.Graphics;
 /// - Dispose: Destroys all resources including render passes
 /// 
 /// <para><strong>Usage:</strong></para>
-/// Renderer injects ISwapChain to access RenderPasses, Framebuffers, and ClearValues for rendering.
+/// Renderer injects ISwapChain to access RenderPasses and Framebuffers for rendering.
+/// Clear values are built dynamically in Renderer from Viewport.BackgroundColor.
 /// </remarks>
 public interface ISwapChain : IDisposable
 {
@@ -62,23 +63,6 @@ public interface ISwapChain : IDisposable
     /// <para>Framebuffers bind specific ImageViews to RenderPass attachments.</para>
     /// </remarks>
     Framebuffer[][] Framebuffers { get; }
-    
-    /// <summary>
-    /// Gets clear values for each render pass, indexed by bit position.
-    /// Clear values define what to clear attachments to when LoadOp is Clear.
-    /// </summary>
-    /// <remarks>
-    /// <para><strong>Array Layout:</strong></para>
-    /// - Index 0: Color attachment clear value (RGBA)
-    /// - Index 1: Depth/stencil clear value (if depth enabled)
-    /// 
-    /// <para><strong>Usage:</strong></para>
-    /// <code>
-    /// var clearValues = swapChain.ClearValues[bitPos];
-    /// renderPassInfo.PClearValues = clearValues;
-    /// </code>
-    /// </remarks>
-    ClearValue[][] ClearValues { get; }
 
     /// <summary>
     /// Gets the depth image if any render pass uses depth attachment, otherwise default.
@@ -112,4 +96,15 @@ public interface ISwapChain : IDisposable
     /// <param name="imageIndex">Index of the image to present (from AcquireNextImage).</param>
     /// <param name="renderFinishedSemaphore">Semaphore to wait on before presenting.</param>
     void Present(uint imageIndex, Semaphore renderFinishedSemaphore);
+    
+    /// <summary>
+    /// Event raised before presenting an image to the screen.
+    /// At this point, the image is in PresentSrcKhr layout and ready to be sampled for testing.
+    /// </summary>
+    /// <remarks>
+    /// This event is primarily used by testing infrastructure (IPixelSampler) to sample
+    /// the final rendered output before it's presented to the screen.
+    /// The image is guaranteed to be in the correct layout (PresentSrcKhr) for readback.
+    /// </remarks>
+    event EventHandler<PresentEventArgs>? BeforePresent;
 }

@@ -63,14 +63,9 @@ public class Application(IServiceProvider services) : IApplication
                     return;
                 }
 
-                var content = contentManager.Create(startupTemplate);
-                if (content == null)
-                {
-                    logger?.LogError("Failed to create startup template {StartupTemplateName}", startupTemplate.Name);
-                    return;
-                }
-
-                contentManager.Viewport.Content = content;
+                // Load the startup template - this creates the viewport and content
+                logger.LogDebug("Loading startup template: {TemplateName}", startupTemplate.Name);
+                contentManager.Load(startupTemplate);
 
                 window.Update += dt =>
                 {

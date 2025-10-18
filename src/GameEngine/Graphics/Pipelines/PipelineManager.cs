@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
@@ -18,6 +19,7 @@ public unsafe class PipelineManager : IPipelineManager
     private readonly ILogger _logger;
     private readonly IGraphicsContext _context;
     private readonly IWindowService _windowService;
+    private readonly IResourceManager _resources;
     private readonly Vk _vk;
 
     // Thread-safe pipeline cache
@@ -39,15 +41,20 @@ public unsafe class PipelineManager : IPipelineManager
 
     // Temporary GC handles for vertex input descriptions during pipeline creation
     private readonly List<GCHandle> _tempGCHandles = new();
+    private readonly ISwapChain _swapChain;
 
     public PipelineManager(
         IGraphicsContext context,
         IWindowService windowService,
+        ISwapChain swapChain,
+        IResourceManager resources,
         ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger(nameof(PipelineManager));
         _context = context;
         _windowService = windowService;
+        _swapChain = swapChain;
+        _resources = resources;
         _vk = _context.VulkanApi;
 
         // Subscribe to window resize events
@@ -73,6 +80,12 @@ public unsafe class PipelineManager : IPipelineManager
         {
             throw new InvalidOperationException($"Pipeline '{name}' is undefined.");
         }
+    }
+
+    /// <inheritdoc/>
+    public IPipelineBuilder GetBuilder()
+    {
+        return new PipelineBuilder(this, _swapChain, _resources);
     }
 
     /// <inheritdoc/>

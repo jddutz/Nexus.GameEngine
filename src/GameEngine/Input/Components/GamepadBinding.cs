@@ -104,7 +104,7 @@ public partial class GamepadBinding(
     /// Configure the gamepad binding using the provided template.
     /// </summary>
     /// <param name="template">Template containing configuration data</param>
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
 

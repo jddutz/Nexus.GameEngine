@@ -1,6 +1,4 @@
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
@@ -105,7 +103,7 @@ public partial class GridLayout(IWindowService windowService)
     /// Configure this GridLayout using the specified template.
     /// </summary>
     /// <param name="template">Template containing grid layout configuration</param>
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
 

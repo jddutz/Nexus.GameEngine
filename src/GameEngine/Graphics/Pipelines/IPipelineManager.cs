@@ -74,6 +74,22 @@ public interface IPipelineManager : IDisposable
     Pipeline GetOrCreatePipeline(PipelineDescriptor descriptor);
 
     /// <summary>
+    /// Creates a new pipeline builder for fluent pipeline configuration.
+    /// </summary>
+    /// <returns>A new pipeline builder instance.</returns>
+    /// <remarks>
+    /// Use the builder to configure a pipeline fluently:
+    /// <code>
+    /// var pipeline = pipelineManager.GetBuilder()
+    ///     .WithShader(shader)
+    ///     .WithRenderPass(renderPass)
+    ///     .WithTopology(PrimitiveTopology.TriangleFan)
+    ///     .Build();
+    /// </code>
+    /// </remarks>
+    IPipelineBuilder GetBuilder();
+
+    /// <summary>
     /// Retrieves a handle for the specified pipeline from the cache
     /// or throws <see cref="NotFoundException"/>
     /// </summary>

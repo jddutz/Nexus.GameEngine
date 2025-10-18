@@ -7,12 +7,16 @@ using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Events;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Resources;
+using Nexus.GameEngine.Resources.Geometry;
+using Nexus.GameEngine.Resources.Shaders;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Runtime.Settings;
+using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
@@ -42,8 +46,9 @@ class Program
                     ["Application:General:ApplicationVersion"] = "1.0.0",
                     ["Application:General:EngineName"] = "Nexus Game Engine",
                     ["Application:General:EngineVersion"] = "1.0.0",
-                    ["Graphics:Fullscree"] = "false",
-                    ["Graphics:Vulkan:EnableValidationLayers"] = "true"
+                    ["Graphics:Fullscreen"] = "false",
+                    ["Graphics:Vulkan:EnableValidationLayers"] = "true",
+                    ["Graphics:Vulkan:EnableSwapchainTransfer"] = "true"  // Enable for pixel sampling tests
                 })
                 .Build();
 
@@ -65,7 +70,7 @@ class Program
                 .AddSingleton(testLoggerFactory)
                 .Configure<ApplicationSettings>(configuration.GetSection("Application"))
                 .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
-                .Configure<GraphicsSettings>(configuration.GetSection("Graphics:Vulkan"))
+                .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))
                 .AddSingleton<IWindowService, WindowService>()
                 .AddSingleton<IValidation, Validation>()
                 .AddSingleton<IGraphicsContext, Context>()
@@ -77,10 +82,14 @@ class Program
                 .AddSingleton<IRenderer, Renderer>()
                 .AddSingleton<IEventBus, EventBus>()
                 .AddSingleton<IAssetService, AssetService>()
+                .AddSingleton<IBufferManager, BufferManager>()
+                .AddSingleton<IGeometryResourceManager, GeometryResourceManager>()
+                .AddSingleton<IShaderResourceManager, ShaderResourceManager>()
                 .AddSingleton<IResourceManager, ResourceManager>()
                 .AddSingleton<IContentManager, ContentManager>()
                 .AddSingleton<IComponentFactory, ComponentFactory>()
                 .AddSingleton<IActionFactory, ActionFactory>()
+                .AddPixelSampling()
                 .AddDiscoveredServices<IRuntimeComponent>()
                 .AddDiscoveredServices<IAction>()
                 .BuildServiceProvider();

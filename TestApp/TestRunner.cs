@@ -34,6 +34,7 @@ public class TestRunner(
 
     int discovered = 0;
     private Stopwatch _stopwatch = new();
+    private bool _resultsOutputted = false;
 
     /// <summary>
     /// Activates the TestRunner, discovers all ITestComponent types in the assembly, and starts the stopwatch.
@@ -45,6 +46,16 @@ public class TestRunner(
         {
             if (type.IsAssignableTo(typeof(ITestComponent)) && !type.IsAbstract && !type.IsInterface)
             {
+                // Check if the test component has the TestRunnerIgnore attribute
+                var ignoreAttribute = type.GetCustomAttributes(typeof(TestRunnerIgnoreAttribute), false)
+                    .FirstOrDefault() as TestRunnerIgnoreAttribute;
+                
+                if (ignoreAttribute != null)
+                {
+                    Logger?.LogInformation("Skipping test component {TypeName}: {Reason}", type.FullName, ignoreAttribute.Reason);
+                    continue;
+                }
+                
                 _testComponents.Enqueue(type);
                 Logger?.LogDebug("Discovered concrete test component: {TypeName}", type.FullName);
                 discovered++;
@@ -98,9 +109,13 @@ public class TestRunner(
         }
         else
         {
-            Logger?.LogInformation("All test components executed. Stopping stopwatch and outputting results.");
-            _stopwatch.Stop();
-            OutputTestResults();
+            if (!_resultsOutputted)
+            {
+                Logger?.LogInformation("All test components executed. Stopping stopwatch and outputting results.");
+                _stopwatch.Stop();
+                OutputTestResults();
+                _resultsOutputted = true;
+            }
         }
     }
 
@@ -122,15 +137,12 @@ public class TestRunner(
             if (result.Passed)
             {
                 passed.Add(result);
-                Logger?.LogInformation("[Pass] {TestName}", result.TestName);
+                Logger?.LogInformation("[Pass] {TestName}: {Output}", result.TestName, result.Output);
             }
             else
             {
                 failed.Add(result);
-                Logger?.LogWarning("[Fail] {TestName}", result.TestName);
-
-                if (!string.IsNullOrEmpty(result.ErrorMessage))
-                    Logger?.LogWarning("{ErrorMessage}", result.ErrorMessage);
+                Logger?.LogWarning("[Fail] {TestName}: {Output}", result.TestName, result.Output);
 
                 if (result.Exception is Exception ex)
                 {
@@ -154,7 +166,7 @@ public class TestRunner(
             Logger?.LogInformation("Failed Tests:");
             foreach (var test in failed)
             {
-                Logger?.LogInformation("{TestName}: {ErrorMessage}", test.TestName, test.ErrorMessage ?? "Unknown error");
+                Logger?.LogInformation("{TestName}: {Output}", test.TestName, test.Output);
             }
         }
 

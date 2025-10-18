@@ -1,120 +1,85 @@
-using Nexus.GameEngine.Animation;
-using Nexus.GameEngine.Components;
+using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources;
-using Silk.NET.Maths;
+using Nexus.GameEngine.Resources.Geometry;
+using Nexus.GameEngine.Resources.Geometry.Definitions;
+using Nexus.GameEngine.Resources.Shaders.Definitions;
+using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
 
-public partial class BackgroundLayer()
-        : RenderableBase(), IRenderable, IBackgroundController
+/// <summary>
+/// Full-screen background layer that renders a solid color quad.
+/// Renders in Main pass with priority 0 (first to render).
+/// </summary>
+public partial class BackgroundLayer(
+    IPipelineManager pipelineManager,
+    IResourceManager resources)
+    : RenderableBase(), IRenderable
 {
-    public new record Template : RuntimeComponent.Template
+    private GeometryResource? _geometry;
+    private Pipeline _pipeline;
+
+    /// <summary>
+    /// Render at the very beginning of the Main pass (background)
+    /// </summary>
+    protected override uint GetDefaultRenderMask() => RenderPasses.Main;
+
+    protected override void OnActivate()
     {
-        public bool IsVisible { get; set; }
-        public Vector4D<float> BackgroundColor { get; set; }
+        base.OnActivate();
+        Logger?.LogInformation("BackgroundLayer.OnActivate called - creating pipeline and geometry");
+
+        try
+        {
+            // Build pipeline using fluent API - renders full-screen colored quad
+            _pipeline = pipelineManager.GetBuilder()
+                .WithShader(new ColoredGeometryShader())
+                .WithRenderPasses(RenderPasses.Main)
+                .WithTopology(PrimitiveTopology.TriangleStrip)
+                .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
+                .WithDepthTest()
+                .WithDepthWrite()
+                .Build("BackgroundLayerPipeline");
+
+            Logger?.LogInformation("BackgroundLayer pipeline created successfully");
+
+            // Use ColorQuad but it will fill the screen in normalized device coordinates
+            _geometry = resources.Geometry.GetOrCreate(new ColorQuad());
+
+            Logger?.LogInformation("BackgroundLayer geometry resource created. Name: {Name}, VertexCount: {VertexCount}",
+                _geometry.Name, _geometry.VertexCount);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "BackgroundLayer initialization failed");
+            throw;
+        }
     }
 
-    // ComponentProperty fields - generator creates public properties with deferred updates
-    [ComponentProperty]
-    private bool _isVisible = true;
-
-    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.CubicEaseInOut)]
-    private Vector4D<float> _backgroundColor = Colors.CornflowerBlue;
-
-    public uint RenderPriority => 0;
-
-    public Box3D<float> BoundingBox => new(Vector3D<float>.Zero, Vector3D<float>.Zero);
-
-    public uint RenderPassFlags => 1;
-
-    public IEnumerable<DrawCommand> GetElements()
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
-        throw new NotImplementedException();
-        /*
-        Logger?.LogDebug("BackgroundLayer.OnRender called - IsVisible: {IsVisible}, BackgroundColor: {BackgroundColor}", IsVisible, BackgroundColor);
-
-        if (!IsVisible)
-        {
-            Logger?.LogDebug("BackgroundLayer not visible, skipping render");
+        if (_geometry == null)
             yield break;
-        }
 
-        // Get resources using our new resource system
-        Logger?.LogDebug("Creating resources for BackgroundLayer");
-        var geometryResource = resourceManager.GetOrCreateResource(
-            GeometryDefinitions.FullScreenQuad);
-        var shaderResource = 0u;  //resourceManager.GetOrCreateResource(Shaders.BackgroundSolid);
-
-        Logger?.LogDebug("Created geometry resource: {GeometryResource}, shader resource: {ShaderResource}", geometryResource, shaderResource);
-
-        yield return new DrawCommand()
+        yield return new DrawCommand
         {
-            // TODO: update these values
-            Vao = 0,
-            Vbo = 0,
-            Ebo = 0,
-            Shader = 0,
-            ShaderProgram = shaderResource,
-            VertexArray = geometryResource,
-            Priority = RenderPriority
-            // No uniforms needed for basic orange color shader
+            RenderMask = RenderMask,
+            Pipeline = _pipeline,
+            VertexBuffer = _geometry.Buffer,
+            VertexCount = _geometry.VertexCount,
+            InstanceCount = 1
         };
-        */
     }
 
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnDeactivate()
     {
-        base.OnConfigure(componentTemplate);
-
-        if (componentTemplate is Template template)
+        if (_geometry != null)
         {
-            // Direct field assignment during configuration - no deferred updates needed
-            _isVisible = template.IsVisible;
-            _backgroundColor = template.BackgroundColor;
+            resources.Geometry.Release(new ColorQuad());
+            _geometry = null;
         }
-    }
-
-    // IBackgroundController implementation - properties are automatically deferred
-    public void SetVisible(bool visible)
-    {
-        IsVisible = visible;
-    }
-
-    public void SetBackgroundColor(Vector4D<float> color)
-    {
-        BackgroundColor = color;
-    }
-
-    public void SetBackgroundColor(float r, float g, float b, float a = 1.0f)
-    {
-        BackgroundColor = new Vector4D<float>(r, g, b, a);
-    }
-
-    public void SetBackgroundColor(string colorName)
-    {
-        // Use reflection to get predefined color from Colors class
-        var colorProperty = typeof(Colors).GetProperty(colorName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-        if (colorProperty?.GetValue(null) is Vector4D<float> color)
-        {
-            BackgroundColor = color;
-        }
-        else
-        {
-            // Fallback to default color if name not found
-            BackgroundColor = Colors.White;
-        }
-    }
-
-    public void FadeToColor(Vector4D<float> targetColor, float factor)
-    {
-        // Linear interpolation between current and target color
-        var current = BackgroundColor;
-        BackgroundColor = new Vector4D<float>(
-            current.X + (targetColor.X - current.X) * factor,
-            current.Y + (targetColor.Y - current.Y) * factor,
-            current.Z + (targetColor.Z - current.Z) * factor,
-            current.W + (targetColor.W - current.W) * factor
-        );
+        base.OnDeactivate();
     }
 }

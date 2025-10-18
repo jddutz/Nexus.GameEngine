@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Graphics;
+using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -16,4 +16,5 @@ public class GraphicsSettings
     public bool ShowParticleEffects { get; set; } = true;
     public float RenderScale { get; set; } = 1.0f;
     public VulkanSettings Vulkan { get; set; } = new();
+    public Vector4D<float>? BackgroundColor { get; set; }
 }

@@ -16,6 +16,14 @@ public interface IContentManager : IDisposable
     IViewport Viewport { get; }
 
     /// <summary>
+    /// Loads content from a template. If the template is a Viewport.Template, creates a new viewport
+    /// from it. Otherwise, creates a default viewport and assigns the created content to it.
+    /// This method can be called to switch game modes or scenes.
+    /// </summary>
+    /// <param name="template">The template to load. Can be a Viewport.Template or any other component template.</param>
+    void Load(IComponentTemplate template);
+
+    /// <summary>
     /// Creates a new runtime component from the specified template.
     /// </summary>
     /// <param name="template">The component template to instantiate.</param>

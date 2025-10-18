@@ -108,8 +108,8 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     /// Override in derived classes to implement component-specific configuration.
     /// Parent is configured before calling this method.
     /// </summary>
-    /// <param name="template">Template used for configuration</param>
-    protected virtual void OnConfigure(IComponentTemplate componentTemplate) { }
+    /// <param name="componentTemplate">Template used for configuration, or null if created without template</param>
+    protected virtual void OnConfigure(IComponentTemplate? componentTemplate) { }
 
     /// <summary>
     /// Configure the component using the specified template.
@@ -118,24 +118,14 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     /// This method is sealed to ensure UpdateAnimations is called after OnConfigure.
     /// </summary>
     /// <param name="componentTemplate">The template to configure from.</param>
-    public void Configure(IComponentTemplate componentTemplate)
+    public void Configure(IComponentTemplate? componentTemplate)
     {
-        if (componentTemplate == null)
-        {
-            Logger?.LogDebug("Configure called on {TypeName} with null template", GetType().Name);
-            return;
-        }
-
-        Logger?.LogDebug("Configure called on {TypeName} with template: {ComponentTypeName}", GetType().Name, componentTemplate.GetType().Name);
-
-        Name = componentTemplate.Name;
-        IsEnabled = componentTemplate.Enabled;
-
-        Logger?.LogDebug("Component name set to: '{Name}', enabled: {IsEnabled}", Name, IsEnabled);
+        Logger?.LogDebug("Configure called on {TypeName} with template: {ComponentTypeName}", 
+            GetType().Name, componentTemplate?.GetType().Name ?? "null");
 
         BeforeConfiguration?.Invoke(this, new(componentTemplate));
 
-        // Configure root to leaf
+        // Always call OnConfigure, even with null template (allows components to initialize without template)
         OnConfigure(componentTemplate);
 
         // Apply any pending property changes after configuration (instant update with deltaTime = 0)
@@ -143,6 +133,11 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         if (componentTemplate is Template template)
         {
+            Name = componentTemplate.Name;
+            IsEnabled = componentTemplate.Enabled;
+
+            Logger?.LogDebug("Component name set to: '{Name}', enabled: {IsEnabled}", Name, IsEnabled);
+
             Logger?.LogDebug("Template is RuntimeComponent.Template with {SubcomponentCount} subcomponents", template.Subcomponents?.Length ?? 0);
 
             if (template.Subcomponents != null)
@@ -164,7 +159,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         }
         else
         {
-            Logger?.LogDebug("Template is not RuntimeComponent.Template, it's: {TypeName}", componentTemplate.GetType().Name);
+            Logger?.LogDebug("Template is not RuntimeComponent.Template, it's: {TypeName}", componentTemplate?.GetType().Name ?? "null");
         }
 
         AfterConfiguration?.Invoke(this, new(componentTemplate));
@@ -530,6 +525,10 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         if (component == null) return null;
 
+        // Call Configure with null template to ensure OnConfigure is called
+        // This allows components to initialize even without a template
+        component.Configure(null);
+
         AddChild(component);
 
         return component;
@@ -618,7 +617,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         where T : IRuntimeComponent
     {
         if (Parent == null) return [];
-        return Parent.GetChildren<T>(filter);
+        return Parent.GetChildren(filter);
     }
 
     public virtual T? FindParent<T>(Func<T, bool>? filter = null)

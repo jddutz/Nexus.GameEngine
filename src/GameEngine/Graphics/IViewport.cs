@@ -44,6 +44,12 @@ public interface IViewport : IRuntimeComponent
     /// Background color for clearing the viewport (RGBA values 0-1)
     /// </summary>
     Vector4D<float> BackgroundColor { get; set; }
+    
+    /// <summary>
+    /// Gets the cached Vulkan clear color value.
+    /// This is automatically updated when BackgroundColor changes.
+    /// </summary>
+    ClearValue ClearColorValue { get; }
 
     /// <summary>
     /// Gets the Vulkan viewport structure for this viewport.

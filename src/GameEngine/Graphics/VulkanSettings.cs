@@ -39,6 +39,14 @@ public class VulkanSettings
     public uint MinImageCount { get; set; } = 2;
     
     /// <summary>
+    /// Enable transfer source usage for swapchain images.
+    /// Required for pixel sampling (reading pixels back to CPU for testing).
+    /// Default: false (production). Set to true for testing scenarios.
+    /// Performance impact: Minimal - only affects image creation, not rendering.
+    /// </summary>
+    public bool EnableSwapchainTransfer { get; set; } = false;
+    
+    /// <summary>
     /// Required device extensions. Devices without ALL these extensions will be rejected.
     /// Default: Only swap chain support (minimal requirements).
     /// </summary>

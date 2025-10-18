@@ -31,17 +31,12 @@ public class RenderableTestComponent()
     {
         bool passed = FramesRendered > 0;
 
-        var result = new TestResult()
+        yield return new TestResult()
         {
             TestName = "GetDrawCommands() should be called at least once",
+            ExpectedResult = "FramesRendered > 0",
+            ActualResult = $"FramesRendered: {FramesRendered}",
             Passed = passed
         };
-
-        if (!passed)
-        {
-            result.ErrorMessage = $"Expected FramesRendered > 0, Actual: {FramesRendered}";
-        }
-
-        yield return result;
     }
 }

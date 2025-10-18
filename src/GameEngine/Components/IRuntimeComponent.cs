@@ -86,8 +86,8 @@ public interface IRuntimeComponent : IDisposable
     /// Configure the component using the specified template.
     /// Automatically triggers re-validation of the component.
     /// </summary>
-    /// <param name="template">Template used for configuration.</param>
-    void Configure(IComponentTemplate template);
+    /// <param name="template">Template used for configuration. Can be null for template-less components.</param>
+    void Configure(IComponentTemplate? template);
 
     /// <summary>
     /// Validate this component and all its subcomponents.

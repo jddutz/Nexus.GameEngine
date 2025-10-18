@@ -70,7 +70,7 @@ public abstract partial class InputBinding(
     [ComponentProperty]
     private ActionId _actionId = ActionId.None;
 
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
 

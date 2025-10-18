@@ -8,28 +8,27 @@ namespace TestApp.TestComponents;
 public class LifecycleTestComponent : RuntimeComponent, ITestComponent
 {
     // Track which lifecycle methods were called
-    private bool _onConfigureCalled = false;
-    private bool _onActivateCalled = false;
-    private bool _onUpdateCalled = false;
-    private bool _onDeactivateCalled = false;
+    private int _onConfigureCalled = 0;
+    private int _onActivateCalled = 0;
+    private int _onUpdateCalled = 0;
+    private int _onDeactivateCalled = 0;
     
     // Track the order of calls
     private readonly List<string> _callOrder = new();
     
     public int FrameCount { get; set; } = 5;
-    private int _updateCount = 0;
 
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
-        _onConfigureCalled = true;
+        _onConfigureCalled++;
         _callOrder.Add("OnConfigure");
     }
 
     protected override void OnActivate()
     {
         base.OnActivate();
-        _onActivateCalled = true;
+        _onActivateCalled++;
         _callOrder.Add("OnActivate");
     }
 
@@ -37,15 +36,10 @@ public class LifecycleTestComponent : RuntimeComponent, ITestComponent
     {
         base.OnUpdate(deltaTime);
         
-        if (!_onUpdateCalled)
-        {
-            _onUpdateCalled = true;
-            _callOrder.Add("OnUpdate");
-        }
+        _onUpdateCalled++;
+        _callOrder.Add("OnUpdate");
         
-        _updateCount++;
-        
-        if (_updateCount >= FrameCount)
+        if (_onUpdateCalled >= FrameCount)
         {
             Deactivate();
         }
@@ -53,51 +47,43 @@ public class LifecycleTestComponent : RuntimeComponent, ITestComponent
 
     protected override void OnDeactivate()
     {
-        _onDeactivateCalled = true;
+        _onDeactivateCalled++;
         _callOrder.Add("OnDeactivate");
         base.OnDeactivate();
     }
 
     public IEnumerable<TestResult> GetTestResults()
     {
-        // Note: OnConfigure is only called when using CreateChild(template), not CreateChild(type)
-        // TestRunner uses CreateChild(type), so OnConfigure won't be called
-        
         yield return new TestResult
         {
-            TestName = "OnActivate should be called",
-            Passed = _onActivateCalled,
-            ErrorMessage = _onActivateCalled ? "" : "OnActivate was never called"
+            TestName = "OnActivate should be called at least once",
+            ExpectedResult = "> 0",
+            ActualResult = _onActivateCalled.ToString(),
+            Passed = _onActivateCalled > 0
         };
 
         yield return new TestResult
         {
-            TestName = "OnUpdate should be called",
-            Passed = _onUpdateCalled,
-            ErrorMessage = _onUpdateCalled ? "" : "OnUpdate was never called"
+            TestName = $"OnUpdate should be called at least {FrameCount} times",
+            ExpectedResult = $">= {FrameCount}",
+            ActualResult = _onUpdateCalled.ToString(),
+            Passed = _onUpdateCalled >= FrameCount
         };
 
         yield return new TestResult
         {
             TestName = "OnDeactivate should be called",
-            Passed = _onDeactivateCalled,
-            ErrorMessage = _onDeactivateCalled ? "" : "OnDeactivate was never called"
+            ExpectedResult = "> 0",
+            ActualResult = _onDeactivateCalled.ToString(),
+            Passed = _onDeactivateCalled > 0
         };
 
         yield return new TestResult
         {
             TestName = "Lifecycle methods should be called in correct order",
-            Passed = ValidateCallOrder(),
-            ErrorMessage = ValidateCallOrder() ? "" : $"Incorrect call order: {string.Join(" → ", _callOrder)}"
-        };
-
-        yield return new TestResult
-        {
-            TestName = "Component should update for expected number of frames",
-            Passed = _updateCount >= FrameCount,
-            ErrorMessage = _updateCount >= FrameCount 
-                ? "" 
-                : $"Expected {FrameCount} updates, got {_updateCount}"
+            ExpectedResult = "OnConfigure,OnActivate,OnUpdate (x5),OnDeactivate",
+            ActualResult = string.Join(",", _callOrder),
+            Passed = ValidateCallOrder()
         };
     }
 
@@ -106,7 +92,7 @@ public class LifecycleTestComponent : RuntimeComponent, ITestComponent
         // Expected order without Configure: OnActivate → OnUpdate → OnDeactivate
         // Expected order with Configure: OnConfigure → OnActivate → OnUpdate → OnDeactivate
         
-        if (_onConfigureCalled)
+        if (_onConfigureCalled > 0)
         {
             // Full lifecycle with configuration
             if (_callOrder.Count < 4) return false;
@@ -114,7 +100,7 @@ public class LifecycleTestComponent : RuntimeComponent, ITestComponent
             return _callOrder[0] == "OnConfigure" &&
                    _callOrder[1] == "OnActivate" &&
                    _callOrder[2] == "OnUpdate" &&
-                   _callOrder[3] == "OnDeactivate";
+                   _callOrder[^1] == "OnDeactivate";
         }
         else
         {
@@ -123,7 +109,7 @@ public class LifecycleTestComponent : RuntimeComponent, ITestComponent
             
             return _callOrder[0] == "OnActivate" &&
                    _callOrder[1] == "OnUpdate" &&
-                   _callOrder[2] == "OnDeactivate";
+                   _callOrder[^1] == "OnDeactivate";
         }
     }
 }

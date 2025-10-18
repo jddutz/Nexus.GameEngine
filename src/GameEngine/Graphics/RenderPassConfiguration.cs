@@ -1,4 +1,3 @@
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
@@ -64,16 +63,6 @@ public class RenderPassConfiguration
     /// Final layout for depth attachment.
     /// </summary>
     public ImageLayout DepthFinalLayout { get; set; } = ImageLayout.DepthStencilAttachmentOptimal;
-    
-    /// <summary>
-    /// Clear color value (RGBA).
-    /// </summary>
-    public Vector4D<float> ClearColorValue { get; set; } = new(0.0f, 0.0f, 0.0f, 1.0f);
-    
-    /// <summary>
-    /// Clear depth value.
-    /// </summary>
-    public float ClearDepthValue { get; set; } = 1.0f;
     
     /// <summary>
     /// Number of MSAA samples.

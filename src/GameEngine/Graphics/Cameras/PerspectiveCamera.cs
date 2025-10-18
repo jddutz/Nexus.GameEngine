@@ -232,7 +232,7 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
     /// <summary>
     /// Configure the component using the specified template.
     /// </summary>
-    protected override void OnConfigure(IComponentTemplate componentTemplate)
+    protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

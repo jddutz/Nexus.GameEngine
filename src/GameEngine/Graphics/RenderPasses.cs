@@ -1,6 +1,3 @@
-using System.Runtime.CompilerServices;
-using Nexus.GameEngine.Resources;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics;
@@ -13,7 +10,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <remarks>
 /// <para><strong>Design Philosophy:</strong></para>
 /// <list type="bullet">
-/// <item>Bit position determines execution order (bit 0 first, bit 10 last)</item>
+/// <item>Bit position determines execution order (bit 0 first, bit 7 last)</item>
 /// <item>Multiple passes can be combined with bitwise OR (|)</item>
 /// <item>Zero runtime cost for unused passes - they're simply skipped</item>
 /// <item>Comprehensive set covers 95% of game rendering scenarios</item>
@@ -55,87 +52,60 @@ public static class RenderPasses
     public const uint Depth = 1u << 1;  // 0b00000000010
     
     /// <summary>
-    /// Background rendering pass.
-    /// Renders skybox, background images, or solid colors at infinite depth.
-    /// Executes THIRD (after depth setup, before main scene).
-    /// Used by: Skyboxes, procedural skies, background images, solid colors.
-    /// Note: Typically rendered at depth=1.0 (far plane) with depth test LEQUAL.
-    /// </summary>
-    public const uint Background = 1u << 2;  // 0b00000000100
-    
-    /// <summary>
     /// Main opaque geometry pass.
     /// Renders solid, non-transparent objects with depth testing and writing.
-    /// Executes FOURTH (primary scene rendering).
-    /// Used by: 3D models, terrain, buildings, characters, static geometry.
+    /// Clears color and depth buffers if it's the first active pass.
+    /// Executes THIRD (primary scene rendering).
+    /// Used by: 3D models, terrain, buildings, characters, static geometry, backgrounds.
     /// Optimization: Render front-to-back for early-Z rejection.
     /// </summary>
-    public const uint Main = 1u << 3;  // 0b00000001000
+    public const uint Main = 1u << 2;  // 0b00000000100
     
     /// <summary>
     /// Lighting pass (for deferred renderers).
     /// Accumulates lighting from all light sources using G-buffer data.
-    /// Executes FIFTH (after G-buffer generation).
+    /// Executes FOURTH (after G-buffer generation).
     /// Used by: Deferred shading pipelines, many-light scenarios.
     /// Note: Forward renderers compute lighting in Main pass instead.
     /// </summary>
-    public const uint Lighting = 1u << 4;  // 0b00000010000
+    public const uint Lighting = 1u << 3;  // 0b00000001000
     
     /// <summary>
     /// Reflection pass.
     /// Renders reflective surfaces using screen-space reflections (SSR) or planar reflections.
-    /// Executes SIXTH (after main scene available for reflection).
+    /// Executes FIFTH (after main scene available for reflection).
     /// Used by: Mirrors, water surfaces, metallic materials, glass.
     /// Techniques: SSR, planar reflections, cube maps, raytraced reflections.
     /// </summary>
-    public const uint Reflection = 1u << 5;  // 0b00000100000
+    public const uint Reflection = 1u << 4;  // 0b00000010000
     
     /// <summary>
     /// Transparent geometry pass.
     /// Renders alpha-blended surfaces with depth testing but no depth writes.
-    /// Executes SEVENTH (after all opaque geometry).
-    /// Used by: Glass, water, smoke, foliage, alpha-blended sprites.
+    /// Executes SIXTH (after all opaque geometry).
+    /// Used by: Glass, water, smoke, foliage, alpha-blended sprites, particle effects.
     /// Sorting: Back-to-front for correct alpha blending.
-    /// Note: Disable depth writes, enable blending (SrcAlpha, OneMinusSrcAlpha).
+    /// Note: Disable depth writes, enable blending (SrcAlpha, OneMinusSrcAlpha or additive).
     /// </summary>
-    public const uint Transparent = 1u << 6;  // 0b00001000000
-    
-    /// <summary>
-    /// Particle system pass.
-    /// Renders particle effects with additive or alpha blending.
-    /// Executes EIGHTH (after transparent geometry).
-    /// Used by: Fire, smoke, sparks, magic effects, explosions, weather.
-    /// Blending: Additive (One, One) or alpha (SrcAlpha, OneMinusSrcAlpha).
-    /// Note: Often uses soft particles (depth fade) to blend with scene.
-    /// </summary>
-    public const uint Particles = 1u << 7;  // 0b00010000000
+    public const uint Transparent = 1u << 5;  // 0b00000100000
     
     /// <summary>
     /// Post-processing pass.
     /// Applies full-screen effects to final rendered image.
-    /// Executes NINTH (after all scene rendering).
+    /// Executes SEVENTH (after all scene rendering).
     /// Used by: Bloom, tone mapping, color grading, anti-aliasing, DOF, motion blur.
     /// Technique: Render scene to texture, apply effects as full-screen quad.
     /// </summary>
-    public const uint Post = 1u << 8;  // 0b00100000000
+    public const uint Post = 1u << 6;  // 0b00001000000
     
     /// <summary>
     /// UI/HUD overlay pass.
-    /// Renders screen-space UI elements without depth testing.
-    /// Executes TENTH (after post-processing).
-    /// Used by: HUD, menus, text, health bars, minimaps, crosshairs.
+    /// Renders screen-space UI elements and debug overlays without depth testing.
+    /// Executes LAST (after post-processing).
+    /// Used by: HUD, menus, text, health bars, minimaps, crosshairs, debug visualizations.
     /// Note: Orthographic projection, no depth test, alpha blending enabled.
     /// </summary>
-    public const uint UI = 1u << 9;  // 0b01000000000
-    
-    /// <summary>
-    /// Debug visualization pass.
-    /// Renders development/editor overlays (wireframes, bounds, gizmos).
-    /// Executes LAST (overlay all other rendering).
-    /// Used by: Collision shapes, normals, light bounds, camera frustums.
-    /// Note: Development only - disabled in release builds.
-    /// </summary>
-    public const uint Debug = 1u << 10;  // 0b10000000000
+    public const uint UI = 1u << 7;  // 0b00010000000
     
     // ==========================================
     // COMBINED MASKS
@@ -145,8 +115,8 @@ public static class RenderPasses
     /// All render passes combined.
     /// Use for components that should participate in all rendering.
     /// </summary>
-    public const uint All = Shadow | Depth | Background | Main | Lighting | 
-                           Reflection | Transparent | Particles | Post | UI | Debug;
+    public const uint All = Shadow | Depth | Main | Lighting | 
+                           Reflection | Transparent | Post | UI;
     
     /// <summary>
     /// All opaque passes (Shadow, Depth, Main).
@@ -155,17 +125,17 @@ public static class RenderPasses
     public const uint Opaque = Shadow | Depth | Main;
     
     /// <summary>
-    /// All transparent passes (Transparent, Particles).
+    /// Alpha-blended pass (Transparent only - includes particles).
     /// Use for effects that require alpha blending.
     /// </summary>
-    public const uint AlphaBlended = Transparent | Particles;
+    public const uint AlphaBlended = Transparent;
     
     /// <summary>
-    /// Scene rendering passes (excludes UI, Post, Debug).
+    /// Scene rendering passes (excludes UI, Post).
     /// Use for world-space objects.
     /// </summary>
-    public const uint Scene = Shadow | Depth | Background | Main | Lighting | 
-                             Reflection | Transparent | Particles;
+    public const uint Scene = Shadow | Depth | Main | Lighting | 
+                             Reflection | Transparent;
     
     // ==========================================
     // METADATA
@@ -174,12 +144,12 @@ public static class RenderPasses
     /// <summary>
     /// Total number of defined render passes.
     /// </summary>
-    public const int Count = 11;
+    public const int Count = 8;
     
     /// <summary>
-    /// Maximum valid bit index (0-10).
+    /// Maximum valid bit index (0-7).
     /// </summary>
-    public const int MaxBitIndex = 10;
+    public const int MaxBitIndex = 7;
     
     // ==========================================
     // RENDER PASS CONFIGURATIONS
@@ -187,7 +157,7 @@ public static class RenderPasses
     
     /// <summary>
     /// Standard configurations for all render passes.
-    /// Array is indexed by bit position (0-10) matching the pass constants.
+    /// Array is indexed by bit position (0-7) matching the pass constants.
     /// Used by SwapChain to create Vulkan render pass objects.
     /// </summary>
     /// <remarks>
@@ -209,11 +179,10 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.DontCare,
             DepthLoadOp = AttachmentLoadOp.Clear,
             DepthStoreOp = AttachmentStoreOp.Store,  // Save shadow map
-            ColorInitialLayout = ImageLayout.Undefined,
+            ColorInitialLayout = ImageLayout.Undefined,  // DontCare + no color attachment
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
             DepthInitialLayout = ImageLayout.Undefined,
             DepthFinalLayout = ImageLayout.DepthStencilReadOnlyOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
         },
@@ -228,55 +197,33 @@ public static class RenderPasses
             ColorStoreOp = AttachmentStoreOp.DontCare,
             DepthLoadOp = AttachmentLoadOp.Clear,
             DepthStoreOp = AttachmentStoreOp.Store,  // Save for main pass
-            ColorInitialLayout = ImageLayout.Undefined,
+            ColorInitialLayout = ImageLayout.Undefined,  // DontCare + no color attachment
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
             DepthInitialLayout = ImageLayout.Undefined,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()  // Front-to-back
         },
         
-        // [2] Background - Skybox/background at far plane
-        new()
-        {
-            Name = nameof(Background),
-            ColorFormat = Format.Undefined,  // Use swapchain format
-            DepthFormat = Format.D32Sfloat,
-            ColorLoadOp = AttachmentLoadOp.Clear,  // Clear to background
-            ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Clear,  // CLEAR depth for testing (normally Load from depth pass)
-            DepthStoreOp = AttachmentStoreOp.Store,
-            ColorInitialLayout = ImageLayout.Undefined,
-            ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
-            DepthInitialLayout = ImageLayout.Undefined,  // Changed from DepthStencilAttachmentOptimal since we're clearing
-            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearColorValue = Colors.CornflowerBlue,
-            ClearDepthValue = 1.0f,
-            SampleCount = SampleCountFlags.Count1Bit,
-            BatchStrategy = new DefaultBatchStrategy()
-        },
-        
-        // [3] Main - Primary opaque geometry
+        // [2] Main - Primary opaque geometry (also handles background clearing)
         new()
         {
             Name = nameof(Main),
             ColorFormat = Format.Undefined,  // Use swapchain format
             DepthFormat = Format.D32Sfloat,
-            ColorLoadOp = AttachmentLoadOp.Load,  // Keep background
+            ColorLoadOp = AttachmentLoadOp.Clear,  // Clear color buffer
             ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Load,  // Keep depth from prepass
+            DepthLoadOp = AttachmentLoadOp.Clear,  // Clear depth buffer
             DepthStoreOp = AttachmentStoreOp.Store,
-            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
+            ColorInitialLayout = ImageLayout.Undefined,  // Clear discards previous contents
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
-            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
+            DepthInitialLayout = ImageLayout.Undefined,  // First pass with depth
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()  // Front-to-back for early-Z
         },
         
-        // [4] Lighting - Deferred lighting accumulation
+        // [3] Lighting - Deferred lighting accumulation
         new()
         {
             Name = nameof(Lighting),
@@ -290,12 +237,11 @@ public static class RenderPasses
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
             DepthInitialLayout = ImageLayout.Undefined,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
         },
         
-        // [5] Reflection - Screen-space reflections
+        // [4] Reflection - Screen-space reflections
         new()
         {
             Name = nameof(Reflection),
@@ -309,12 +255,11 @@ public static class RenderPasses
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
             DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()
         },
         
-        // [6] Transparent - Alpha-blended geometry
+        // [5] Transparent - Alpha-blended geometry and particles
         new()
         {
             Name = nameof(Transparent),
@@ -328,31 +273,11 @@ public static class RenderPasses
             ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
             DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()  // Back-to-front sorting
         },
         
-        // [7] Particles - Particle effects
-        new()
-        {
-            Name = nameof(Particles),
-            ColorFormat = Format.Undefined,  // Use swapchain format
-            DepthFormat = Format.D32Sfloat,
-            ColorLoadOp = AttachmentLoadOp.Load,  // Keep existing scene
-            ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Load,  // Soft particles need depth
-            DepthStoreOp = AttachmentStoreOp.DontCare,  // Don't write depth
-            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
-            ColorFinalLayout = ImageLayout.ColorAttachmentOptimal,
-            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
-            SampleCount = SampleCountFlags.Count1Bit,
-            BatchStrategy = new DefaultBatchStrategy()  // Back-to-front or additive
-        },
-        
-        // [8] Post - Post-processing effects
+        // [6] Post - Post-processing effects
         new()
         {
             Name = nameof(Post),
@@ -370,7 +295,7 @@ public static class RenderPasses
             BatchStrategy = new DefaultBatchStrategy()
         },
         
-        // [9] UI - Screen-space UI overlay
+        // [7] UI - Screen-space UI overlay and debug visualizations
         new()
         {
             Name = nameof(UI),
@@ -386,25 +311,6 @@ public static class RenderPasses
             DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
             SampleCount = SampleCountFlags.Count1Bit,
             BatchStrategy = new DefaultBatchStrategy()  // Painter's algorithm
-        },
-        
-        // [10] Debug - Debug visualization overlay
-        new()
-        {
-            Name = nameof(Debug),
-            ColorFormat = Format.Undefined,  // Use swapchain format
-            DepthFormat = Format.D32Sfloat,
-            ColorLoadOp = AttachmentLoadOp.Load,  // Overlay on everything
-            ColorStoreOp = AttachmentStoreOp.Store,
-            DepthLoadOp = AttachmentLoadOp.Load,
-            DepthStoreOp = AttachmentStoreOp.DontCare,
-            ColorInitialLayout = ImageLayout.ColorAttachmentOptimal,
-            ColorFinalLayout = ImageLayout.PresentSrcKhr,  // Final pass
-            DepthInitialLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            DepthFinalLayout = ImageLayout.DepthStencilAttachmentOptimal,
-            ClearDepthValue = 1.0f,
-            SampleCount = SampleCountFlags.Count1Bit,
-            BatchStrategy = new DefaultBatchStrategy()
         }
     ];
     
@@ -421,15 +327,12 @@ public static class RenderPasses
     {
         Shadow => nameof(Shadow),
         Depth => nameof(Depth),
-        Background => nameof(Background),
         Main => nameof(Main),
         Lighting => nameof(Lighting),
         Reflection => nameof(Reflection),
         Transparent => nameof(Transparent),
-        Particles => nameof(Particles),
         Post => nameof(Post),
         UI => nameof(UI),
-        Debug => nameof(Debug),
         _ => $"Unknown(0x{pass:X})"
     };
     
@@ -455,7 +358,7 @@ public static class RenderPasses
     }
     
     /// <summary>
-    /// Gets the bit index of a single render pass (0-10).
+    /// Gets the bit index of a single render pass (0-9).
     /// Returns -1 if mask doesn't represent exactly one pass.
     /// </summary>
     /// <param name="pass">Single render pass bit</param>
@@ -481,7 +384,7 @@ public static class RenderPasses
     /// Use this to iterate passes for rendering.
     /// </summary>
     /// <param name="mask">Bit mask with one or more passes</param>
-    /// <returns>Individual pass bits in execution order (bit 0 to bit 10)</returns>
+    /// <returns>Individual pass bits in execution order (bit 0 to bit 9)</returns>
     public static IEnumerable<uint> GetActivePasses(uint mask)
     {
         for (int i = 0; i <= MaxBitIndex; i++)
@@ -514,7 +417,7 @@ public static class RenderPasses
     /// Counts the number of active passes in a mask.
     /// </summary>
     /// <param name="mask">Bit mask to count</param>
-    /// <returns>Number of set bits (0-11)</returns>
+    /// <returns>Number of set bits (0-10)</returns>
     public static int CountPasses(uint mask)
     {
         // Manual popcount (count set bits)

@@ -20,6 +20,14 @@ public class TestResult
     /// </value>
     public string Description { get; set; } = string.Empty;
     /// <summary>
+    /// Gets or sets the expected result of the test.
+    /// </summary>
+    public string ExpectedResult { get; set; } = string.Empty;
+    /// <summary>
+    /// Gets or sets the actual result from the test.
+    /// </summary>
+    public string ActualResult { get; set; } = string.Empty;
+    /// <summary>
     /// Gets or sets a value indicating whether the test passed.
     /// </summary>
     /// <value>
@@ -27,17 +35,14 @@ public class TestResult
     /// </value>
     public bool Passed { get; set; } = false;
     /// <summary>
-    /// Gets or sets the error message if the test failed.
-    /// </summary>
-    /// <value>
-    /// The error message describing the reason for test failure, or <see langword="null"/> if the test passed.
-    /// </value>
-    public string? ErrorMessage { get; set; }
-    /// <summary>
     /// Gets or sets the exception thrown during test execution, if any.
     /// </summary>
     /// <value>
     /// The <see cref="Exception"/> instance if an error occurred; otherwise, <see langword="null"/>.
     /// </value>
     public Exception? Exception { get; set; }
+
+    public string Output => Exception == null
+        ? $"Expected {ExpectedResult}, Actual {ActualResult}"
+        : $"Exception: {Exception.Message}\n{Exception.StackTrace}";
 }

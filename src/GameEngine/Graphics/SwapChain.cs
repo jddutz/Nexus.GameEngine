@@ -71,12 +71,13 @@ public unsafe class SwapChain : ISwapChain
     private Format _depthFormat;
     private bool _hasDepthAttachment;
     
-    private const int PassCount = 11; // RenderPasses has 11 passes (0-10)
+    private const int PassCount = 8; // RenderPasses has 8 passes (0-7)
     private readonly RenderPass[] _renderPasses = new RenderPass[PassCount];
     private readonly Framebuffer[][] _framebuffers = new Framebuffer[PassCount][];
-    private readonly ClearValue[][] _clearValues = new ClearValue[PassCount][];
 
     private KhrSwapchain? _khrSwapchain;
+
+    public event EventHandler<PresentEventArgs>? BeforePresent;
 
     public SwapChain(
         IGraphicsContext context,
@@ -113,7 +114,6 @@ public unsafe class SwapChain : ISwapChain
     public ImageView[] SwapchainImageViews => _swapchainImageViews;
     public RenderPass[] Passes => _renderPasses;
     public Framebuffer[][] Framebuffers => _framebuffers;
-    public ClearValue[][] ClearValues => _clearValues;
     public Image DepthImage => _depthImage;
     public bool HasDepthAttachment => _hasDepthAttachment;
 
@@ -157,6 +157,14 @@ public unsafe class SwapChain : ISwapChain
         _logger.LogDebug("Creating swap chain: Format={Format}, PresentMode={PresentMode}, Extent={Width}x{Height}, ImageCount={ImageCount}",
             surfaceFormat.Format, presentMode, extent.Width, extent.Height, imageCount);
 
+        // Determine image usage flags
+        var imageUsage = ImageUsageFlags.ColorAttachmentBit;
+        if (_settings.EnableSwapchainTransfer)
+        {
+            imageUsage |= ImageUsageFlags.TransferSrcBit;
+            _logger.LogDebug("Swapchain transfer enabled - images can be read back to CPU");
+        }
+
         // Create swap chain
         var createInfo = new SwapchainCreateInfoKHR
         {
@@ -167,7 +175,7 @@ public unsafe class SwapChain : ISwapChain
             ImageColorSpace = surfaceFormat.ColorSpace,
             ImageExtent = extent,
             ImageArrayLayers = 1,
-            ImageUsage = ImageUsageFlags.ColorAttachmentBit,
+            ImageUsage = imageUsage,
             PreTransform = swapChainSupport.Capabilities.CurrentTransform,
             CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
             PresentMode = presentMode,
@@ -432,7 +440,6 @@ public unsafe class SwapChain : ISwapChain
             
             var renderPass = CreateRenderPass(config);
             _renderPasses[i] = renderPass;
-            _clearValues[i] = CreateClearValues(config);
             
             _logger.LogDebug("Created render pass '{Name}' (bit {Bit}): Format={Format}, Depth={Depth}", 
                 config.Name,
@@ -667,48 +674,6 @@ public unsafe class SwapChain : ISwapChain
     }
 
     /// <summary>
-    /// Creates clear values array for a render pass configuration.
-    /// Clear values are used during vkCmdBeginRenderPass when attachments have LoadOp.Clear.
-    /// </summary>
-    /// <param name="config">Configuration containing clear color and depth values.</param>
-    /// <returns>Array of ClearValue structures (one for color, one for depth if enabled).</returns>
-    /// <remarks>
-    /// Index 0: Color attachment clear value (RGBA from config.ClearColorValue)
-    /// Index 1: Depth/stencil clear value (depth from config.ClearDepthValue, stencil always 0)
-    /// </remarks>
-    private ClearValue[] CreateClearValues(RenderPassConfiguration config)
-    {
-        var clearValues = new List<ClearValue>();
-
-        // Color clear value
-        clearValues.Add(new ClearValue
-        {
-            Color = new ClearColorValue
-            {
-                Float32_0 = config.ClearColorValue.X,
-                Float32_1 = config.ClearColorValue.Y,
-                Float32_2 = config.ClearColorValue.Z,
-                Float32_3 = config.ClearColorValue.W
-            }
-        });
-
-        // Depth clear value (if depth enabled)
-        if (config.DepthFormat != Format.Undefined)
-        {
-            clearValues.Add(new ClearValue
-            {
-                DepthStencil = new ClearDepthStencilValue
-                {
-                    Depth = config.ClearDepthValue,
-                    Stencil = 0
-                }
-            });
-        }
-
-        return clearValues.ToArray();
-    }
-
-    /// <summary>
     /// Creates framebuffers for all render passes.
     /// Creates N framebuffers per render pass, where N = number of swapchain images.
     /// </summary>
@@ -820,6 +785,18 @@ public unsafe class SwapChain : ISwapChain
     /// </summary>
     public void Present(uint imageIndex, Semaphore renderFinishedSemaphore)
     {
+        // Raise BeforePresent event for testing infrastructure (pixel sampling)
+        // At this point, the image is in PresentSrcKhr layout and ready to sample
+        // Only create event args if there are subscribers (optimization)
+        if (BeforePresent != null)
+        {
+            BeforePresent.Invoke(this, new PresentEventArgs 
+            { 
+                ImageIndex = imageIndex,
+                Image = _swapchainImages[imageIndex]
+            });
+        }
+        
         var swapchain = _swapchain;
         var presentInfo = new PresentInfoKHR
         {
@@ -1009,8 +986,9 @@ public unsafe class SwapChain : ISwapChain
                 _vk.DestroyRenderPass(_context.Device, renderPass, null);
             }
         }
+        
+        Array.Clear(_framebuffers, 0, _framebuffers.Length);
         Array.Clear(_renderPasses, 0, _renderPasses.Length);
-        Array.Clear(_clearValues, 0, _clearValues.Length);
 
         _logger.LogDebug("Swap chain disposed");
     }

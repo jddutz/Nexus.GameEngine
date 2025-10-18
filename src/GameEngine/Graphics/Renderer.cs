@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
@@ -12,29 +10,19 @@ namespace Nexus.GameEngine.Graphics;
 /// Vulkan renderer implementation that orchestrates frame rendering.
 /// Manages image acquisition, command recording, and presentation.
 /// </summary>
-/// <remarks>
-/// <para><strong>Current Status:</strong> Partial implementation</para>
-/// <para>✅ Swap chain integration (acquire/present)</para>
-/// <para>✅ Synchronization (ISyncManager)</para>
-/// <para>✅ Command buffer recording (ICommandPoolManager)</para>
-/// <para>✅ Render pass execution (empty pass for layout transitions)</para>
-/// <para>❌ Pipeline binding (pending IPipelineManager)</para>
-/// </remarks>
 public unsafe class Renderer(
     IGraphicsContext context,
     ISwapChain swapChain,
     ISyncManager syncManager,
     ICommandPoolManager commandPoolManager,
-    ILoggerFactory loggerFactory,
     IContentManager contentManager)
     : IRenderer
 {    
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
 
-    public event EventHandler? BeforeRendering;
-    public event EventHandler? AfterRendering;
+    public event EventHandler<RenderEventArgs>? BeforeRendering;
+    public event EventHandler<RenderEventArgs>? AfterRendering;
 
     public void OnRender(double deltaTime)
     {
@@ -43,46 +31,18 @@ public unsafe class Renderer(
             throw new InvalidOperationException("ContentManager.Viewport.Content is null, nothing to render.");
         }
 
-        BeforeRendering?.Invoke(this, EventArgs.Empty);
-
         // Skip rendering if window is minimized (swapchain extent is 0x0)
         if (swapChain.SwapchainExtent.Width == 0 || swapChain.SwapchainExtent.Height == 0)
         {
             return;
         }
 
-        // Get synchronization primitives for current frame
-        var frameSync = syncManager.GetFrameSync(_currentFrameIndex);
+        // Prepare frame synchronization and acquire next image
+        var (frameSync, imageIndex, imageSync) = PrepareFrame();
 
-        // Wait for this frame to finish (ensures command buffers aren't in use)
-        syncManager.WaitForFence(frameSync.InFlightFence);
-        syncManager.ResetFence(frameSync.InFlightFence);
+        BeforeRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
 
-        // 1. Acquire next swapchain image (signals per-frame ImageAvailable semaphore)
-        var imageIndex = swapChain.AcquireNextImage(frameSync.ImageAvailable, out var acquireResult);
-
-        if (acquireResult == Result.ErrorOutOfDateKhr)
-        {
-            swapChain.Recreate();
-            return; // Skip this frame, will render with new swapchain next frame
-        }
-        else if (acquireResult != Result.Success && acquireResult != Result.SuboptimalKhr)
-        {
-            throw new Exception($"Failed to acquire swap chain image: {acquireResult}");
-        }
-
-        // Get per-image render semaphore
-        var imageSync = syncManager.GetImageSync(imageIndex);
-
-        // 2. Record command buffer with render pass (for layout transitions)
-        // Lazy-initialize command pool
-        _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
-
-        // Allocate command buffer for this frame
-        var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
-        var cmd = commandBuffers[0];
-
-        // Create render context with camera and viewport information
+        // Create render context for this frame
         var renderContext = new RenderContext
         {
             Camera = contentManager.Viewport.Camera,
@@ -92,10 +52,72 @@ public unsafe class Renderer(
             DeltaTime = deltaTime
         };
 
-        // OPTIMIZATION: Pre-allocate per-pass sorted sets (11 passes = indices 0-10)
+        // Collect and sort draw commands from component tree
+        var (activePasses, passCommandSets) = CollectDrawCommands(renderContext);
+
+        // Allocate and record command buffer
+        _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
+
+        // Allocate command buffer for this frame
+        var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
+
+        // Record rendering commands
+        RecordCommandBuffer(commandBuffers[0], imageIndex, renderContext, activePasses, passCommandSets);
+
+        // Submit commands to GPU
+        SubmitFrame(commandBuffers[0], frameSync, imageSync);
+
+        // Present rendered image to screen
+        PresentFrame(imageIndex, imageSync);
+
+        AfterRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
+
+        // Move to next frame
+        _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
+    }
+
+    /// <summary>
+    /// Prepares frame synchronization and acquires the next swapchain image.
+    /// </summary>
+    /// <returns>Frame sync, image index, and image sync objects.</returns>
+    private (FrameSync frameSync, uint imageIndex, ImageSync imageSync) PrepareFrame()
+    {
+        // Get synchronization primitives for current frame
+        var frameSync = syncManager.GetFrameSync(_currentFrameIndex);
+
+        // Wait for this frame to finish (ensures command buffers aren't in use)
+        syncManager.WaitForFence(frameSync.InFlightFence);
+        syncManager.ResetFence(frameSync.InFlightFence);
+
+        // Acquire next swapchain image (signals per-frame ImageAvailable semaphore)
+        var imageIndex = swapChain.AcquireNextImage(frameSync.ImageAvailable, out var acquireResult);
+
+        if (acquireResult == Result.ErrorOutOfDateKhr)
+        {
+            swapChain.Recreate();
+            throw new InvalidOperationException("Swapchain is out of date, recreating.");
+        }
+        else if (acquireResult != Result.Success && acquireResult != Result.SuboptimalKhr)
+        {
+            throw new Exception($"Failed to acquire swap chain image: {acquireResult}");
+        }
+
+        // Get per-image render semaphore
+        var imageSync = syncManager.GetImageSync(imageIndex);
+
+        return (frameSync, imageIndex, imageSync);
+    }
+
+    /// <summary>
+    /// Collects and sorts draw commands from the component tree into per-pass buckets.
+    /// </summary>
+    /// <returns>Active passes mask and per-pass sorted command sets.</returns>
+    private (uint activePasses, SortedSet<DrawCommand>[] passCommandSets) CollectDrawCommands(RenderContext renderContext)
+    {
+        // OPTIMIZATION: Pre-allocate per-pass sorted sets (8 passes = indices 0-7)
         // Commands are automatically sorted on insertion using batch strategy comparer
         // Note: RenderPasses.Configurations is static, so BatchStrategy instances are already cached
-        const int PassCount = 11;
+        const int PassCount = 8;
         var passCommandSets = new SortedSet<DrawCommand>[PassCount];
         for (int i = 0; i < PassCount; i++)
         {
@@ -103,9 +125,11 @@ public unsafe class Renderer(
         }
         
         // OPTIMIZATION: Collect and sort draw commands into per-pass buckets in single traversal
-        uint activePasses = 0;
+        // Main pass always executes to handle initial image layout transitions
+        // UI pass always executes to transition image to PresentSrcKhr for presentation
+        uint activePasses = RenderPasses.Main | RenderPasses.UI;
         var componentStack = new Stack<IRuntimeComponent>();
-        componentStack.Push(contentManager.Viewport.Content);
+        componentStack.Push(contentManager.Viewport.Content!);
         
         while (componentStack.Count > 0)
         {
@@ -137,7 +161,21 @@ public unsafe class Renderer(
             }
         }
 
-        // Record commands
+        return (activePasses, passCommandSets);
+    }
+
+    /// <summary>
+    /// Records all rendering commands into the command buffer.
+    /// </summary>
+    private void RecordCommandBuffer(
+        CommandBuffer cmd, 
+        uint imageIndex, 
+        RenderContext renderContext, 
+        uint activePasses, 
+        SortedSet<DrawCommand>[] passCommandSets)
+    {
+        const int PassCount = 8;
+
         unsafe
         {
             // Begin command buffer
@@ -153,148 +191,25 @@ public unsafe class Renderer(
                 throw new InvalidOperationException($"Failed to begin command buffer: {result}");
             }
 
-            // Transition swapchain image from UNDEFINED to COLOR_ATTACHMENT_OPTIMAL before rendering
-            var imageMemoryBarrier = new ImageMemoryBarrier
-            {
-                SType = StructureType.ImageMemoryBarrier,
-                OldLayout = ImageLayout.Undefined,
-                NewLayout = ImageLayout.ColorAttachmentOptimal,
-                SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                Image = swapChain.SwapchainImages[imageIndex],
-                SubresourceRange = new ImageSubresourceRange
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    BaseMipLevel = 0,
-                    LevelCount = 1,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1
-                },
-                SrcAccessMask = 0,
-                DstAccessMask = AccessFlags.ColorAttachmentWriteBit
-            };
+            // Pre-allocate clear values buffer outside loop to avoid stack overflow
+            ClearValue* passClearValues = stackalloc ClearValue[2]; // Max 2: color + depth
 
-            context.VulkanApi.CmdPipelineBarrier(
-                cmd,
-                PipelineStageFlags.TopOfPipeBit,
-                PipelineStageFlags.ColorAttachmentOutputBit,
-                0,
-                0, null,
-                0, null,
-                1, &imageMemoryBarrier);
-
-            // Transition depth image from UNDEFINED to DEPTH_STENCIL_ATTACHMENT_OPTIMAL if depth is used
-            if (swapChain.HasDepthAttachment)
-            {
-                var depthBarrier = new ImageMemoryBarrier
-                {
-                    SType = StructureType.ImageMemoryBarrier,
-                    OldLayout = ImageLayout.Undefined,
-                    NewLayout = ImageLayout.DepthStencilAttachmentOptimal,
-                    SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                    DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                    Image = swapChain.DepthImage,
-                    SubresourceRange = new ImageSubresourceRange
-                    {
-                        AspectMask = ImageAspectFlags.DepthBit,
-                        BaseMipLevel = 0,
-                        LevelCount = 1,
-                        BaseArrayLayer = 0,
-                        LayerCount = 1
-                    },
-                    SrcAccessMask = 0,
-                    DstAccessMask = AccessFlags.DepthStencilAttachmentReadBit | AccessFlags.DepthStencilAttachmentWriteBit
-                };
-
-                context.VulkanApi.CmdPipelineBarrier(
-                    cmd,
-                    PipelineStageFlags.TopOfPipeBit,
-                    PipelineStageFlags.EarlyFragmentTestsBit,
-                    0,
-                    0, null,
-                    0, null,
-                    1, &depthBarrier);
-            }
-
-            // Iterate all 11 passes in order (pass index corresponds to bit position)
+            // Iterate all 8 passes in order (pass index corresponds to bit position)
             for (uint passMask = 1u, p = 0; p < PassCount; passMask <<= 1, p++)
             {
                 // Skip inactive passes
                 if ((activePasses & passMask) == 0)
                     continue;
                 
-                var passDrawCommands = passCommandSets[p];
-                
-                _logger.LogDebug("Pass {PassIndex} (mask {PassMask}): {CommandCount} draw commands", p, passMask, passDrawCommands.Count);
-
-                // Skip empty passes (defensive check)
-                if (passDrawCommands.Count == 0)
+                // Skip empty passes except Main and UI
+                if (passMask != RenderPasses.Main
+                    && passMask != RenderPasses.UI
+                    && passCommandSets[p].Count == 0)
                     continue;
 
-                // Begin render pass
-                var renderPassInfo = new RenderPassBeginInfo
-                {
-                    SType = StructureType.RenderPassBeginInfo,
-                    RenderPass = swapChain.Passes[p],
-                    Framebuffer = swapChain.Framebuffers[p][imageIndex],
-                    RenderArea = new Rect2D
-                    {
-                        Offset = new Offset2D(0, 0),
-                        Extent = swapChain.SwapchainExtent
-                    },
-                    ClearValueCount = (uint)swapChain.ClearValues[p].Length,
-                    PClearValues = (ClearValue*)System.Runtime.CompilerServices.Unsafe.AsPointer(
-                        ref System.Runtime.InteropServices.MemoryMarshal.GetArrayDataReference(swapChain.ClearValues[p]))
-                };
-
-                context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
-
-                // Set dynamic viewport and scissor state from the current viewport
-                var viewport = renderContext.Viewport.VulkanViewport;
-                context.VulkanApi.CmdSetViewport(cmd, 0, 1, &viewport);
-
-                var scissor = renderContext.Viewport.VulkanScissor;
-                context.VulkanApi.CmdSetScissor(cmd, 0, 1, &scissor);
-
-                // Draw sorted commands for this pass
-                foreach (var drawCommand in passDrawCommands)
-                {
-                    Draw(cmd, drawCommand);
-                }
-
-                // End render pass
-                context.VulkanApi.CmdEndRenderPass(cmd);
+                // Record this render pass
+                RecordRenderPass(cmd, imageIndex, p, passClearValues, renderContext, passCommandSets[p]);
             }
-
-            // Transition swapchain image from COLOR_ATTACHMENT_OPTIMAL to PRESENT_SRC_KHR after rendering
-            var presentBarrier = new ImageMemoryBarrier
-            {
-                SType = StructureType.ImageMemoryBarrier,
-                OldLayout = ImageLayout.ColorAttachmentOptimal,
-                NewLayout = ImageLayout.PresentSrcKhr,
-                SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-                Image = swapChain.SwapchainImages[imageIndex],
-                SubresourceRange = new ImageSubresourceRange
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    BaseMipLevel = 0,
-                    LevelCount = 1,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1
-                },
-                SrcAccessMask = AccessFlags.ColorAttachmentWriteBit,
-                DstAccessMask = 0
-            };
-
-            context.VulkanApi.CmdPipelineBarrier(
-                cmd,
-                PipelineStageFlags.ColorAttachmentOutputBit,
-                PipelineStageFlags.BottomOfPipeBit,
-                0,
-                0, null,
-                0, null,
-                1, &presentBarrier);
 
             // End command buffer
             result = context.VulkanApi.EndCommandBuffer(cmd);
@@ -302,33 +217,125 @@ public unsafe class Renderer(
             {
                 throw new InvalidOperationException($"Failed to end command buffer: {result}");
             }
+        }
+    }
 
-            // Submit command buffer
-            var waitStages = PipelineStageFlags.ColorAttachmentOutputBit;
-            var imageAvailableSemaphore = frameSync.ImageAvailable;  // Per-frame acquire semaphore
-            var renderFinishedSemaphore = imageSync.RenderFinished;   // Per-image render semaphore
-            var commandBuffer = cmd;
-
-            var submitInfo = new SubmitInfo
+    /// <summary>
+    /// Records a single render pass with its draw commands.
+    /// </summary>
+    private unsafe void RecordRenderPass(
+        CommandBuffer cmd,
+        uint imageIndex,
+        uint passIndex,
+        ClearValue* passClearValues,
+        RenderContext renderContext,
+        SortedSet<DrawCommand> drawCommands)
+    {
+        // Build clear values dynamically based on pass configuration
+        var config = RenderPasses.Configurations[passIndex];
+        var clearValueCount = 0;
+        
+        // Add color clear value if this pass clears color
+        if (config.ColorLoadOp == AttachmentLoadOp.Clear)
+        {
+            // Use cached clear value from Viewport (converted in OnUpdate)
+            passClearValues[clearValueCount++] = renderContext.Viewport.ClearColorValue;
+        }
+        else if (config.ColorFormat != Format.Undefined)
+        {
+            // Color attachment exists but not clearing - still need placeholder
+            passClearValues[clearValueCount++] = default;
+        }
+        
+        // Add depth clear value if this pass has depth and clears it
+        if (config.DepthFormat != Format.Undefined)
+        {
+            if (config.DepthLoadOp == AttachmentLoadOp.Clear)
             {
-                SType = StructureType.SubmitInfo,
-                WaitSemaphoreCount = 1,
-                PWaitSemaphores = &imageAvailableSemaphore,
-                PWaitDstStageMask = &waitStages,
-                CommandBufferCount = 1,
-                PCommandBuffers = &commandBuffer,
-                SignalSemaphoreCount = 1,
-                PSignalSemaphores = &renderFinishedSemaphore
-            };
-
-            result = context.VulkanApi.QueueSubmit(context.GraphicsQueue, 1, &submitInfo, frameSync.InFlightFence);
-            if (result != Result.Success)
+                passClearValues[clearValueCount++] = new ClearValue
+                {
+                    DepthStencil = new ClearDepthStencilValue
+                    {
+                        Depth = 1.0f,
+                        Stencil = 0
+                    }
+                };
+            }
+            else
             {
-                throw new InvalidOperationException($"Failed to submit queue: {result}");
+                // Depth attachment exists but not clearing - still need placeholder
+                passClearValues[clearValueCount++] = default;
             }
         }
 
-        // 3. Present the rendered image (waits for RenderFinished semaphore)
+        // Begin render pass
+        var renderPassInfo = new RenderPassBeginInfo
+        {
+            SType = StructureType.RenderPassBeginInfo,
+            RenderPass = swapChain.Passes[passIndex],
+            Framebuffer = swapChain.Framebuffers[passIndex][imageIndex],
+            RenderArea = new Rect2D
+            {
+                Offset = new Offset2D(0, 0),
+                Extent = swapChain.SwapchainExtent
+            },
+            ClearValueCount = (uint)clearValueCount,
+            PClearValues = passClearValues
+        };
+
+        context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
+
+        // Set dynamic viewport and scissor state from the current viewport
+        var viewport = renderContext.Viewport.VulkanViewport;
+        context.VulkanApi.CmdSetViewport(cmd, 0, 1, &viewport);
+
+        var scissor = renderContext.Viewport.VulkanScissor;
+        context.VulkanApi.CmdSetScissor(cmd, 0, 1, &scissor);
+
+        // Draw sorted commands for this pass
+        foreach (var drawCommand in drawCommands)
+        {
+            Draw(cmd, drawCommand);
+        }
+
+        // End render pass
+        context.VulkanApi.CmdEndRenderPass(cmd);
+    }
+
+    /// <summary>
+    /// Submits the recorded command buffer to the GPU queue.
+    /// </summary>
+    private unsafe void SubmitFrame(CommandBuffer cmd, FrameSync frameSync, ImageSync imageSync)
+    {
+        var waitStages = PipelineStageFlags.ColorAttachmentOutputBit;
+        var imageAvailableSemaphore = frameSync.ImageAvailable;  // Per-frame acquire semaphore
+        var renderFinishedSemaphore = imageSync.RenderFinished;   // Per-image render semaphore
+        var commandBuffer = cmd;
+
+        var submitInfo = new SubmitInfo
+        {
+            SType = StructureType.SubmitInfo,
+            WaitSemaphoreCount = 1,
+            PWaitSemaphores = &imageAvailableSemaphore,
+            PWaitDstStageMask = &waitStages,
+            CommandBufferCount = 1,
+            PCommandBuffers = &commandBuffer,
+            SignalSemaphoreCount = 1,
+            PSignalSemaphores = &renderFinishedSemaphore
+        };
+
+        var result = context.VulkanApi.QueueSubmit(context.GraphicsQueue, 1, &submitInfo, frameSync.InFlightFence);
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to submit queue: {result}");
+        }
+    }
+
+    /// <summary>
+    /// Presents the rendered image to the screen.
+    /// </summary>
+    private void PresentFrame(uint imageIndex, ImageSync imageSync)
+    {
         try
         {
             swapChain.Present(imageIndex, imageSync.RenderFinished);
@@ -337,18 +344,10 @@ public unsafe class Renderer(
         {
             swapChain.Recreate();
         }
-
-        AfterRendering?.Invoke(this, EventArgs.Empty);
-
-        // Move to next frame
-        _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
     }
 
     private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
     {
-        _logger.LogDebug("Draw() called - Pipeline: {Pipeline}, VertexBuffer: {VertexBuffer}, VertexCount: {VertexCount}, InstanceCount: {InstanceCount}", 
-            drawCommand.Pipeline.Handle, drawCommand.VertexBuffer.Handle, drawCommand.VertexCount, drawCommand.InstanceCount);
-        
         context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline);
         
         var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
@@ -356,7 +355,5 @@ public unsafe class Renderer(
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
-        
-        _logger.LogDebug("Draw() completed - CmdDraw executed");
     }
 }
