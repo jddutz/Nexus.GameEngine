@@ -5,7 +5,7 @@ namespace TestApp.TestComponents;
 /// <summary>
 /// Tests that all RuntimeComponent lifecycle methods are called in the correct order.
 /// </summary>
-public class LifecycleTestComponent : RuntimeComponent, ITestComponent
+public class LifecycleTest : RuntimeComponent, ITestComponent
 {
     // Track which lifecycle methods were called
     private int _onConfigureCalled = 0;

@@ -2,19 +2,55 @@
 
 ## Current State
 
-### Completed: Context (Foundation Layer)
+### Completed: Core Infrastructure
 
-**Responsibility:** Core Vulkan infrastructure and device lifecycle management
+The following systems are implemented and tested:
 
-**Provides:**
+1. **Context (Foundation Layer)** ✅
+   - Vulkan API instance
+   - Window surface
+   - Physical device (GPU) selection
+   - Logical device
+   - Graphics and present queue handles
 
-- Vulkan API instance
-- Window surface
-- Physical device (GPU) selection
-- Logical device
-- Graphics and present queue handles
+2. **SwapChain** ✅
+   - Image presentation buffers
+   - Image views
+   - Framebuffers for each render pass
+   - Window resize handling
 
-**Status:** ✅ Complete and tested
+3. **Synchronization (ISyncManager)** ✅
+   - Per-frame fences (in-flight tracking)
+   - Per-image semaphores (image available, render finished)
+   - Frame pacing and coordination
+
+4. **Command Buffers (ICommandPoolManager)** ✅
+   - Command pool allocation per queue family
+   - Command buffer allocation and management
+   - Thread-safe pool access
+
+5. **Descriptor Sets (IDescriptorManager)** ✅
+   - Descriptor pool management with automatic expansion
+   - Descriptor set layout creation and caching
+   - Descriptor set allocation and updates
+   - Support for uniform buffers (ready for textures/samplers)
+
+6. **Pipeline Management (IPipelineManager)** ✅
+   - Graphics pipeline creation and caching
+   - Fluent builder API with extension methods
+   - Hot-reload support (shader file watching)
+   - Descriptor set layout integration
+
+7. **Buffer Management (IBufferManager)** ✅
+   - Vertex buffer creation and management
+   - Uniform buffer creation with HOST_VISIBLE memory
+   - Buffer update utilities
+
+8. **Rendering (IRenderer)** ✅
+   - Frame orchestration
+   - Draw command batching via IBatchStrategy
+   - Automatic descriptor set binding
+   - Push constant support
 
 **Missing:** ❌ Validation layers not yet enabled
 

@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Vulkan;
@@ -9,13 +10,18 @@ namespace Nexus.GameEngine.Graphics.Pipelines;
 /// Provides a readable API for configuring pipeline state.
 /// Use extension methods to configure the builder.
 /// </summary>
-public class PipelineBuilder(IPipelineManager manager, ISwapChain swapChain, IResourceManager resources) : IPipelineBuilder
+public class PipelineBuilder(
+    IPipelineManager manager, 
+    ISwapChain swapChain, 
+    IResourceManager resources,
+    IDescriptorManager descriptorManager) : IPipelineBuilder
 {    
     // Internal state accessible by extension methods
     internal ShaderResource? Shader { get; set; }
     internal IShaderDefinition? ShaderDefinition { get; set; }
     internal IResourceManager Resources { get; } = resources;
     internal ISwapChain SwapChain { get; } = swapChain;
+    internal IDescriptorManager DescriptorManager { get; } = descriptorManager;
     internal RenderPass? RenderPass { get; set; }
     internal PrimitiveTopology Topology { get; set; } = PrimitiveTopology.TriangleList;
     internal CullModeFlags CullMode { get; set; } = CullModeFlags.BackBit;
@@ -40,6 +46,15 @@ public class PipelineBuilder(IPipelineManager manager, ISwapChain swapChain, IRe
         if (RenderPass == null)
             throw new InvalidOperationException("RenderPass is required. Call WithRenderPass() before Build().");
         
+        // Create descriptor set layouts if shader uses descriptor sets
+        DescriptorSetLayout[]? descriptorSetLayouts = null;
+        if (Shader.Definition.DescriptorSetLayoutBindings != null && 
+            Shader.Definition.DescriptorSetLayoutBindings.Length > 0)
+        {
+            var layout = DescriptorManager.CreateDescriptorSetLayout(Shader.Definition.DescriptorSetLayoutBindings);
+            descriptorSetLayouts = [layout];
+        }
+        
         // Create descriptor from builder configuration
         var descriptor = new PipelineDescriptor
         {
@@ -48,6 +63,7 @@ public class PipelineBuilder(IPipelineManager manager, ISwapChain swapChain, IRe
             FragmentShaderPath = Shader.Definition.FragmentShaderPath,
             VertexInputDescription = Shader.Definition.InputDescription,
             PushConstantRanges = Shader.Definition.PushConstantRanges,
+            DescriptorSetLayouts = descriptorSetLayouts,
             RenderPass = RenderPass.Value,
             Topology = Topology,
             CullMode = CullMode,

@@ -9,6 +9,7 @@ using Nexus.GameEngine.Events;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Commands;
+using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Resources;
@@ -77,6 +78,7 @@ class Program
                 .AddSingleton<ISwapChain, SwapChain>()
                 .AddSingleton<ISyncManager, SyncManager>()
                 .AddSingleton<ICommandPoolManager, CommandPoolManager>()
+                .AddSingleton<IDescriptorManager, DescriptorManager>()
                 .AddSingleton<IPipelineManager, PipelineManager>()
                 .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
                 .AddSingleton<IRenderer, Renderer>()

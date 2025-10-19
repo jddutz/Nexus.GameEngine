@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Core.Native;
@@ -20,6 +21,7 @@ public unsafe class PipelineManager : IPipelineManager
     private readonly IGraphicsContext _context;
     private readonly IWindowService _windowService;
     private readonly IResourceManager _resources;
+    private readonly IDescriptorManager _descriptorManager;
     private readonly Vk _vk;
 
     // Thread-safe pipeline cache
@@ -48,6 +50,7 @@ public unsafe class PipelineManager : IPipelineManager
         IWindowService windowService,
         ISwapChain swapChain,
         IResourceManager resources,
+        IDescriptorManager descriptorManager,
         ILoggerFactory loggerFactory)
     {
         _logger = loggerFactory.CreateLogger(nameof(PipelineManager));
@@ -55,6 +58,7 @@ public unsafe class PipelineManager : IPipelineManager
         _windowService = windowService;
         _swapChain = swapChain;
         _resources = resources;
+        _descriptorManager = descriptorManager;
         _vk = _context.VulkanApi;
 
         // Subscribe to window resize events
@@ -85,7 +89,7 @@ public unsafe class PipelineManager : IPipelineManager
     /// <inheritdoc/>
     public IPipelineBuilder GetBuilder()
     {
-        return new PipelineBuilder(this, _swapChain, _resources);
+        return new PipelineBuilder(this, _swapChain, _resources, _descriptorManager);
     }
 
     /// <inheritdoc/>
@@ -473,13 +477,25 @@ public unsafe class PipelineManager : IPipelineManager
                 PDynamicStates = dynamicStates
             };
 
-            // Pipeline layout with push constants support
+            // Pipeline layout with push constants and descriptor sets support
             var pipelineLayoutInfo = new PipelineLayoutCreateInfo
             {
                 SType = StructureType.PipelineLayoutCreateInfo,
                 SetLayoutCount = 0,
                 PushConstantRangeCount = 0
             };
+
+            // Add descriptor set layouts if specified
+            if (descriptor.DescriptorSetLayouts != null && descriptor.DescriptorSetLayouts.Length > 0)
+            {
+                var setLayouts = stackalloc DescriptorSetLayout[descriptor.DescriptorSetLayouts.Length];
+                for (int i = 0; i < descriptor.DescriptorSetLayouts.Length; i++)
+                {
+                    setLayouts[i] = descriptor.DescriptorSetLayouts[i];
+                }
+                pipelineLayoutInfo.SetLayoutCount = (uint)descriptor.DescriptorSetLayouts.Length;
+                pipelineLayoutInfo.PSetLayouts = setLayouts;
+            }
 
             // Add push constant ranges if specified
             if (descriptor.PushConstantRanges != null && descriptor.PushConstantRanges.Length > 0)

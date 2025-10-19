@@ -116,6 +116,17 @@ public class TestRunner(
                 OutputTestResults();
                 _resultsOutputted = true;
             }
+
+            // Exit the application by closing the window
+            try
+            {
+                windowService.GetWindow().Close();
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Failed to close window, using Environment.Exit as fallback");
+                Environment.Exit(Environment.ExitCode);
+            }
         }
     }
 
@@ -124,36 +135,40 @@ public class TestRunner(
     /// </summary>
     private void OutputTestResults()
     {
+        var componentCount = 0;
         var passed = new List<TestResult>();
         var failed = new List<TestResult>();
 
-        var components = GetChildren<ITestComponent>().ToList();
-        var results = components.SelectMany(t => t.GetTestResults());
-        foreach (var result in results)
+        foreach (var testComponent in GetChildren<ITestComponent>())
         {
-            if (!string.IsNullOrEmpty(result.Description))
-                Logger?.LogTrace("{Description}", result.Description);
-
-            if (result.Passed)
+            componentCount++;
+            
+            foreach (var result in testComponent.GetTestResults())
             {
-                passed.Add(result);
-                Logger?.LogInformation("[Pass] {TestName}: {Output}", result.TestName, result.Output);
-            }
-            else
-            {
-                failed.Add(result);
-                Logger?.LogWarning("[Fail] {TestName}: {Output}", result.TestName, result.Output);
+                if (!string.IsNullOrEmpty(result.Description))
+                    Logger?.LogTrace("{Description}", result.Description);
 
-                if (result.Exception is Exception ex)
+                if (result.Passed)
                 {
-                    Logger?.LogTrace("{Exception}\n{StackTrace}", ex.Message, ex.StackTrace);
+                    passed.Add(result);
+                    Logger?.LogInformation("PASS|{TestComponentName} {TestName}: {Output}", testComponent.Name, result.TestName, result.Output);
+                }
+                else
+                {
+                    failed.Add(result);
+                    Logger?.LogWarning("FAIL|{TestComponentName} {TestName}: {Output}", testComponent.Name, result.TestName, result.Output);
+
+                    if (result.Exception is Exception ex)
+                    {
+                        Logger?.LogTrace("{Exception}\n{StackTrace}", ex.Message, ex.StackTrace);
+                    }
                 }
             }
         }
 
         Logger?.LogInformation(
             RESULTS_SUMMARY,
-            components.Count,
+            componentCount,
             passed.Count + failed.Count,
             passed.Count,
             failed.Count,
@@ -161,28 +176,8 @@ public class TestRunner(
             passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]"
             );
 
-        if (failed.Count > 0)
-        {
-            Logger?.LogInformation("Failed Tests:");
-            foreach (var test in failed)
-            {
-                Logger?.LogInformation("{TestName}: {Output}", test.TestName, test.Output);
-            }
-        }
-
         // Set exit code
         Environment.ExitCode = failed.Count == 0 ? 0 : 1;
-
-        // Exit the application by closing the window
-        try
-        {
-            windowService.GetWindow().Close();
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogError(ex, "Failed to close window, using Environment.Exit as fallback");
-            Environment.Exit(Environment.ExitCode);
-        }
     }
 
     /// <summary>

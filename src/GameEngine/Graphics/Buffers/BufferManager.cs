@@ -79,6 +79,74 @@ public unsafe class BufferManager : IBufferManager
     }
     
     /// <inheritdoc />
+    public (Buffer, DeviceMemory) CreateUniformBuffer(ulong size)
+    {
+        _logger.LogDebug("Creating uniform buffer: size={Size} bytes", size);
+        
+        // Create buffer with uniform buffer usage
+        var bufferInfo = new BufferCreateInfo
+        {
+            SType = StructureType.BufferCreateInfo,
+            Size = size,
+            Usage = BufferUsageFlags.UniformBufferBit,
+            SharingMode = SharingMode.Exclusive
+        };
+        
+        Buffer buffer;
+        if (_context.VulkanApi.CreateBuffer(_context.Device, &bufferInfo, null, &buffer) != Result.Success)
+        {
+            throw new Exception("Failed to create uniform buffer");
+        }
+        
+        // Allocate HOST_VISIBLE and HOST_COHERENT memory for easy CPU updates
+        _context.VulkanApi.GetBufferMemoryRequirements(_context.Device, buffer, out var memRequirements);
+        
+        var allocInfo = new MemoryAllocateInfo
+        {
+            SType = StructureType.MemoryAllocateInfo,
+            AllocationSize = memRequirements.Size,
+            MemoryTypeIndex = FindMemoryType(
+                memRequirements.MemoryTypeBits,
+                MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit)
+        };
+        
+        DeviceMemory memory;
+        if (_context.VulkanApi.AllocateMemory(_context.Device, &allocInfo, null, &memory) != Result.Success)
+        {
+            _context.VulkanApi.DestroyBuffer(_context.Device, buffer, null);
+            throw new Exception("Failed to allocate uniform buffer memory");
+        }
+        
+        // Bind buffer to memory
+        _context.VulkanApi.BindBufferMemory(_context.Device, buffer, memory, 0);
+        
+        _logger.LogDebug("Uniform buffer created successfully: handle={Buffer}", buffer.Handle);
+        
+        return (buffer, memory);
+    }
+    
+    /// <inheritdoc />
+    public void UpdateUniformBuffer(DeviceMemory memory, ReadOnlySpan<byte> data)
+    {
+        var size = (ulong)data.Length;
+        
+        _logger.LogDebug("Updating uniform buffer: size={Size} bytes", size);
+        
+        // Map memory
+        void* mappedData;
+        _context.VulkanApi.MapMemory(_context.Device, memory, 0, size, 0, &mappedData);
+        
+        // Copy data
+        fixed (byte* dataPtr = data)
+        {
+            System.Buffer.MemoryCopy(dataPtr, mappedData, (long)size, (long)size);
+        }
+        
+        // Unmap (HOST_COHERENT flag means no need for explicit flush)
+        _context.VulkanApi.UnmapMemory(_context.Device, memory);
+    }
+    
+    /// <inheritdoc />
     public void DestroyBuffer(Buffer buffer, DeviceMemory memory)
     {
         _logger.LogDebug("Destroying buffer: handle={Buffer}", buffer.Handle);

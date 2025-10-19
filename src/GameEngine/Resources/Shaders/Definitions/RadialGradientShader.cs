@@ -39,6 +39,19 @@ public class RadialGradientShader : IShaderDefinition
     ];
     
     /// <inheritdoc/>
+    public DescriptorSetLayoutBinding[]? DescriptorSetLayoutBindings =>
+    [
+        new DescriptorSetLayoutBinding
+        {
+            Binding = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            StageFlags = ShaderStageFlags.FragmentBit,
+            PImmutableSamplers = null
+        }
+    ];
+    
+    /// <inheritdoc/>
     public void ValidateGeometry(GeometryResource geometry)
     {
         var expectedStride = InputDescription.Bindings[0].Stride;
@@ -49,7 +62,4 @@ public class RadialGradientShader : IShaderDefinition
                 $"doesn't match shader '{Name}' expected stride ({expectedStride} bytes)");
         }
     }
-    
-    // TODO: Add descriptor set layout for UBO binding
-    // This will require extending IShaderDefinition interface to include DescriptorSetLayouts
 }

@@ -15,7 +15,7 @@ public static class TestingServiceExtensions
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddPixelSampling(this IServiceCollection services)
     {
-        services.AddSingleton<IPixelSampler, VulkanPixelSampler>();
+        services.AddTransient<IPixelSampler, VulkanPixelSampler>();
         return services;
     }
 }

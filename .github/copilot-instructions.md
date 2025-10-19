@@ -67,6 +67,7 @@ The build-testapp task has a dependency on compile-shaders task.
 - **IPipelineManager**: Graphics pipeline creation and caching with fluent builder API
 - **ICommandPoolManager**: Command buffer allocation and management
 - **ISyncManager**: Synchronization primitives (semaphores, fences)
+- **IDescriptorManager**: Descriptor pool, layout, and set management for binding resources (UBOs, textures) to shaders
 - **IRenderer**: High-level rendering orchestration
 - **IViewport**: Screen region and content management
 
@@ -75,7 +76,7 @@ The build-testapp task has a dependency on compile-shaders task.
 - **IResourceManager**: Unified resource management interface
 - **IGeometryResourceManager**: Vertex/index buffer management
 - **IShaderResourceManager**: SPIR-V shader module management
-- **IBufferManager**: Vulkan buffer allocation and lifecycle
+- **IBufferManager**: Vulkan buffer allocation and lifecycle (vertex buffers, uniform buffers)
 
 See `src/GameEngine/Graphics/` and `src/GameEngine/Resources/` for implementations.
 
@@ -98,6 +99,7 @@ var services = new ServiceCollection()
     .AddSingleton<ISwapChain, SwapChain>()
     .AddSingleton<ISyncManager, SyncManager>()
     .AddSingleton<ICommandPoolManager, CommandPoolManager>()
+    .AddSingleton<IDescriptorManager, DescriptorManager>()
     .AddSingleton<IPipelineManager, PipelineManager>()
     .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
     .AddSingleton<IRenderer, Renderer>()

@@ -129,9 +129,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Always call OnConfigure, even with null template (allows components to initialize without template)
         OnConfigure(componentTemplate);
 
-        // Apply any pending property changes after configuration (instant update with deltaTime = 0)
-        UpdateAnimations(0);
-
         if (componentTemplate is Template template)
         {
             Name = componentTemplate.Name;
@@ -362,7 +359,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         // Apply deferred updates  root to leaf
         // so deferred updates are done before the first OnUpdate()
-        UpdateAnimations(deltaTime);
+        if (IsEnabled) UpdateAnimations(deltaTime);
 
         // Create a snapshot of children to allow collection modifications during update
         foreach (var child in Children.ToArray())

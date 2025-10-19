@@ -30,6 +30,9 @@ public class ColoredGeometryShader : IShaderDefinition
     public PushConstantRange[]? PushConstantRanges => null;  // No push constants needed
     
     /// <inheritdoc/>
+    public DescriptorSetLayoutBinding[]? DescriptorSetLayoutBindings => null;  // No descriptor sets needed
+    
+    /// <inheritdoc/>
     public void ValidateGeometry(GeometryResource geometry)
     {
         var expectedStride = InputDescription.Bindings[0].Stride;

@@ -38,6 +38,9 @@ public class UniformColorQuadShader : IShaderDefinition
     ];
     
     /// <inheritdoc/>
+    public DescriptorSetLayoutBinding[]? DescriptorSetLayoutBindings => null;  // No descriptor sets needed
+    
+    /// <inheritdoc/>
     public void ValidateGeometry(GeometryResource geometry)
     {
         var expectedStride = InputDescription.Bindings[0].Stride;

@@ -6,7 +6,7 @@ namespace TestApp.TestComponents;
 /// <summary>
 /// Service responsible for discovering integration tests in assemblies.
 /// </summary>
-public class RenderableTestComponent()
+public class RenderableTest()
     : RenderableBase(), IRenderable, ITestComponent
 {
     public uint RenderPriority { get; set; } = 0;

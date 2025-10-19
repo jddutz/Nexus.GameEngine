@@ -33,6 +33,17 @@ public interface IShaderDefinition : IResourceDefinition
     PushConstantRange[]? PushConstantRanges { get; }
     
     /// <summary>
+    /// Descriptor set layout bindings used by this shader.
+    /// Null or empty if shader doesn't use descriptor sets (UBOs, textures, etc.).
+    /// </summary>
+    /// <remarks>
+    /// For shaders that use uniform buffers or other resources, this defines
+    /// the descriptor set layout bindings. The descriptor manager will create
+    /// descriptor set layouts from these bindings.
+    /// </remarks>
+    DescriptorSetLayoutBinding[]? DescriptorSetLayoutBindings { get; }
+    
+    /// <summary>
     /// Validates that geometry is compatible with this shader's input requirements.
     /// </summary>
     /// <param name="geometry">Geometry resource to validate</param>

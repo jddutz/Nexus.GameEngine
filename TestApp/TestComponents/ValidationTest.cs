@@ -10,7 +10,7 @@ namespace TestApp.TestComponents;
 /// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetDrawCommands (Act), GetTestResults (Assert).
 /// </summary>
 [TestRunnerIgnore(reason: "Validation tests all passed but continue output false errors via console log")]
-public class ValidationTestComponent(IGraphicsContext context)
+public class ValidationTest(IGraphicsContext context)
     : RenderableBase(), IRenderable, ITestComponent
 {
     private record TestData

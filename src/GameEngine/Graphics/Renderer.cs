@@ -352,6 +352,21 @@ public unsafe class Renderer(
     {
         context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline.Pipeline);
         
+        // Bind descriptor sets if provided
+        if (drawCommand.DescriptorSet.Handle != 0)
+        {
+            var descriptorSets = stackalloc DescriptorSet[] { drawCommand.DescriptorSet };
+            context.VulkanApi.CmdBindDescriptorSets(
+                commandBuffer,
+                PipelineBindPoint.Graphics,
+                drawCommand.Pipeline.Layout,
+                0, // first set
+                1, // descriptor set count
+                descriptorSets,
+                0, // dynamic offset count
+                null); // dynamic offsets
+        }
+        
         // Push constants if provided
         if (drawCommand.PushConstants != null && drawCommand.Pipeline.Layout.Handle != 0)
         {
@@ -390,6 +405,32 @@ public unsafe class Renderer(
                     commandBuffer,
                     pipelineLayout,
                     ShaderStageFlags.VertexBit,
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
+            case LinearGradientPushConstants linearGradient:
+            {
+                var size = (uint)Marshal.SizeOf<LinearGradientPushConstants>();
+                var dataPtr = &linearGradient;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.FragmentBit,  // Linear gradient uses fragment shader
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
+            case RadialGradientPushConstants radialGradient:
+            {
+                var size = (uint)Marshal.SizeOf<RadialGradientPushConstants>();
+                var dataPtr = &radialGradient;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.FragmentBit,  // Radial gradient uses fragment shader
                     0,  // offset
                     size,
                     dataPtr);
