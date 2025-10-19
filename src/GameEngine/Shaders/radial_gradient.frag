@@ -55,8 +55,15 @@ vec4 sampleGradient(float t) {
 }
 
 void main() {
-    // Calculate distance from center
-    float dist = distance(fragPos, pc.center);
+    // Convert fragPos from NDC [-1, 1] to normalized coordinates [0, 1]
+    // Note: Flip Y for Vulkan's coordinate system (Y increases downward)
+    vec2 normalizedPos = vec2(
+        (fragPos.x + 1.0) * 0.5,
+        (-fragPos.y + 1.0) * 0.5
+    );
+    
+    // Calculate distance from center (both in normalized [0,1] space)
+    float dist = distance(normalizedPos, pc.center);
     
     // Normalize distance by radius to get t value [0, 1]
     float t = dist / pc.radius;

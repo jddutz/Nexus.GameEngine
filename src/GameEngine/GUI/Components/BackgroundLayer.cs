@@ -280,13 +280,25 @@ public partial class BackgroundLayer(
 
         _drawCallCount++;
         
-        // Log current colors on first call and every 100 frames
+        // Log current state on first call and every 100 frames
         if (_drawCallCount == 1 || _drawCallCount % 100 == 0)
         {
             if (BackgroundLayerMode == BackgroundLayerModeEnum.UniformColor)
             {
                 Logger?.LogInformation("DrawCall {Count}: Mode={Mode}, UniformColor={Color}",
                     _drawCallCount, BackgroundLayerMode, _uniformColor);
+            }
+            else if (BackgroundLayerMode == BackgroundLayerModeEnum.LinearGradient)
+            {
+                Logger?.LogInformation("DrawCall {Count}: Mode={Mode}, Angle={Angle}, DescriptorSet={Set}",
+                    _drawCallCount, BackgroundLayerMode, _linearGradientAngle,
+                    _gradientDescriptorSet?.Handle ?? 0);
+            }
+            else if (BackgroundLayerMode == BackgroundLayerModeEnum.RadialGradient)
+            {
+                Logger?.LogInformation("DrawCall {Count}: Mode={Mode}, Center={Center}, Radius={Radius}, DescriptorSet={Set}",
+                    _drawCallCount, BackgroundLayerMode, _radialGradientCenter, _radialGradientRadius,
+                    _gradientDescriptorSet?.Handle ?? 0);
             }
             else
             {
@@ -329,14 +341,36 @@ public partial class BackgroundLayer(
     {
         Logger?.LogDebug("Creating gradient UBO with {StopCount} stops", gradient.Stops.Length);
         
+        // Log gradient stops for debugging
+        for (int i = 0; i < gradient.Stops.Length; i++)
+        {
+            var stop = gradient.Stops[i];
+            Logger?.LogInformation("  Stop[{Index}]: Position={Pos}, Color=RGBA({R}, {G}, {B}, {A})",
+                i, stop.Position, stop.Color.X, stop.Color.Y, stop.Color.Z, stop.Color.W);
+        }
+        
         // Convert gradient definition to UBO structure
         var ubo = GradientUBO.FromGradientDefinition(gradient);
+        
+        // Log UBO contents for verification
+        unsafe
+        {
+            Logger?.LogInformation("UBO StopCount: {Count}", ubo.StopCount);
+            for (int i = 0; i < ubo.StopCount; i++)
+            {
+                Logger?.LogInformation("  UBO Color[{Index}]: ({R}, {G}, {B}, {A})",
+                    i, ubo.Colors[i * 4 + 0], ubo.Colors[i * 4 + 1], ubo.Colors[i * 4 + 2], ubo.Colors[i * 4 + 3]);
+                Logger?.LogInformation("  UBO Position[{Index}]: {Pos} (std140: vec4-aligned at offset {Offset})",
+                    i, ubo.Positions[i * 4 + 0], i * 4);
+            }
+        }
         
         // Create uniform buffer
         var uboSize = GradientUBO.SizeInBytes;
         (_gradientUboBuffer, _gradientUboMemory) = bufferManager.CreateUniformBuffer(uboSize);
         
-        Logger?.LogDebug("UBO buffer created: size={Size} bytes", uboSize);
+        Logger?.LogInformation("UBO buffer created: size={Size} bytes, handle={Handle}",
+            uboSize, _gradientUboBuffer.Value.Handle);
         
         // Upload UBO data to buffer
         var uboBytes = ubo.AsBytes();
@@ -356,7 +390,8 @@ public partial class BackgroundLayer(
         // Allocate descriptor set
         _gradientDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
         
-        Logger?.LogDebug("Descriptor set allocated: handle={Handle}", _gradientDescriptorSet.Value.Handle);
+        Logger?.LogInformation("Descriptor set allocated: handle={Handle}, layout={Layout}",
+            _gradientDescriptorSet.Value.Handle, layout.Handle);
         
         // Update descriptor set to point to our UBO buffer
         descriptorManager.UpdateDescriptorSet(
@@ -365,7 +400,8 @@ public partial class BackgroundLayer(
             uboSize,
             0);  // binding = 0
         
-        Logger?.LogDebug("Descriptor set updated with UBO buffer binding");
+        Logger?.LogInformation("Descriptor set updated: set={Set}, buffer={Buffer}, size={Size}, binding=0",
+            _gradientDescriptorSet.Value.Handle, _gradientUboBuffer.Value.Handle, uboSize);
     }
 
     protected override void OnDeactivate()

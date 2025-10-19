@@ -7,12 +7,16 @@ namespace Nexus.GameEngine.Graphics;
 /// <summary>
 /// Uniform Buffer Object structure for gradient definitions.
 /// Must match GLSL layout (std140) in linear_gradient.frag and radial_gradient.frag.
+/// 
+/// IMPORTANT: std140 layout rules require array elements to be vec4-aligned (16 bytes).
+/// This means float[32] actually takes 512 bytes (32 × 16), not 128 bytes (32 × 4).
+/// 
 /// Layout:
 ///   - vec4[32] colors  = 512 bytes (32 × 16 bytes)
-///   - float[32] positions = 128 bytes (32 × 4 bytes)
+///   - float[32] positions = 512 bytes (32 × 16 bytes, only first 4 bytes of each vec4 used)
 ///   - int stopCount = 4 bytes
 ///   - padding = 12 bytes (for 16-byte alignment)
-/// Total size: 656 bytes
+/// Total size: 1040 bytes
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct GradientUBO
@@ -28,9 +32,10 @@ public unsafe struct GradientUBO
     public fixed float Colors[MaxStops * 4];  // 32 vec4s = 512 bytes
     
     /// <summary>
-    /// Normalized positions of each stop (0.0 to 1.0)
+    /// Normalized positions of each stop (0.0 to 1.0).
+    /// Each position is stored in a vec4 for std140 alignment (only X component used).
     /// </summary>
-    public fixed float Positions[MaxStops];  // 32 floats = 128 bytes
+    public fixed float Positions[MaxStops * 4];  // 32 vec4s = 512 bytes (only .x component used)
     
     /// <summary>
     /// Number of active stops (2 to 32)
@@ -74,8 +79,12 @@ public unsafe struct GradientUBO
             ubo.Colors[i * 4 + 2] = stop.Color.Z;
             ubo.Colors[i * 4 + 3] = stop.Color.W;
             
-            // Copy position
-            ubo.Positions[i] = stop.Position;
+            // Copy position (std140: each float in array must be vec4-aligned, so stride = 16 bytes)
+            // We only use the first component (.x) of each vec4
+            ubo.Positions[i * 4 + 0] = stop.Position;  // .x component
+            ubo.Positions[i * 4 + 1] = 0.0f;           // .y padding
+            ubo.Positions[i * 4 + 2] = 0.0f;           // .z padding
+            ubo.Positions[i * 4 + 3] = 0.0f;           // .w padding
         }
         
         return ubo;

@@ -56,12 +56,16 @@ vec4 sampleGradient(float t) {
 }
 
 void main() {
-    // Rotate fragment position by angle
+    // Flip Y coordinate for Vulkan's coordinate system (Y increases downward)
+    // In NDC: top = -1, bottom = +1, so we negate Y to match typical gradient convention
+    vec2 pos = vec2(fragPos.x, -fragPos.y);
+    
+    // Rotate position by angle
     float cosA = cos(pc.angle);
     float sinA = sin(pc.angle);
     vec2 rotated = vec2(
-        fragPos.x * cosA - fragPos.y * sinA,
-        fragPos.x * sinA + fragPos.y * cosA
+        pos.x * cosA - pos.y * sinA,
+        pos.x * sinA + pos.y * cosA
     );
     
     // Map from [-1, 1] to [0, 1] along the gradient direction (X axis after rotation)

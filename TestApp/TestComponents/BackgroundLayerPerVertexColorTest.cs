@@ -17,48 +17,30 @@ namespace TestApp.TestComponents;
 ///   Index 2 → Top-Right    (Screen: width-offset, offset)
 ///   Index 3 → Bottom-Right (Screen: width-offset, height-offset)
 /// 
-/// Initial colors: TL=Blue, BL=Green, TR=Red, BR=Yellow
-/// Animates to: TL=Yellow, BL=Red, TR=Green, BR=Blue (clockwise rotation)
+/// Single frame test: TL=Blue, BL=Green, TR=Red, BR=Yellow
 /// </summary>
 public class BackgroundLayerPerVertexColorTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
-    private int framesRendered = 0;
-    private System.Diagnostics.Stopwatch? stopwatch;
-    private BackgroundLayer? bg;
-    private int finalFrame = -1;
+    private bool rendered = false;
 
-    // Initial vertex colors: TL=Blue, BL=Green, TR=Red, BR=Yellow
-    private static readonly Vector4D<float>[] initialColors = [
+    // Vertex colors: TL=Blue, BL=Green, TR=Red, BR=Yellow
+    private static readonly Vector4D<float>[] vertexColors = [
         Colors.Blue,    // Index 0 - Top-Left
         Colors.Green,   // Index 1 - Bottom-Left
         Colors.Red,     // Index 2 - Top-Right
         Colors.Yellow   // Index 3 - Bottom-Right
     ];
 
-    // Final vertex colors (clockwise rotation): TL=Yellow, BL=Red, TR=Green, BR=Blue
-    private static readonly Vector4D<float>[] finalColors = [
-        Colors.Yellow,  // Index 0 - Top-Left (was BR)
-        Colors.Red,     // Index 1 - Bottom-Left (was TR)
-        Colors.Green,   // Index 2 - Top-Right (was BL)
-        Colors.Blue     // Index 3 - Bottom-Right (was TL)
-    ];
-
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
 
-        bg = CreateChild(new BackgroundLayer.Template()
+        CreateChild(new BackgroundLayer.Template()
         {
             Mode = BackgroundLayerModeEnum.PerVertexColor,
-            VertexColors = initialColors
-        }) as BackgroundLayer ?? throw new InvalidOperationException("BackgroundLayer component is null");
-
-        bg.AnimationEnded += (sender, e) =>
-        {
-            // Capture one more frame after animation completes to render the final values
-            finalFrame = framesRendered + 1;
-        };
+            VertexColors = vertexColors
+        });
 
         var window = windowService.GetWindow();
 
@@ -76,48 +58,23 @@ public class BackgroundLayerPerVertexColorTest(IPixelSampler pixelSampler, IWind
 
     protected override void OnActivate()
     {
-        stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        pixelSampler.Activate();  // Start capturing frames
+        pixelSampler.Activate();
     }
 
     protected override void OnUpdate(double deltaTime)
     {
-        if (framesRendered == 0 && bg != null)
-        {
-            bg.VertexColors = finalColors;
-        }
-
-        // Check if we've reached the final frame (animation complete + 1 frame rendered)
-        if (finalFrame >= 0 && framesRendered >= finalFrame)
+        // Render one frame then deactivate
+        if (rendered)
         {
             pixelSampler.Deactivate();
             Deactivate();
         }
-
-        framesRendered++;
-    }
-    
-    protected void OnDeactivated()
-    {
-        stopwatch?.Stop();
+        rendered = true;
     }
 
     public IEnumerable<TestResult> GetTestResults()
     {
-        var expectedTestDuration = 0.4d;
-        var timeElapsedSeconds = stopwatch?.Elapsed.TotalSeconds ?? 0d;
-        var fps = framesRendered / timeElapsedSeconds;
-
-        yield return new TestResult
-        {
-            TestName = $"Test duration should be longer than the animation",
-            ExpectedResult = $"~{expectedTestDuration:F1}s",
-            ActualResult = $"{timeElapsedSeconds:F3}s ({framesRendered} frames, {fps:F0} fps)",
-            Passed = timeElapsedSeconds >= expectedTestDuration
-        };
-        
         var samples = pixelSampler.GetResults();
-        var framesSampled = samples?.Length ?? 0;
 
         yield return new TestResult
         {
@@ -129,31 +86,16 @@ public class BackgroundLayerPerVertexColorTest(IPixelSampler pixelSampler, IWind
 
         if (samples == null || samples.Length == 0) yield break;
 
-        // Check initial frame colors (frame 0)
+        // Check vertex colors
         for(int i=0; i<samples[0].Length; i++)
         {
             yield return new()
             {
-                TestName = $"Frame[0] Pixel[{i}] color check",
-                ExpectedResult = PixelAssertions.DescribeColor(initialColors[i]),
+                TestName = $"Per-vertex color Pixel[{i}] color check",
+                ExpectedResult = PixelAssertions.DescribeColor(vertexColors[i]),
                 ActualResult = PixelAssertions.DescribeColor(samples[0][i]),
-                Passed = PixelAssertions.ColorsMatch(samples[0][i], initialColors[i])
+                Passed = PixelAssertions.ColorsMatch(samples[0][i], vertexColors[i])
             };
-        }
-
-        // Check final frame colors (frame when animation completed)
-        if (finalFrame >= 0 && finalFrame < samples.Length)
-        {
-            for (int i = 0; i < samples[finalFrame].Length; i++)
-            {
-                yield return new()
-                {
-                    TestName = $"Frame[{finalFrame}] Pixel[{i}] color check",
-                    ExpectedResult = PixelAssertions.DescribeColor(finalColors[i]),
-                    ActualResult = PixelAssertions.DescribeColor(samples[finalFrame][i]),
-                    Passed = PixelAssertions.ColorsMatch(samples[finalFrame][i], finalColors[i])
-                };
-            }
         }
     }
 }

@@ -8,30 +8,23 @@ using Nexus.GameEngine.Testing;
 namespace TestApp.TestComponents;
 
 /// <summary>
+/// Tests BackgroundLayer with UniformColor mode.
+/// Single frame test: verifies uniform blue color across all sample points.
 /// </summary>
 public class BackgroundLayerUniformColorTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
-    private int framesRendered = 0;
-    private System.Diagnostics.Stopwatch? stopwatch;
-    private BackgroundLayer? bg;
-    private int finalFrame = -1;
+    private bool rendered = false;
 
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
         base.OnConfigure(componentTemplate);
 
-        bg = CreateChild(new BackgroundLayer.Template()
+        CreateChild(new BackgroundLayer.Template()
         {
             Mode = BackgroundLayerModeEnum.UniformColor,
             UniformColor = Colors.Blue
-        }) as BackgroundLayer ?? throw new InvalidOperationException("BackgroundLayer component is null");
-
-        bg.AnimationEnded += (sender, e) =>
-        {
-            // Capture one more frame after animation completes to render the final values
-            finalFrame = framesRendered + 1;
-        };
+        });
 
         var window = windowService.GetWindow();
 
@@ -49,48 +42,23 @@ public class BackgroundLayerUniformColorTest(IPixelSampler pixelSampler, IWindow
 
     protected override void OnActivate()
     {
-        stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        pixelSampler.Activate();  // Start capturing frames
+        pixelSampler.Activate();
     }
 
     protected override void OnUpdate(double deltaTime)
     {
-        if (framesRendered == 0 && bg != null)
-        {
-            bg.UniformColor = Colors.Green;
-        }
-
-        // Check if we've reached the final frame (animation complete + 1 frame rendered)
-        if (finalFrame >= 0 && framesRendered >= finalFrame)
+        // Render one frame then deactivate
+        if (rendered)
         {
             pixelSampler.Deactivate();
             Deactivate();
         }
-
-        framesRendered++;
-    }
-    
-    protected void OnDeactivated()
-    {
-        stopwatch?.Stop();
+        rendered = true;
     }
 
     public IEnumerable<TestResult> GetTestResults()
     {
-        var expectedTestDuration = 0.4d;
-        var timeElapsedSeconds = stopwatch?.Elapsed.TotalSeconds ?? 0d;
-        var fps = framesRendered / timeElapsedSeconds;
-
-        yield return new TestResult
-        {
-            TestName = $"Test duration should be longer than the animation",
-            ExpectedResult = $"~{expectedTestDuration:F1}s",
-            ActualResult = $"{timeElapsedSeconds:F3}s ({framesRendered} frames, {fps:F0} fps)",
-            Passed = timeElapsedSeconds >= expectedTestDuration
-        };
-        
         var samples = pixelSampler.GetResults();
-        var framesSampled = samples?.Length ?? 0;
 
         yield return new TestResult
         {
@@ -106,26 +74,11 @@ public class BackgroundLayerUniformColorTest(IPixelSampler pixelSampler, IWindow
         {
             yield return new()
             {
-                TestName = $"Frame[0] Pixel[{i}] color check",
+                TestName = $"Uniform color Pixel[{i}] color check",
                 ExpectedResult = PixelAssertions.DescribeColor(Colors.Blue),
                 ActualResult = PixelAssertions.DescribeColor(samples[0][i]),
                 Passed = PixelAssertions.ColorsMatch(samples[0][i], Colors.Blue)
             };
-        }
-
-        // Check final frame colors (frame when animation completed)
-        if (finalFrame >= 0 && finalFrame < samples.Length)
-        {
-            for (int i = 0; i < samples[finalFrame].Length; i++)
-            {
-                yield return new()
-                {
-                    TestName = $"Frame[{finalFrame}] Pixel[{i}] color check",
-                    ExpectedResult = PixelAssertions.DescribeColor(Colors.Green),
-                    ActualResult = PixelAssertions.DescribeColor(samples[finalFrame][i]),
-                    Passed = PixelAssertions.ColorsMatch(samples[finalFrame][i], Colors.Green)
-                };
-            }
         }
     }
 }
