@@ -10,7 +10,7 @@ using Silk.NET.Maths;
 namespace TestApp.TestComponents;
 
 /// <summary>
-/// Tests BackgroundLayer with LinearGradient mode (horizontal gradient).
+/// Tests LinearGradientBackground with horizontal gradient.
 /// Validates that gradient shaders and UBO/descriptor system work correctly.
 /// 
 /// Single frame test: Red (left) → Green (right) at angle 0°
@@ -18,7 +18,8 @@ namespace TestApp.TestComponents;
 public class BackgroundLayerHorizGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
-    private bool rendered = false;
+    private int framesRendered = 0;
+        private readonly int frameCount = 1;
 
     // Red to Green horizontal gradient
     private static readonly GradientDefinition gradient = GradientDefinition.TwoColor(
@@ -41,11 +42,10 @@ public class BackgroundLayerHorizGradientTest(IPixelSampler pixelSampler, IWindo
     {
         base.OnConfigure(componentTemplate);
 
-        CreateChild(new BackgroundLayer.Template()
+        CreateChild(new LinearGradientBackground.Template()
         {
-            Mode = BackgroundLayerModeEnum.LinearGradient,
-            LinearGradientDefinition = gradient,
-            LinearGradientAngle = 0f  // Horizontal (0 degrees)
+            Gradient = gradient,
+            Angle = 0f  // Horizontal (0 radians)
         });
 
         var window = windowService.GetWindow();
@@ -69,12 +69,12 @@ public class BackgroundLayerHorizGradientTest(IPixelSampler pixelSampler, IWindo
     protected override void OnUpdate(double deltaTime)
     {
         // Render one frame then deactivate
-        if (rendered)
+        if (framesRendered > frameCount)
         {
             pixelSampler.Deactivate();
             Deactivate();
         }
-        rendered = true;
+        framesRendered++;
     }
 
     public IEnumerable<TestResult> GetTestResults()

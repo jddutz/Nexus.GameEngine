@@ -436,6 +436,19 @@ public unsafe class Renderer(
                     dataPtr);
                 break;
             }
+            case ImageTexturePushConstants imageTexture:
+            {
+                var size = (uint)Marshal.SizeOf<ImageTexturePushConstants>();
+                var dataPtr = &imageTexture;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.VertexBit,  // Image texture uses vertex shader for UV bounds
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
         }
     }
 }

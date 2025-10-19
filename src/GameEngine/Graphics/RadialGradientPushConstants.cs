@@ -5,35 +5,44 @@ namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
 /// Push constants for radial gradient rendering.
-/// Updated every frame for animation (center movement, radius changes).
-/// Size: 16 bytes (within push constant budget).
+/// Updated every frame for animation (center movement, radius changes, scaling).
+/// Size: 32 bytes (within push constant budget).
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct RadialGradientPushConstants
 {
     /// <summary>
-    /// Center point of the radial gradient in normalized device coordinates [-1, 1].
-    /// (0, 0) = screen center, (-1, -1) = top-left, (1, 1) = bottom-right.
+    /// Center point of the radial gradient in normalized [0,1] coordinates.
+    /// (0.5, 0.5) = screen center, (0, 0) = top-left, (1, 1) = bottom-right.
+    /// Values outside [0,1] place center offscreen for partial gradient effects.
     /// </summary>
     public Vector2D<float> Center;
     
     /// <summary>
-    /// Radius of the gradient in normalized device coordinates.
-    /// 1.0 = from center to edge of screen (default).
+    /// Radius of the gradient in normalized [0,1] coordinates.
+    /// 0.5 = from center to edge (when centered).
     /// </summary>
     public float Radius;
     
-    /// <summary>
-    /// Padding to ensure 16-byte alignment for Vulkan.
-    /// </summary>
-    private float _padding;
+    private float _padding1;
     
     /// <summary>
-    /// Creates push constants for a centered radial gradient.
+    /// Scale factors for elliptical gradients.
+    /// (1, 1) = circular (default)
+    /// (aspectRatio, 1) = circular on non-square viewports
+    /// (2, 1) = ellipse stretched horizontally
     /// </summary>
-    public static RadialGradientPushConstants Centered(float radius = 1.0f) => new() 
+    public Vector2D<float> Scale;
+    
+    private Vector2D<float> _padding2;
+    
+    /// <summary>
+    /// Creates push constants for a centered circular radial gradient with aspect correction.
+    /// </summary>
+    public static RadialGradientPushConstants Centered(float radius, float aspectRatio) => new() 
     { 
-        Center = Vector2D<float>.Zero,
-        Radius = radius 
+        Center = new Vector2D<float>(0.5f, 0.5f),
+        Radius = radius,
+        Scale = new Vector2D<float>(aspectRatio, 1.0f)
     };
 }

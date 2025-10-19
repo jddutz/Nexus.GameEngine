@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Resources.Textures;
 
 namespace Nexus.GameEngine.Resources;
 
@@ -19,6 +20,10 @@ public interface IResourceManager : IDisposable
     /// </summary>
     IShaderResourceManager Shaders { get; }
     
-    // Future: ITextureResourceManager Textures { get; }
+    /// <summary>
+    /// Texture resource manager for image textures.
+    /// </summary>
+    ITextureResourceManager Textures { get; }
+    
     // Future: IAudioResourceManager Audio { get; }
 }

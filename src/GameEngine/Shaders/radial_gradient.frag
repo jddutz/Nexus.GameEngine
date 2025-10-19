@@ -12,9 +12,11 @@ layout(binding = 0) uniform GradientUBO {
 
 // Push constants: animation parameters (updated every frame)
 layout(push_constant) uniform PushConstants {
-    vec2 center;          // Center point in NDC
+    vec2 center;          // Center point in normalized [0,1] space
     float radius;         // Gradient radius
-    float padding;
+    float padding1;
+    vec2 scale;           // Scale factors (X, Y) for elliptical gradients
+    vec2 padding2;
 } pc;
 
 // Sample the gradient at position t (0.0 to 1.0)
@@ -62,8 +64,15 @@ void main() {
         (-fragPos.y + 1.0) * 0.5
     );
     
-    // Calculate distance from center (both in normalized [0,1] space)
-    float dist = distance(normalizedPos, pc.center);
+    // Calculate offset from center
+    vec2 offset = normalizedPos - pc.center;
+    
+    // Apply scale transformation for elliptical gradients
+    // scale.x and scale.y allow independent X/Y scaling
+    vec2 scaledOffset = offset * pc.scale;
+    
+    // Calculate distance in scaled space
+    float dist = length(scaledOffset);
     
     // Normalize distance by radius to get t value [0, 1]
     float t = dist / pc.radius;

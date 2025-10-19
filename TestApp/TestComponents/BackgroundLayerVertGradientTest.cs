@@ -9,7 +9,7 @@ using Silk.NET.Maths;
 namespace TestApp.TestComponents;
 
 /// <summary>
-/// Tests BackgroundLayer with LinearGradient mode (vertical gradient).
+/// Tests LinearGradientBackground with vertical gradient.
 /// Validates that gradient shaders work correctly with angle = 90°.
 /// 
 /// Single frame test: Blue (top) → Yellow (bottom) at angle 90°
@@ -17,7 +17,8 @@ namespace TestApp.TestComponents;
 public class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
-    private bool rendered = false;
+    private int framesRendered = 0;
+    private readonly int frameCount = 1;
 
     // Blue to Yellow vertical gradient
     private static readonly GradientDefinition gradient = GradientDefinition.TwoColor(
@@ -40,11 +41,10 @@ public class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindow
     {
         base.OnConfigure(componentTemplate);
 
-        CreateChild(new BackgroundLayer.Template()
+        CreateChild(new LinearGradientBackground.Template()
         {
-            Mode = BackgroundLayerModeEnum.LinearGradient,
-            LinearGradientDefinition = gradient,
-            LinearGradientAngle = MathF.PI / 2f  // Vertical (90 degrees)
+            Gradient = gradient,
+            Angle = MathF.PI / 2f  // Vertical (90 degrees = π/2 radians)
         });
 
         var window = windowService.GetWindow();
@@ -68,12 +68,12 @@ public class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindow
     protected override void OnUpdate(double deltaTime)
     {
         // Render one frame then deactivate
-        if (rendered)
+        if (framesRendered > frameCount)
         {
             pixelSampler.Deactivate();
             Deactivate();
         }
-        rendered = true;
+        framesRendered++;
     }
 
     public IEnumerable<TestResult> GetTestResults()

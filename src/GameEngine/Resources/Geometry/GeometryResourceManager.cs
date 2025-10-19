@@ -40,6 +40,19 @@ public class GeometryResourceManager : IGeometryResourceManager
                 definition.Name, definition.VertexCount, definition.Stride);
             
             var vertexData = definition.GetVertexData();
+            
+            // Debug: Log vertex data for TexturedQuad
+            if (definition.Name == "TexturedQuad" && vertexData.Length >= 64)
+            {
+                var bytes = vertexData.ToArray();
+                for (int i = 0; i < 4; i++)
+                {
+                    var offset = i * 16;
+                    var vertexBytes = string.Join("-", bytes.Skip(offset).Take(16).Select(b => b.ToString("X2")));
+                    _logger.LogInformation("TexturedQuad vertex {Index}: {Bytes}", i, vertexBytes);
+                }
+            }
+            
             var (buffer, memory) = _bufferManager.CreateVertexBuffer(vertexData);
             
             var resource = new GeometryResource(

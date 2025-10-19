@@ -86,6 +86,21 @@ public interface IDescriptorManager : IDisposable
     void UpdateDescriptorSet(DescriptorSet descriptorSet, Silk.NET.Vulkan.Buffer buffer, ulong size, uint binding = 0);
     
     /// <summary>
+    /// Updates a descriptor set to bind a combined image sampler (texture).
+    /// </summary>
+    /// <param name="descriptorSet">Descriptor set to update</param>
+    /// <param name="imageView">Image view to bind</param>
+    /// <param name="sampler">Sampler to bind</param>
+    /// <param name="imageLayout">Image layout (typically ShaderReadOnlyOptimal)</param>
+    /// <param name="binding">Binding point (default 0)</param>
+    void UpdateDescriptorSet(
+        DescriptorSet descriptorSet,
+        ImageView imageView,
+        Sampler sampler,
+        ImageLayout imageLayout,
+        uint binding = 0);
+    
+    /// <summary>
     /// Resets all descriptor pools, freeing all allocated descriptor sets.
     /// Call this during resource cleanup or when recreating swapchain.
     /// </summary>

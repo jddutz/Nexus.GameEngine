@@ -1,0 +1,606 @@
+using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Buffers;
+using Silk.NET.Vulkan;
+using StbImageSharp;
+using System.Runtime.InteropServices;
+
+namespace Nexus.GameEngine.Resources.Textures;
+
+/// <summary>
+/// Implements texture resource management with caching, reference counting, and Vulkan image creation.
+/// Loads textures from embedded resources using StbImageSharp.
+/// </summary>
+public unsafe class TextureResourceManager : ITextureResourceManager
+{
+    private readonly ILogger<TextureResourceManager> _logger;
+    private readonly IGraphicsContext _context;
+    private readonly IBufferManager _bufferManager;
+    private readonly Graphics.Commands.ICommandPoolManager _commandPoolManager;
+    private readonly Vk _vk;
+    
+    private readonly Dictionary<string, (TextureResource Resource, int RefCount)> _cache = new();
+    private readonly object _lock = new();
+    
+    public TextureResourceManager(
+        ILoggerFactory loggerFactory,
+        IGraphicsContext context,
+        IBufferManager bufferManager,
+        Graphics.Commands.ICommandPoolManager commandPoolManager)
+    {
+        _logger = loggerFactory.CreateLogger<TextureResourceManager>();
+        _context = context;
+        _bufferManager = bufferManager;
+        _commandPoolManager = commandPoolManager;
+        _vk = context.VulkanApi;
+        
+        // Configure StbImage: do NOT flip images vertically on load
+        // PNG images are stored with (0,0) at top-left, matching our UV coordinate system
+        // where V=0 is top and V=1 is bottom (standard Vulkan/D3D texture coordinates).
+        // The TexturedQuad geometry defines UV coordinates to match this convention.
+        StbImage.stbi_set_flip_vertically_on_load(0);
+    }
+    
+    /// <inheritdoc />
+    public TextureResource GetOrCreate(ITextureDefinition definition)
+    {
+        lock (_lock)
+        {
+            // Check cache
+            if (_cache.TryGetValue(definition.Name, out var cached))
+            {
+                _logger.LogDebug("Texture cache hit: {Name} (ref count: {RefCount} -> {NewRefCount})",
+                    definition.Name, cached.RefCount, cached.RefCount + 1);
+                
+                _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
+                return cached.Resource;
+            }
+            
+            // Load texture
+            _logger.LogDebug("Loading texture: {Name} from {Path}", definition.Name, definition.FilePath);
+            
+            var resource = CreateTexture(definition);
+            
+            _cache[definition.Name] = (resource, 1);
+            
+            _logger.LogInformation("Texture loaded: {Name}, Size: {Width}x{Height}, Format: {Format}",
+                definition.Name, resource.Width, resource.Height, resource.Format);
+            
+            return resource;
+        }
+    }
+    
+    /// <inheritdoc />
+    public void Release(ITextureDefinition definition)
+    {
+        lock (_lock)
+        {
+            if (!_cache.TryGetValue(definition.Name, out var cached))
+            {
+                _logger.LogWarning("Attempted to release non-existent texture: {Name}", definition.Name);
+                return;
+            }
+            
+            var newRefCount = cached.RefCount - 1;
+            
+            if (newRefCount > 0)
+            {
+                _logger.LogDebug("Texture released: {Name} (ref count: {OldCount} -> {NewCount})",
+                    definition.Name, cached.RefCount, newRefCount);
+                
+                _cache[definition.Name] = (cached.Resource, newRefCount);
+            }
+            else
+            {
+                _logger.LogInformation("Destroying texture resource: {Name} (ref count reached 0)", definition.Name);
+                
+                // Destroy texture resources
+                DestroyTextureResource(cached.Resource);
+                _cache.Remove(definition.Name);
+            }
+        }
+    }
+    
+    private TextureResource CreateTexture(ITextureDefinition definition)
+    {
+        // 1. Load image from embedded resource
+        var imageData = LoadImageFromEmbeddedResource(definition.FilePath, definition.SourceAssembly);
+        
+        try
+        {
+            // 2. Determine format based on color space and component count
+            // Use SRGB format for color textures (albedo, UI, etc.) - GPU will convert to linear during sampling
+            // Use UNORM format for data textures (normals, masks, test images with raw data)
+            var format = (definition.IsSrgb, imageData.Components) switch
+            {
+                (true, ColorComponents.RedGreenBlueAlpha) => Format.R8G8B8A8Srgb,
+                (true, ColorComponents.RedGreenBlue) => Format.R8G8B8Srgb,
+                (true, ColorComponents.GreyAlpha) => Format.R8G8Srgb,
+                (true, ColorComponents.Grey) => Format.R8Srgb,
+                (false, ColorComponents.RedGreenBlueAlpha) => Format.R8G8B8A8Unorm,
+                (false, ColorComponents.RedGreenBlue) => Format.R8G8B8Unorm,
+                (false, ColorComponents.GreyAlpha) => Format.R8G8Unorm,
+                (false, ColorComponents.Grey) => Format.R8Unorm,
+                _ => throw new NotSupportedException($"Unsupported image format: {imageData.Components}")
+            };
+            
+            // 3. Create Vulkan image
+            var image = CreateVulkanImage(imageData.Width, imageData.Height, format);
+            
+            // 4. Allocate and bind memory
+            var imageMemory = AllocateImageMemory(image);
+            
+            // 5. Upload pixels via staging buffer
+            UploadPixelsToImage(image, imageData.Pixels, imageData.Width, imageData.Height);
+            
+            // 6. Transition image layout to shader read (image is now in TransferDstOptimal after upload)
+            TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, format);
+            
+            // 7. Create image view
+            var imageView = CreateImageView(image, format);
+            
+            // 8. Create sampler
+            var sampler = CreateSampler();
+            
+            return new TextureResource(
+                image,
+                imageMemory,
+                imageView,
+                sampler,
+                (uint)imageData.Width,
+                (uint)imageData.Height,
+                format,
+                definition.Name);
+        }
+        finally
+        {
+            // Free pixel data from StbImage
+            Marshal.FreeHGlobal(imageData.Pixels);
+        }
+    }
+    
+    private struct ImageData
+    {
+        public IntPtr Pixels;
+        public int Width;
+        public int Height;
+        public ColorComponents Components;
+    }
+    
+    private ImageData LoadImageFromEmbeddedResource(string filePath, System.Reflection.Assembly? sourceAssembly)
+    {
+        // Use provided assembly or default to GameEngine assembly
+        var assembly = sourceAssembly ?? typeof(TextureResourceManager).Assembly;
+        
+        // Convert path to embedded resource name
+        // For GameEngine: "Resources/Textures/uvmap.png" -> "Nexus.GameEngine.Resources.Textures.uvmap.png"
+        // For other assemblies: "Resources/Textures/test.png" -> "{AssemblyName}.Resources.Textures.test.png"
+        var assemblyName = assembly.GetName().Name;
+        var resourceName = $"{assemblyName}.{filePath.Replace('/', '.')}";
+        
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        
+        if (stream == null)
+        {
+            throw new FileNotFoundException(
+                $"Texture resource not found: {resourceName} in assembly {assemblyName} (from path: {filePath})");
+        }
+        
+        // Read stream into memory
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        var imageData = memoryStream.ToArray();
+        
+        _logger.LogTrace("Loaded {ByteCount} bytes from embedded resource: {ResourceName}",
+            imageData.Length, resourceName);
+        
+        // Load image with StbImage
+        ImageResult image;
+        fixed (byte* ptr = imageData)
+        {
+            using var imageStream = new UnmanagedMemoryStream(ptr, imageData.Length);
+            image = ImageResult.FromStream(imageStream, ColorComponents.RedGreenBlueAlpha);
+        }
+        
+        if (image == null)
+        {
+            throw new InvalidOperationException($"Failed to load image from: {filePath}");
+        }
+        
+        // Allocate unmanaged memory for pixel data (will be freed by caller)
+        var pixelDataSize = image.Width * image.Height * (int)image.Comp;
+        var pixels = (byte*)Marshal.AllocHGlobal(pixelDataSize);
+        Marshal.Copy(image.Data, 0, (IntPtr)pixels, pixelDataSize);
+        
+        _logger.LogTrace("Image decoded: {Width}x{Height}, Components: {Components}",
+            image.Width, image.Height, image.Comp);
+        
+        return new ImageData
+        {
+            Pixels = (IntPtr)pixels,
+            Width = image.Width,
+            Height = image.Height,
+            Components = image.Comp
+        };
+    }
+    
+    private Image CreateVulkanImage(int width, int height, Format format)
+    {
+        var imageInfo = new ImageCreateInfo
+        {
+            SType = StructureType.ImageCreateInfo,
+            ImageType = ImageType.Type2D,
+            Extent = new Extent3D
+            {
+                Width = (uint)width,
+                Height = (uint)height,
+                Depth = 1
+            },
+            MipLevels = 1,
+            ArrayLayers = 1,
+            Format = format,
+            Tiling = ImageTiling.Optimal,
+            InitialLayout = ImageLayout.Undefined,
+            Usage = ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit,
+            SharingMode = SharingMode.Exclusive,
+            Samples = SampleCountFlags.Count1Bit,
+            Flags = 0
+        };
+        
+        Image image;
+        var result = _vk.CreateImage(_context.Device, &imageInfo, null, &image);
+        
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to create Vulkan image: {result}");
+        }
+        
+        _logger.LogTrace("Vulkan image created: {Width}x{Height}, Format: {Format}",
+            width, height, format);
+        
+        return image;
+    }
+    
+    private DeviceMemory AllocateImageMemory(Image image)
+    {
+        _vk.GetImageMemoryRequirements(_context.Device, image, out var memRequirements);
+        
+        var allocInfo = new MemoryAllocateInfo
+        {
+            SType = StructureType.MemoryAllocateInfo,
+            AllocationSize = memRequirements.Size,
+            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits,
+                MemoryPropertyFlags.DeviceLocalBit)
+        };
+        
+        DeviceMemory imageMemory;
+        var result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &imageMemory);
+        
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to allocate image memory: {result}");
+        }
+        
+        _vk.BindImageMemory(_context.Device, image, imageMemory, 0);
+        
+        _logger.LogTrace("Image memory allocated and bound: {Size} bytes", memRequirements.Size);
+        
+        return imageMemory;
+    }
+    
+    private void UploadPixelsToImage(Image image, IntPtr pixels, int width, int height)
+    {
+        var imageSize = (ulong)(width * height * 4); // RGBA = 4 bytes per pixel
+        
+        // Create staging buffer
+        var stagingBuffer = CreateStagingBuffer(imageSize, out var stagingMemory);
+        
+        try
+        {
+            // Copy pixel data to staging buffer
+            void* data;
+            _vk.MapMemory(_context.Device, stagingMemory, 0, imageSize, 0, &data);
+            System.Buffer.MemoryCopy((void*)pixels, data, (long)imageSize, (long)imageSize);
+            _vk.UnmapMemory(_context.Device, stagingMemory);
+            
+            // Transition image to transfer destination
+            TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, Format.R8G8B8A8Srgb);
+            
+            // Copy buffer to image
+            CopyBufferToImage(stagingBuffer, image, (uint)width, (uint)height);
+            
+            _logger.LogTrace("Pixels uploaded to image via staging buffer");
+        }
+        finally
+        {
+            // Cleanup staging resources
+            _vk.DestroyBuffer(_context.Device, stagingBuffer, null);
+            _vk.FreeMemory(_context.Device, stagingMemory, null);
+        }
+    }
+    
+    private Silk.NET.Vulkan.Buffer CreateStagingBuffer(ulong size, out DeviceMemory memory)
+    {
+        var bufferInfo = new BufferCreateInfo
+        {
+            SType = StructureType.BufferCreateInfo,
+            Size = size,
+            Usage = BufferUsageFlags.TransferSrcBit,
+            SharingMode = SharingMode.Exclusive
+        };
+        
+        Silk.NET.Vulkan.Buffer buffer;
+        var result = _vk.CreateBuffer(_context.Device, &bufferInfo, null, &buffer);
+        
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to create staging buffer: {result}");
+        }
+        
+        _vk.GetBufferMemoryRequirements(_context.Device, buffer, out var memRequirements);
+        
+        var allocInfo = new MemoryAllocateInfo
+        {
+            SType = StructureType.MemoryAllocateInfo,
+            AllocationSize = memRequirements.Size,
+            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits,
+                MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit)
+        };
+        
+        DeviceMemory stagingMemory;
+        result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &stagingMemory);
+        
+        if (result != Result.Success)
+        {
+            _vk.DestroyBuffer(_context.Device, buffer, null);
+            throw new InvalidOperationException($"Failed to allocate staging buffer memory: {result}");
+        }
+        
+        _vk.BindBufferMemory(_context.Device, buffer, stagingMemory, 0);
+        
+        memory = stagingMemory;
+        return buffer;
+    }
+    
+    private void CopyBufferToImage(Silk.NET.Vulkan.Buffer buffer, Image image, uint width, uint height)
+    {
+        var commandBuffer = BeginSingleTimeCommands();
+        
+        var region = new BufferImageCopy
+        {
+            BufferOffset = 0,
+            BufferRowLength = 0,
+            BufferImageHeight = 0,
+            ImageSubresource = new ImageSubresourceLayers
+            {
+                AspectMask = ImageAspectFlags.ColorBit,
+                MipLevel = 0,
+                BaseArrayLayer = 0,
+                LayerCount = 1
+            },
+            ImageOffset = new Offset3D(0, 0, 0),
+            ImageExtent = new Extent3D(width, height, 1)
+        };
+        
+        _vk.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
+        
+        EndSingleTimeCommands(commandBuffer);
+    }
+    
+    private void TransitionImageLayout(Image image, ImageLayout oldLayout, ImageLayout newLayout, Format format)
+    {
+        var commandBuffer = BeginSingleTimeCommands();
+        
+        var barrier = new ImageMemoryBarrier
+        {
+            SType = StructureType.ImageMemoryBarrier,
+            OldLayout = oldLayout,
+            NewLayout = newLayout,
+            SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
+            DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
+            Image = image,
+            SubresourceRange = new ImageSubresourceRange
+            {
+                AspectMask = ImageAspectFlags.ColorBit,
+                BaseMipLevel = 0,
+                LevelCount = 1,
+                BaseArrayLayer = 0,
+                LayerCount = 1
+            }
+        };
+        
+        PipelineStageFlags sourceStage;
+        PipelineStageFlags destinationStage;
+        
+        if (oldLayout == ImageLayout.Undefined && newLayout == ImageLayout.TransferDstOptimal)
+        {
+            barrier.SrcAccessMask = 0;
+            barrier.DstAccessMask = AccessFlags.TransferWriteBit;
+            
+            sourceStage = PipelineStageFlags.TopOfPipeBit;
+            destinationStage = PipelineStageFlags.TransferBit;
+        }
+        else if (oldLayout == ImageLayout.TransferDstOptimal && newLayout == ImageLayout.ShaderReadOnlyOptimal)
+        {
+            barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
+            barrier.DstAccessMask = AccessFlags.ShaderReadBit;
+            
+            sourceStage = PipelineStageFlags.TransferBit;
+            destinationStage = PipelineStageFlags.FragmentShaderBit;
+        }
+        else
+        {
+            throw new NotSupportedException($"Unsupported layout transition: {oldLayout} -> {newLayout}");
+        }
+        
+        _vk.CmdPipelineBarrier(
+            commandBuffer,
+            sourceStage, destinationStage,
+            0,
+            0, null,
+            0, null,
+            1, &barrier);
+        
+        EndSingleTimeCommands(commandBuffer);
+    }
+    
+    private CommandBuffer BeginSingleTimeCommands()
+    {
+        // Get the graphics pool for one-time commands
+        var pool = _commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
+        
+        var commandBuffers = pool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
+        var commandBuffer = commandBuffers[0];
+        
+        var beginInfo = new CommandBufferBeginInfo
+        {
+            SType = StructureType.CommandBufferBeginInfo,
+            Flags = CommandBufferUsageFlags.OneTimeSubmitBit
+        };
+        
+        _vk.BeginCommandBuffer(commandBuffer, &beginInfo);
+        
+        return commandBuffer;
+    }
+    
+    private void EndSingleTimeCommands(CommandBuffer commandBuffer)
+    {
+        _vk.EndCommandBuffer(commandBuffer);
+        
+        var submitInfo = new SubmitInfo
+        {
+            SType = StructureType.SubmitInfo,
+            CommandBufferCount = 1,
+            PCommandBuffers = &commandBuffer
+        };
+        
+        _vk.QueueSubmit(_context.GraphicsQueue, 1, &submitInfo, default);
+        _vk.QueueWaitIdle(_context.GraphicsQueue);
+        
+        // Free the command buffer by resetting the pool
+        // Note: This is safe because we waited for the queue to be idle
+        var pool = _commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
+        pool.FreeCommandBuffers(new[] { commandBuffer });
+    }
+    
+    private ImageView CreateImageView(Image image, Format format)
+    {
+        var viewInfo = new ImageViewCreateInfo
+        {
+            SType = StructureType.ImageViewCreateInfo,
+            Image = image,
+            ViewType = ImageViewType.Type2D,
+            Format = format,
+            SubresourceRange = new ImageSubresourceRange
+            {
+                AspectMask = ImageAspectFlags.ColorBit,
+                BaseMipLevel = 0,
+                LevelCount = 1,
+                BaseArrayLayer = 0,
+                LayerCount = 1
+            }
+        };
+        
+        ImageView imageView;
+        var result = _vk.CreateImageView(_context.Device, &viewInfo, null, &imageView);
+        
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to create image view: {result}");
+        }
+        
+        _logger.LogTrace("Image view created");
+        
+        return imageView;
+    }
+    
+    private Sampler CreateSampler()
+    {
+        var samplerInfo = new SamplerCreateInfo
+        {
+            SType = StructureType.SamplerCreateInfo,
+            MagFilter = Filter.Linear,
+            MinFilter = Filter.Linear,
+            AddressModeU = SamplerAddressMode.ClampToEdge,
+            AddressModeV = SamplerAddressMode.ClampToEdge,
+            AddressModeW = SamplerAddressMode.ClampToEdge,
+            AnisotropyEnable = false,
+            MaxAnisotropy = 1.0f,
+            BorderColor = BorderColor.IntOpaqueBlack,
+            UnnormalizedCoordinates = false,
+            CompareEnable = false,
+            CompareOp = CompareOp.Always,
+            MipmapMode = SamplerMipmapMode.Linear,
+            MipLodBias = 0.0f,
+            MinLod = 0.0f,
+            MaxLod = 0.0f
+        };
+        
+        Sampler sampler;
+        var result = _vk.CreateSampler(_context.Device, &samplerInfo, null, &sampler);
+        
+        if (result != Result.Success)
+        {
+            throw new InvalidOperationException($"Failed to create sampler: {result}");
+        }
+        
+        _logger.LogTrace("Sampler created: Linear filtering, ClampToEdge addressing");
+        
+        return sampler;
+    }
+    
+    private uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
+    {
+        _vk.GetPhysicalDeviceMemoryProperties(_context.PhysicalDevice, out var memProperties);
+        
+        for (uint i = 0; i < memProperties.MemoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << (int)i)) != 0 &&
+                (memProperties.MemoryTypes[(int)i].PropertyFlags & properties) == properties)
+            {
+                return i;
+            }
+        }
+        
+        throw new InvalidOperationException("Failed to find suitable memory type");
+    }
+    
+    private void DestroyTextureResource(TextureResource resource)
+    {
+        if (resource.Sampler.Handle != 0)
+        {
+            _vk.DestroySampler(_context.Device, resource.Sampler, null);
+        }
+        if (resource.ImageView.Handle != 0)
+        {
+            _vk.DestroyImageView(_context.Device, resource.ImageView, null);
+        }
+        if (resource.Image.Handle != 0)
+        {
+            _vk.DestroyImage(_context.Device, resource.Image, null);
+        }
+        if (resource.ImageMemory.Handle != 0)
+        {
+            _vk.FreeMemory(_context.Device, resource.ImageMemory, null);
+        }
+        
+        _logger.LogDebug("Texture resource destroyed: {Name}", resource.Name);
+    }
+    
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            _logger.LogInformation("Disposing TextureResourceManager: {Count} resources in cache", _cache.Count);
+            
+            // Destroy all texture resources
+            foreach (var (resource, _) in _cache.Values)
+            {
+                DestroyTextureResource(resource);
+            }
+            
+            _cache.Clear();
+        }
+    }
+}

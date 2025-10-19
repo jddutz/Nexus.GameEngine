@@ -166,6 +166,56 @@ public unsafe class DescriptorManager : IDescriptorManager
     }
     
     /// <inheritdoc/>
+    public void UpdateDescriptorSet(
+        DescriptorSet descriptorSet,
+        ImageView imageView,
+        Sampler sampler,
+        ImageLayout imageLayout,
+        uint binding = 0)
+    {
+        if (descriptorSet.Handle == 0)
+        {
+            throw new ArgumentException("Invalid descriptor set", nameof(descriptorSet));
+        }
+        
+        if (imageView.Handle == 0)
+        {
+            throw new ArgumentException("Invalid image view", nameof(imageView));
+        }
+        
+        if (sampler.Handle == 0)
+        {
+            throw new ArgumentException("Invalid sampler", nameof(sampler));
+        }
+        
+        // Describe the image binding
+        var imageInfo = new DescriptorImageInfo
+        {
+            ImageView = imageView,
+            Sampler = sampler,
+            ImageLayout = imageLayout
+        };
+        
+        // Create write descriptor set
+        var descriptorWrite = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = descriptorSet,
+            DstBinding = binding,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.CombinedImageSampler,
+            DescriptorCount = 1,
+            PImageInfo = &imageInfo
+        };
+        
+        // Update the descriptor set
+        _vk.UpdateDescriptorSets(_context.Device, 1, &descriptorWrite, 0, null);
+        
+        _logger.LogDebug("Updated descriptor set: set={Set}, binding={Binding}, imageView={ImageView}, sampler={Sampler}",
+            descriptorSet.Handle, binding, imageView.Handle, sampler.Handle);
+    }
+    
+    /// <inheritdoc/>
     public void ResetPools()
     {
         _logger.LogInformation("Resetting descriptor pools: pools={Count}, sets={Sets}", 
@@ -235,7 +285,6 @@ public unsafe class DescriptorManager : IDescriptorManager
     private DescriptorPool CreateDescriptorPool()
     {
         // Define pool sizes for different descriptor types
-        // Start with uniform buffers, can expand to support textures, samplers, etc.
         var poolSizes = stackalloc DescriptorPoolSize[]
         {
             new DescriptorPoolSize
@@ -243,14 +292,17 @@ public unsafe class DescriptorManager : IDescriptorManager
                 Type = DescriptorType.UniformBuffer,
                 DescriptorCount = DescriptorsPerPool
             },
-            // Future: Add other descriptor types as needed
-            // new DescriptorPoolSize { Type = DescriptorType.CombinedImageSampler, DescriptorCount = 1000 }
+            new DescriptorPoolSize
+            {
+                Type = DescriptorType.CombinedImageSampler,
+                DescriptorCount = DescriptorsPerPool
+            }
         };
         
         var poolInfo = new DescriptorPoolCreateInfo
         {
             SType = StructureType.DescriptorPoolCreateInfo,
-            PoolSizeCount = 1, // Only uniform buffers for now
+            PoolSizeCount = 2, // Uniform buffers + combined image samplers
             PPoolSizes = poolSizes,
             MaxSets = DescriptorsPerPool,
             Flags = DescriptorPoolCreateFlags.FreeDescriptorSetBit // Allow individual set freeing (optional)

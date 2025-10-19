@@ -18,13 +18,6 @@ public class TestRunner(
     IWindowService windowService)
     : RuntimeComponent
 {
-    private const string RESULTS_SUMMARY = "\n=== TEST RUN SUMMARY ===\n"
-            + "Test Components Discovered: {TestComponents}\n"
-            + "Number of Test Results: {TotalCount}\n"
-            + "Passed: {PassCount}\n"
-            + "Failed: {FailCount}\n"
-            + "Total Time: {TotalTime:F2}ms\n"
-            + "Overall Result: {OverallResult}";
     /// <summary>
     /// Configuration template for the TestRunner component.
     /// </summary>
@@ -32,6 +25,7 @@ public class TestRunner(
 
     private Queue<Type> _testComponents = new();
 
+    int framesRendered = 0;
     int discovered = 0;
     private Stopwatch _stopwatch = new();
     private bool _resultsOutputted = false;
@@ -73,6 +67,8 @@ public class TestRunner(
     /// <param name="deltaTime">Elapsed time since last update.</param>
     protected override void OnUpdate(double deltaTime)
     {
+        framesRendered++;
+        
         Logger?.LogTrace("TestRunner OnUpdate called. DeltaTime: {DeltaTime}", deltaTime);
 
         bool isTestStillRunning = false;
@@ -96,7 +92,7 @@ public class TestRunner(
             {
                 testComponent.Name = testComponentType.Name;
                 Logger?.LogInformation("Test component created: {TypeName} with name '{Name}'", testComponent.GetType().FullName, testComponent.Name);
-                
+
                 // CRITICAL: Activate the component so it participates in the update lifecycle
                 Logger?.LogInformation("Activating test component: {Name}", testComponent.Name);
                 testComponent.Activate();
@@ -142,7 +138,7 @@ public class TestRunner(
         foreach (var testComponent in GetChildren<ITestComponent>())
         {
             componentCount++;
-            
+
             foreach (var result in testComponent.GetTestResults())
             {
                 if (!string.IsNullOrEmpty(result.Description))
@@ -151,12 +147,12 @@ public class TestRunner(
                 if (result.Passed)
                 {
                     passed.Add(result);
-                    Logger?.LogInformation("PASS|{TestComponentName} {TestName}: {Output}", testComponent.Name, result.TestName, result.Output);
+                    Logger?.LogInformation("PASS|{TestComponentName} {TestName}{Description}: {Output}", testComponent.Name, result.TestName, result.Description, result.Output);
                 }
                 else
                 {
                     failed.Add(result);
-                    Logger?.LogWarning("FAIL|{TestComponentName} {TestName}: {Output}", testComponent.Name, result.TestName, result.Output);
+                    Logger?.LogWarning("FAIL|{TestComponentName} {TestName}{Description}: {Output}", testComponent.Name, result.TestName, result.Description, result.Output);
 
                     if (result.Exception is Exception ex)
                     {
@@ -165,6 +161,16 @@ public class TestRunner(
                 }
             }
         }
+        
+        const string RESULTS_SUMMARY = "\n=== TEST RUN SUMMARY ===\n"
+            + "Test Components Discovered: {TestComponents}\n"
+            + "Number of Test Results: {TotalCount}\n"
+            + "Passed: {PassCount}\n"
+            + "Failed: {FailCount}\n"
+            + "Total Time: {TotalTime:F2}ms\n"
+            + "Frames Rendered: {FramesRendered}\n"
+            + "Avg FPS: {AverageFPS:F0}\n"
+            + "Overall Result: {OverallResult}";
 
         Logger?.LogInformation(
             RESULTS_SUMMARY,
@@ -173,6 +179,8 @@ public class TestRunner(
             passed.Count,
             failed.Count,
             _stopwatch.ElapsedMilliseconds,
+            framesRendered,
+            framesRendered / _stopwatch.Elapsed.TotalSeconds,
             passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]"
             );
 

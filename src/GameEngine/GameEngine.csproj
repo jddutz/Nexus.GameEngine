@@ -39,11 +39,15 @@
     <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
+    <PackageReference Include="StbImageSharp" Version="2.27.14" />
   </ItemGroup>
 
   <!-- Embedded Resources -->
   <ItemGroup>
     <EmbeddedResource Include="Shaders\**\*.spv" />
+    <EmbeddedResource Include="Resources\Textures\**\*.png" />
+    <EmbeddedResource Include="Resources\Textures\**\*.jpg" />
+    <EmbeddedResource Include="Resources\Textures\**\*.jpeg" />
   </ItemGroup>
 
   <!-- Source Generators and Analyzers -->
