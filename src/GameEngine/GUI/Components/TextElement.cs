@@ -75,7 +75,7 @@ public partial class TextElement()
             _fontSize = 1f;
     }
 
-    partial void OnFontNameChanged(string oldValue)
+    partial void OnFontNameChanged(string? oldValue)
     {
         // Ensure non-null font name
         if (string.IsNullOrEmpty(_fontName))

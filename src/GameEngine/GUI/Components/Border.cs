@@ -55,10 +55,10 @@ public partial class Border()
     partial void OnStyleChanged(BorderStyle oldValue) => OnRenderPropertiesChanged();
     partial void OnBackgroundColorChanged(Vector4D<float> oldValue) => OnRenderPropertiesChanged();
     partial void OnBorderColorChanged(Vector4D<float> oldValue) => OnRenderPropertiesChanged();
-    partial void OnBorderThicknessChanged(Thickness oldValue) => OnRenderPropertiesChanged();
+    partial void OnBorderThicknessChanged(Thickness? oldValue) => OnRenderPropertiesChanged();
     partial void OnCornerRadiusChanged(float oldValue) => OnRenderPropertiesChanged();
-    partial void OnBackgroundImageChanged(string oldValue) => OnRenderPropertiesChanged();
-    partial void OnBorderImageChanged(string oldValue) => OnRenderPropertiesChanged();
+    partial void OnBackgroundImageChanged(string? oldValue) => OnRenderPropertiesChanged();
+    partial void OnBorderImageChanged(string? oldValue) => OnRenderPropertiesChanged();
     partial void OnIsVisibleChanged(bool oldValue) => OnRenderPropertiesChanged();
     partial void OnOpacityChanged(float oldValue)
     {

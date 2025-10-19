@@ -1,6 +1,6 @@
-DO NOT change any code without explicit instructions to do so.
+DO NOT change any code without explicit instructions to do so. If not sure, ask first.
 
-This project follows a documentation-first test-driven-development approach. See `Tests\README.md` for comprehensive testing guidelines.
+This project follows a documentation-first test-driven-development approach. See `src/GameEngine/Testing/README.md` for comprehensive testing guidelines.
 
 ## Development Workflow
 
@@ -12,9 +12,11 @@ Before updating any code:
      - do the tests need to be revised
    - Fix the errors before proceeding
 2. Update any documentation related to the change:
-   - `.docs\Project Structure.md`
-   - `.docs\Silk dotNET Setup.md`
+   - `.docs/Project Structure.md`
+   - `.docs/Vulkan Architecture.md`
+   - `.docs/Deferred Property Generation System.md`
    - `README.md`
+   - `src/GameEngine/Testing/README.md`
 3. Generate unit tests to cover all new behaviors
 4. (Red Phase) Confirm that the new tests fail as expected
 5. Update the code to implement the changes
@@ -22,7 +24,7 @@ Before updating any code:
 7. Rebuild the project and address any warnings and errors
 8. Provide a summary (via chat) of the changes made and instructions for manual testing required
 
-Use the `.github/agent/` folder for temporary files:
+Use the `.temp/agent` folder for temporary files:
 
 - Work instructions or plans
 - Checklists
@@ -30,16 +32,27 @@ Use the `.github/agent/` folder for temporary files:
 - Progress tracking
 - Output files
 
-Use dotnet command for editing CSPROJ and SLN files.
+Use dotnet commands for editing CSPROJ and SLN files.
 All classes and interfaces should be defined in separate files.
 
 ## Build Commands
 
 ```bash
 dotnet build Nexus.GameEngine.sln --configuration Debug
-dotnet test  # Regular unit tests
-dotnet run --project TestApp # Integration tests
+dotnet test Tests/Tests.csproj  # Unit tests
+dotnet run --project TestApp/TestApp.csproj # Integration tests (frame-based testing)
 ```
+
+## Shader Compilation
+
+Shaders must be compiled to SPIR-V before building:
+
+```bash
+cd src/GameEngine/Shaders
+.\compile.bat  # Requires VulkanSDK with glslc compiler
+```
+
+The build-testapp task has a dependency on compile-shaders task.
 
 ## Architecture Overview
 
@@ -47,40 +60,102 @@ dotnet run --project TestApp # Integration tests
 
 **Component-Based Architecture**: Everything is an `IRuntimeComponent` that can contain other components via a `Children` property. Components implement only the behavior interfaces they need.
 
-**Viewport + Renderer System**:
+**Vulkan Rendering System**:
 
-- **Viewport**: Manages screen regions with cameras and content assignment
-- **Renderer**: Renders viewport content trees with efficient batching and state management
-- **Middleware**: Extensible pre/post render hooks for debugging and state capture
+- **IGraphicsContext**: Core Vulkan infrastructure (instance, device, queues)
+- **ISwapChain**: Swap chain management for presentation
+- **IPipelineManager**: Graphics pipeline creation and caching with fluent builder API
+- **ICommandPoolManager**: Command buffer allocation and management
+- **ISyncManager**: Synchronization primitives (semaphores, fences)
+- **IRenderer**: High-level rendering orchestration
+- **IViewport**: Screen region and content management
 
-**Resource Management**: Attribute-based system for OpenGL resources with automatic lifecycle management. See `GameEngine/Graphics/Resources/` for implementations.
+**Resource Management**: 
 
-**Testing Infrastructure**: Comprehensive unit and integration testing with OpenGL context management. See `Tests/README.md` for details.
+- **IResourceManager**: Unified resource management interface
+- **IGeometryResourceManager**: Vertex/index buffer management
+- **IShaderResourceManager**: SPIR-V shader module management
+- **IBufferManager**: Vulkan buffer allocation and lifecycle
+
+See `src/GameEngine/Graphics/` and `src/GameEngine/Resources/` for implementations.
+
+**Testing Infrastructure**: Frame-based integration testing using TestApp. See `src/GameEngine/Testing/README.md` and `TestApp/` for details.
 
 ### Key Architectural Principles
 
 **Application Startup Pattern:**
 
 ```csharp
-// CORRECT: Use StartupTemplate for deferred component creation
-var app = services.GetRequiredService<IApplication>();
-app.StartupTemplate = Templates.MainMenu;  // Created after window initialization
-await app.RunAsync();
+// Create services manually (no AddGameEngineServices helper exists)
+var services = new ServiceCollection()
+    .AddSingleton<ILoggerFactory>(loggerFactory)
+    .Configure<ApplicationSettings>(configuration.GetSection("Application"))
+    .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
+    .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))
+    .AddSingleton<IWindowService, WindowService>()
+    .AddSingleton<IValidation, Validation>()
+    .AddSingleton<IGraphicsContext, Context>()
+    .AddSingleton<ISwapChain, SwapChain>()
+    .AddSingleton<ISyncManager, SyncManager>()
+    .AddSingleton<ICommandPoolManager, CommandPoolManager>()
+    .AddSingleton<IPipelineManager, PipelineManager>()
+    .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
+    .AddSingleton<IRenderer, Renderer>()
+    .AddSingleton<IEventBus, EventBus>()
+    .AddSingleton<IAssetService, AssetService>()
+    .AddSingleton<IBufferManager, BufferManager>()
+    .AddSingleton<IGeometryResourceManager, GeometryResourceManager>()
+    .AddSingleton<IShaderResourceManager, ShaderResourceManager>()
+    .AddSingleton<IResourceManager, ResourceManager>()
+    .AddSingleton<IContentManager, ContentManager>()
+    .AddSingleton<IComponentFactory, ComponentFactory>()
+    .AddSingleton<IActionFactory, ActionFactory>()
+    .AddPixelSampling()  // Testing only
+    .AddDiscoveredServices<IRuntimeComponent>()
+    .AddDiscoveredServices<IAction>()
+    .BuildServiceProvider();
+
+// Create and run application with startup template
+var application = new Application(services);
+var windowOptions = WindowOptions.DefaultVulkan with
+{
+    Size = new Vector2D<int>(1920, 1080),
+    Title = "My App",
+    VSync = true
+};
+application.Run(windowOptions, Templates.MainMenu);
 ```
 
-**IMPORTANT**: Do not create InputContext-dependent components (KeyBinding, MouseBinding, InputMap) before calling `app.RunAsync()`. Use the StartupTemplate property instead of directly calling content managers in startup code.
-
-**Runtime Content Changes:**
-
-```csharp
-// Use renderer viewport for content changes after startup
-var renderer = services.GetRequiredService<IRenderer>();
-renderer.Viewport.Content = newContent;
-```
+**IMPORTANT**: Do not create InputContext-dependent components (KeyBinding, MouseBinding, InputMap) before the window is initialized. Pass the startup template to `application.Run()` instead.
 
 ### RuntimeComponent System
 
-**Deferred Property Updates**: Components use lambda-based deferred updates via `QueueUpdate()` to maintain temporal consistency during frame processing. Properties have `private set` and interface methods queue changes for execution at frame boundaries.
+**Animated Property System**: Components use source-generated animated properties. All properties marked with `[ComponentProperty]` automatically support:
+- Deferred updates (changes apply during `UpdateAnimations()` call)
+- Optional interpolation over time (specify Duration and InterpolationMode)
+- PropertyChanged notifications
+- Animation lifecycle events (AnimationStarted, AnimationEnded)
+
+**Source Generator Architecture**: The `AnimatedPropertyGenerator` (in `src/GameEngine.SourceGenerators/`) generates optimized code at compile-time:
+- **Zero runtime overhead**: Type-specific interpolation code (no boxing, no reflection, no dynamic dispatch)
+- **Array animation support**: Animated arrays interpolate each element individually with inline loops
+- **Built-in type support**: float, double, int, Silk.NET vectors/matrices automatically supported
+- **Extensibility**: Custom types can implement `IInterpolatable<T>` for specialized interpolation
+
+Example:
+```csharp
+// Developer writes:
+[ComponentProperty(Duration = 0.4f, Interpolation = InterpolationMode.Linear)]
+private Vector4D<float>[] _vertexColors = [...];
+
+// Generator produces optimized per-element interpolation:
+for (int i = 0; i < newArray.Length; i++)
+    newArray[i] = startValue[i] + (endValue[i] - startValue[i]) * t;
+```
+
+See `.docs/Deferred Property Generation System.md` for complete details.
+
+**Legacy Deferred Updates**: `QueueUpdate()` method still exists for complex multi-property updates but should be rarely needed. Most properties now use auto-generated animated properties instead.
 
 **Declarative Templates**: Components use strongly-typed template records for configuration. See `TestApp/MainMenu.cs` for example declarative syntax.
 
@@ -88,23 +163,34 @@ renderer.Viewport.Content = newContent;
 
 ### Resource Management System
 
-**Attribute-Based Resources**: Shared resources declared using `[SharedResource]` attributes on static definitions. See `GameEngine/Graphics/Resources/` for implementation.
+**Unified Resource Management**: 
+- `IResourceManager` provides centralized access to all resource types
+- `IGeometryResourceManager` handles Vulkan vertex/index buffers
+- `IShaderResourceManager` manages SPIR-V shader modules
+- `IBufferManager` provides low-level Vulkan buffer allocation
 
-**Type-Safe Access**: Components access resources through `IResourceManager.GetOrCreateResource<T>()` with compile-time checking.
+**Resource Lifecycle**: Resources are cached and reused across components. Disposal is handled by the resource managers.
 
-**Automatic Lifecycle**: Resources are automatically created, cached, and cleaned up based on component scope.
+See `src/GameEngine/Resources/` for implementations.
 
 ### Graphics and Rendering
 
-**Batch Rendering**: Renderer uses `IBatchStrategy` to minimize OpenGL state changes by grouping compatible render states.
+**Pipeline Management**: 
+- Fluent builder API for creating Vulkan graphics pipelines (`IPipelineBuilder`)
+- Pipeline caching and reuse via `IPipelineManager`
+- Support for multiple render passes (opaque, transparent, UI, etc.)
 
-**Middleware System**: Extensible `IRenderMiddleware` for debugging, profiling, and state capture. See `GameEngine/Graphics/Middleware/`.
+**Command Buffer Management**:
+- Pool-based command buffer allocation via `ICommandPoolManager`
+- Automatic command buffer recording and submission
 
-**OpenGL State Management**: Renderer queries actual GL state before updates to avoid redundant API calls.
+**Synchronization**:
+- Frame-based synchronization with fences and semaphores via `ISyncManager`
+- Proper image acquisition and presentation coordination
+
+**Batch Rendering**: Renderer uses `IBatchStrategy` to group compatible render commands and minimize state changes.
 
 ### Testing Infrastructure
-
-**OpenGL Testing**: Shared context with automatic state reset between tests. Use `[Collection("OpenGL")]` and inherit from `OpenGLTestBase`.
 
 **Integration Testing**: Frame-based test execution using fire-and-forget pattern:
 
@@ -113,7 +199,9 @@ renderer.Viewport.Content = newContent;
 - **PostRender middleware** = Assert (validate results)
   See `TestApp/Testing/` for implementation.
 
-**Test Types**: Unit tests (Tests project), OpenGL integration tests (OpenGLTests project), and frame-based integration tests (TestApp).
+**Test Types**: Unit tests (Tests project), and frame-based integration tests (TestApp).
+
+**Pixel Sampling**: VulkanPixelSampler service (currently a stub) will allow reading rendered pixel colors for validation. Enable with `.AddPixelSampling()` in test configuration. See `src/GameEngine/Testing/README.md` for details.
 
 ### Logging
 

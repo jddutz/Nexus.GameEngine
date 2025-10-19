@@ -3,10 +3,11 @@ using Nexus.GameEngine.Animation;
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
-/// Manages interpolation and timing for animated property values.
+/// Manages interpolation and timing for animated array property values.
+/// Interpolates each element individually when the element type implements IInterpolatable.
 /// </summary>
-/// <typeparam name="T">The value type being animated.</typeparam>
-public sealed class PropertyAnimation<T> where T : struct
+/// <typeparam name="T">The element type of the array being animated.</typeparam>
+public sealed class ArrayPropertyAnimation<T> where T : struct
 {
     /// <summary>
     /// Gets or sets the animation duration in seconds.
@@ -23,32 +24,48 @@ public sealed class PropertyAnimation<T> where T : struct
     /// </summary>
     public bool IsAnimating { get; private set; }
 
-    private T _startValue;
-    private T _endValue;
+    private T[] _startValue = [];
+    private T[] _endValue = [];
+    private T[] _currentValue = [];
     private double _startTime;
     private double _elapsed;
 
     /// <summary>
-    /// Starts a new animation from the current value to a target value.
+    /// Starts a new animation from the current array to a target array.
     /// </summary>
-    /// <param name="startValue">The starting value.</param>
-    /// <param name="endValue">The target value.</param>
+    /// <param name="startValue">The starting array.</param>
+    /// <param name="endValue">The target array.</param>
     /// <param name="currentTime">The current time in seconds.</param>
-    public void StartAnimation(T startValue, T endValue, double currentTime)
+    /// <exception cref="ArgumentNullException">Thrown when startValue or endValue is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when array lengths don't match.</exception>
+    public void StartAnimation(T[] startValue, T[] endValue, double currentTime)
     {
+        if (startValue == null)
+            throw new ArgumentNullException(nameof(startValue), "Start array cannot be null for animation");
+        
+        if (endValue == null)
+            throw new ArgumentNullException(nameof(endValue), "End array cannot be null for animation");
+        
+        if (startValue.Length != endValue.Length)
+            throw new ArgumentException(
+                $"Array length mismatch: cannot animate from array of length {startValue.Length} to array of length {endValue.Length}. " +
+                "Array animations require constant element count.",
+                nameof(endValue));
+
         _startValue = startValue;
         _endValue = endValue;
+        _currentValue = new T[startValue.Length];
         _startTime = currentTime;
         _elapsed = 0.0;
         IsAnimating = Duration > 0;
     }
 
     /// <summary>
-    /// Updates the animation and returns the current interpolated value.
+    /// Updates the animation and returns the current interpolated array.
     /// </summary>
     /// <param name="deltaTime">The time elapsed since the last update in seconds.</param>
-    /// <returns>The interpolated value at the current time.</returns>
-    public T Update(double deltaTime)
+    /// <returns>The interpolated array at the current time.</returns>
+    public T[] Update(double deltaTime)
     {
         if (!IsAnimating)
             return _endValue;
@@ -66,8 +83,13 @@ public sealed class PropertyAnimation<T> where T : struct
         // Apply easing function based on interpolation mode
         t = ApplyEasing(t, Interpolation);
 
-        // Perform interpolation (this will be implemented by the generator for specific types)
-        return Interpolate(_startValue, _endValue, t);
+        // Interpolate each element
+        for (int i = 0; i < _startValue.Length; i++)
+        {
+            _currentValue[i] = InterpolateElement(_startValue[i], _endValue[i], t);
+        }
+
+        return _currentValue;
     }
 
     /// <summary>
@@ -91,11 +113,11 @@ public sealed class PropertyAnimation<T> where T : struct
     }
 
     /// <summary>
-    /// Performs type-specific interpolation between two values.
-    /// NOTE: The source generator should create optimized type-specific subclasses
+    /// Performs type-specific interpolation between two element values.
+    /// NOTE: The source generator should inline optimized interpolation code
     /// to avoid runtime type checking. This is a fallback implementation.
     /// </summary>
-    private T Interpolate(T start, T end, float t)
+    private T InterpolateElement(T start, T end, float t)
     {
         // Check if type implements IInterpolatable<T> (for custom user types)
         if (start is IInterpolatable<T> interpolatable)
@@ -113,7 +135,7 @@ public sealed class PropertyAnimation<T> where T : struct
         }
         catch
         {
-            // For unsupported types, snap to end value
+            // For unsupported types, snap to end value (Step interpolation)
             return end;
         }
     }

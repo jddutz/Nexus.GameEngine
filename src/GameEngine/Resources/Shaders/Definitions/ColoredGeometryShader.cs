@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 namespace Nexus.GameEngine.Resources.Shaders.Definitions;
 
 /// <summary>
-/// Shader definition for colored geometry using push constants.
-/// Vertex format: Position (vec2) only
-/// Colors: Provided via push constants (4 x vec4 for quad vertices)
+/// Shader definition for colored geometry with per-vertex colors.
+/// Vertex format: Position (vec2) + Color (vec4) = 24 bytes per vertex
+/// Colors: Provided as vertex attributes
 /// </summary>
 public class ColoredGeometryShader : IShaderDefinition
 {
@@ -27,15 +27,7 @@ public class ColoredGeometryShader : IShaderDefinition
     public VertexInputDescription InputDescription => ColorQuad.GetVertexInputDescription();
     
     /// <inheritdoc/>
-    public PushConstantRange[]? PushConstantRanges =>
-    [
-        new PushConstantRange
-        {
-            StageFlags = ShaderStageFlags.VertexBit,
-            Offset = 0,
-            Size = (uint)Unsafe.SizeOf<VertexColorsPushConstants>() // 64 bytes (4 x vec4)
-        }
-    ];
+    public PushConstantRange[]? PushConstantRanges => null;  // No push constants needed
     
     /// <inheritdoc/>
     public void ValidateGeometry(GeometryResource geometry)

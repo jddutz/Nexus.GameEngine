@@ -8,6 +8,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Nexus.GameEngine</RootNamespace>
 
+    <!-- Emit source generator files to disk for debugging -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+
     <!-- Package Information -->
     <PackageId>Nexus.GameEngine</PackageId>
     <Authors>NexusRealms</Authors>

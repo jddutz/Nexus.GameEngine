@@ -84,6 +84,12 @@ public class AnimationAttributeTypeAnalyzer : DiagnosticAnalyzer
 
     private static bool IsAnimatableType(ITypeSymbol type)
     {
+        // Check if it's an array - validate element type instead
+        if (type is IArrayTypeSymbol arrayType)
+        {
+            return IsAnimatableType(arrayType.ElementType);
+        }
+
         // Check for numeric primitives
         switch (type.SpecialType)
         {

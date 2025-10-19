@@ -160,14 +160,19 @@ public class ContentManager(
 
     public void OnUpdate(double deltaTime)
     {
-        Viewport?.Update(deltaTime);
+        if (Viewport == null)
+        {
+            var activeComponents = content.Values
+                .OfType<IRuntimeComponent>()
+                .Where(c => c.IsActive);
 
-        var activeComponents = content.Values
-            .OfType<IRuntimeComponent>()
-            .Where(c => c.IsActive);
-
-        foreach (var component in activeComponents)
-            component.Update(deltaTime);
+            foreach (var component in activeComponents)
+                component.Update(deltaTime);
+        }
+        else
+        {
+            Viewport?.Update(deltaTime);
+        }
     }
 
     /// <inheritdoc/>

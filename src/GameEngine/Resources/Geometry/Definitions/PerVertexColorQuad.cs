@@ -6,8 +6,9 @@ using System.Runtime.InteropServices;
 namespace Nexus.GameEngine.Resources.Geometry.Definitions;
 
 /// <summary>
-/// Colored quad geometry definition.
-/// Vertex format: Position(Vec2) + Color(Vec4) = 24 bytes per vertex
+/// Position-only quad geometry definition for per-vertex color rendering via UBO.
+/// Vertex format: Position(Vec2) = 8 bytes per vertex
+/// Colors are provided via Uniform Buffer Object (not vertex data).
 /// Four vertices arranged as a triangle strip forming a full-screen quad.
 /// 
 /// COORDINATE SYSTEM AND VERTEX ORDER STANDARD:
@@ -24,12 +25,12 @@ namespace Nexus.GameEngine.Resources.Geometry.Definitions;
 ///   Index 3 → Bottom-Right  (NDC: +1, +1)  (Screen: width, height)
 /// 
 /// This matches the OpenGL/Vulkan standard quad vertex ordering.
-/// Colors array follows same index order: Colors[0]=TL, Colors[1]=BL, Colors[2]=TR, Colors[3]=BR
+/// UBO contains 4 colors indexed by gl_VertexIndex.
 /// </summary>
-public record ColorQuad(Vector4D<float>[] Colors) : IGeometryDefinition
+public record PerVertexColorQuad : IGeometryDefinition
 {
     /// <inheritdoc />
-    public string Name => "ColorQuad";
+    public string Name => "PerVertexColorQuad";
 
     // Four vertices forming a full-screen quad using triangle strip
     // Triangle strip order: TL -> BL -> TR -> BR (indices 0, 1, 2, 3)
@@ -45,27 +46,13 @@ public record ColorQuad(Vector4D<float>[] Colors) : IGeometryDefinition
     public uint VertexCount => (uint)_positions.Length;
 
     /// <inheritdoc />
-    public uint Stride => (uint)(Unsafe.SizeOf<Vector2D<float>>() + Unsafe.SizeOf<Vector4D<float>>());  // 8 + 16 = 24 bytes
+    public uint Stride => (uint)Unsafe.SizeOf<Vector2D<float>>();  // 8 bytes
 
     /// <inheritdoc />
     public ReadOnlySpan<byte> GetVertexData()
     {
-        // Interleave position and color data
-        // Format: [pos0, color0, pos1, color1, pos2, color2, pos3, color3]
-        var vertexData = new float[_positions.Length * 6];  // 6 floats per vertex (2 for pos, 4 for color)
-        
-        for (int i = 0; i < _positions.Length; i++)
-        {
-            int baseIndex = i * 6;
-            vertexData[baseIndex + 0] = _positions[i].X;
-            vertexData[baseIndex + 1] = _positions[i].Y;
-            vertexData[baseIndex + 2] = Colors[i].X;
-            vertexData[baseIndex + 3] = Colors[i].Y;
-            vertexData[baseIndex + 4] = Colors[i].Z;
-            vertexData[baseIndex + 5] = Colors[i].W;
-        }
-
-        return MemoryMarshal.AsBytes(vertexData.AsSpan());
+        // Return position data only (colors come from UBO)
+        return MemoryMarshal.AsBytes(_positions.AsSpan());
     }
 
     /// <summary>
@@ -77,7 +64,7 @@ public record ColorQuad(Vector4D<float>[] Colors) : IGeometryDefinition
         var binding = new VertexInputBindingDescription
         {
             Binding = 0,
-            Stride = (uint)(Unsafe.SizeOf<Vector2D<float>>() + Unsafe.SizeOf<Vector4D<float>>()),  // 24 bytes
+            Stride = (uint)Unsafe.SizeOf<Vector2D<float>>(),  // 8 bytes
             InputRate = VertexInputRate.Vertex
         };
 
@@ -90,14 +77,6 @@ public record ColorQuad(Vector4D<float>[] Colors) : IGeometryDefinition
                 Location = 0,
                 Format = Format.R32G32Sfloat,
                 Offset = 0
-            },
-            // Color (vec4) at location 1
-            new()
-            {
-                Binding = 0,
-                Location = 1,
-                Format = Format.R32G32B32A32Sfloat,
-                Offset = 8  // After 2 floats (position)
             }
         };
 
@@ -107,4 +86,4 @@ public record ColorQuad(Vector4D<float>[] Colors) : IGeometryDefinition
             Attributes = attributes
         };
     }
-};
+}

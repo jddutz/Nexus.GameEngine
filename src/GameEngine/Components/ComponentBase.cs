@@ -80,11 +80,3 @@ public abstract class ComponentBase : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 }
-
-/// <summary>
-/// Legacy type alias for backward compatibility.
-/// </summary>
-[Obsolete("Use ComponentBase instead", false)]
-public abstract class RuntimeComponentBase : ComponentBase
-{
-}

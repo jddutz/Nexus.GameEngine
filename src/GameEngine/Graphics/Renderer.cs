@@ -367,18 +367,34 @@ public unsafe class Renderer(
 
     private unsafe void PushConstantsToShader(CommandBuffer commandBuffer, PipelineLayout pipelineLayout, object pushConstants)
     {
-        // Currently only supporting VertexColorsPushConstants
-        if (pushConstants is VertexColorsPushConstants colors)
+        switch (pushConstants)
         {
-            var size = (uint)Marshal.SizeOf<VertexColorsPushConstants>();
-            var dataPtr = &colors;
-            context.VulkanApi.CmdPushConstants(
-                commandBuffer,
-                pipelineLayout,
-                ShaderStageFlags.VertexBit,
-                0,  // offset
-                size,
-                dataPtr);
+            case UniformColorPushConstants uniformColor:
+            {
+                var size = (uint)Marshal.SizeOf<UniformColorPushConstants>();
+                var dataPtr = &uniformColor;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.VertexBit,
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
+            case VertexColorsPushConstants colors:
+            {
+                var size = (uint)Marshal.SizeOf<VertexColorsPushConstants>();
+                var dataPtr = &colors;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.VertexBit,
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
         }
     }
 }

@@ -1,0 +1,72 @@
+#version 450
+
+layout(location = 0) in vec2 fragPos;
+layout(location = 0) out vec4 outColor;
+
+// Uniform buffer: gradient definition (updated when gradient changes)
+layout(binding = 0) uniform GradientUBO {
+    vec4 colors[32];      // Color at each stop
+    float positions[32];  // Position of each stop (0.0 to 1.0)
+    int stopCount;        // Number of active stops (2-32)
+} gradient;
+
+// Push constants: animation parameters (updated every frame)
+layout(push_constant) uniform PushConstants {
+    float angle;          // Rotation angle in radians
+    float padding1;
+    float padding2;
+    float padding3;
+} pc;
+
+// Sample the gradient at position t (0.0 to 1.0)
+vec4 sampleGradient(float t) {
+    // Clamp to valid range
+    t = clamp(t, 0.0, 1.0);
+    
+    // Handle edge cases
+    if (gradient.stopCount < 2) {
+        return gradient.colors[0];
+    }
+    
+    // If t is before first stop, use first color
+    if (t <= gradient.positions[0]) {
+        return gradient.colors[0];
+    }
+    
+    // If t is after last stop, use last color
+    int lastIndex = gradient.stopCount - 1;
+    if (t >= gradient.positions[lastIndex]) {
+        return gradient.colors[lastIndex];
+    }
+    
+    // Find the two stops that surround t
+    for (int i = 0; i < gradient.stopCount - 1; i++) {
+        float pos1 = gradient.positions[i];
+        float pos2 = gradient.positions[i + 1];
+        
+        if (t >= pos1 && t <= pos2) {
+            // Interpolate between the two colors
+            float localT = (t - pos1) / (pos2 - pos1);
+            return mix(gradient.colors[i], gradient.colors[i + 1], localT);
+        }
+    }
+    
+    // Fallback (should never reach here)
+    return gradient.colors[0];
+}
+
+void main() {
+    // Rotate fragment position by angle
+    float cosA = cos(pc.angle);
+    float sinA = sin(pc.angle);
+    vec2 rotated = vec2(
+        fragPos.x * cosA - fragPos.y * sinA,
+        fragPos.x * sinA + fragPos.y * cosA
+    );
+    
+    // Map from [-1, 1] to [0, 1] along the gradient direction (X axis after rotation)
+    float t = (rotated.x + 1.0) * 0.5;
+    
+    // Sample gradient and output color
+    outColor = sampleGradient(t);
+}
