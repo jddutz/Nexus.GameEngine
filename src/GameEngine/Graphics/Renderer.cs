@@ -138,7 +138,7 @@ public unsafe class Renderer(
             var component = componentStack.Pop();
             
             // Collect draw commands and distribute to pass-specific lists
-            if (component is IRenderable renderable)
+            if (component is IDrawable renderable)
             {
                 foreach (var drawCommand in renderable.GetDrawCommands(renderContext))
                 {

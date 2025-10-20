@@ -109,7 +109,7 @@ public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
 ## Complete Example: Gradient Background
 
 ```csharp
-public partial class GradientBackground : RenderableBase, IRenderable
+public partial class GradientBackground : Drawable, IDrawable
 {
     private readonly IBufferManager _bufferManager;
     private readonly IDescriptorManager _descriptorManager;

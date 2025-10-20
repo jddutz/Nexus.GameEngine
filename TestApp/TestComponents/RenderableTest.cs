@@ -7,7 +7,7 @@ namespace TestApp.TestComponents;
 /// Service responsible for discovering integration tests in assemblies.
 /// </summary>
 public class RenderableTest()
-    : RenderableBase(), IRenderable, ITestComponent
+    : RuntimeComponent, IDrawable, ITestComponent
 {
     public uint RenderPriority { get; set; } = 0;
     public int FramesRendered { get; private set; } = 0;
@@ -21,7 +21,7 @@ public class RenderableTest()
         }
     }
 
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         FramesRendered++;
         return [];

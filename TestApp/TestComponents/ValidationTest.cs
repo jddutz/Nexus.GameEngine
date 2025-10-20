@@ -11,7 +11,7 @@ namespace TestApp.TestComponents;
 /// </summary>
 [TestRunnerIgnore(reason: "Validation tests all passed but continue output false errors via console log")]
 public class ValidationTest(IGraphicsContext context)
-    : RenderableBase(), IRenderable, ITestComponent
+    : RuntimeComponent, IDrawable, ITestComponent
 {
     private record TestData
     {
@@ -45,7 +45,7 @@ public class ValidationTest(IGraphicsContext context)
         }
     }
 
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (!IsActive)
             yield break;

@@ -14,7 +14,7 @@ public class RenderEventArgs : EventArgs
 
 /// <summary>
 /// Renderer interface providing Vulkan context access and render orchestration.
-/// Renders IRenderable components by walking the component tree.
+/// Renders IDrawable components by walking the component tree.
 /// </summary>
 public interface IRenderer
 {
@@ -32,7 +32,7 @@ public interface IRenderer
 
     /// <summary>
     /// Handles window render events. Walks the component tree.
-    /// Calls GetRenderElements() on each IRenderable component to collect rendering data.
+    /// Calls GetRenderElements() on each IDrawable component to collect rendering data.
     /// </summary>
     void OnRender(double deltaTime);
 }

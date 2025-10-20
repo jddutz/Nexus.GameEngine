@@ -69,12 +69,11 @@ public class ImagePlacementStretchTest(IPixelSampler pixelSampler, IWindowServic
     protected override void OnUpdate(double deltaTime)
     {
         // Render one frame then deactivate
-        if (framesRendered > 256)
+        if (framesRendered > frameCount)
         {
             pixelSampler.Deactivate();
             Deactivate();
         }
-        framesRendered++;
         framesRendered++;
     }
 

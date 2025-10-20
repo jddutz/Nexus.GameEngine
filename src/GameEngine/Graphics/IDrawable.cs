@@ -3,10 +3,9 @@ using Nexus.GameEngine.Components;
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
-/// Interface for components that can be rendered.
-/// Components implementing this interface provide rendering data to the engine.
+/// Interface for components that issue draw commands.
 /// </summary>
-public interface IRenderable : IRuntimeComponent
+public interface IDrawable : IRuntimeComponent
 {
     /// <summary>
     /// Gets draw commands for this component.

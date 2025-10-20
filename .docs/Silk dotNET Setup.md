@@ -27,7 +27,7 @@ public interface IRenderer
 }
 
 // Components render directly using GL calls
-public class BackgroundLayer : RuntimeComponent, IRenderable
+public class BackgroundLayer : RuntimeComponent, IDrawable
 {
     public void OnRender(IRenderer renderer, double deltaTime)
     {
@@ -115,10 +115,10 @@ public class RenderPassConfiguration
 
 ### Component Rendering Integration
 
-Components implement `IRenderable` to participate in rendering:
+Components implement `IDrawable` to participate in rendering:
 
 ```csharp
-public interface IRenderable : IRuntimeComponent
+public interface IDrawable : IRuntimeComponent
 {
     void OnRender(IRenderer renderer, double deltaTime);
     bool ShouldRender { get; }
@@ -220,7 +220,7 @@ public class TextureAsset
 Components reference assets using strongly-typed references:
 
 ```csharp
-public class BackgroundLayer : RuntimeComponent, IRenderable
+public class BackgroundLayer : RuntimeComponent, IDrawable
 {
     public record Template : RuntimeComponent.Template
     {

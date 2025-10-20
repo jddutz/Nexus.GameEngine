@@ -25,12 +25,12 @@ public partial class LinearGradientBackground(
     IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
-    : RenderableBase(), IRenderable
+    : RuntimeComponent, IDrawable
 {
     /// <summary>
     /// Template for configuring LinearGradientBackground components.
     /// </summary>
-    public new record Template : RenderableBase.Template
+    public new record Template : RuntimeComponent.Template
     {
         /// <summary>
         /// The gradient definition (color stops).
@@ -64,11 +64,6 @@ public partial class LinearGradientBackground(
     /// </summary>
     [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
     private float _angle = 0f;
-
-    /// <summary>
-    /// Render in the Main pass (background priority).
-    /// </summary>
-    protected override uint GetDefaultRenderMask() => RenderPasses.Main;
 
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
@@ -185,7 +180,7 @@ public partial class LinearGradientBackground(
             _gradientDescriptorSet.Value.Handle, _gradientUboBuffer.Value.Handle, uboSize);
     }
 
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (_geometry == null || !_gradientDescriptorSet.HasValue)
             yield break;
@@ -204,7 +199,7 @@ public partial class LinearGradientBackground(
 
         yield return new DrawCommand
         {
-            RenderMask = RenderMask,
+            RenderMask = RenderPasses.Main,
             Pipeline = _pipeline,
             VertexBuffer = _geometry.Buffer,
             VertexCount = _geometry.VertexCount,

@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A UI component that displays text.
 /// </summary>
 public partial class TextElement()
-    : RenderableBase(), IRenderable, ITextController
+    : RuntimeComponent, IDrawable, ITextController
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -119,7 +119,7 @@ public partial class TextElement()
         }
     }
 
-    // IRenderable.SetVisible implementation
+    // IDrawable.SetVisible implementation
     public void SetVisible(bool visible)
     {
         IsVisible = visible;
@@ -188,8 +188,9 @@ public partial class TextElement()
         FontSize = FontSize * scaleFactor;
     }
 
-    public IEnumerable<DrawCommand> GetElements()
+    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
-        throw new NotImplementedException();
+        // TODO: Implement text rendering
+        yield break;
     }
 }

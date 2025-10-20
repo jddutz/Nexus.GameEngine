@@ -79,7 +79,7 @@ public partial class Border()
     /// </summary>
     protected override void OnActivate()
     {
-        // Border components are rendered through the IRenderable interface
+        // Border components are rendered through the IDrawable interface
         // when the renderer walks the component tree
     }
 

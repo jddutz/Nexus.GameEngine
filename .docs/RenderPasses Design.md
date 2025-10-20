@@ -57,7 +57,7 @@ for (int i = 0; i <= 10; i++)
 
 **Usage:**
 ```csharp
-public class Tree : RenderableBase
+public class Tree : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Main | RenderPasses.Shadow;
 }
@@ -75,7 +75,7 @@ public class Tree : RenderableBase
 **Usage:**
 ```csharp
 // Optional - enable in VulkanSettings for scenes with heavy overdraw
-public class Character : RenderableBase
+public class Character : Drawable
 {
     protected override uint GetRenderPasses() => 
         RenderPasses.Depth | RenderPasses.Main | RenderPasses.Shadow;
@@ -92,7 +92,7 @@ public class Character : RenderableBase
 
 **Usage:**
 ```csharp
-public class Skybox : RenderableBase
+public class Skybox : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Background;
     
@@ -121,12 +121,12 @@ public class Skybox : RenderableBase
 
 **Usage:**
 ```csharp
-public class Sprite : RenderableBase
+public class Sprite : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Main;
 }
 
-public class StaticMesh : RenderableBase
+public class StaticMesh : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Main;
 }
@@ -158,12 +158,12 @@ public class DeferredLightRenderer
 
 **Usage:**
 ```csharp
-public class Mirror : RenderableBase
+public class Mirror : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Reflection;
 }
 
-public class Water : RenderableBase
+public class Water : Drawable
 {
     protected override uint GetRenderPasses() => 
         RenderPasses.Main | RenderPasses.Reflection;  // Both passes
@@ -181,7 +181,7 @@ public class Water : RenderableBase
 
 **Usage:**
 ```csharp
-public class Glass : RenderableBase
+public class Glass : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Transparent;
     
@@ -213,12 +213,12 @@ public class Glass : RenderableBase
 
 **Usage:**
 ```csharp
-public class ParticleSystem : RenderableBase
+public class ParticleSystem : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Particles;
 }
 
-public class Fire : RenderableBase
+public class Fire : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Particles;
 }
@@ -234,12 +234,12 @@ public class Fire : RenderableBase
 
 **Usage:**
 ```csharp
-public class BloomEffect : RenderableBase
+public class BloomEffect : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Post;
 }
 
-public class ToneMappingEffect : RenderableBase
+public class ToneMappingEffect : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Post;
 }
@@ -255,17 +255,17 @@ public class ToneMappingEffect : RenderableBase
 
 **Usage:**
 ```csharp
-public class TextElement : RenderableBase
+public class TextElement : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.UI;
 }
 
-public class Button : RenderableBase
+public class Button : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.UI;
 }
 
-public class HealthBar : RenderableBase
+public class HealthBar : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.UI;
 }
@@ -282,7 +282,7 @@ public class HealthBar : RenderableBase
 **Usage:**
 ```csharp
 #if DEBUG
-public class CollisionDebugRenderer : RenderableBase
+public class CollisionDebugRenderer : Drawable
 {
     protected override uint GetRenderPasses() => RenderPasses.Debug;
 }

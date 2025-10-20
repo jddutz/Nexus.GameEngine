@@ -39,9 +39,27 @@ Nexus.GameEngine.sln
 The engine is built around a hierarchical component system where everything inherits from `IRuntimeComponent`:
 
 - **Component Trees**: All game objects, UI elements, and systems form parent-child hierarchies
-- **Behavior Interfaces**: Components implement only the behaviors they need (IRenderable, IUpdatable, etc.)
+- **Behavior Interfaces**: Components implement only the behaviors they need (IDrawable, IUpdatable, etc.)
 - **Template Configuration**: Components are configured using strongly-typed template records
 - **Dependency Injection**: Components receive dependencies through constructor injection
+
+#### Transform System
+
+The engine uses a unified 3D transform system for all spatial objects:
+
+- **ITransformable**: Interface for components with position, rotation, and scale in 3D space
+- **Coordinate System**: Right-handed, -Z forward, +Y up (Vulkan/Silk.NET conventions)
+- **Transform Properties**: 
+  - `Position` (Vector3D<float>): Local position relative to parent
+  - `Rotation` (Quaternion<float>): Local rotation with SLERP interpolation
+  - `Scale` (Vector3D<float>): Non-uniform scaling
+- **Transform Matrices**:
+  - `LocalMatrix`: Transform relative to parent (Scale → Rotate → Translate)
+  - `WorldMatrix`: Absolute transform in world space (computed on-demand from hierarchy)
+- **Direction Vectors**: Forward, Right, Up computed from rotation (local and world space)
+- **Parent/Child Hierarchy**: Lazy computation of world transforms by walking up parent chain
+- **Animated Properties**: All transform properties support interpolation via ComponentProperty attribute
+- **2D and 3D**: 2D games use orthographic cameras; all transforms are fundamentally 3D
 
 ### Resource Management System
 
@@ -65,7 +83,7 @@ A new attribute-based resource management system provides centralized, type-safe
 The graphics system provides a flexible rendering pipeline:
 
 - **IRenderer**: Core rendering interface with OpenGL access
-- **IRenderable**: Interface for components that can be rendered
+- **IDrawable**: Interface for components that can be rendered
 - **Render Passes**: Configurable multi-pass rendering pipeline
 - **Resource Sharing**: Efficient sharing of geometry, shaders, and textures
 

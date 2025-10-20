@@ -519,10 +519,18 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         if (type.SpecialType == SpecialType.System_Int32) // int
             return $"(int)({startExpr} + ({endExpr} - {startExpr}) * {tExpr})";
         
-        // Check for Silk.NET types (Vector, Matrix, etc.) - they have operator overloads
+        // Check for Silk.NET types (Vector, Matrix, Quaternion, etc.)
         if (type.ContainingNamespace?.ToDisplayString() == "Silk.NET.Maths")
         {
             var simpleTypeName = type.Name;
+            
+            // Quaternion needs special handling - use SLERP instead of linear interpolation
+            if (simpleTypeName.StartsWith("Quaternion"))
+            {
+                return $"global::Silk.NET.Maths.Quaternion.Slerp({startExpr}, {endExpr}, {tExpr})";
+            }
+            
+            // Vector and Matrix types support operator overloads for linear interpolation
             if (simpleTypeName.StartsWith("Vector") || simpleTypeName.StartsWith("Matrix"))
             {
                 // Silk.NET types support operator+ and operator*

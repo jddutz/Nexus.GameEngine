@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.GUI.Abstractions;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract partial class LayoutBase : RenderableBase, IRenderable
+public abstract partial class LayoutBase : RuntimeComponent, IDrawable
 {
 
     /// <summary>
@@ -203,6 +203,11 @@ public abstract partial class LayoutBase : RenderableBase, IRenderable
     /// Layout components should render their children.
     /// </summary>
     public bool ShouldRenderChildren => true;
+
+    /// <summary>
+    /// Layout components don't issue their own draw commands - they arrange children.
+    /// </summary>
+    public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context) => [];
 
     protected override void OnDeactivate()
     {

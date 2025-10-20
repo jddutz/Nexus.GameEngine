@@ -957,7 +957,7 @@ public class TextElement : RuntimeComponent
 ### **Before (Manual Implementation)**
 
 ```csharp
-public class TextElement : RuntimeComponent, IRenderable
+public class TextElement : RuntimeComponent, IDrawable
 {
     private string? _text;
     private Vector4D<float> _color = Colors.White;
@@ -1011,7 +1011,7 @@ public class TextElement : RuntimeComponent, IRenderable
 ### **After (Generated Implementation)**
 
 ```csharp
-public partial class TextElement : RuntimeComponent, IRenderable
+public partial class TextElement : RuntimeComponent, IDrawable
 {
     // Just declare properties - everything else is generated!
     // No [Animation] attribute = instant update (Duration = 0)

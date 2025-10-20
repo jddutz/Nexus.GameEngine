@@ -53,7 +53,7 @@ The RuntimeComponent system is built on a hierarchical composition model where:
 
 1. **Universal Interface**: All game objects, UI elements, input handlers, and system components implement `IRuntimeComponent`
 2. **Tree Structure**: Components form parent-child relationships through the `Children` property and `Parent` references
-3. **Behavioral Composition**: Components implement specific behavior interfaces (`IRenderable`, `IUpdatable`, etc.) only when needed
+3. **Behavioral Composition**: Components implement specific behavior interfaces (`IDrawable`, `IUpdatable`, etc.) only when needed
 4. **Template-Based Configuration**: Components are configured using strongly-typed template records
 5. **Dependency Injection**: Components receive dependencies through constructor injection
 6. **Lifecycle Management**: Automatic activation, validation, and disposal cascades through the component tree
@@ -163,7 +163,7 @@ foreach (var child in component.Children) { }
 
 Components implement behavior interfaces as needed. See examples in the codebase:
 
-- [`IRenderable`](GameEngine/Graphics/IRenderable.cs) - For visual components
+- [`IDrawable`](GameEngine/Graphics/IDrawable.cs) - For visual components
 - [`IUpdatable`](GameEngine/Runtime/IUpdatable.cs) - For components requiring frame updates
 - [`IInputHandler`](GameEngine/Input/IInputHandler.cs) - For input processing components
 
@@ -366,7 +366,7 @@ public static class Shaders
 Components access resources through the resource manager:
 
 ```csharp
-public class BackgroundLayer : RuntimeComponent, IRenderable
+public class BackgroundLayer : RuntimeComponent, IDrawable
 {
     private readonly IResourceManager _resourceManager;
 
