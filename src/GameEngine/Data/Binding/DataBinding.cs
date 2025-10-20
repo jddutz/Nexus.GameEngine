@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class DataBinding(string sourceProperty, string targetProperty, BindingModeEnum mode,
                   IValueConverter? converter = null, IBindingValidator? validator = null)

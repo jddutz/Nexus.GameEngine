@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public struct BindingError(string propertyName, string message, BindingErrorSeverityEnum severity, Exception? exception = null)
     {

@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     /// <summary>
     /// Provides data for deserialization events.

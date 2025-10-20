@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
 
@@ -30,16 +30,12 @@ public class ShaderResourceManager : IShaderResourceManager
         {
             // Check cache
             if (_cache.TryGetValue(definition.Name, out var cached))
-            {
-                _logger.LogDebug("Shader cache hit: {Name} (ref count: {RefCount} -> {NewRefCount})",
-                    definition.Name, cached.RefCount, cached.RefCount + 1);
-                
+            {                
                 _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
                 return cached.Resource;
             }
             
             // Load shader modules
-            _logger.LogDebug("Loading shader: {Name}", definition.Name);
             
             var vertShaderModule = CreateShaderModule(definition.VertexShaderPath);
             var fragShaderModule = CreateShaderModule(definition.FragmentShaderPath);
@@ -54,7 +50,6 @@ public class ShaderResourceManager : IShaderResourceManager
             
             _cache[definition.Name] = (resource, 1);
             
-            _logger.LogInformation("Shader loaded: {Name}", definition.Name);
             
             return resource;
         }
@@ -71,19 +66,13 @@ public class ShaderResourceManager : IShaderResourceManager
             var assembly = typeof(ShaderResourceManager).Assembly;
             using var stream = assembly.GetManifestResourceStream(resourceName);
             
-            if (stream == null)
-            {
-                _logger.LogError("Shader resource not found: {ResourceName} (from path: {ShaderPath})", 
-                    resourceName, shaderPath);
-                return default;
-            }
+            if (stream == null) return default;
 
             // Read SPIR-V bytes
             using var memoryStream = new MemoryStream();
             stream.CopyTo(memoryStream);
             var code = memoryStream.ToArray();
 
-            _logger.LogTrace("Loaded {ByteCount} bytes from shader: {ShaderPath}", code.Length, shaderPath);
 
             // Create shader module
             fixed (byte* codePtr = code)
@@ -100,17 +89,14 @@ public class ShaderResourceManager : IShaderResourceManager
                 
                 if (result != Result.Success)
                 {
-                    _logger.LogError("Failed to create shader module: {Result}", result);
                     return default;
                 }
 
-                _logger.LogTrace("Created shader module from: {ShaderPath}", shaderPath);
                 return shaderModule;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception loading shader: {ShaderPath}", shaderPath);
             return default;
         }
     }
@@ -122,22 +108,17 @@ public class ShaderResourceManager : IShaderResourceManager
         {
             if (!_cache.TryGetValue(definition.Name, out var cached))
             {
-                _logger.LogWarning("Attempted to release non-existent shader: {Name}", definition.Name);
                 return;
             }
             
             var newRefCount = cached.RefCount - 1;
             
             if (newRefCount > 0)
-            {
-                _logger.LogDebug("Shader released: {Name} (ref count: {OldCount} -> {NewCount})",
-                    definition.Name, cached.RefCount, newRefCount);
-                
+            {                
                 _cache[definition.Name] = (cached.Resource, newRefCount);
             }
             else
             {
-                _logger.LogInformation("Destroying shader resource: {Name} (ref count reached 0)", definition.Name);
                 
                 // Destroy shader modules
                 DestroyShaderResource(cached.Resource);
@@ -163,7 +144,6 @@ public class ShaderResourceManager : IShaderResourceManager
     {
         lock (_lock)
         {
-            _logger.LogInformation("Disposing ShaderResourceManager: {Count} resources in cache", _cache.Count);
             
             // Destroy all shader modules
             foreach (var (resource, _) in _cache.Values)

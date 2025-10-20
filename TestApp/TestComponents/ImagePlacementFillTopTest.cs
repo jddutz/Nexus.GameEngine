@@ -16,7 +16,7 @@ namespace TestApp.TestComponents;
 /// Uses image_test.png (256x256 square): R channel = X coordinate (0-255), G channel = Y coordinate (0-255)
 /// Expected: When narrow/tall image, shows top and clips bottom; when wide/short, centers horizontally
 /// </summary>
-public class ImagePlacementFillTopTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class ImagePlacementFillTopTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

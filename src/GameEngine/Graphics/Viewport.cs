@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
@@ -62,7 +62,6 @@ public partial class Viewport(
             if (_camera != value)
             {
                 _camera = value;
-                Logger?.LogDebug("Viewport camera changed to {CameraName}", value?.Name ?? "null");
             }
         }
     }
@@ -88,7 +87,6 @@ public partial class Viewport(
                     AddChild(_content);
                 }
 
-                Logger?.LogDebug("Viewport content changed to {ContentName}", value?.Name ?? "null");
             }
         }
     }
@@ -191,8 +189,6 @@ public partial class Viewport(
         
         _vulkanStateNeedsUpdate = false;
         
-        Logger?.LogDebug("Updated Vulkan viewport: ({X}, {Y}, {Width}x{Height})", 
-            _vulkanViewport.Value.X, _vulkanViewport.Value.Y, _vulkanViewport.Value.Width, _vulkanViewport.Value.Height);
     }
     
     /// <summary>

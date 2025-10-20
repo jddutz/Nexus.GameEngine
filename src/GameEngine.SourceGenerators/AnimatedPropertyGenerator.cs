@@ -191,6 +191,9 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         sb.AppendLine($"partial class {className}");
         sb.AppendLine("{");
 
+        // Generate cached property name strings to avoid allocations
+        GeneratePropertyNameConstants(sb, properties);
+
         // Generate backing fields and property implementations
         foreach (var prop in properties)
         {
@@ -203,6 +206,26 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         sb.AppendLine("}");
 
         return sb.ToString();
+    }
+
+    private static void GeneratePropertyNameConstants(StringBuilder sb, List<PropertyInfo> properties)
+    {
+        if (properties.Count == 0) return;
+        
+        sb.AppendLine("    // Cached property name strings to avoid allocations");
+        foreach (var prop in properties)
+        {
+            sb.AppendLine($"    private const string {prop.Name}PropertyName = \"{prop.Name}\";");
+        }
+        sb.AppendLine();
+        
+        // Add component-level dirty flag for performance
+        if (properties.Count > 0)
+        {
+            sb.AppendLine("    // Component-level dirty flag to track if any properties need processing (performance optimization)");
+            sb.AppendLine("    private bool _isDirty;");
+            sb.AppendLine();
+        }
     }
 
     private static void GenerateProperty(StringBuilder sb, PropertyInfo prop)
@@ -221,6 +244,9 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         sb.AppendLine($"        get => {targetFieldName}__initialized ? {targetFieldName}__value : {fieldName};");
         sb.AppendLine($"        set {{ {targetFieldName}__value = value; {targetFieldName}__initialized = true; }}");
         sb.AppendLine("    }");
+        
+        // Cache EqualityComparer to avoid property access overhead
+        sb.AppendLine($"    private static readonly global::System.Collections.Generic.EqualityComparer<{prop.Type}> {fieldName}__comparer = global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default;");
 
         if (prop.HasAnimationAttribute && prop.Duration > 0)
         {
@@ -240,6 +266,7 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 sb.AppendLine($"    private {animFieldName}State {animFieldName} = new();");
                 sb.AppendLine($"    private {elementType}[] {animFieldName}_startValue = default!;");
                 sb.AppendLine($"    private {elementType}[] {animFieldName}_endValue = default!;");
+                sb.AppendLine($"    private {elementType}[] {animFieldName}_buffer = default!; // Reusable buffer to avoid per-frame allocation");
                 sb.AppendLine($"    private double {animFieldName}_elapsed;");
             }
             else
@@ -266,7 +293,7 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         var defaultInterpolation = prop.Interpolation;
         sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = -1f, global::Nexus.GameEngine.Animation.InterpolationMode interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode)(-1))");
         sb.AppendLine("    {");
-        sb.AppendLine($"        if (global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, value))");
+        sb.AppendLine($"        if ({fieldName}__comparer.Equals({targetFieldName}, value))");
         sb.AppendLine("            return;");
         sb.AppendLine();
         sb.AppendLine($"        {targetFieldName} = value;");
@@ -310,7 +337,8 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 sb.AppendLine($"            {animFieldName}_endValue = {targetFieldName};");
                 sb.AppendLine($"            {animFieldName}_elapsed = 0.0;");
                 sb.AppendLine($"            {animFieldName}.IsAnimating = true;");
-                sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
+                sb.AppendLine($"            _isDirty = true;");
+                sb.AppendLine($"            OnPropertyAnimationStarted({prop.Name}PropertyName);");
                 sb.AppendLine("        }");
                 sb.AppendLine("        else");
                 sb.AppendLine("        {");
@@ -323,7 +351,8 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 sb.AppendLine($"        if (IsActive && duration > 0f)");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            {animFieldName}.StartAnimation({fieldName}, {targetFieldName}, 0.0); // TODO: Use TimeProvider");
-                sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
+                sb.AppendLine($"            _isDirty = true;");
+                sb.AppendLine($"            OnPropertyAnimationStarted({prop.Name}PropertyName);");
                 sb.AppendLine("        }");
                 sb.AppendLine("        else");
                 sb.AppendLine("        {");
@@ -334,11 +363,8 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         }
         else
         {
-            // Property without animation - always instant
-            sb.AppendLine($"        OnPropertyAnimationStarted(nameof({prop.Name}));");
-            sb.AppendLine($"        {fieldName} = {targetFieldName};");
-            sb.AppendLine($"        NotifyPropertyChanged(nameof({prop.Name}));");
-            sb.AppendLine($"        OnPropertyAnimationEnded(nameof({prop.Name}));");
+            // Property without animation - always instant, mark dirty for deferred update
+            sb.AppendLine($"        _isDirty = true;");
         }
 
         sb.AppendLine("    }");
@@ -364,6 +390,24 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         sb.AppendLine("    {");
         sb.AppendLine("        base.UpdateAnimations(deltaTime);");
         sb.AppendLine();
+        
+        // Generate early-exit check for performance using single _isDirty flag
+        if (properties.Count > 0)
+        {
+            sb.AppendLine("        // Early exit if no properties need processing (performance optimization)");
+            sb.AppendLine("        if (!_isDirty)");
+            sb.AppendLine("            return;");
+            sb.AppendLine();
+        }
+        
+        // Track if any properties are still dirty at the end
+        var animatedProps = properties.Where(p => p.HasAnimationAttribute && p.Duration > 0).ToList();
+        if (animatedProps.Count > 0)
+        {
+            sb.AppendLine("        // Track if any animations are still active");
+            sb.AppendLine("        bool stillAnimating = false;");
+            sb.AppendLine();
+        }
 
         foreach (var prop in properties)
         {
@@ -390,21 +434,21 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                     sb.AppendLine($"                var oldValue = {fieldName};");
                     sb.AppendLine($"                {fieldName} = {animFieldName}_endValue;");
                     sb.AppendLine($"                {animFieldName}.IsAnimating = false;");
-                    sb.AppendLine($"                NotifyPropertyChanged(nameof({prop.Name}));");
                     sb.AppendLine($"                On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine($"                OnPropertyAnimationEnded(nameof({prop.Name}));");
                     sb.AppendLine("            }");
                     sb.AppendLine("            else");
                     sb.AppendLine("            {");
-                    sb.AppendLine($"                // Interpolate array elements");
+                    sb.AppendLine($"                // Interpolate array elements in-place using reusable buffer");
                     sb.AppendLine($"                var oldValue = {fieldName};");
                     sb.AppendLine($"                float t = (float)({animFieldName}_elapsed / {animFieldName}.Duration);");
                     sb.AppendLine($"                // Apply easing (simplified - just linear for now)");
                     sb.AppendLine($"                // TODO: Add easing function support");
                     sb.AppendLine();
-                    sb.AppendLine($"                // Allocate new array and interpolate each element");
-                    sb.AppendLine($"                var newArray = new {elementType}[{animFieldName}_startValue.Length];");
-                    sb.AppendLine($"                for (int i = 0; i < newArray.Length; i++)");
+                    sb.AppendLine($"                // Allocate buffer on first use, reuse thereafter (zero per-frame allocation)");
+                    sb.AppendLine($"                if ({animFieldName}_buffer == null || {animFieldName}_buffer.Length != {animFieldName}_startValue.Length)");
+                    sb.AppendLine($"                    {animFieldName}_buffer = new {elementType}[{animFieldName}_startValue.Length];");
+                    sb.AppendLine();
+                    sb.AppendLine($"                for (int i = 0; i < {animFieldName}_buffer.Length; i++)");
                     sb.AppendLine("                {");
                     
                     // Generate optimized interpolation code for the element type
@@ -414,12 +458,12 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                         $"{animFieldName}_endValue[i]",
                         "t");
                     
-                    sb.AppendLine($"                    newArray[i] = {interpCode};");
+                    sb.AppendLine($"                    {animFieldName}_buffer[i] = {interpCode};");
                     sb.AppendLine("                }");
                     sb.AppendLine();
-                    sb.AppendLine($"                {fieldName} = newArray;");
-                    sb.AppendLine($"                NotifyPropertyChanged(nameof({prop.Name}));");
+                    sb.AppendLine($"                {fieldName} = {animFieldName}_buffer;");
                     sb.AppendLine($"                On{prop.Name}Changed(oldValue!);");
+                    sb.AppendLine($"                stillAnimating = true;");
                     sb.AppendLine("            }");
                     sb.AppendLine("        }");
                 }
@@ -430,15 +474,11 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                     sb.AppendLine("        {");
                     sb.AppendLine($"            var oldValue = {fieldName};");
                     sb.AppendLine($"            {fieldName} = {animFieldName}.Update(deltaTime);");
-                    sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
                     // For non-array types, only use ! if reference type
                     var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
                     sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-                    sb.AppendLine();
-                    sb.AppendLine($"            if (!{animFieldName}.IsAnimating)");
-                    sb.AppendLine("            {");
-                    sb.AppendLine($"                OnPropertyAnimationEnded(nameof({prop.Name}));");
-                    sb.AppendLine("            }");
+                    sb.AppendLine($"            if ({animFieldName}.IsAnimating)");
+                    sb.AppendLine($"                stillAnimating = true;");
                     sb.AppendLine("        }");
                 }
             }
@@ -472,9 +512,7 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                         sb.AppendLine($"            if ({targetFieldName} != null)");
                         sb.AppendLine($"                global::System.Array.Copy({targetFieldName}!, {fieldName}, {targetFieldName}.Length);");
                     }
-                    sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
                     sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine($"            OnPropertyAnimationEnded(nameof({prop.Name}));");
                     sb.AppendLine("        }");
                     sb.AppendLine();
                     
@@ -503,11 +541,8 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                     sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName}))");
                     sb.AppendLine("        {");
                     sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
                     sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                    sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
                     sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine($"            OnPropertyAnimationEnded(nameof({prop.Name}));");
                     sb.AppendLine("        }");
                 }
                 else
@@ -516,16 +551,26 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                     sb.AppendLine($"        if (!global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, {fieldName}))");
                     sb.AppendLine("        {");
                     sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
                     sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                    sb.AppendLine($"            NotifyPropertyChanged(nameof({prop.Name}));");
                     var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
                     sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-                    sb.AppendLine($"            OnPropertyAnimationEnded(nameof({prop.Name}));");
                     sb.AppendLine("        }");
                 }
             }
             sb.AppendLine();
+        }
+
+        // Clear dirty flag if no animations are still running
+        if (animatedProps.Count > 0)
+        {
+            sb.AppendLine("        // Clear dirty flag if all animations are complete");
+            sb.AppendLine("        _isDirty = stillAnimating;");
+        }
+        else if (properties.Count > 0)
+        {
+            // No animated properties, so clear dirty flag after processing
+            sb.AppendLine("        // All properties processed, clear dirty flag");
+            sb.AppendLine("        _isDirty = false;");
         }
 
         sb.AppendLine("    }");

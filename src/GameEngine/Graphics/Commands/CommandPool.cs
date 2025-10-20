@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using VkCommandPool = Silk.NET.Vulkan.CommandPool;
 using Silk.NET.Vulkan;
 
@@ -65,10 +65,6 @@ public unsafe class CommandPool : ICommandPool
         _createdAt = DateTime.UtcNow;
 
         CreateCommandPool(transient);
-
-        _logger.LogDebug(
-            "Command pool created: QueueFamily={QueueFamily}, IndividualReset={AllowReset}, Transient={Transient}",
-            queueFamilyIndex, allowIndividualReset, transient);
     }
 
     /// <inheritdoc/>
@@ -87,7 +83,6 @@ public unsafe class CommandPool : ICommandPool
 
         if (count == 0)
         {
-            _logger.LogWarning("Attempted to allocate 0 command buffers");
             return Array.Empty<CommandBuffer>();
         }
 
@@ -107,9 +102,6 @@ public unsafe class CommandPool : ICommandPool
             var result = _vk.AllocateCommandBuffers(_context.Device, &allocInfo, pCommandBuffers);
             if (result != Result.Success)
             {
-                _logger.LogError(
-                    "Failed to allocate {Count} {Level} command buffers: {Result}",
-                    count, level, result);
                 throw new InvalidOperationException($"Failed to allocate command buffers: {result}");
             }
         }
@@ -126,10 +118,6 @@ public unsafe class CommandPool : ICommandPool
             _allocatedBuffers.AddRange(commandBuffers);
         }
 
-        _logger.LogTrace(
-            "Allocated {Count} {Level} command buffers (Total: {Total})",
-            count, level, _totalAllocatedBuffers);
-
         return commandBuffers;
     }
 
@@ -140,7 +128,6 @@ public unsafe class CommandPool : ICommandPool
 
         if (commandBuffers == null || commandBuffers.Length == 0)
         {
-            _logger.LogWarning("Attempted to free null or empty command buffer array");
             return;
         }
 
@@ -161,10 +148,6 @@ public unsafe class CommandPool : ICommandPool
                 _allocatedBuffers.Remove(buffer);
             }
         }
-
-        _logger.LogTrace(
-            "Freed {Count} command buffers (Remaining: {Remaining})",
-            commandBuffers.Length, _totalAllocatedBuffers);
     }
 
     /// <inheritdoc/>
@@ -175,17 +158,11 @@ public unsafe class CommandPool : ICommandPool
         var result = _vk.ResetCommandPool(_context.Device, _pool, flags);
         if (result != Result.Success)
         {
-            _logger.LogError("Failed to reset command pool: {Result}", result);
             throw new InvalidOperationException($"Failed to reset command pool: {result}");
         }
 
         _resetCount++;
         _lastResetAt = DateTime.UtcNow;
-
-        var memoryReleased = flags.HasFlag(CommandPoolResetFlags.ReleaseResourcesBit);
-        _logger.LogTrace(
-            "Command pool reset (Flags={Flags}, MemoryReleased={MemoryReleased}, ResetCount={ResetCount})",
-            flags, memoryReleased, _resetCount);
     }
 
     /// <inheritdoc/>
@@ -197,7 +174,6 @@ public unsafe class CommandPool : ICommandPool
         // For now, just track the call - actual implementation requires checking feature support
         _trimCount++;
 
-        _logger.LogTrace("Command pool trimmed (TrimCount={TrimCount})", _trimCount);
     }
 
     /// <inheritdoc/>
@@ -241,12 +217,9 @@ public unsafe class CommandPool : ICommandPool
         };
 
         VkCommandPool pool;
-        var result = _vk.CreateCommandPool(_context.Device, &poolInfo, null, &pool);
+        var result = _vk.CreateCommandPool(_context.Device, &poolInfo, null, out pool);
         if (result != Result.Success)
         {
-            _logger.LogError(
-                "Failed to create command pool for queue family {QueueFamily}: {Result}",
-                _queueFamilyIndex, result);
             throw new InvalidOperationException($"Failed to create command pool: {result}");
         }
 
@@ -258,14 +231,11 @@ public unsafe class CommandPool : ICommandPool
         if (_disposed)
             return;
 
-        _logger.LogDebug(
-            "Disposing command pool: QueueFamily={QueueFamily}, AllocatedBuffers={BufferCount}",
-            _queueFamilyIndex, _totalAllocatedBuffers);
+        _disposed = true;
 
         // Free all tracked command buffers
         if (_allocatedBuffers.Count > 0)
         {
-            _logger.LogDebug("Freeing {Count} remaining command buffers", _allocatedBuffers.Count);
             
             lock (_allocatedBuffers)
             {
@@ -291,6 +261,5 @@ public unsafe class CommandPool : ICommandPool
         _disposed = true;
         GC.SuppressFinalize(this);
 
-        _logger.LogDebug("Command pool disposed");
     }
 }

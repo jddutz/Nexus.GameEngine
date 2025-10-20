@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -65,7 +65,6 @@ public unsafe class PipelineManager : IPipelineManager
         var window = _windowService.GetWindow();
         window.Resize += OnWindowResize;
 
-        _logger.LogDebug("PipelineManager initialized and subscribed to window resize events");
     }
 
     /// <inheritdoc/>
@@ -77,7 +76,6 @@ public unsafe class PipelineManager : IPipelineManager
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            _logger.LogTrace("Pipeline cache hit: {PipelineName}", name);
             return new PipelineHandle(cached.Handle, cached.Layout);
         }
         else
@@ -105,13 +103,11 @@ public unsafe class PipelineManager : IPipelineManager
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            _logger.LogTrace("Pipeline cache hit: {PipelineName}", descriptor.Name);
             return new PipelineHandle(cached.Handle, cached.Layout);
         }
 
         // Cache miss - create new pipeline
         Interlocked.Increment(ref _cacheMisses);
-        _logger.LogDebug("Creating new pipeline: {PipelineName}", descriptor.Name);
 
         var stopwatch = Stopwatch.StartNew();
         var (pipeline, pipelineLayout) = CreatePipeline(descriptor);
@@ -122,7 +118,6 @@ public unsafe class PipelineManager : IPipelineManager
         if (pipeline.Handle == 0)
         {
             Interlocked.Increment(ref _compilationFailures);
-            _logger.LogError("Pipeline creation failed: {PipelineName}, returning error pipeline", descriptor.Name);
             return GetErrorPipeline(descriptor.RenderPass);
         }
 
@@ -144,10 +139,6 @@ public unsafe class PipelineManager : IPipelineManager
         TrackShaderDependency(descriptor.FragmentShaderPath, descriptor.Name);
         if (descriptor.GeometryShaderPath != null)
             TrackShaderDependency(descriptor.GeometryShaderPath, descriptor.Name);
-
-        _logger.LogInformation(
-            "Pipeline created: {PipelineName} in {CreationTimeMs:F2}ms (Total: {CacheMisses} created, {CacheHits} cached)",
-            descriptor.Name, stopwatch.Elapsed.TotalMilliseconds, _cacheMisses, _cacheHits);
 
         return new PipelineHandle(pipeline, pipelineLayout);
     }
@@ -224,7 +215,6 @@ public unsafe class PipelineManager : IPipelineManager
         {
             Interlocked.Increment(ref _invalidationCount);
             DestroyPipeline(cached);
-            _logger.LogDebug("Pipeline invalidated: {PipelineName}", pipelineName);
             return true;
         }
 
@@ -244,17 +234,12 @@ public unsafe class PipelineManager : IPipelineManager
                 count++;
         }
 
-        _logger.LogInformation(
-            "Invalidated {Count} pipelines using shader: {ShaderPath}",
-            count, shaderPath);
-
         return count;
     }
 
     /// <inheritdoc/>
     public void ReloadAllShaders()
     {
-        _logger.LogInformation("Reloading all shaders - waiting for GPU idle");
 
         // Wait for GPU to finish all operations
         _vk.DeviceWaitIdle(_context.Device);
@@ -269,7 +254,6 @@ public unsafe class PipelineManager : IPipelineManager
         _pipelines.Clear();
         _shaderToPipelines.Clear();
 
-        _logger.LogInformation("All pipelines destroyed - will be recreated on next access");
     }
 
     /// <inheritdoc/>
@@ -324,25 +308,21 @@ public unsafe class PipelineManager : IPipelineManager
 
         if (string.IsNullOrEmpty(descriptor.Name))
         {
-            _logger.LogError("Pipeline descriptor has empty name");
             return false;
         }
 
         if (string.IsNullOrEmpty(descriptor.VertexShaderPath))
         {
-            _logger.LogError("Pipeline descriptor has empty vertex shader path");
             return false;
         }
 
         if (string.IsNullOrEmpty(descriptor.FragmentShaderPath))
         {
-            _logger.LogError("Pipeline descriptor has empty fragment shader path");
             return false;
         }
 
         if (descriptor.RenderPass.Handle == 0)
         {
-            _logger.LogError("Pipeline descriptor has invalid render pass");
             return false;
         }
 
@@ -356,7 +336,6 @@ public unsafe class PipelineManager : IPipelineManager
         // For now, return invalid handle
         if (_errorPipeline == null || _errorPipeline.Value.Handle == 0)
         {
-            _logger.LogWarning("Error pipeline not yet implemented");
         }
         return _errorPipeline != null ? new PipelineHandle(_errorPipeline.Value, default) : PipelineHandle.Invalid;
     }
@@ -367,9 +346,6 @@ public unsafe class PipelineManager : IPipelineManager
     /// </summary>
     private void OnWindowResize(Silk.NET.Maths.Vector2D<int> newSize)
     {
-        _logger.LogDebug("Window resized to {Width}x{Height} - checking for viewport-dependent pipelines", 
-            newSize.X, newSize.Y);
-
         // TODO: Only invalidate pipelines that have viewport-dependent state
         // For now, we'll let pipelines with DynamicViewport=true handle it themselves
         // Static viewport pipelines would need to be recreated here
@@ -394,7 +370,6 @@ public unsafe class PipelineManager : IPipelineManager
 
             if (vertShaderModule.Handle == 0 || fragShaderModule.Handle == 0)
             {
-                _logger.LogError("Failed to create shader modules for pipeline: {PipelineName}", descriptor.Name);
                 return default;
             }
 
@@ -513,7 +488,6 @@ public unsafe class PipelineManager : IPipelineManager
             var result = _vk.CreatePipelineLayout(_context.Device, &pipelineLayoutInfo, null, &pipelineLayout);
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create pipeline layout: {Result}", result);
                 CleanupShaderModules(vertShaderModule, fragShaderModule, shaderStages);
                 return default;
             }
@@ -555,17 +529,14 @@ public unsafe class PipelineManager : IPipelineManager
 
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create graphics pipeline: {Result}", result);
                 _vk.DestroyPipelineLayout(_context.Device, pipelineLayout, null);
                 return default;
             }
 
-            _logger.LogDebug("Successfully created pipeline: {PipelineName}", descriptor.Name);
             return (pipeline, pipelineLayout);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception while creating pipeline: {PipelineName}", descriptor.Name);
             CleanupTempGCHandles();
             return default;
         }
@@ -588,10 +559,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (stream == null)
             {
-                _logger.LogError("Shader resource not found: {ResourceName} (from path: {ShaderPath})", 
-                    resourceName, shaderPath);
-                _logger.LogDebug("Available resources: {Resources}", 
-                    string.Join(", ", assembly.GetManifestResourceNames()));
+                _logger.LogError("Could not find embedded resource: {ResourceName} for shader: {ShaderPath}", resourceName, shaderPath);
                 return default;
             }
 
@@ -600,8 +568,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (bytesRead != code.Length)
             {
-                _logger.LogError("Failed to read complete shader data: read {BytesRead} of {TotalBytes}", 
-                    bytesRead, code.Length);
+                _logger.LogWarning("Shader read incomplete: Read {BytesRead} of {ExpectedBytes} bytes", bytesRead, code.Length);
                 return default;
             }
             
@@ -619,18 +586,15 @@ public unsafe class PipelineManager : IPipelineManager
                 
                 if (result != Result.Success)
                 {
-                    _logger.LogError("Failed to create shader module from {ShaderPath}: {Result}", 
-                        shaderPath, result);
+                    _logger.LogError("Failed to create shader module for {ShaderPath}: {Result}", shaderPath, result);
                     return default;
                 }
 
-                _logger.LogDebug("Created shader module from embedded resource: {ResourceName}", resourceName);
                 return shaderModule;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception while creating shader module from {ShaderPath}", shaderPath);
             return default;
         }
     }
@@ -820,7 +784,6 @@ public unsafe class PipelineManager : IPipelineManager
 
     public void Dispose()
     {
-        _logger.LogDebug("Disposing PipelineManager - destroying {Count} cached pipelines", _pipelines.Count);
 
         // Unsubscribe from window events
         try

@@ -14,7 +14,7 @@ namespace TestApp;
 /// TestRunner is a RuntimeComponent that discovers and executes integration tests.
 /// It manages test lifecycle, result output, and application exit based on test outcomes.
 /// </summary>
-public class TestRunner(
+public partial class TestRunner(
     IWindowService windowService)
     : RuntimeComponent
 {
@@ -68,15 +68,12 @@ public class TestRunner(
     protected override void OnUpdate(double deltaTime)
     {
         framesRendered++;
-        
-        Logger?.LogTrace("TestRunner OnUpdate called. DeltaTime: {DeltaTime}", deltaTime);
 
         bool isTestStillRunning = false;
         foreach (var child in Children)
         {
             if (child.IsActive)
             {
-                Logger?.LogTrace("Test component still active: {TypeName}", child.GetType().FullName);
                 isTestStillRunning = true;
             }
         }

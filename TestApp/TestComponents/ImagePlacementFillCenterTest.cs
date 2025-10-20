@@ -16,7 +16,7 @@ namespace TestApp.TestComponents;
 /// Uses image_test.png (256x256 square): R channel = X coordinate (0-255), G channel = Y coordinate (0-255)
 /// Expected: Aspect ratio maintained, excess cropped equally from both sides, center visible
 /// </summary>
-public class ImagePlacementFillCenterTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class ImagePlacementFillCenterTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

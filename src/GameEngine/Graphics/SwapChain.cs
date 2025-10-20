@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Vulkan;
@@ -16,11 +16,11 @@ namespace Nexus.GameEngine.Graphics;
 /// <remarks>
 /// <para><strong>Ownership Hierarchy:</strong></para>
 /// <list type="bullet">
-/// <item>Swapchain → Images (owned by Vulkan)</item>
-/// <item>ImageViews → Views into swapchain images</item>
-/// <item>RenderPasses → Created from RenderPasses.Configurations static array (survive resize)</item>
-/// <item>Framebuffers → Bind ImageViews to RenderPasses (recreated on resize)</item>
-/// <item>ClearValues → Per-RenderPass clear values</item>
+/// <item>Swapchain â†’ Images (owned by Vulkan)</item>
+/// <item>ImageViews â†’ Views into swapchain images</item>
+/// <item>RenderPasses â†’ Created from RenderPasses.Configurations static array (survive resize)</item>
+/// <item>Framebuffers â†’ Bind ImageViews to RenderPasses (recreated on resize)</item>
+/// <item>ClearValues â†’ Per-RenderPass clear values</item>
 /// </list>
 /// 
 /// <para><strong>Initialization Sequence:</strong></para>
@@ -38,8 +38,8 @@ namespace Nexus.GameEngine.Graphics;
 /// 
 /// <para><strong>Window Resize Lifecycle:</strong></para>
 /// <list type="bullet">
-/// <item>Destroy: Framebuffers → ImageViews → Swapchain</item>
-/// <item>Recreate: Swapchain → ImageViews → Framebuffers</item>
+/// <item>Destroy: Framebuffers â†’ ImageViews â†’ Swapchain</item>
+/// <item>Recreate: Swapchain â†’ ImageViews â†’ Framebuffers</item>
 /// <item>RenderPasses survive (format doesn't change)</item>
 /// </list>
 /// 
@@ -94,7 +94,6 @@ public unsafe class SwapChain : ISwapChain
         // Get the swap chain extension
         if (!_vk.TryGetDeviceExtension(_context.Instance, _context.Device, out _khrSwapchain))
         {
-            _logger.LogError("Failed to get KHR_swapchain extension");
             throw new Exception("KHR_swapchain extension not available");
         }
 
@@ -104,7 +103,6 @@ public unsafe class SwapChain : ISwapChain
         CreateDepthResources(); // Create depth buffer if any render pass needs it
         CreateAllFramebuffers();
         
-        _logger.LogDebug("Swap chain initialization complete with {RenderPassCount} render passes", PassCount);
     }
 
     public SwapchainKHR Swapchain => _swapchain;
@@ -133,8 +131,6 @@ public unsafe class SwapChain : ISwapChain
         // Skip swapchain creation if window is minimized (0x0 extent)
         if (extent.Width == 0 || extent.Height == 0)
         {
-            _logger.LogDebug("Skipping swapchain creation: Window is minimized (extent {Width}x{Height})", 
-                extent.Width, extent.Height);
             _swapchainExtent = extent;
             return;
         }
@@ -151,18 +147,13 @@ public unsafe class SwapChain : ISwapChain
         if (imageCount < _settings.MinImageCount)
         {
             imageCount = _settings.MinImageCount;
-            _logger.LogDebug("Adjusting image count to settings minimum: {MinCount}", imageCount);
         }
-
-        _logger.LogDebug("Creating swap chain: Format={Format}, PresentMode={PresentMode}, Extent={Width}x{Height}, ImageCount={ImageCount}",
-            surfaceFormat.Format, presentMode, extent.Width, extent.Height, imageCount);
 
         // Determine image usage flags
         var imageUsage = ImageUsageFlags.ColorAttachmentBit;
         if (_settings.EnableSwapchainTransfer)
         {
             imageUsage |= ImageUsageFlags.TransferSrcBit;
-            _logger.LogDebug("Swapchain transfer enabled - images can be read back to CPU");
         }
 
         // Create swap chain
@@ -189,7 +180,6 @@ public unsafe class SwapChain : ISwapChain
 
         if (!graphicsFamily.HasValue || !presentFamily.HasValue)
         {
-            _logger.LogError("Failed to find required queue families");
             throw new Exception("Required queue families not found");
         }
 
@@ -203,8 +193,6 @@ public unsafe class SwapChain : ISwapChain
             createInfo.ImageSharingMode = SharingMode.Concurrent;
             createInfo.QueueFamilyIndexCount = 2;
             createInfo.PQueueFamilyIndices = queueFamilyIndices;
-            _logger.LogDebug("Using concurrent sharing mode (graphics family {Graphics} != present family {Present})",
-                graphicsFamily.Value, presentFamily.Value);
         }
         else
         {
@@ -212,7 +200,6 @@ public unsafe class SwapChain : ISwapChain
             createInfo.ImageSharingMode = SharingMode.Exclusive;
             createInfo.QueueFamilyIndexCount = 0;
             createInfo.PQueueFamilyIndices = null;
-            _logger.LogDebug("Using exclusive sharing mode (same queue family {Family})", graphicsFamily.Value);
         }
 
         // Create the swap chain
@@ -220,7 +207,6 @@ public unsafe class SwapChain : ISwapChain
         var result = _khrSwapchain!.CreateSwapchain(_context.Device, &createInfo, null, &swapchain);
         if (result != Result.Success)
         {
-            _logger.LogError("Failed to create swap chain: {Result}", result);
             throw new Exception($"Failed to create swap chain: {result}");
         }
 
@@ -228,7 +214,6 @@ public unsafe class SwapChain : ISwapChain
         _swapchainFormat = surfaceFormat.Format;
         _swapchainExtent = extent;
 
-        _logger.LogDebug("Swap chain created successfully (Handle: {Handle})", _swapchain.Handle);
 
         // Retrieve swap chain images
         RetrieveSwapchainImages();
@@ -242,10 +227,8 @@ public unsafe class SwapChain : ISwapChain
     /// </summary>
     private SurfaceFormatKHR ChooseSurfaceFormat(SurfaceFormatKHR[] availableFormats)
     {
-        _logger.LogDebug("Available surface formats: {Count}", availableFormats.Length);
         foreach (var format in availableFormats)
         {
-            _logger.LogDebug("  - Format: {Format}, ColorSpace: {ColorSpace}", format.Format, format.ColorSpace);
         }
 
         // Try each preferred format in order
@@ -256,13 +239,11 @@ public unsafe class SwapChain : ISwapChain
             
             if (match.Format != Format.Undefined)
             {
-                _logger.LogDebug("Selected surface format: {Format} (preferred)", match.Format);
                 return match;
             }
         }
 
         // Fallback to first available format
-        _logger.LogWarning("No preferred surface format available, using fallback: {Format}", availableFormats[0].Format);
         return availableFormats[0];
     }
 
@@ -271,10 +252,8 @@ public unsafe class SwapChain : ISwapChain
     /// </summary>
     private PresentModeKHR ChoosePresentMode(PresentModeKHR[] availableModes)
     {
-        _logger.LogDebug("Available present modes: {Count}", availableModes.Length);
         foreach (var mode in availableModes)
         {
-            _logger.LogDebug("  - {Mode}", mode);
         }
 
         // Try each preferred mode in order
@@ -282,13 +261,11 @@ public unsafe class SwapChain : ISwapChain
         {
             if (availableModes.Contains(preferred))
             {
-                _logger.LogDebug("Selected present mode: {Mode} (preferred)", preferred);
                 return preferred;
             }
         }
 
         // Fallback to FIFO (guaranteed to be available per Vulkan spec)
-        _logger.LogWarning("No preferred present mode available, using FIFO fallback");
         return PresentModeKHR.FifoKhr;
     }
 
@@ -301,8 +278,6 @@ public unsafe class SwapChain : ISwapChain
         // If currentExtent is not uint.MaxValue, it's been set by the surface and we must use it
         if (capabilities.CurrentExtent.Width != uint.MaxValue)
         {
-            _logger.LogDebug("Using surface-defined extent: {Width}x{Height}",
-                capabilities.CurrentExtent.Width, capabilities.CurrentExtent.Height);
             return capabilities.CurrentExtent;
         }
 
@@ -321,12 +296,6 @@ public unsafe class SwapChain : ISwapChain
             capabilities.MinImageExtent.Height, 
             capabilities.MaxImageExtent.Height);
 
-        _logger.LogDebug("Calculated extent: {Width}x{Height} (window: {WinWidth}x{WinHeight}, clamped to [{MinW}-{MaxW}]x[{MinH}-{MaxH}])",
-            actualExtent.Width, actualExtent.Height,
-            window.FramebufferSize.X, window.FramebufferSize.Y,
-            capabilities.MinImageExtent.Width, capabilities.MaxImageExtent.Width,
-            capabilities.MinImageExtent.Height, capabilities.MaxImageExtent.Height);
-
         return actualExtent;
     }
 
@@ -344,7 +313,6 @@ public unsafe class SwapChain : ISwapChain
             _khrSwapchain.GetSwapchainImages(_context.Device, _swapchain, &imageCount, pImages);
         }
 
-        _logger.LogDebug("Retrieved {ImageCount} swap chain images", imageCount);
     }
 
     /// <summary>
@@ -383,14 +351,12 @@ public unsafe class SwapChain : ISwapChain
             var result = _vk.CreateImageView(_context.Device, &createInfo, null, &imageView);
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create image view {Index}: {Result}", i, result);
                 throw new Exception($"Failed to create image view: {result}");
             }
 
             _swapchainImageViews[i] = imageView;
         }
 
-        _logger.LogDebug("Created {Count} image views", _swapchainImageViews.Length);
     }
 
     /// <summary>
@@ -441,12 +407,6 @@ public unsafe class SwapChain : ISwapChain
             var renderPass = CreateRenderPass(config);
             _renderPasses[i] = renderPass;
             
-            _logger.LogDebug("Created render pass '{Name}' (bit {Bit}): Format={Format}, Depth={Depth}", 
-                config.Name,
-                i,
-                config.ColorFormat == Format.Undefined ? _swapchainFormat : config.ColorFormat,
-                config.DepthFormat);
-            
             // Track if any render pass needs depth
             if (config.DepthFormat != Format.Undefined)
             {
@@ -464,12 +424,8 @@ public unsafe class SwapChain : ISwapChain
     {
         if (!_hasDepthAttachment)
         {
-            _logger.LogDebug("No depth attachment needed");
             return;
         }
-
-        _logger.LogDebug("Creating depth resources: Format={Format}, Extent={Width}x{Height}", 
-            _depthFormat, _swapchainExtent.Width, _swapchainExtent.Height);
 
         // Create depth image
         var imageInfo = new ImageCreateInfo
@@ -534,7 +490,6 @@ public unsafe class SwapChain : ISwapChain
             throw new Exception($"Failed to create depth image view: {result}");
         }
 
-        _logger.LogDebug("Depth resources created successfully");
     }
 
     /// <summary>
@@ -572,7 +527,7 @@ public unsafe class SwapChain : ISwapChain
     /// Single graphics subpass with color and optional depth/stencil attachments.
     /// 
     /// <para><strong>Dependencies:</strong></para>
-    /// External → Subpass 0 dependency for color and depth synchronization.
+    /// External â†’ Subpass 0 dependency for color and depth synchronization.
     /// </remarks>
     private RenderPass CreateRenderPass(RenderPassConfiguration config)
     {
@@ -665,7 +620,6 @@ public unsafe class SwapChain : ISwapChain
             var result = _vk.CreateRenderPass(_context.Device, &renderPassInfo, null, &renderPass);
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create render pass '{Name}': {Result}", config.Name, result);
                 throw new Exception($"Failed to create render pass: {result}");
             }
 
@@ -700,8 +654,6 @@ public unsafe class SwapChain : ISwapChain
             _framebuffers[passIndex] = framebuffers;
         }
         
-        _logger.LogDebug("Created framebuffers for {RenderPassCount} render passes ({ImageCount} per pass)", 
-            PassCount, _swapchainImages.Length);
     }
 
     /// <summary>
@@ -747,7 +699,6 @@ public unsafe class SwapChain : ISwapChain
         var result = _vk.CreateFramebuffer(_context.Device, &framebufferInfo, null, &framebuffer);
         if (result != Result.Success)
         {
-            _logger.LogError("Failed to create framebuffer: {Result}", result);
             throw new Exception($"Failed to create framebuffer: {result}");
         }
 
@@ -770,11 +721,9 @@ public unsafe class SwapChain : ISwapChain
 
         if (result == Result.ErrorOutOfDateKhr)
         {
-            _logger.LogWarning("Swap chain out of date during image acquisition");
         }
         else if (result != Result.Success && result != Result.SuboptimalKhr)
         {
-            _logger.LogError("Failed to acquire swap chain image: {Result}", result);
         }
 
         return imageIndex;
@@ -813,12 +762,10 @@ public unsafe class SwapChain : ISwapChain
 
         if (result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr)
         {
-            _logger.LogWarning("Swap chain out of date or suboptimal during presentation");
             // Caller should handle recreation
         }
         else if (result != Result.Success)
         {
-            _logger.LogError("Failed to present swap chain image: {Result}", result);
             throw new Exception($"Failed to present swap chain image: {result}");
         }
     }
@@ -846,7 +793,6 @@ public unsafe class SwapChain : ISwapChain
     /// </remarks>
     public void Recreate()
     {
-        _logger.LogDebug("Recreating swap chain");
 
         // Wait for device to finish operations
         _vk.DeviceWaitIdle(_context.Device);
@@ -872,7 +818,6 @@ public unsafe class SwapChain : ISwapChain
         // Skip depth and framebuffer creation until window is restored
         if (_swapchainExtent.Width == 0 || _swapchainExtent.Height == 0)
         {
-            _logger.LogDebug("Skipping depth and framebuffer recreation: Window is minimized");
             return;
         }
         
@@ -882,7 +827,6 @@ public unsafe class SwapChain : ISwapChain
         // Recreate framebuffers for all render passes (render passes survive)
         CreateAllFramebuffers();
 
-        _logger.LogDebug("Swap chain recreation complete");
     }
 
     /// <summary>
@@ -959,7 +903,6 @@ public unsafe class SwapChain : ISwapChain
     /// </remarks>
     public void Dispose()
     {
-        _logger.LogDebug("Disposing swap chain");
 
         // Wait for device to finish
         _vk.DeviceWaitIdle(_context.Device);
@@ -990,6 +933,5 @@ public unsafe class SwapChain : ISwapChain
         Array.Clear(_framebuffers, 0, _framebuffers.Length);
         Array.Clear(_renderPasses, 0, _renderPasses.Length);
 
-        _logger.LogDebug("Swap chain disposed");
     }
 }

@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     /// <summary>
     /// Specifies serialization formats.

@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     /// <summary>
     /// Specifies types of differences between objects.

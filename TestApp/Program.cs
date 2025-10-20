@@ -48,7 +48,11 @@ class Program
                     ["Application:General:EngineName"] = "Nexus Game Engine",
                     ["Application:General:EngineVersion"] = "1.0.0",
                     ["Graphics:Fullscreen"] = "false",
-                    ["Graphics:Vulkan:EnableValidationLayers"] = "true",
+#if DEBUG
+                    ["Graphics:Vulkan:EnableValidationLayers"] = "true",   // Enable in Debug for error detection
+#else
+                    ["Graphics:Vulkan:EnableValidationLayers"] = "false",  // Disable in Release for performance
+#endif
                     ["Graphics:Vulkan:EnableSwapchainTransfer"] = "true"  // Enable for pixel sampling tests
                 })
                 .Build();

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
@@ -24,7 +24,6 @@ public unsafe class BufferManager : IBufferManager
     {
         var bufferSize = (ulong)data.Length;
         
-        _logger.LogDebug("Creating vertex buffer: size={Size} bytes", bufferSize);
         
         // Create buffer
         var bufferInfo = new BufferCreateInfo
@@ -73,7 +72,6 @@ public unsafe class BufferManager : IBufferManager
         
         _context.VulkanApi.UnmapMemory(_context.Device, memory);
         
-        _logger.LogDebug("Vertex buffer created successfully: handle={Buffer}", buffer.Handle);
         
         return (buffer, memory);
     }
@@ -81,7 +79,6 @@ public unsafe class BufferManager : IBufferManager
     /// <inheritdoc />
     public (Buffer, DeviceMemory) CreateUniformBuffer(ulong size)
     {
-        _logger.LogDebug("Creating uniform buffer: size={Size} bytes", size);
         
         // Create buffer with uniform buffer usage
         var bufferInfo = new BufferCreateInfo
@@ -120,7 +117,6 @@ public unsafe class BufferManager : IBufferManager
         // Bind buffer to memory
         _context.VulkanApi.BindBufferMemory(_context.Device, buffer, memory, 0);
         
-        _logger.LogDebug("Uniform buffer created successfully: handle={Buffer}", buffer.Handle);
         
         return (buffer, memory);
     }
@@ -130,7 +126,6 @@ public unsafe class BufferManager : IBufferManager
     {
         var size = (ulong)data.Length;
         
-        _logger.LogDebug("Updating uniform buffer: size={Size} bytes", size);
         
         // Map memory
         void* mappedData;
@@ -149,7 +144,6 @@ public unsafe class BufferManager : IBufferManager
     /// <inheritdoc />
     public void DestroyBuffer(Buffer buffer, DeviceMemory memory)
     {
-        _logger.LogDebug("Destroying buffer: handle={Buffer}", buffer.Handle);
         
         // Wait for GPU to finish using the buffer
         _context.VulkanApi.DeviceWaitIdle(_context.Device);

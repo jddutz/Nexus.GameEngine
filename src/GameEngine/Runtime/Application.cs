@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -59,7 +59,6 @@ public class Application(IServiceProvider services) : IApplication
 
                 if (startupTemplate == null)
                 {
-                    logger?.LogError("Application.StartupTemplate is required.");
                     return;
                 }
 
@@ -75,7 +74,6 @@ public class Application(IServiceProvider services) : IApplication
                     }
                     catch (Exception ex)
                     {
-                        logger?.LogError(ex, "Exception during window.Update event");
                     }
                 };
 
@@ -87,13 +85,11 @@ public class Application(IServiceProvider services) : IApplication
                     }
                     catch (Exception ex)
                     {
-                        logger?.LogError(ex, "Exception during window.Render event");
                     }
                 };
             }
             catch (Exception ex)
             {
-                logger?.LogError(ex, "Exception during window.Load event");
             }
         };
 
@@ -105,7 +101,6 @@ public class Application(IServiceProvider services) : IApplication
         }
         catch (Exception ex)
         {
-            logger?.LogError(ex, "Unhandled exception in Application.Run");
             throw;
         }
     }

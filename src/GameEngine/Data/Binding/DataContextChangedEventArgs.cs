@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class DataContextChangedEventArgs(object? oldDataContext, object? newDataContext) : EventArgs
     {

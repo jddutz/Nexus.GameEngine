@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public struct BindingValidationResult(bool isValid, IReadOnlyList<string> errors, IReadOnlyList<string> warnings)
     {

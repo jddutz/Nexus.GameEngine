@@ -1,13 +1,13 @@
 using System.ComponentModel;
 using System.Linq.Expressions;
 
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     /// <summary>
     /// Represents a component that can bind to data sources for automatic synchronization
     /// and real-time updates. Supports two-way binding, validation, and conversion.
     /// </summary>
-    public interface IDataBinding : INotifyPropertyChanged
+    public interface IDataBinding
     {
         bool IsDataBindingEnabled { get; set; }
         object? DataSource { get; set; }

@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class ClientJoinedEventArgs(string clientId, Dictionary<string, object> clientInfo) : EventArgs
     {

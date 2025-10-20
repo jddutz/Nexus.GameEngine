@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using Silk.NET.Vulkan;
 
@@ -31,7 +31,6 @@ public class CommandPoolManager : ICommandPoolManager
         _context = context;
         _loggerFactory = loggerFactory;
 
-        _logger.LogDebug("CommandPoolManager initialized");
     }
 
     /// <inheritdoc/>
@@ -41,7 +40,6 @@ public class CommandPoolManager : ICommandPoolManager
 
         return _poolsByType.GetOrAdd(type, t =>
         {
-            _logger.LogDebug("Creating command pool for type: {PoolType}", t);
             var pool = CreatePoolForType(t);
             
             lock (_poolsLock)
@@ -57,10 +55,6 @@ public class CommandPoolManager : ICommandPoolManager
     public ICommandPool CreatePool(uint queueFamilyIndex, bool allowIndividualReset = false, bool transient = true)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-
-        _logger.LogDebug(
-            "Creating custom command pool: QueueFamily={QueueFamily}, IndividualReset={AllowReset}, Transient={Transient}",
-            queueFamilyIndex, allowIndividualReset, transient);
 
         var pool = new CommandPool(
             _context,
@@ -107,7 +101,6 @@ public class CommandPoolManager : ICommandPoolManager
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _logger.LogTrace("Resetting all command pools (Flags={Flags})", flags);
 
         lock (_poolsLock)
         {
@@ -119,13 +112,11 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to reset command pool: QueueFamily={QueueFamily}",
-                        pool.QueueFamilyIndex);
+                    _logger.LogError(ex, "Error resetting command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
                 }
             }
         }
 
-        _logger.LogTrace("All command pools reset successfully");
     }
 
     /// <inheritdoc/>
@@ -133,7 +124,6 @@ public class CommandPoolManager : ICommandPoolManager
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        _logger.LogTrace("Trimming all command pools");
 
         lock (_poolsLock)
         {
@@ -145,13 +135,11 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to trim command pool: QueueFamily={QueueFamily}",
-                        pool.QueueFamilyIndex);
+                    _logger.LogError(ex, "Error trimming command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
                 }
             }
         }
 
-        _logger.LogTrace("All command pools trimmed");
     }
 
     /// <inheritdoc/>
@@ -231,7 +219,6 @@ public class CommandPoolManager : ICommandPoolManager
         // For now, fall back to graphics queue
         uint queueFamilyIndex = 0;
 
-        _logger.LogWarning("No dedicated transfer queue found, using graphics queue");
 
         return new CommandPool(
             _context,
@@ -250,7 +237,6 @@ public class CommandPoolManager : ICommandPoolManager
         // For now, fall back to graphics queue
         uint queueFamilyIndex = 0;
 
-        _logger.LogWarning("No dedicated compute queue found, using graphics queue");
 
         return new CommandPool(
             _context,
@@ -265,7 +251,6 @@ public class CommandPoolManager : ICommandPoolManager
         if (_disposed)
             return;
 
-        _logger.LogDebug("Disposing CommandPoolManager - destroying {PoolCount} pools", _allPools.Count);
 
         lock (_poolsLock)
         {
@@ -277,8 +262,7 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error disposing command pool: QueueFamily={QueueFamily}",
-                        pool.QueueFamilyIndex);
+                    _logger.LogError(ex, "Error disposing command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
                 }
             }
 
@@ -289,6 +273,5 @@ public class CommandPoolManager : ICommandPoolManager
         _disposed = true;
         GC.SuppressFinalize(this);
 
-        _logger.LogDebug("CommandPoolManager disposed");
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -29,18 +29,15 @@ public class ContentManager(
     /// <inheritdoc/>
     public void Load(IComponentTemplate template)
     {
-        _logger.LogDebug("Loading content from template: {TemplateName}", template.Name);
 
         // Check if template is Viewport.Template
         if (template is Viewport.Template viewportTemplate)
         {
-            _logger.LogDebug("Template is Viewport.Template, creating viewport from template");
             // Create viewport from the provided template (may include Content)
             Viewport = CreateViewport(viewportTemplate);
         }
         else
         {
-            _logger.LogDebug("Template is not Viewport.Template, creating default viewport and content");
             // Create default viewport from GraphicsSettings
             Viewport = CreateViewport(null);
             
@@ -51,11 +48,9 @@ public class ContentManager(
             {
                 // Assign content to viewport
                 Viewport.Content = createdContent;
-                _logger.LogDebug("Assigned content '{ContentName}' to viewport", createdContent.Name);
             }
             else
             {
-                _logger.LogWarning("Failed to create content from template '{TemplateName}'", template.Name);
             }
         }
     }
@@ -71,7 +66,6 @@ public class ContentManager(
         // Dispose existing viewport if it exists
         if (Viewport != null)
         {
-            _logger.LogDebug("Disposing existing viewport");
             (Viewport as IRuntimeComponent)?.Dispose();
         }
 
@@ -79,7 +73,6 @@ public class ContentManager(
 
         if (template != null)
         {
-            _logger.LogDebug("Creating viewport from template");
             // Create from template using ComponentFactory
             var component = _factory.CreateInstance(template);
             viewport = component as IViewport 
@@ -87,7 +80,6 @@ public class ContentManager(
         }
         else
         {
-            _logger.LogDebug("Creating default viewport from GraphicsSettings");
             // Create default viewport
             viewport = _factory.Create<Viewport>() as IViewport
                 ?? throw new InvalidOperationException("Failed to create default Viewport");
@@ -98,7 +90,6 @@ public class ContentManager(
         }
 
         // Activate the viewport
-        _logger.LogDebug("Activating viewport");
         (viewport as IRuntimeComponent)?.Activate();
 
         return viewport;
@@ -115,7 +106,6 @@ public class ContentManager(
     {
         if (string.IsNullOrEmpty(template.Name))
         {
-            _logger.LogWarning("Cannot get or create content with empty name");
             return null;
         }
 
@@ -139,13 +129,11 @@ public class ContentManager(
             }
             else
             {
-                _logger.LogError("Failed to create content from template '{Name}'", template.Name);
                 return null;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create content from template '{Name}'", template.Name);
             return null;
         }
     }
@@ -182,7 +170,6 @@ public class ContentManager(
         {
             content.Remove(name);
             component.Dispose();
-            _logger.LogDebug("Removed content '{Name}'", name);
             return true;
         }
 
@@ -208,6 +195,5 @@ public class ContentManager(
         }
 
         _disposed = true;
-        _logger.LogDebug("ContentManager disposed");
     }
 }

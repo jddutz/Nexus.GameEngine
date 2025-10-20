@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Silk.NET.Vulkan;
 using System.Diagnostics;
 using VkSemaphore = Silk.NET.Vulkan.Semaphore;
@@ -48,7 +48,6 @@ public sealed class SyncManager : ISyncManager
         _logger = loggerFactory.CreateLogger(nameof(SyncManager));
         MaxFramesInFlight = maxFramesInFlight;
 
-        _logger.LogInformation("Initializing SyncManager with {MaxFramesInFlight} frames in flight", MaxFramesInFlight);
 
         _frameSyncs = new FrameSync[MaxFramesInFlight];
 
@@ -58,14 +57,11 @@ public sealed class SyncManager : ISyncManager
             for (int i = 0; i < MaxFramesInFlight; i++)
             {
                 _frameSyncs[i] = CreateFrameSync(i);
-                _logger.LogDebug("Created sync primitives for frame {FrameIndex}", i);
             }
 
-            _logger.LogInformation("SyncManager initialized successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize SyncManager");
             Dispose();
             throw;
         }
@@ -98,7 +94,6 @@ public sealed class SyncManager : ISyncManager
                 return existing;
             }
 
-            _logger.LogDebug("Creating image sync primitives for swapchain image {ImageIndex}", imageIndex);
             var imageSync = CreateImageSync(imageIndex);
             _imageSyncs[imageIndex] = imageSync;
             return imageSync;
@@ -131,7 +126,6 @@ public sealed class SyncManager : ISyncManager
             else if (result == Result.Timeout)
             {
                 _fenceWaitTimeouts++;
-                _logger.LogWarning("Fence wait timed out after {TimeoutMs}ms", timeoutNanoseconds / 1_000_000.0);
                 return false;
             }
             else
@@ -176,11 +170,6 @@ public sealed class SyncManager : ISyncManager
                 else if (result == Result.Timeout)
                 {
                     _fenceWaitTimeouts++;
-                    _logger.LogWarning(
-                        "Fence wait timed out after {TimeoutMs}ms (waitAll={WaitAll}, count={Count})",
-                        timeoutNanoseconds / 1_000_000.0,
-                        waitAll,
-                        fences.Length);
                     return false;
                 }
                 else
@@ -249,7 +238,6 @@ public sealed class SyncManager : ISyncManager
         var vk = _context.VulkanApi;
 
         _deviceWaitIdleCalls++;
-        _logger.LogDebug("Waiting for device to become idle");
 
         var result = vk.DeviceWaitIdle(device);
 
@@ -267,7 +255,6 @@ public sealed class SyncManager : ISyncManager
         var vk = _context.VulkanApi;
 
         _queueWaitIdleCalls++;
-        _logger.LogDebug("Waiting for queue to become idle");
 
         var result = vk.QueueWaitIdle(queue);
 
@@ -388,7 +375,6 @@ public sealed class SyncManager : ISyncManager
         if (_disposed)
             return;
 
-        _logger.LogInformation("Disposing SyncManager");
 
         // Wait for device to finish all work before destroying sync primitives
         try
@@ -397,7 +383,6 @@ public sealed class SyncManager : ISyncManager
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to wait for device idle during disposal");
         }
 
         var device = _context.Device;
@@ -424,11 +409,6 @@ public sealed class SyncManager : ISyncManager
         }
 
         var stats = GetStatistics();
-        _logger.LogInformation(
-            "SyncManager disposed. Stats: {TotalFrames} frames, {TotalWaits} fence waits, {AvgWaitMs:F2}ms avg wait",
-            stats.TotalFramesRendered,
-            stats.TotalFenceWaits,
-            stats.AverageFenceWaitTimeMs);
 
         _disposed = true;
     }

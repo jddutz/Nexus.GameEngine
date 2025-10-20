@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -142,7 +142,6 @@ public partial class TextElement()
         }
         else
         {
-            Logger?.LogWarning("Unknown color name: {ColorName}", colorName);
         }
     }
 

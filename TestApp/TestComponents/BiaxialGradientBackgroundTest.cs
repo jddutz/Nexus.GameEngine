@@ -17,7 +17,7 @@ namespace TestApp.TestComponents;
 /// - Bottom-left: Blue
 /// - Bottom-right: Yellow
 /// </summary>
-public class BiaxialGradientBackgroundTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class BiaxialGradientBackgroundTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

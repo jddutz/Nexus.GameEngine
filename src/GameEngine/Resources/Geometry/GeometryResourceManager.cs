@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Graphics.Buffers;
 
 namespace Nexus.GameEngine.Resources.Geometry;
@@ -28,20 +28,14 @@ public class GeometryResourceManager : IGeometryResourceManager
             // Check cache
             if (_cache.TryGetValue(definition.Name, out var cached))
             {
-                _logger.LogDebug("Geometry cache hit: {Name} (ref count: {RefCount} -> {NewRefCount})",
-                    definition.Name, cached.RefCount, cached.RefCount + 1);
-                
                 _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
                 return cached.Resource;
             }
             
-            // Create new resource
-            _logger.LogInformation("Creating geometry resource: {Name} (vertices: {Count}, stride: {Stride})",
-                definition.Name, definition.VertexCount, definition.Stride);
-            
+            // Create new resource            
             var vertexData = definition.GetVertexData();
             
-            // Debug: Log vertex data for TexturedQuad
+            // Debug: Log vertex data for TexturedQuad (TRACE level for performance)
             if (definition.Name == "TexturedQuad" && vertexData.Length >= 64)
             {
                 var bytes = vertexData.ToArray();
@@ -49,7 +43,6 @@ public class GeometryResourceManager : IGeometryResourceManager
                 {
                     var offset = i * 16;
                     var vertexBytes = string.Join("-", bytes.Skip(offset).Take(16).Select(b => b.ToString("X2")));
-                    _logger.LogInformation("TexturedQuad vertex {Index}: {Bytes}", i, vertexBytes);
                 }
             }
             
@@ -64,7 +57,6 @@ public class GeometryResourceManager : IGeometryResourceManager
             
             _cache[definition.Name] = (resource, 1);
             
-            _logger.LogDebug("Geometry resource created: {Name} (ref count: 1)", definition.Name);
             
             return resource;
         }
@@ -77,7 +69,6 @@ public class GeometryResourceManager : IGeometryResourceManager
         {
             if (!_cache.TryGetValue(definition.Name, out var cached))
             {
-                _logger.LogWarning("Attempted to release non-existent geometry: {Name}", definition.Name);
                 return;
             }
             
@@ -85,14 +76,10 @@ public class GeometryResourceManager : IGeometryResourceManager
             
             if (newRefCount > 0)
             {
-                _logger.LogDebug("Geometry released: {Name} (ref count: {OldCount} -> {NewCount})",
-                    definition.Name, cached.RefCount, newRefCount);
-                
                 _cache[definition.Name] = (cached.Resource, newRefCount);
             }
             else
             {
-                _logger.LogInformation("Destroying geometry resource: {Name} (ref count reached 0)", definition.Name);
                 
                 _bufferManager.DestroyBuffer(cached.Resource.Buffer, cached.Resource.Memory);
                 _cache.Remove(definition.Name);
@@ -105,11 +92,9 @@ public class GeometryResourceManager : IGeometryResourceManager
     {
         lock (_lock)
         {
-            _logger.LogInformation("Disposing GeometryResourceManager: {Count} resources in cache", _cache.Count);
             
             foreach (var (name, cached) in _cache)
             {
-                _logger.LogDebug("Destroying geometry: {Name}", name);
                 _bufferManager.DestroyBuffer(cached.Resource.Buffer, cached.Resource.Memory);
             }
             

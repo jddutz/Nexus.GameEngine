@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class DataSourceChangedEventArgs(object? oldDataSource, object? newDataSource) : EventArgs
     {

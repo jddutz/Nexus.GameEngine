@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public struct ValueValidationResult(bool isValid, string? errorMessage = null, BindingErrorSeverityEnum severity = BindingErrorSeverityEnum.Error)
     {

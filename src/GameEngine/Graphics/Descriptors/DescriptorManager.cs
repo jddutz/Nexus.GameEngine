@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Silk.NET.Vulkan;
 using System.Collections.Concurrent;
 
@@ -32,7 +32,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         _logger = loggerFactory.CreateLogger<DescriptorManager>();
         _vk = context.VulkanApi;
         
-        _logger.LogInformation("DescriptorManager initialized");
     }
     
     /// <inheritdoc/>
@@ -49,7 +48,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         // Return cached layout if exists
         if (_layoutCache.TryGetValue(hash, out var cachedLayout))
         {
-            _logger.LogDebug("Returning cached descriptor set layout (hash: {Hash})", hash);
             return cachedLayout;
         }
         
@@ -72,7 +70,6 @@ public unsafe class DescriptorManager : IDescriptorManager
             }
             
             _layoutCache.TryAdd(hash, layout);
-            _logger.LogInformation("Created descriptor set layout: bindings={Count}, hash={Hash}", bindings.Length, hash);
             
             return layout;
         }
@@ -105,7 +102,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         if (result == Result.ErrorOutOfPoolMemory || result == Result.ErrorFragmentedPool)
         {
             // Pool exhausted - create new pool and retry
-            _logger.LogWarning("Descriptor pool exhausted, creating new pool");
             _currentPoolIndex++;
             pool = GetOrCreatePool();
             allocInfo.DescriptorPool = pool;
@@ -119,8 +115,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         }
         
         _totalSetsAllocated++;
-        _logger.LogDebug("Allocated descriptor set: handle={Handle}, total={Total}", 
-            descriptorSet.Handle, _totalSetsAllocated);
         
         return descriptorSet;
     }
@@ -160,9 +154,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         
         // Update the descriptor set
         _vk.UpdateDescriptorSets(_context.Device, 1, &descriptorWrite, 0, null);
-        
-        _logger.LogDebug("Updated descriptor set: set={Set}, binding={Binding}, buffer={Buffer}, size={Size}",
-            descriptorSet.Handle, binding, buffer.Handle, size);
     }
     
     /// <inheritdoc/>
@@ -210,16 +201,11 @@ public unsafe class DescriptorManager : IDescriptorManager
         
         // Update the descriptor set
         _vk.UpdateDescriptorSets(_context.Device, 1, &descriptorWrite, 0, null);
-        
-        _logger.LogDebug("Updated descriptor set: set={Set}, binding={Binding}, imageView={ImageView}, sampler={Sampler}",
-            descriptorSet.Handle, binding, imageView.Handle, sampler.Handle);
     }
     
     /// <inheritdoc/>
     public void ResetPools()
     {
-        _logger.LogInformation("Resetting descriptor pools: pools={Count}, sets={Sets}", 
-            _descriptorPools.Count, _totalSetsAllocated);
         
         foreach (var pool in _descriptorPools)
         {
@@ -228,14 +214,10 @@ public unsafe class DescriptorManager : IDescriptorManager
         
         _currentPoolIndex = 0;
         _totalSetsAllocated = 0;
-        
-        _logger.LogDebug("Descriptor pools reset complete");
     }
     
     public void Dispose()
     {
-        _logger.LogInformation("Disposing DescriptorManager: layouts={Layouts}, pools={Pools}", 
-            _layoutCache.Count, _descriptorPools.Count);
         
         // Wait for device to finish
         _vk.DeviceWaitIdle(_context.Device);
@@ -253,8 +235,6 @@ public unsafe class DescriptorManager : IDescriptorManager
             _vk.DestroyDescriptorSetLayout(_context.Device, layout, null);
         }
         _layoutCache.Clear();
-        
-        _logger.LogInformation("DescriptorManager disposed");
     }
     
     /// <summary>
@@ -272,9 +252,6 @@ public unsafe class DescriptorManager : IDescriptorManager
         var pool = CreateDescriptorPool();
         _descriptorPools.Add(pool);
         _totalPoolsCreated++;
-        
-        _logger.LogInformation("Created descriptor pool #{Index}: max sets={MaxSets}", 
-            _totalPoolsCreated, DescriptorsPerPool);
         
         return pool;
     }

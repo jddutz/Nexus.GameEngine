@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -23,7 +23,7 @@ public partial class ImageTextureBackground(
     IPipelineManager pipelineManager,
     IResourceManager resources,
     IDescriptorManager descriptorManager)
-    : RuntimeComponent, IDrawable
+    : DrawableComponent, IDrawable
 {
     /// <summary>
     /// Template for configuring ImageTextureBackground components.
@@ -69,8 +69,6 @@ public partial class ImageTextureBackground(
     protected override void OnActivate()
     {
         base.OnActivate();
-        Logger?.LogInformation("ImageTextureBackground.OnActivate - Texture: {Texture}, Placement: {Placement}",
-            _textureDefinition?.Name, BackgroundImagePlacement.GetName(_placement));
 
         if (_textureDefinition == null)
         {
@@ -89,12 +87,9 @@ public partial class ImageTextureBackground(
                 .WithDepthWrite()
                 .Build("ImageTextureBackground_Pipeline");
 
-            Logger?.LogInformation("ImageTextureBackground pipeline created successfully");
 
             // Load texture with specified definition
             _texture = resources.Textures.GetOrCreate(_textureDefinition);
-            Logger?.LogInformation("Texture loaded: {Name}, Size: {Width}x{Height}, IsSrgb: {IsSrgb}",
-                _texture.Name, _texture.Width, _texture.Height, _textureDefinition.IsSrgb);
             
             // Create descriptor set for texture
             var shader = new ImageTextureShader();
@@ -115,36 +110,19 @@ public partial class ImageTextureBackground(
                 ImageLayout.ShaderReadOnlyOptimal,
                 binding: 0);
             
-            Logger?.LogInformation("Texture descriptor set created and updated: {Set}",
-                _textureDescriptorSet.Value.Handle);
-            
             // Create textured quad geometry
             _geometry = resources.Geometry.GetOrCreate(new TexturedQuad());
-            
-            Logger?.LogInformation("TexturedQuad geometry created: VertexCount={VertexCount}",
-                _geometry.VertexCount);
         }
         catch (Exception ex)
         {
-            Logger?.LogError(ex, "ImageTextureBackground initialization failed");
             throw;
         }
     }
 
-    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (_geometry == null || !_textureDescriptorSet.HasValue || _texture == null)
             yield break;
-
-        _drawCallCount++;
-        
-        // Log current state on first call and every 100 frames
-        if (_drawCallCount == 1 || _drawCallCount % 100 == 0)
-        {
-            Logger?.LogInformation("DrawCall {Count}: Texture={Texture}, Placement={Placement}, DescriptorSet={Set}",
-                _drawCallCount, _texture.Name, BackgroundImagePlacement.GetName(_placement),
-                _textureDescriptorSet.Value.Handle);
-        }
 
         // Calculate UV bounds based on placement mode and viewport size
         var pushConstants = CalculateImageTexturePushConstants(context);
@@ -182,22 +160,7 @@ public partial class ImageTextureBackground(
             viewportWidth,
             viewportHeight);
         
-        // Log UV bounds on first few draw calls
-        if (_drawCallCount < 3)
-        {
-            Logger?.LogInformation("UV Bounds: Placement={Placement}, Image={IW}x{IH}, Viewport={VW}x{VH}, uvMin=({MinX:F6}, {MinY:F6}), uvMax=({MaxX:F6}, {MaxY:F6})",
-                BackgroundImagePlacement.GetName(_placement), _texture.Width, _texture.Height,
-                viewportWidth, viewportHeight, uvMin.X, uvMin.Y, uvMax.X, uvMax.Y);
-        }
-        
         var pushConstants = ImageTexturePushConstants.FromUVBounds(uvMin, uvMax);
-        
-        // Verify push constants were created correctly
-        if (_drawCallCount < 3)
-        {
-            Logger?.LogInformation("Push Constants: uvMin=({MinX:F6}, {MinY:F6}), uvMax=({MaxX:F6}, {MaxY:F6})",
-                pushConstants.UvMin.X, pushConstants.UvMin.Y, pushConstants.UvMax.X, pushConstants.UvMax.Y);
-        }
         
         return pushConstants;
     }
@@ -210,13 +173,11 @@ public partial class ImageTextureBackground(
             resources.Textures.Release(_textureDefinition);
             _texture = null;
             
-            Logger?.LogDebug("Texture resource released");
         }
         
         if (_textureDescriptorSet.HasValue)
         {
             _textureDescriptorSet = null;
-            Logger?.LogDebug("Texture descriptor set reference cleared");
         }
         
         if (_geometry != null)

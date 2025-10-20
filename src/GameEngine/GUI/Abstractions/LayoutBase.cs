@@ -3,6 +3,7 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Animation;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 
@@ -42,6 +43,15 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
             _window.Resize += OnWindowResize;
         }
     }
+    
+    /// <summary>
+    /// Whether this component should be rendered.
+    /// When false, GetDrawCommands will not be called and component is skipped during rendering.
+    /// Generated property: IsVisible (read-only), SetIsVisible(...) method for updates.
+    /// </summary>
+    [ComponentProperty(Duration = AnimationDuration.Fast, Interpolation = InterpolationMode.Step)]
+    private bool _isVisible = true;
+
 
     public Vector2D<float> PreferredSize { get; set; }
 
@@ -166,27 +176,6 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
         InvalidateLayout();
     }
 
-    private bool _isVisible = true;
-
-    public bool IsVisible
-    {
-        get => _isVisible;
-        private set
-        {
-            if (_isVisible != value)
-            {
-                _isVisible = value;
-                NotifyPropertyChanged();
-            }
-        }
-    }
-
-    public void SetVisible(bool visible)
-    {
-        QueueUpdate(() => IsVisible = visible);
-    }
-
-    public bool ShouldRender => IsVisible;
     public uint RenderPriority => 420; // UI layout layer
 
     /// <summary>

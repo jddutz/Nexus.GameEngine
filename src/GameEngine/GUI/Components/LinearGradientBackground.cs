@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Data;
@@ -25,7 +25,7 @@ public partial class LinearGradientBackground(
     IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
-    : RuntimeComponent, IDrawable
+    : DrawableComponent, IDrawable
 {
     /// <summary>
     /// Template for configuring LinearGradientBackground components.
@@ -79,7 +79,6 @@ public partial class LinearGradientBackground(
     protected override void OnActivate()
     {
         base.OnActivate();
-        Logger?.LogInformation("LinearGradientBackground.OnActivate - Angle: {Angle}", _angle);
 
         if (_gradientDefinition == null)
         {
@@ -101,23 +100,15 @@ public partial class LinearGradientBackground(
                 .WithDepthWrite()
                 .Build("LinearGradientBackground_Pipeline");
 
-            Logger?.LogInformation("LinearGradientBackground pipeline created successfully");
 
             // Create position-only full-screen quad geometry
             _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
 
-            Logger?.LogInformation("LinearGradientBackground geometry created. Name: {Name}, VertexCount: {VertexCount}",
-                _geometry.Name, _geometry.VertexCount);
-
             // Create UBO and descriptor set for gradient
             CreateGradientUBO(_gradientDefinition);
-            
-            Logger?.LogInformation("Linear gradient UBO created with {StopCount} stops",
-                _gradientDefinition.Stops.Length);
         }
         catch (Exception ex)
         {
-            Logger?.LogError(ex, "LinearGradientBackground initialization failed");
             throw;
         }
     }
@@ -127,14 +118,11 @@ public partial class LinearGradientBackground(
     /// </summary>
     private void CreateGradientUBO(GradientDefinition gradient)
     {
-        Logger?.LogDebug("Creating gradient UBO with {StopCount} stops", gradient.Stops.Length);
         
         // Log gradient stops for debugging
         for (int i = 0; i < gradient.Stops.Length; i++)
         {
             var stop = gradient.Stops[i];
-            Logger?.LogDebug("  Stop[{Index}]: Position={Pos}, Color=RGBA({R}, {G}, {B}, {A})",
-                i, stop.Position, stop.Color.X, stop.Color.Y, stop.Color.Z, stop.Color.W);
         }
         
         // Convert gradient definition to UBO structure
@@ -144,14 +132,10 @@ public partial class LinearGradientBackground(
         var uboSize = GradientUBO.SizeInBytes;
         (_gradientUboBuffer, _gradientUboMemory) = bufferManager.CreateUniformBuffer(uboSize);
         
-        Logger?.LogDebug("UBO buffer created: size={Size} bytes, handle={Handle}",
-            uboSize, _gradientUboBuffer.Value.Handle);
-        
         // Upload UBO data to buffer
         var uboBytes = ubo.AsBytes();
         bufferManager.UpdateUniformBuffer(_gradientUboMemory.Value, uboBytes);
         
-        Logger?.LogDebug("UBO data uploaded to buffer");
         
         // Get or create descriptor set layout
         var shader = new LinearGradientShader();
@@ -166,33 +150,20 @@ public partial class LinearGradientBackground(
         // Allocate descriptor set
         _gradientDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
         
-        Logger?.LogDebug("Descriptor set allocated: handle={Handle}, layout={Layout}",
-            _gradientDescriptorSet.Value.Handle, layout.Handle);
-        
         // Update descriptor set to point to our UBO buffer
         descriptorManager.UpdateDescriptorSet(
             _gradientDescriptorSet.Value,
             _gradientUboBuffer.Value,
             uboSize,
             0);  // binding = 0
-        
-        Logger?.LogDebug("Descriptor set updated: set={Set}, buffer={Buffer}, size={Size}, binding=0",
-            _gradientDescriptorSet.Value.Handle, _gradientUboBuffer.Value.Handle, uboSize);
     }
 
-    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (_geometry == null || !_gradientDescriptorSet.HasValue)
             yield break;
 
         _drawCallCount++;
-        
-        // Log current state on first call and every 100 frames
-        if (_drawCallCount == 1 || _drawCallCount % 100 == 0)
-        {
-            Logger?.LogInformation("DrawCall {Count}: Angle={Angle}, DescriptorSet={Set}",
-                _drawCallCount, _angle, _gradientDescriptorSet.Value.Handle);
-        }
 
         // Use push constants for the angle (allows animation)
         var pushConstants = new LinearGradientPushConstants { Angle = _angle };
@@ -218,14 +189,12 @@ public partial class LinearGradientBackground(
             _gradientUboBuffer = null;
             _gradientUboMemory = null;
             
-            Logger?.LogDebug("Gradient UBO buffer destroyed");
         }
         
         // Descriptor sets are freed automatically when the pool is reset
         if (_gradientDescriptorSet.HasValue)
         {
             _gradientDescriptorSet = null;
-            Logger?.LogDebug("Gradient descriptor set reference cleared");
         }
         
         if (_geometry != null)

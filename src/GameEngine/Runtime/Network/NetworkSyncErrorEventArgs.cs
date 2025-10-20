@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class NetworkSyncErrorEventArgs(INetworkSync networkSync, Exception exception, NetworkUpdate? update = null) : EventArgs
     {

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Runtime;
@@ -53,7 +53,6 @@ public unsafe class Context : IGraphicsContext
         var window = windowService.GetWindow();
         if (window.VkSurface is null)
         {
-            _logger.LogError("Window does not support Vulkan surfaces");
             throw new Exception("Windowing platform doesn't support Vulkan.");
         }
 
@@ -61,9 +60,6 @@ public unsafe class Context : IGraphicsContext
         _vulkanApi = Vk.GetApi();
 
         // Step 3: Create Vulkan instance - the connection between app and Vulkan library
-        _logger.LogDebug("Creating Vulkan instance: App={AppName}, Engine={EngineName}, API=1.2",
-            options.Value.General.ApplicationName, options.Value.General.EngineName);
-
         ApplicationInfo appInfo = new()
         {
             SType = StructureType.ApplicationInfo,
@@ -90,10 +86,8 @@ public unsafe class Context : IGraphicsContext
         {
             totalExtensions++;
             debugUtilsNamePtr = SilkMarshal.StringToPtr(ExtDebugUtils.ExtensionName);
-            _logger.LogDebug("Adding debug utils extension for validation layers");
         }
 
-        _logger.LogDebug("Total Vulkan extensions required: {ExtensionCount}", totalExtensions);
 
         // Build extension array
         var extensionsArray = stackalloc byte*[(int)totalExtensions];
@@ -135,7 +129,6 @@ public unsafe class Context : IGraphicsContext
 
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create Vulkan instance: {Result}", result);
                 throw new Exception($"Failed to create Vulkan instance: {result}");
             }
         }
@@ -145,12 +138,10 @@ public unsafe class Context : IGraphicsContext
             var result = _vulkanApi.CreateInstance(in createInfo, null, out _instance);
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create Vulkan instance: {Result}", result);
                 throw new Exception($"Failed to create Vulkan instance: {result}");
             }
         }
 
-        _logger.LogDebug("Vulkan instance created (Handle: {Handle})", _instance.Handle);
 
         // Cleanup debug utils extension name if added
         if (debugUtilsNamePtr != 0)
@@ -166,7 +157,6 @@ public unsafe class Context : IGraphicsContext
 
         // Step 4: Create surface - platform-agnostic abstraction for rendering to the window
         Surface = CreateSurface(window);
-        _logger.LogDebug("Surface created (Handle: {Handle})", Surface.Handle);
 
         // Step 5: Select physical device - choose which GPU to use for rendering
         PhysicalDevice = SelectPhysicalDevice();
@@ -176,10 +166,6 @@ public unsafe class Context : IGraphicsContext
         Device = device;
         GraphicsQueue = graphicsQueue;
         PresentQueue = presentQueue;
-        _logger.LogDebug("Logical device created. Device={DeviceHandle}, Graphics={GraphicsHandle}, Present={PresentHandle}",
-            Device.Handle, GraphicsQueue.Handle, PresentQueue.Handle);
-
-        _logger.LogDebug("Vulkan context initialization complete");
     }
 
     /// <summary>
@@ -253,13 +239,11 @@ public unsafe class Context : IGraphicsContext
             var errorMessage = "Window.VkSurface is null. Window is not configured for Vulkan. "
             + "Ensure the window API is configured for Vulkan before constructing VulkanContext.";
 
-            _logger.LogError(errorMessage);
             throw new InvalidOperationException(errorMessage);
         }
 
         // Create the Vulkan surface handle - connects Vulkan to native windowing system (Win32, X11, Wayland, etc.)
         var surfaceKhr = vkSurface.Create<AllocationCallbacks>(Instance.ToHandle(), null).ToSurface();
-        _logger.LogDebug("Surface KHR created from window (Handle: {Handle})", surfaceKhr.Handle);
         return surfaceKhr;
     }
 
@@ -281,14 +265,12 @@ public unsafe class Context : IGraphicsContext
 
         if (deviceCount == 0)
         {
-            _logger.LogError("No Vulkan-capable GPUs found");
             throw new Exception("Failed to find GPUs with Vulkan support");
         }
 
         // Second call: Retrieve the actual device handles
         var devices = stackalloc PhysicalDevice[(int)deviceCount];
         result = VulkanApi.EnumeratePhysicalDevices(Instance, &deviceCount, devices);
-        _logger.LogDebug("Found {DeviceCount} Vulkan-capable GPU(s)", deviceCount);
 
         // Log all available devices
         for (uint i = 0; i < deviceCount; i++)
@@ -296,7 +278,6 @@ public unsafe class Context : IGraphicsContext
             PhysicalDeviceProperties props;
             VulkanApi.GetPhysicalDeviceProperties(devices[i], &props);
             var name = Marshal.PtrToStringAnsi((nint)props.DeviceName);
-            _logger.LogDebug("- GPU {Index}: {Name} (Type: {Type})", i, name, props.DeviceType);
         }
 
         // Score all suitable devices
@@ -312,7 +293,6 @@ public unsafe class Context : IGraphicsContext
                 PhysicalDeviceProperties props;
                 VulkanApi.GetPhysicalDeviceProperties(device, &props);
                 var name = Marshal.PtrToStringAnsi((nint)props.DeviceName);
-                _logger.LogDebug("GPU {Index} ({Name}) is not suitable", i, name);
                 continue;
             }
 
@@ -321,12 +301,10 @@ public unsafe class Context : IGraphicsContext
             PhysicalDeviceProperties properties;
             VulkanApi.GetPhysicalDeviceProperties(device, &properties);
             var deviceName = Marshal.PtrToStringAnsi((nint)properties.DeviceName);
-            _logger.LogDebug("GPU {Index} ({Name}) is suitable (score: {Score})", i, deviceName, score);
         }
 
         if (suitableDevices.Count == 0)
         {
-            _logger.LogError("No suitable GPU found that meets requirements");
             throw new Exception("Failed to find a suitable GPU");
         }
 
@@ -336,7 +314,6 @@ public unsafe class Context : IGraphicsContext
         PhysicalDeviceProperties selectedProps;
         VulkanApi.GetPhysicalDeviceProperties(selected.device, &selectedProps);
         var selectedName = Marshal.PtrToStringAnsi((nint)selectedProps.DeviceName);
-        _logger.LogInformation("Selected GPU: {Name} (Score: {Score})", selectedName, selected.score);
 
         return selected.device;
     }
@@ -429,7 +406,6 @@ public unsafe class Context : IGraphicsContext
         {
             if (!availableExtensionNames.Contains(required))
             {
-                _logger.LogDebug("Device missing required extension: {Extension}", required);
                 return false;
             }
         }
@@ -494,24 +470,15 @@ public unsafe class Context : IGraphicsContext
     {
         uint queueFamilyCount = 0;
         VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, null);
-        _logger.LogDebug("Query returned {QueueFamilyCount} queue families available", queueFamilyCount);
 
         var queueFamilies = stackalloc QueueFamilyProperties[(int)queueFamilyCount];
         VulkanApi.GetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueFamilyCount, queueFamilies);
-
-        _logger.LogDebug("Physical device has {QueueFamilyCount} queue families", queueFamilyCount);
-        for (uint i = 0; i < queueFamilyCount; i++)
-        {
-            _logger.LogDebug("- Family {Index}: {Count} queue(s), Flags={Flags}",
-                i, queueFamilies[i].QueueCount, queueFamilies[i].QueueFlags);
-        }
 
         uint? graphicsFamily = null;
         uint? presentFamily = null;
 
         if (!VulkanApi.TryGetInstanceExtension(Instance, out KhrSurface khrSurface))
         {
-            _logger.LogError("KHR_surface extension not available");
             throw new Exception("KHR_surface extension not available");
         }
 
@@ -520,7 +487,6 @@ public unsafe class Context : IGraphicsContext
             if ((queueFamilies[i].QueueFlags & QueueFlags.GraphicsBit) != 0)
             {
                 graphicsFamily = i;
-                _logger.LogDebug("Family {Index} supports graphics operations", i);
             }
 
             Bool32 presentSupport = false;
@@ -528,32 +494,22 @@ public unsafe class Context : IGraphicsContext
             if (presentSupport)
             {
                 presentFamily = i;
-                _logger.LogDebug("Family {Index} supports presentation to surface", i);
             }
 
             if (graphicsFamily.HasValue && presentFamily.HasValue)
             {
-                _logger.LogDebug("Found all required queue families, stopping search");
                 break;
             }
         }
 
         if (!graphicsFamily.HasValue || !presentFamily.HasValue)
         {
-            _logger.LogError("Failed to find suitable queue families. Graphics: {Graphics}, Present: {Present}",
-                graphicsFamily, presentFamily);
             throw new Exception("Failed to find suitable queue families");
         }
 
-        _logger.LogDebug("Using queue families - Graphics: {GraphicsFamily}, Present: {PresentFamily}",
-            graphicsFamily.Value, presentFamily.Value);
-
         var uniqueQueueFamilies = graphicsFamily.Value == presentFamily.Value
             ? new[] { graphicsFamily.Value }
-            : new[] { graphicsFamily.Value, presentFamily.Value };
-
-        _logger.LogDebug("Creating {QueueCount} unique queue(s). Same family for both: {IsSame}",
-            uniqueQueueFamilies.Length, graphicsFamily.Value == presentFamily.Value);
+            : [graphicsFamily.Value, presentFamily.Value];
 
         var queueCreateInfos = stackalloc DeviceQueueCreateInfo[uniqueQueueFamilies.Length];
         float queuePriority = 1.0f;
@@ -567,12 +523,9 @@ public unsafe class Context : IGraphicsContext
                 QueueCount = 1,
                 PQueuePriorities = &queuePriority
             };
-            _logger.LogDebug("Queue create info {Index}: Family={Family}, Count=1, Priority={Priority}",
-                i, uniqueQueueFamilies[i], queuePriority);
         }
 
         var deviceFeatures = new PhysicalDeviceFeatures();
-        _logger.LogDebug("Device features: none enabled (using defaults)");
 
         var extensionName = stackalloc byte*[1];
         extensionName[0] = (byte*)SilkMarshal.StringToPtr(KhrSwapchain.ExtensionName);
@@ -587,9 +540,6 @@ public unsafe class Context : IGraphicsContext
             PpEnabledExtensionNames = extensionName
         };
 
-        _logger.LogDebug("Device create info configured: QueueFamilies={QueueCount}, Extensions={ExtCount}",
-            uniqueQueueFamilies.Length, 1);
-
         // Creating the logical device using selected physical device and queues
         Device device;
         var result = VulkanApi.CreateDevice(PhysicalDevice, &createInfo, null, &device);
@@ -598,19 +548,13 @@ public unsafe class Context : IGraphicsContext
 
         if (result != Result.Success)
         {
-            _logger.LogError("Failed to create logical device: {Result}", result);
             throw new Exception($"Failed to create logical device: {result}");
         }
-        _logger.LogDebug("Logical device created successfully (Handle: {Handle})", device.Handle);
 
         Queue graphicsQueue, presentQueue;
         VulkanApi.GetDeviceQueue(device, graphicsFamily.Value, 0, &graphicsQueue);
-        _logger.LogDebug("Graphics queue retrieved: Family={Family}, Index=0, Handle={Handle}",
-            graphicsFamily.Value, graphicsQueue.Handle);
 
         VulkanApi.GetDeviceQueue(device, presentFamily.Value, 0, &presentQueue);
-        _logger.LogDebug("Present queue retrieved: Family={Family}, Index=0, Handle={Handle}",
-            presentFamily.Value, presentQueue.Handle);
 
         return (device, graphicsQueue, presentQueue);
     }
@@ -659,7 +603,6 @@ public unsafe class Context : IGraphicsContext
         // 5. Unload Vulkan library and free function pointers
         VulkanApi.Dispose();
 
-        _logger.LogDebug("Vulkan context disposed");
     }
 
     /// <summary>

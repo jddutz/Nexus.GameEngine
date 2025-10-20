@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class BindingStateSnapshot(IReadOnlyList<DataBinding> bindings, IReadOnlyList<BindingError> errors, Dictionary<string, object?> propertyValues)
     {

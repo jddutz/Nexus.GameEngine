@@ -16,7 +16,7 @@ namespace TestApp.TestComponents;
 /// Uses image_test.png (256x256 square): R channel = X coordinate (0-255), G channel = Y coordinate (0-255)
 /// Expected: Shows bottom-left portion, crops top and right when both dimensions need cropping
 /// </summary>
-public class ImagePlacementFillBottomLeftTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class ImagePlacementFillBottomLeftTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

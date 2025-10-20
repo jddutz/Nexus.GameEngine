@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public struct BindingStatistics(int activeBindings, long totalUpdates, double averageUpdateTime, int errorCount, double updateRate)
     {

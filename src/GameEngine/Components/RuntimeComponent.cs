@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices.Marshalling;
+﻿using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Extensions.Logging;
 
 namespace Nexus.GameEngine.Components;
@@ -48,7 +48,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         _deferredUpdates.Add(update);
 
-        Logger?.LogTrace("Queued deferred update. Total pending: {PendingCount}", _deferredUpdates.Count);
     }
 
     /// <summary>
@@ -59,7 +58,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (_deferredUpdates.Count == 0) return;
 
-        Logger?.LogTrace("Applying {UpdateCount} deferred updates", _deferredUpdates.Count);
 
         foreach (var update in _deferredUpdates)
         {
@@ -69,7 +67,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             }
             catch (Exception ex)
             {
-                Logger?.LogError(ex, "Error applying deferred update");
             }
         }
 
@@ -78,7 +75,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Trigger validation after all updates have been applied
         Validate();
 
-        Logger?.LogTrace("Finished applying deferred updates");
     }
 
     #endregion
@@ -95,9 +91,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         set
         {
             if (_configured == value) return;
-
             _configured = value;
-            NotifyPropertyChanged();
         }
     }
 
@@ -121,9 +115,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     /// <param name="componentTemplate">The template to configure from.</param>
     public void Configure(IComponentTemplate? componentTemplate)
     {
-        Logger?.LogDebug("Configure called on {TypeName} with template: {ComponentTypeName}", 
-            GetType().Name, componentTemplate?.GetType().Name ?? "null");
-
         BeforeConfiguration?.Invoke(this, new(componentTemplate));
 
         // Always call OnConfigure, even with null template (allows components to initialize without template)
@@ -134,9 +125,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             Name = componentTemplate.Name;
             IsEnabled = componentTemplate.Enabled;
 
-            Logger?.LogDebug("Component name set to: '{Name}', enabled: {IsEnabled}", Name, IsEnabled);
 
-            Logger?.LogDebug("Template is RuntimeComponent.Template with {SubcomponentCount} subcomponents", template.Subcomponents?.Length ?? 0);
 
             if (template.Subcomponents != null)
             {
@@ -144,25 +133,20 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
                 {
                     if (subcomponentTemplate != null)
                     {
-                        Logger?.LogDebug("Creating child from subcomponent template: {SubComponentName} with name '{SubComponentTemplateName}'", subcomponentTemplate.GetType().Name, subcomponentTemplate.Name ?? "null");
                         var child = CreateChild(subcomponentTemplate);
-                        Logger?.LogDebug("Child creation result: {Result}", child != null ? $"SUCCESS - {child.GetType().Name}" : "FAILED");
                     }
                     else
                     {
-                        Logger?.LogDebug("Skipping null subcomponent template");
                     }
                 }
             }
         }
         else
         {
-            Logger?.LogDebug("Template is not RuntimeComponent.Template, it's: {TypeName}", componentTemplate?.GetType().Name ?? "null");
         }
 
         AfterConfiguration?.Invoke(this, new(componentTemplate));
 
-        Logger?.LogDebug("Configuration completed");
     }
 
     #endregion
@@ -203,9 +187,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         _validationState = null;
         _validationErrors = [];
-        // Fire PropertyChanged events directly to avoid infinite recursion through NotifyPropertyChanged
-        NotifyPropertyChanged(new(nameof(IsValid)));
-        NotifyPropertyChanged(new(nameof(ValidationErrors)));
     }
 
     protected virtual IEnumerable<ValidationError> OnValidate() => [];
@@ -215,15 +196,12 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Return cached results if available
         if (!ignoreCached && _validationState != null)
         {
-            Logger?.LogDebug("Using cached validation result: {IsValid}", IsValid);
 
             // Always log validation errors when using cached results, especially for failed validation
             if (!IsValid && ValidationErrors.Any())
             {
-                Logger?.LogDebug("Cached validation errors:");
                 foreach (var error in ValidationErrors)
                 {
-                    Logger?.LogDebug("  - {ErrorMessage} (Severity: {Severity})", error.Message, error.Severity);
                 }
             }
 
@@ -241,23 +219,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         {
             ValidationFailed?.Invoke(this, EventArgs.Empty);
         }
-
-        // Log validation errors for debugging
-        if (ValidationErrors.Any())
-        {
-            Logger?.LogDebug("validation errors:");
-            foreach (var error in ValidationErrors)
-            {
-                Logger?.LogDebug(
-                    "  - {ErrorMessage} (Severity: {Severity})",
-                    error.Message,
-                    error.Severity
-                );
-            }
-        }
-
-        // Fire PropertyChanged event directly to avoid infinite recursion through NotifyPropertyChanged
-        NotifyPropertyChanged(new(nameof(IsValid)));
 
         if (_validationState == true)
         {
@@ -285,9 +246,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         set
         {
             if (_active == value) return;
-
             _active = value;
-            NotifyPropertyChanged();
         }
     }
 
@@ -301,7 +260,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Validate before activation (uses cached results if available)
         if (!Validate())
         {
-            Logger?.LogDebug("Validation failed, cannot be activated");
             return;
         }
 
@@ -312,7 +270,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         foreach (var child in Children)
         {
-            Logger?.LogDebug("Activating child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
             child.Activate();
         }
 
@@ -349,7 +306,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (!IsActive)
         {
-            Logger?.LogTrace("Skipping update - not active");
             return;
         }
 
@@ -423,9 +379,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         set
         {
             if (_unloaded == value) return;
-
             _unloaded = value;
-            NotifyPropertyChanged();
         }
     }
 
@@ -438,7 +392,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (IsUnloaded)
         {
-            Logger?.LogDebug("Already deactivated");
             return; // Already inactive
         }
 
@@ -450,7 +403,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Deactivate leaf to root
         foreach (var child in Children)
         {
-            Logger?.LogDebug("Deactivating child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
             child.Deactivate();
         }
 
@@ -486,7 +438,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         {
             if (string.IsNullOrEmpty(child.Name)) child.Name = child.GetType().Name;
 
-            Logger?.LogDebug("Adding child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
 
             _children.Add(child);
 
@@ -501,21 +452,17 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
                 Added = [child]
             });
 
-            Logger?.LogDebug("Child added successfully. Total children: {ChildCount}", _children.Count);
         }
         else
         {
-            Logger?.LogDebug("Child already exists: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
         }
     }
 
     public virtual IRuntimeComponent? CreateChild(Type componentType)
     {
-        Logger?.LogDebug("CreateChild called for Type: {TypeName}", componentType.Name);
 
         var component = ComponentFactory?.Create(componentType);
 
-        Logger?.LogDebug("ComponentFactory.Create returned: {Result}", component != null ? component.GetType().Name : "null");
 
         if (component == null) return null;
 
@@ -532,16 +479,12 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (template == null)
         {
-            Logger?.LogDebug("CreateChild called on {TypeName} with null template", GetType().Name);
             return null;
         }
 
-        Logger?.LogDebug("CreateChild called on {TypeName} with template: {TemplateTypeName}", GetType().Name, template.GetType().Name);
-        Logger?.LogDebug("ComponentFactory is: {Availability}", ComponentFactory != null ? "available" : "null");
 
         var component = ComponentFactory?.CreateInstance(template);
 
-        Logger?.LogDebug("ComponentFactory.Instantiate returned: {Result}", component != null ? component.GetType().Name : "null");
 
         if (component == null) return null;
 
@@ -554,7 +497,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     {
         if (_children.Remove(child))
         {
-            Logger?.LogDebug("Removing child: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
 
             // Clear parent using concrete type to access internal setter
             if (child is RuntimeComponent runtimeChild)
@@ -567,11 +509,9 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
                 Removed = [child]
             });
 
-            Logger?.LogDebug("Child removed successfully. Total children: {ChildCount}", _children.Count);
         }
         else
         {
-            Logger?.LogDebug("Child not found for removal: {ChildType} '{ChildName}'", child.GetType().Name, child.Name);
         }
     }
 
@@ -636,7 +576,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
     public void Dispose()
     {
-        Logger?.LogDebug("Disposing...");
 
         // Dispose children first (leaf to root)
         foreach (var child in Children.OfType<IDisposable>().ToArray()) // ToArray to avoid collection modification during iteration
@@ -644,7 +583,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             if (child is IDisposable disposableChild)
             {
                 var childName = child is IRuntimeComponent runtimeChild ? runtimeChild.Name : "Unknown";
-                Logger?.LogDebug("Disposing child: {ChildType} '{ChildName}'", child.GetType().Name, childName);
                 disposableChild.Dispose();
             }
         }
@@ -655,7 +593,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         // Call component-specific disposal logic
         OnDispose();
 
-        Logger?.LogDebug("Disposed successfully");
     }
 
     #endregion

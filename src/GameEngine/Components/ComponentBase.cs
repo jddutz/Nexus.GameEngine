@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Components;
 /// from processing infrastructure properties. Only derived classes that implement
 /// IRuntimeComponent will have their properties auto-generated.
 /// </summary>
-public abstract class ComponentBase : INotifyPropertyChanged
+public abstract class ComponentBase
 {
     /// <summary>
     /// Factory used to create new components.
@@ -32,9 +32,7 @@ public abstract class ComponentBase : INotifyPropertyChanged
         set
         {
             if (_id == value) return;
-
             _id = value;
-            NotifyPropertyChanged();
         }
     }
 
@@ -48,9 +46,7 @@ public abstract class ComponentBase : INotifyPropertyChanged
         set
         {
             if (_name == value) return;
-
             _name = value;
-            NotifyPropertyChanged();
         }
     }
 
@@ -64,19 +60,7 @@ public abstract class ComponentBase : INotifyPropertyChanged
         set
         {
             if (_enabled == value) return;
-
             _enabled = value;
-            NotifyPropertyChanged();
         }
     }
-
-    /// <summary>
-    /// Call this method when a property changes.
-    /// </summary>
-    protected void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
-    {
-        PropertyChanged?.Invoke(this, new(propertyName));
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 }

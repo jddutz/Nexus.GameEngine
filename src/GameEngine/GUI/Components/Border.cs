@@ -1,4 +1,4 @@
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
 
 using Microsoft.Extensions.Logging;
 
@@ -121,25 +121,21 @@ public partial class Border()
         // 3. Draw border rectangles if BorderThickness > 0
 
         // Placeholder implementation
-        Logger?.LogDebug("Rendering Rectangle Border: Background={BackgroundColor}, Border={BorderColor}, Thickness={BorderThickness}", _backgroundColor, _borderColor, _borderThickness);
     }
 
     private void RenderRoundedRectangle()
     {
         // TODO: Future implementation for rounded corners
-        Logger?.LogDebug("Rendering RoundedRect Border (not implemented): CornerRadius={CornerRadius}", _cornerRadius);
     }
 
     private void RenderImage()
     {
         // TODO: Future implementation for image backgrounds
-        Logger?.LogDebug("Rendering Image Border (not implemented): Image={BackgroundImage}", _backgroundImage);
     }
 
     private void RenderNinePatch()
     {
         // TODO: Future implementation for ninepatch borders
-        Logger?.LogDebug("Rendering NinePatch Border (not implemented): Image={BorderImage}", _borderImage);
     }
 
     private void OnRenderPropertiesChanged()

@@ -18,7 +18,7 @@ namespace TestApp.TestComponents;
 /// 
 /// Single frame test: White (center) → Black (edges) from center point (0.5, 0.5)
 /// </summary>
-public class BackgroundLayerRadialGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class BackgroundLayerRadialGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

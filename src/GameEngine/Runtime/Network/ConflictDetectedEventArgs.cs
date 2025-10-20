@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class ConflictDetectedEventArgs(INetworkSync networkSync, object localState, object remoteState, string propertyName) : EventArgs
     {

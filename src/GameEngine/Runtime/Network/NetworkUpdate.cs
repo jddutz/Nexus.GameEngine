@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class NetworkUpdate(string networkId, string senderId, int stateVersion, bool isDelta,
                     Dictionary<string, object> properties, NetworkReliabilityEnum reliability, NetworkPriorityEnum priority)

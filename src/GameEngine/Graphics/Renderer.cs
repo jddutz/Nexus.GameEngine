@@ -138,7 +138,8 @@ public unsafe class Renderer(
             var component = componentStack.Pop();
             
             // Collect draw commands and distribute to pass-specific lists
-            if (component is IDrawable renderable)
+            // PERFORMANCE: Check IsVisible before calling GetDrawCommands() to skip hidden components
+            if (component is IDrawable renderable && renderable.IsVisible)
             {
                 foreach (var drawCommand in renderable.GetDrawCommands(renderContext))
                 {

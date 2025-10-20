@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class NetworkConnectionEventArgs(INetworkSync networkSync, bool isConnected, string? reason = null) : EventArgs
     {

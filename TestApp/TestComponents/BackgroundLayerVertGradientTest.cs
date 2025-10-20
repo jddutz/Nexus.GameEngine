@@ -14,7 +14,7 @@ namespace TestApp.TestComponents;
 /// 
 /// Single frame test: Blue (top) → Yellow (bottom) at angle 90°
 /// </summary>
-public class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;

@@ -1,4 +1,5 @@
 using System.Runtime.Serialization;
+using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
@@ -10,7 +11,7 @@ namespace TestApp.TestComponents;
 /// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetDrawCommands (Act), GetTestResults (Assert).
 /// </summary>
 [TestRunnerIgnore(reason: "Validation tests all passed but continue output false errors via console log")]
-public class ValidationTest(IGraphicsContext context)
+public partial class ValidationTest(IGraphicsContext context)
     : RuntimeComponent, IDrawable, ITestComponent
 {
     private record TestData
@@ -21,6 +22,15 @@ public class ValidationTest(IGraphicsContext context)
     }
 
     private int frameCount = 0;
+    
+    /// <summary>
+    /// Whether this component should be rendered.
+    /// When false, GetDrawCommands will not be called and component is skipped during rendering.
+    /// Generated property: IsVisible (read-only), SetIsVisible(...) method for updates.
+    /// </summary>
+    [ComponentProperty(Duration = AnimationDuration.Fast, Interpolation = InterpolationMode.Step)]
+    private bool _isVisible = true;
+
 
     private static readonly TestData[] testData = [
         new() {

@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public struct NetworkStatistics(long bytesSent, long bytesReceived, int updatesSent, int updatesReceived,
                         float averageLatency, float currentLatency, float packetLossRate,

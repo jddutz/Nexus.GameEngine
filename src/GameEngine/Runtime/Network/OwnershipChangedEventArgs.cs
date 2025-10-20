@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class OwnershipChangedEventArgs(INetworkSync networkSync, string? previousOwner, string newOwner, OwnershipChangeReasonEnum reason) : EventArgs
     {

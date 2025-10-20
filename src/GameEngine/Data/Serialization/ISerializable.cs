@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     /// <summary>
     /// Represents a component that provides custom serialization and deserialization capabilities.

@@ -304,8 +304,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
         // Apply continuous linear velocity
         if (_velocity != Vector3D<float>.Zero)
         {
-            _position += _velocity * (float)deltaTime;
-            NotifyPropertyChanged(nameof(Position));
+            SetPosition(_position + _velocity * (float)deltaTime, duration: 0f);
         }
         
         // Apply continuous angular velocity
@@ -315,8 +314,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
                 _angularVelocity.Y * (float)deltaTime,
                 _angularVelocity.X * (float)deltaTime,
                 _angularVelocity.Z * (float)deltaTime);
-            _rotation = _rotation * deltaRotation;
-            NotifyPropertyChanged(nameof(Rotation));
+            SetRotation(_rotation * deltaRotation, duration: 0f);
         }
     }
 }

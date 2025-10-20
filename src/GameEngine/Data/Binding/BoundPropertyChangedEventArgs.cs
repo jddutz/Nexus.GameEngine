@@ -1,4 +1,4 @@
-namespace Main.Data
+namespace Nexus.GameEngine.Data.Binding
 {
     public class BoundPropertyChangedEventArgs(string propertyName, object? oldValue, object? newValue, DataBinding binding) : EventArgs
     {

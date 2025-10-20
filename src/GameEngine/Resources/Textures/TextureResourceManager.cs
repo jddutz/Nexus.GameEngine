@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Silk.NET.Vulkan;
@@ -48,23 +48,16 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         {
             // Check cache
             if (_cache.TryGetValue(definition.Name, out var cached))
-            {
-                _logger.LogDebug("Texture cache hit: {Name} (ref count: {RefCount} -> {NewRefCount})",
-                    definition.Name, cached.RefCount, cached.RefCount + 1);
-                
+            {                
                 _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
                 return cached.Resource;
             }
             
             // Load texture
-            _logger.LogDebug("Loading texture: {Name} from {Path}", definition.Name, definition.FilePath);
             
             var resource = CreateTexture(definition);
             
             _cache[definition.Name] = (resource, 1);
-            
-            _logger.LogInformation("Texture loaded: {Name}, Size: {Width}x{Height}, Format: {Format}",
-                definition.Name, resource.Width, resource.Height, resource.Format);
             
             return resource;
         }
@@ -77,7 +70,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         {
             if (!_cache.TryGetValue(definition.Name, out var cached))
             {
-                _logger.LogWarning("Attempted to release non-existent texture: {Name}", definition.Name);
                 return;
             }
             
@@ -85,14 +77,10 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             
             if (newRefCount > 0)
             {
-                _logger.LogDebug("Texture released: {Name} (ref count: {OldCount} -> {NewCount})",
-                    definition.Name, cached.RefCount, newRefCount);
-                
                 _cache[definition.Name] = (cached.Resource, newRefCount);
             }
             else
             {
-                _logger.LogInformation("Destroying texture resource: {Name} (ref count reached 0)", definition.Name);
                 
                 // Destroy texture resources
                 DestroyTextureResource(cached.Resource);
@@ -191,9 +179,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         stream.CopyTo(memoryStream);
         var imageData = memoryStream.ToArray();
         
-        _logger.LogTrace("Loaded {ByteCount} bytes from embedded resource: {ResourceName}",
-            imageData.Length, resourceName);
-        
         // Load image with StbImage
         ImageResult image;
         fixed (byte* ptr = imageData)
@@ -211,9 +196,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         var pixelDataSize = image.Width * image.Height * (int)image.Comp;
         var pixels = (byte*)Marshal.AllocHGlobal(pixelDataSize);
         Marshal.Copy(image.Data, 0, (IntPtr)pixels, pixelDataSize);
-        
-        _logger.LogTrace("Image decoded: {Width}x{Height}, Components: {Components}",
-            image.Width, image.Height, image.Comp);
         
         return new ImageData
         {
@@ -255,9 +237,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             throw new InvalidOperationException($"Failed to create Vulkan image: {result}");
         }
         
-        _logger.LogTrace("Vulkan image created: {Width}x{Height}, Format: {Format}",
-            width, height, format);
-        
         return image;
     }
     
@@ -283,7 +262,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         
         _vk.BindImageMemory(_context.Device, image, imageMemory, 0);
         
-        _logger.LogTrace("Image memory allocated and bound: {Size} bytes", memRequirements.Size);
         
         return imageMemory;
     }
@@ -309,7 +287,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             // Copy buffer to image
             CopyBufferToImage(stagingBuffer, image, (uint)width, (uint)height);
             
-            _logger.LogTrace("Pixels uploaded to image via staging buffer");
         }
         finally
         {
@@ -509,7 +486,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             throw new InvalidOperationException($"Failed to create image view: {result}");
         }
         
-        _logger.LogTrace("Image view created");
         
         return imageView;
     }
@@ -544,7 +520,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             throw new InvalidOperationException($"Failed to create sampler: {result}");
         }
         
-        _logger.LogTrace("Sampler created: Linear filtering, ClampToEdge addressing");
         
         return sampler;
     }
@@ -584,7 +559,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             _vk.FreeMemory(_context.Device, resource.ImageMemory, null);
         }
         
-        _logger.LogDebug("Texture resource destroyed: {Name}", resource.Name);
     }
     
     /// <inheritdoc />
@@ -592,7 +566,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
     {
         lock (_lock)
         {
-            _logger.LogInformation("Disposing TextureResourceManager: {Count} resources in cache", _cache.Count);
             
             // Destroy all texture resources
             foreach (var (resource, _) in _cache.Values)

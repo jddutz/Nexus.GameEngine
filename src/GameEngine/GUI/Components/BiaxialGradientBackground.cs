@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -25,7 +25,7 @@ public partial class BiaxialGradientBackground(
     IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
-    : RuntimeComponent, IDrawable
+    : DrawableComponent, IDrawable
 {
     /// <summary>
     /// Template for configuring BiaxialGradientBackground components.
@@ -59,7 +59,6 @@ public partial class BiaxialGradientBackground(
 
     private GeometryResource? _geometry;
     private PipelineHandle _pipeline;
-    private int _drawCallCount = 0;
     
     // UBO and descriptor set for corner colors
     private Silk.NET.Vulkan.Buffer? _colorUboBuffer;
@@ -97,39 +96,23 @@ public partial class BiaxialGradientBackground(
     protected override void OnActivate()
     {
         base.OnActivate();
-        Logger?.LogInformation("BiaxialGradientBackground.OnActivate - TopLeft: {TL}, TopRight: {TR}, BottomLeft: {BL}, BottomRight: {BR}",
-            _topLeft, _topRight, _bottomLeft, _bottomRight);
 
-        try
-        {
-            // Build pipeline for biaxial gradient rendering
-            _pipeline = pipelineManager.GetBuilder()
-                .WithShader(new BiaxialGradientShader())
-                .WithRenderPasses(RenderPasses.Main)
-                .WithTopology(PrimitiveTopology.TriangleStrip)
-                .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-                .WithDepthTest()
-                .WithDepthWrite()
-                .Build("BiaxialGradientBackground_Pipeline");
+        // Build pipeline for biaxial gradient rendering
+        _pipeline = pipelineManager.GetBuilder()
+            .WithShader(new BiaxialGradientShader())
+            .WithRenderPasses(RenderPasses.Main)
+            .WithTopology(PrimitiveTopology.TriangleStrip)
+            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
+            .WithDepthTest()
+            .WithDepthWrite()
+            .Build("BiaxialGradientBackground_Pipeline");
 
-            Logger?.LogInformation("BiaxialGradientBackground pipeline created successfully");
 
-            // Create position-only full-screen quad geometry
-            _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
+        // Create position-only full-screen quad geometry
+        _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
 
-            Logger?.LogInformation("BiaxialGradientBackground geometry created. Name: {Name}, VertexCount: {VertexCount}",
-                _geometry.Name, _geometry.VertexCount);
-
-            // Create UBO and descriptor set for corner colors
-            CreateCornerColorsUBO();
-            
-            Logger?.LogInformation("Corner colors UBO created");
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogError(ex, "BiaxialGradientBackground initialization failed");
-            throw;
-        }
+        // Create UBO and descriptor set for corner colors
+        CreateCornerColorsUBO();
     }
 
     /// <summary>
@@ -137,7 +120,6 @@ public partial class BiaxialGradientBackground(
     /// </summary>
     private void CreateCornerColorsUBO()
     {
-        Logger?.LogDebug("Creating corner colors UBO");
         
         // Create UBO structure
         var ubo = CornerColorsUBO.FromCorners(_topLeft, _topRight, _bottomLeft, _bottomRight);
@@ -146,14 +128,10 @@ public partial class BiaxialGradientBackground(
         var uboSize = CornerColorsUBO.SizeInBytes;
         (_colorUboBuffer, _colorUboMemory) = bufferManager.CreateUniformBuffer(uboSize);
         
-        Logger?.LogDebug("UBO buffer created: size={Size} bytes, handle={Handle}",
-            uboSize, _colorUboBuffer.Value.Handle);
-        
         // Upload UBO data to buffer
         var uboBytes = ubo.AsBytes();
         bufferManager.UpdateUniformBuffer(_colorUboMemory.Value, uboBytes);
         
-        Logger?.LogDebug("UBO data uploaded to buffer");
         
         // Get or create descriptor set layout
         var shader = new BiaxialGradientShader();
@@ -168,18 +146,12 @@ public partial class BiaxialGradientBackground(
         // Allocate descriptor set
         _colorDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
         
-        Logger?.LogDebug("Descriptor set allocated: handle={Handle}, layout={Layout}",
-            _colorDescriptorSet.Value.Handle, layout.Handle);
-        
         // Update descriptor set to point to our UBO buffer
         descriptorManager.UpdateDescriptorSet(
             _colorDescriptorSet.Value,
             _colorUboBuffer.Value,
             uboSize,
             0);  // binding = 0
-        
-        Logger?.LogDebug("Descriptor set updated: set={Set}, buffer={Buffer}, size={Size}, binding=0",
-            _colorDescriptorSet.Value.Handle, _colorUboBuffer.Value.Handle, uboSize);
     }
 
     /// <summary>
@@ -194,7 +166,6 @@ public partial class BiaxialGradientBackground(
         var uboBytes = ubo.AsBytes();
         bufferManager.UpdateUniformBuffer(_colorUboMemory.Value, uboBytes);
         
-        Logger?.LogTrace("Corner colors UBO updated");
     }
 
     /// <summary>
@@ -220,19 +191,10 @@ public partial class BiaxialGradientBackground(
         if (IsActive) UpdateCornerColorsUBO();
     }
 
-    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (_geometry == null || !_colorDescriptorSet.HasValue)
             yield break;
-
-        _drawCallCount++;
-        
-        // Log current state on first call and every 100 frames
-        if (_drawCallCount == 1 || _drawCallCount % 100 == 0)
-        {
-            Logger?.LogInformation("DrawCall {Count}: Colors=TL:{TL}, TR:{TR}, BL:{BL}, BR:{BR}, DescriptorSet={Set}",
-                _drawCallCount, _topLeft, _topRight, _bottomLeft, _bottomRight, _colorDescriptorSet.Value.Handle);
-        }
 
         yield return new DrawCommand
         {
@@ -254,14 +216,12 @@ public partial class BiaxialGradientBackground(
             _colorUboBuffer = null;
             _colorUboMemory = null;
             
-            Logger?.LogDebug("Corner colors UBO buffer destroyed");
         }
         
         // Descriptor sets are freed automatically when the pool is reset
         if (_colorDescriptorSet.HasValue)
         {
             _colorDescriptorSet = null;
-            Logger?.LogDebug("Corner colors descriptor set reference cleared");
         }
         
         if (_geometry != null)
