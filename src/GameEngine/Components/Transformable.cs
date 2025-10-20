@@ -48,6 +48,22 @@ public partial class Transformable : RuntimeComponent, ITransformable
     private Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
     
     // ==========================================
+    // VELOCITY FIELDS (for continuous animations)
+    // ==========================================
+    
+    /// <summary>
+    /// Linear velocity in units per second (world space).
+    /// Applied automatically during OnComponentUpdate.
+    /// </summary>
+    private Vector3D<float> _velocity = Vector3D<float>.Zero;
+    
+    /// <summary>
+    /// Angular velocity in radians per second (Yaw, Pitch, Roll).
+    /// Applied automatically during OnComponentUpdate.
+    /// </summary>
+    private Vector3D<float> _angularVelocity = Vector3D<float>.Zero;
+    
+    // ==========================================
     // TRANSFORM MATRICES
     // ==========================================
     
@@ -144,63 +160,62 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // POSITION METHODS
     // ==========================================
     
-    public void SetPosition(Vector3D<float> position)
+    public void Translate(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
-        Position = position;
+        SetPosition(_position + delta, duration, interpolation);
     }
     
-    public void Translate(Vector3D<float> delta)
-    {
-        Position += delta;
-    }
-    
-    public void TranslateLocal(Vector3D<float> delta)
+    public void TranslateLocal(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         // Transform delta from local space to world space using current rotation
         var worldDelta = Vector3D.Transform(delta, _rotation);
-        Position += worldDelta;
+        SetPosition(_position + worldDelta, duration, interpolation);
+    }
+    
+    /// <summary>
+    /// Sets the linear velocity for continuous movement (units per second).
+    /// Call with Zero to stop movement.
+    /// </summary>
+    public void SetVelocity(Vector3D<float> velocity)
+    {
+        _velocity = velocity;
     }
     
     // ==========================================
     // ROTATION METHODS
     // ==========================================
     
-    public void SetRotation(Quaternion<float> rotation)
-    {
-        Rotation = rotation;
-    }
-    
-    public void RotateX(float radians)
+    public void RotateX(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitX, radians);
-        Rotation = _rotation * rotation;
+        SetRotation(_rotation * rotation, duration, interpolation);
     }
     
-    public void RotateY(float radians)
+    public void RotateY(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, radians);
-        Rotation = _rotation * rotation;
+        SetRotation(_rotation * rotation, duration, interpolation);
     }
     
-    public void RotateZ(float radians)
+    public void RotateZ(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitZ, radians);
-        Rotation = _rotation * rotation;
+        SetRotation(_rotation * rotation, duration, interpolation);
     }
     
-    public void RotateAxis(Vector3D<float> axis, float radians)
+    public void RotateAxis(Vector3D<float> axis, float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         var normalizedAxis = Vector3D.Normalize(axis);
         var rotation = Quaternion<float>.CreateFromAxisAngle(normalizedAxis, radians);
-        Rotation = _rotation * rotation;
+        SetRotation(_rotation * rotation, duration, interpolation);
     }
     
-    public void LookAt(Vector3D<float> target)
+    public void LookAt(Vector3D<float> target, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
-        LookAt(target, Vector3D<float>.UnitY);
+        LookAt(target, Vector3D<float>.UnitY, duration, interpolation);
     }
     
-    public void LookAt(Vector3D<float> target, Vector3D<float> worldUp)
+    public void LookAt(Vector3D<float> target, Vector3D<float> worldUp, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
         var currentPosition = Parent is ITransformable parentTransform 
             ? WorldPosition 
@@ -211,7 +226,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
         // Handle edge case: if target is same as position, use default forward
         if (float.IsNaN(forward.X) || float.IsNaN(forward.Y) || float.IsNaN(forward.Z))
         {
-            Rotation = Quaternion<float>.Identity;
+            SetRotation(Quaternion<float>.Identity, duration, interpolation);
             return;
         }
         
@@ -224,42 +239,46 @@ public partial class Transformable : RuntimeComponent, ITransformable
         if (dot >= 0.999999f)
         {
             // Vectors are already aligned
-            Rotation = Quaternion<float>.Identity;
+            SetRotation(Quaternion<float>.Identity, duration, interpolation);
             return;
         }
         else if (dot <= -0.999999f)
         {
             // Vectors are opposite, rotate 180° around world up
-            Rotation = Quaternion<float>.CreateFromAxisAngle(worldUp, MathF.PI);
+            SetRotation(Quaternion<float>.CreateFromAxisAngle(worldUp, MathF.PI), duration, interpolation);
             return;
         }
         
         // General case: rotate around the perpendicular axis
         var axis = Vector3D.Normalize(Vector3D.Cross(defaultForward, forward));
         var angle = MathF.Acos(dot);
-        Rotation = Quaternion<float>.CreateFromAxisAngle(axis, angle);
+        SetRotation(Quaternion<float>.CreateFromAxisAngle(axis, angle), duration, interpolation);
+    }
+    
+    /// <summary>
+    /// Sets the angular velocity for continuous rotation (radians per second).
+    /// Applied automatically during OnComponentUpdate. Call with Zero to stop rotation.
+    /// </summary>
+    public void SetAngularVelocity(Vector3D<float> angularVelocity)
+    {
+        _angularVelocity = angularVelocity;
     }
     
     // ==========================================
     // SCALE METHODS
     // ==========================================
     
-    public void SetScale(Vector3D<float> scale)
+    public void ScaleBy(Vector3D<float> scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
-        Scale = scale;
-    }
-    
-    public void ScaleBy(Vector3D<float> scaleFactor)
-    {
-        Scale = new Vector3D<float>(
+        SetScale(new Vector3D<float>(
             _scale.X * scaleFactor.X,
             _scale.Y * scaleFactor.Y,
-            _scale.Z * scaleFactor.Z);
+            _scale.Z * scaleFactor.Z), duration, interpolation);
     }
     
-    public void ScaleUniform(float scaleFactor)
+    public void ScaleUniform(float scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
     {
-        Scale = _scale * scaleFactor;
+        SetScale(_scale * scaleFactor, duration, interpolation);
     }
     
     // ==========================================
@@ -270,9 +289,34 @@ public partial class Transformable : RuntimeComponent, ITransformable
     {
         if (componentTemplate is Template template)
         {
-            Position = template.Position;
-            Rotation = template.Rotation;
-            Scale = template.Scale;
+            SetPosition(template.Position);
+            SetRotation(template.Rotation);
+            SetScale(template.Scale);
+        }
+    }
+    
+    // ==========================================
+    // UPDATE (Apply velocities)
+    // ==========================================
+    
+    protected override void OnUpdate(double deltaTime)
+    {
+        // Apply continuous linear velocity
+        if (_velocity != Vector3D<float>.Zero)
+        {
+            _position += _velocity * (float)deltaTime;
+            NotifyPropertyChanged(nameof(Position));
+        }
+        
+        // Apply continuous angular velocity
+        if (_angularVelocity != Vector3D<float>.Zero)
+        {
+            var deltaRotation = Quaternion<float>.CreateFromYawPitchRoll(
+                _angularVelocity.Y * (float)deltaTime,
+                _angularVelocity.X * (float)deltaTime,
+                _angularVelocity.Z * (float)deltaTime);
+            _rotation = _rotation * deltaRotation;
+            NotifyPropertyChanged(nameof(Rotation));
         }
     }
 }

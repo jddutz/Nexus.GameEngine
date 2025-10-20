@@ -131,11 +131,11 @@ public partial class Viewport(
         {
             Camera = template.Camera;
             Content = template.Content;
-            X = template.X;
-            Y = template.Y;
-            Width = template.Width;
-            Height = template.Height;
-            BackgroundColor = template.BackgroundColor;
+            SetX(template.X);
+            SetY(template.Y);
+            SetWidth(template.Width);
+            SetHeight(template.Height);
+            SetBackgroundColor(template.BackgroundColor);
             
             // Compute Vulkan viewport and scissor from normalized coordinates
             UpdateVulkanViewportAndScissor();

@@ -182,52 +182,26 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
         return new Vector2D<int>(screenX, screenY);
     }
 
-    // ICameraController implementation - properties are automatically deferred via ComponentProperty
-    public void SetPosition(Vector3D<float> position)
-    {
-        Position = position;
-    }
-
+    // ICameraController implementation - wrapper methods that call generated Set methods
+    void ICameraController.SetPosition(Vector3D<float> position) => SetPosition(position);
+    void ICameraController.SetForward(Vector3D<float> forward) => SetForward(forward);
+    void ICameraController.SetUp(Vector3D<float> up) => SetUp(up);
+    
     public void Translate(Vector3D<float> translation)
     {
-        Position += translation;
-    }
-
-    public void SetForward(Vector3D<float> forward)
-    {
-        Forward = forward;
-    }
-
-    public void SetUp(Vector3D<float> up)
-    {
-        Up = up;
+        SetPosition(Position + translation);
     }
 
     public void LookAt(Vector3D<float> target)
     {
-        Forward = Vector3D.Normalize(target - Position);
+        SetForward(Vector3D.Normalize(target - Position));
     }
 
-    // IPerspectiveController implementation - properties are automatically deferred via ComponentProperty
-    public void SetFieldOfView(float fieldOfView)
-    {
-        FieldOfView = fieldOfView;
-    }
-
-    public void SetNearPlane(float nearPlane)
-    {
-        NearPlane = nearPlane;
-    }
-
-    public void SetFarPlane(float farPlane)
-    {
-        FarPlane = farPlane;
-    }
-
-    public void SetAspectRatio(float aspectRatio)
-    {
-        AspectRatio = aspectRatio;
-    }
+    // IPerspectiveController implementation - wrapper methods that call generated Set methods
+    void IPerspectiveController.SetFieldOfView(float fov) => SetFieldOfView(fov);
+    void IPerspectiveController.SetNearPlane(float nearPlane) => SetNearPlane(nearPlane);
+    void IPerspectiveController.SetFarPlane(float farPlane) => SetFarPlane(farPlane);
+    void IPerspectiveController.SetAspectRatio(float aspectRatio) => SetAspectRatio(aspectRatio);
 
     /// <summary>
     /// Configure the component using the specified template.
@@ -236,13 +210,13 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
     {
         if (componentTemplate is Template template)
         {
-            FieldOfView = template.FieldOfView;
-            NearPlane = template.NearPlane;
-            FarPlane = template.FarPlane;
-            AspectRatio = template.AspectRatio;
-            Position = template.Position;
-            Forward = template.Forward;
-            Up = template.Up;
+            SetFieldOfView(template.FieldOfView);
+            SetNearPlane(template.NearPlane);
+            SetFarPlane(template.FarPlane);
+            SetAspectRatio(template.AspectRatio);
+            SetPosition(template.Position);
+            SetForward(template.Forward);
+            SetUp(template.Up);
         }
     }
 

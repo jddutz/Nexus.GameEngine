@@ -61,9 +61,8 @@ public partial class KeyBinding(
         if (componentTemplate is Template template)
         {
             Logger?.LogDebug("Binding KeyDown event for {Key}", template.Key);
-            // Direct field assignment during configuration - no deferred updates needed
-            _key = template.Key;
-            _modifierKeys = template.ModifierKeys;
+            SetKey(template.Key);
+            SetModifierKeys(template.ModifierKeys);
         }
     }
 
@@ -135,29 +134,22 @@ public partial class KeyBinding(
         return true;
     }
 
-    // IKeyBindingController implementation - all methods use deferred updates
-    public void SetKey(Key key)
-    {
-        QueueUpdate(() => Key = key);
-    }
-
-    public void SetModifierKeys(params Key[] modifierKeys)
-    {
-        QueueUpdate(() => ModifierKeys = modifierKeys);
-    }
+    // IKeyBindingController implementation - delegate to generated Set methods
+    void IKeyBindingController.SetKey(Key key) => SetKey(key);
+    void IKeyBindingController.SetModifierKeys(params Key[] modifierKeys) => SetModifierKeys(modifierKeys);
 
     public void AddModifierKey(Key modifierKey)
     {
-        QueueUpdate(() => ModifierKeys = ModifierKeys.Concat([modifierKey]).ToArray());
+        SetModifierKeys(ModifierKeys.Concat([modifierKey]).ToArray());
     }
 
     public void RemoveModifierKey(Key modifierKey)
     {
-        QueueUpdate(() => ModifierKeys = ModifierKeys.Where(k => k != modifierKey).ToArray());
+        SetModifierKeys(ModifierKeys.Where(k => k != modifierKey).ToArray());
     }
 
     public void ClearModifierKeys()
     {
-        QueueUpdate(() => ModifierKeys = []);
+        SetModifierKeys([]);
     }
 }

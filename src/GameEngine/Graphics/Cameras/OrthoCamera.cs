@@ -98,12 +98,11 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
     {
         if (componentTemplate is Template template)
         {
-            // Direct assignment during configuration - no deferred updates needed
-            _width = template.Width;
-            _height = template.Height;
-            _nearPlane = template.NearPlane;
-            _farPlane = template.FarPlane;
-            _position = template.Position;
+            SetWidth(template.Width);
+            SetHeight(template.Height);
+            SetNearPlane(template.NearPlane);
+            SetFarPlane(template.FarPlane);
+            SetPosition(template.Position);
             _matricesDirty = true;
         }
     }
@@ -198,18 +197,18 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
         return new Vector2D<int>(screenX, screenY);
     }
 
-    // ICameraController implementation - properties now handle deferred updates and dirty flag automatically
-    public void SetPosition(Vector3D<float> position) => Position = position;
+    // ICameraController implementation - wrapper methods that call generated Set methods
+    void ICameraController.SetPosition(Vector3D<float> position) => SetPosition(position);
 
-    public void Translate(Vector3D<float> translation) => Position += translation;
+    public void Translate(Vector3D<float> translation) => SetPosition(Position + translation);
 
-    public void SetForward(Vector3D<float> forward)
+    void ICameraController.SetForward(Vector3D<float> forward)
     {
         // OrthoCamera has fixed forward direction (-Z), but we'll allow it for interface compatibility
         // In practice, this would be ignored since Forward is fixed for orthographic cameras
     }
 
-    public void SetUp(Vector3D<float> up)
+    void ICameraController.SetUp(Vector3D<float> up)
     {
         // OrthoCamera has fixed up direction (+Y), but we'll allow it for interface compatibility
         // In practice, this would be ignored since Up is fixed for orthographic cameras
@@ -219,22 +218,20 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
     {
         // OrthoCamera has fixed orientation, but we can move to position camera for the target
         // This effectively centers the orthographic view on the target
-        Position = new Vector3D<float>(target.X, target.Y, Position.Z);
+        SetPosition(new Vector3D<float>(target.X, target.Y, Position.Z));
     }
 
-    // IOrthographicController implementation - properties now handle deferred updates and dirty flag automatically
-    public void SetWidth(float width) => Width = width;
-
-    public void SetHeight(float height) => Height = height;
+    // IOrthographicController implementation - wrapper methods that call generated Set methods
+    void IOrthographicController.SetWidth(float width) => SetWidth(width);
+    void IOrthographicController.SetHeight(float height) => SetHeight(height);
 
     public void SetSize(float width, float height)
     {
-        Width = width;
-        Height = height;
+        SetWidth(width);
+        SetHeight(height);
     }
 
-    public void SetNearPlane(float nearPlane) => NearPlane = nearPlane;
-
-    public void SetFarPlane(float farPlane) => FarPlane = farPlane;
+    void IOrthographicController.SetNearPlane(float nearPlane) => SetNearPlane(nearPlane);
+    void IOrthographicController.SetFarPlane(float farPlane) => SetFarPlane(farPlane);
 
 }

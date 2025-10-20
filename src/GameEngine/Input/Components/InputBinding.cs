@@ -76,8 +76,7 @@ public abstract partial class InputBinding(
 
         if (componentTemplate is Template template)
         {
-            // Direct field assignment during configuration - no deferred updates needed
-            _actionId = template.ActionId;
+            SetActionId(template.ActionId);
         }
     }
 
@@ -190,9 +189,6 @@ public abstract partial class InputBinding(
     /// </summary>
     protected abstract void UnsubscribeFromInputEvents();
 
-    // IInputBindingController implementation - all methods use deferred updates
-    public void SetActionId(ActionId actionId)
-    {
-        QueueUpdate(() => ActionId = actionId);
-    }
+    // IInputBindingController implementation - delegate to generated Set method
+    void IInputBindingController.SetActionId(ActionId actionId) => SetActionId(actionId);
 }

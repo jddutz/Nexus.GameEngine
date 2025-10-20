@@ -23,27 +23,52 @@ public interface IViewport : IRuntimeComponent
     /// <summary>
     /// X position of the viewport (normalized 0-1)
     /// </summary>
-    float X { get; set; }
+    float X { get; }
 
     /// <summary>
     /// Y position of the viewport (normalized 0-1)
     /// </summary>
-    float Y { get; set; }
+    float Y { get; }
 
     /// <summary>
     /// Width of the viewport (normalized 0-1)
     /// </summary>
-    float Width { get; set; }
+    float Width { get; }
 
     /// <summary>
     /// Height of the viewport (normalized 0-1)
     /// </summary>
-    float Height { get; set; }
+    float Height { get; }
 
     /// <summary>
     /// Background color for clearing the viewport (RGBA values 0-1)
     /// </summary>
-    Vector4D<float> BackgroundColor { get; set; }
+    Vector4D<float> BackgroundColor { get; }
+    
+    /// <summary>
+    /// Set the X position of the viewport (normalized 0-1)
+    /// </summary>
+    void SetX(float value, float duration = -1f, Animation.InterpolationMode interpolation = (Animation.InterpolationMode)(-1));
+    
+    /// <summary>
+    /// Set the Y position of the viewport (normalized 0-1)
+    /// </summary>
+    void SetY(float value, float duration = -1f, Animation.InterpolationMode interpolation = (Animation.InterpolationMode)(-1));
+    
+    /// <summary>
+    /// Set the Width of the viewport (normalized 0-1)
+    /// </summary>
+    void SetWidth(float value, float duration = -1f, Animation.InterpolationMode interpolation = (Animation.InterpolationMode)(-1));
+    
+    /// <summary>
+    /// Set the Height of the viewport (normalized 0-1)
+    /// </summary>
+    void SetHeight(float value, float duration = -1f, Animation.InterpolationMode interpolation = (Animation.InterpolationMode)(-1));
+    
+    /// <summary>
+    /// Set the background color for clearing the viewport (RGBA values 0-1)
+    /// </summary>
+    void SetBackgroundColor(Vector4D<float> value, float duration = -1f, Animation.InterpolationMode interpolation = (Animation.InterpolationMode)(-1));
     
     /// <summary>
     /// Gets the cached Vulkan clear color value.

@@ -103,9 +103,9 @@ public partial class RadialGradientBackground(
         if (componentTemplate is Template template)
         {
             _gradientDefinition = template.Gradient;
-            _center = template.Center;
-            _radius = template.Radius;
-            _scale = template.Scale;
+            SetCenter(template.Center);
+            SetRadius(template.Radius);
+            SetScale(template.Scale);
         }
     }
 

@@ -87,10 +87,10 @@ public partial class BiaxialGradientBackground(
         
         if (componentTemplate is Template template)
         {
-            _topLeft = template.TopLeft;
-            _topRight = template.TopRight;
-            _bottomLeft = template.BottomLeft;
-            _bottomRight = template.BottomRight;
+            SetTopLeft(template.TopLeft);
+            SetTopRight(template.TopRight);
+            SetBottomLeft(template.BottomLeft);
+            SetBottomRight(template.BottomRight);
         }
     }
 

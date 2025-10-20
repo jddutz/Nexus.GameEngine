@@ -110,35 +110,25 @@ public partial class TextElement()
 
         if (componentTemplate is Template template)
         {
-            _text = template.Text ?? string.Empty;
-            _color = template.Color;
-            _fontSize = Math.Max(1f, template.FontSize); // Ensure minimum size
-            _fontName = template.FontName ?? "DefaultFont";
-            _alignment = template.Alignment;
-            _isVisible = template.IsVisible;
+            SetText(template.Text ?? string.Empty);
+            SetColor(template.Color);
+            SetFontSize(Math.Max(1f, template.FontSize)); // Ensure minimum size
+            SetFontName(template.FontName ?? "DefaultFont");
+            SetAlignment(template.Alignment);
+            SetIsVisible(template.IsVisible);
         }
     }
 
-    // IDrawable.SetVisible implementation
-    public void SetVisible(bool visible)
-    {
-        IsVisible = visible;
-    }
+    // IGuiController.SetVisible implementation - wrapper that calls generated method
+    void IGuiController.SetVisible(bool visible) => SetIsVisible(visible);
 
-    // ITextController implementations - properties are automatically deferred
-    public void SetText(string? text)
-    {
-        Text = text ?? string.Empty;
-    }
-
-    public void SetColor(Vector4D<float> color)
-    {
-        Color = color;
-    }
+    // ITextController implementations - wrappers that call generated Set methods
+    void ITextController.SetText(string? text) => SetText(text ?? string.Empty);
+    void ITextController.SetColor(Vector4D<float> color) => SetColor(color);
 
     public void SetColor(float r, float g, float b, float a = 1.0f)
     {
-        Color = new Vector4D<float>(r, g, b, a);
+        SetColor(new Vector4D<float>(r, g, b, a));
     }
 
     public void SetColor(string colorName)
@@ -148,7 +138,7 @@ public partial class TextElement()
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
         if (colorProperty?.GetValue(null) is Vector4D<float> namedColor)
         {
-            Color = namedColor;
+            SetColor(namedColor);
         }
         else
         {
@@ -156,20 +146,9 @@ public partial class TextElement()
         }
     }
 
-    public void SetFontSize(float fontSize)
-    {
-        FontSize = fontSize;
-    }
-
-    public void SetFontName(string fontName)
-    {
-        FontName = fontName;
-    }
-
-    public void SetAlignment(TextAlignment alignment)
-    {
-        Alignment = alignment;
-    }
+    void ITextController.SetFontSize(float fontSize) => SetFontSize(fontSize);
+    void ITextController.SetFontName(string fontName) => SetFontName(fontName);
+    void ITextController.SetAlignment(TextAlignment alignment) => SetAlignment(alignment);
 
     public void AnimateColor(Vector4D<float> targetColor, float factor)
     {
@@ -180,12 +159,12 @@ public partial class TextElement()
             currentColor.Z + (targetColor.Z - currentColor.Z) * factor,
             currentColor.W + (targetColor.W - currentColor.W) * factor
         );
-        Color = interpolatedColor;
+        SetColor(interpolatedColor);
     }
 
     public void ScaleFontSize(float scaleFactor)
     {
-        FontSize = FontSize * scaleFactor;
+        SetFontSize(FontSize * scaleFactor);
     }
 
     public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)

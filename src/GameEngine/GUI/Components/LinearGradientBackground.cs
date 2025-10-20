@@ -72,7 +72,7 @@ public partial class LinearGradientBackground(
         if (componentTemplate is Template template)
         {
             _gradientDefinition = template.Gradient;
-            _angle = template.Angle;
+            SetAngle(template.Angle);
         }
     }
 

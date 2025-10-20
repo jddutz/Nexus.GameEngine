@@ -60,9 +60,8 @@ public partial class InputMap : RuntimeComponent, IInputMapController
 
         if (componentTemplate is Template template)
         {
-            // Direct field assignment during configuration - no deferred updates needed
-            _description = template.Description ?? string.Empty;
-            _priority = template.Priority;
+            SetDescription(template.Description ?? string.Empty);
+            SetPriority(template.Priority);
         }
     }
 
@@ -131,19 +130,8 @@ public partial class InputMap : RuntimeComponent, IInputMapController
         return GetChildren<T>();
     }
 
-    // IInputMapController implementation - all methods use deferred updates
-    public void SetDescription(string description)
-    {
-        QueueUpdate(() => Description = description);
-    }
-
-    public void SetPriority(int priority)
-    {
-        QueueUpdate(() => Priority = priority);
-    }
-
-    public void SetEnabledByDefault(bool enabledByDefault)
-    {
-        QueueUpdate(() => EnabledByDefault = enabledByDefault);
-    }
+    // IInputMapController implementation - delegate to generated Set methods
+    void IInputMapController.SetDescription(string description) => SetDescription(description);
+    void IInputMapController.SetPriority(int priority) => SetPriority(priority);
+    void IInputMapController.SetEnabledByDefault(bool enabledByDefault) => SetEnabledByDefault(enabledByDefault);
 }

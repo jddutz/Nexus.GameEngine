@@ -110,11 +110,11 @@ public partial class GamepadBinding(
 
         if (componentTemplate is Template template)
         {
-            Button = template.Button;
-            EventType = template.EventType;
-            Threshold = template.Threshold;
-            ThumbstickType = template.ThumbstickType;
-            TriggerType = template.TriggerType;
+            SetButton(template.Button);
+            SetEventType(template.EventType);
+            SetThreshold(template.Threshold);
+            SetThumbstickType(template.ThumbstickType);
+            SetTriggerType(template.TriggerType);
         }
     }
 

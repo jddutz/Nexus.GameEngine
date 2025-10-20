@@ -253,64 +253,94 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine();
+        
+        // Generate read-only property
         sb.AppendLine($"    public {prop.Type} {prop.Name}");
         sb.AppendLine("    {");
         sb.AppendLine($"        get => {fieldName};");
-        sb.AppendLine("        set");
-        sb.AppendLine("        {");
-        sb.AppendLine($"            if (global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, value))");
-        sb.AppendLine("                return;");
+        sb.AppendLine("    }");
         sb.AppendLine();
-        sb.AppendLine($"            {targetFieldName} = value;");
+        
+        // Generate Set method with optional duration and interpolation parameters
+        // Use -1 as sentinel value for "use attribute default"
+        var defaultInterpolation = prop.Interpolation;
+        sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = -1f, global::Nexus.GameEngine.Animation.InterpolationMode interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode)(-1))");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        if (global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, value))");
+        sb.AppendLine("            return;");
+        sb.AppendLine();
+        sb.AppendLine($"        {targetFieldName} = value;");
+        sb.AppendLine();
+        sb.AppendLine($"        // Use attribute defaults if not specified (-1 sentinel)");
+        sb.AppendLine($"        if (duration < 0f)");
+        sb.AppendLine($"            duration = {prop.Duration}f;");
+        sb.AppendLine($"        if ((int)interpolation < 0)");
+        sb.AppendLine($"            interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode){prop.Interpolation};");
 
         if (prop.HasAnimationAttribute && prop.Duration > 0)
         {
             var animFieldName = $"{fieldName}Animation";
             
+            sb.AppendLine();
+            sb.AppendLine($"        // Update animation settings if duration > 0");
+            sb.AppendLine($"        if (duration > 0f)");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            {animFieldName}.Duration = duration;");
+            sb.AppendLine($"            {animFieldName}.Interpolation = interpolation;");
+            sb.AppendLine("        }");
+            sb.AppendLine();
+            
             if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
             {
                 var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 // Start inline array animation (only if component is active)
-                sb.AppendLine($"            // Only animate if component is active; otherwise apply immediately");
-                sb.AppendLine($"            if (IsActive)");
+                sb.AppendLine($"        // Only animate if component is active and duration > 0; otherwise apply immediately");
+                sb.AppendLine($"        if (IsActive && duration > 0f)");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            // Deep copy the current array to avoid reference issues during animation");
+                sb.AppendLine($"            if ({fieldName} != null)");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                // Deep copy the current array to avoid reference issues during animation");
-                sb.AppendLine($"                if ({fieldName} != null)");
-                sb.AppendLine("                {");
-                sb.AppendLine($"                    {animFieldName}_startValue = new {elementType}[{fieldName}.Length];");
-                sb.AppendLine($"                    global::System.Array.Copy({fieldName}, {animFieldName}_startValue, {fieldName}.Length);");
-                sb.AppendLine("                }");
-                sb.AppendLine($"                else");
-                sb.AppendLine("                {");
-                sb.AppendLine($"                    {animFieldName}_startValue = {targetFieldName};");
-                sb.AppendLine("                }");
-                sb.AppendLine($"                {animFieldName}_endValue = {targetFieldName};");
-                sb.AppendLine($"                {animFieldName}_elapsed = 0.0;");
-                sb.AppendLine($"                {animFieldName}.IsAnimating = true;");
-                sb.AppendLine($"                OnPropertyAnimationStarted(nameof({prop.Name}));");
+                sb.AppendLine($"                {animFieldName}_startValue = new {elementType}[{fieldName}.Length];");
+                sb.AppendLine($"                global::System.Array.Copy({fieldName}, {animFieldName}_startValue, {fieldName}.Length);");
                 sb.AppendLine("            }");
-                sb.AppendLine("            else");
+                sb.AppendLine($"            else");
                 sb.AppendLine("            {");
-                sb.AppendLine($"                // Apply immediately during configuration");
-                sb.AppendLine($"                {fieldName} = {targetFieldName};");
+                sb.AppendLine($"                {animFieldName}_startValue = {targetFieldName};");
                 sb.AppendLine("            }");
+                sb.AppendLine($"            {animFieldName}_endValue = {targetFieldName};");
+                sb.AppendLine($"            {animFieldName}_elapsed = 0.0;");
+                sb.AppendLine($"            {animFieldName}.IsAnimating = true;");
+                sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
+                sb.AppendLine("        }");
+                sb.AppendLine("        else");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            // Apply immediately during configuration or when duration = 0");
+                sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                sb.AppendLine("        }");
             }
             else
             {
-                sb.AppendLine($"            if (IsActive)");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                {animFieldName}.StartAnimation({fieldName}, {targetFieldName}, 0.0); // TODO: Use TimeProvider");
-                sb.AppendLine($"                OnPropertyAnimationStarted(nameof({prop.Name}));");
-                sb.AppendLine("            }");
-                sb.AppendLine("            else");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                // Apply immediately during configuration");
-                sb.AppendLine($"                {fieldName} = {targetFieldName};");
-                sb.AppendLine("            }");
+                sb.AppendLine($"        if (IsActive && duration > 0f)");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            {animFieldName}.StartAnimation({fieldName}, {targetFieldName}, 0.0); // TODO: Use TimeProvider");
+                sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
+                sb.AppendLine("        }");
+                sb.AppendLine("        else");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            // Apply immediately during configuration or when duration = 0");
+                sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                sb.AppendLine("        }");
             }
         }
+        else
+        {
+            // Property without animation - always instant
+            sb.AppendLine($"        OnPropertyAnimationStarted(nameof({prop.Name}));");
+            sb.AppendLine($"        {fieldName} = {targetFieldName};");
+            sb.AppendLine($"        NotifyPropertyChanged(nameof({prop.Name}));");
+            sb.AppendLine($"        OnPropertyAnimationEnded(nameof({prop.Name}));");
+        }
 
-        sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
