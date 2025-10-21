@@ -12,12 +12,12 @@ public interface ITextureResourceManager : IDisposable
     /// </summary>
     /// <param name="definition">Texture definition specifying the texture to load</param>
     /// <returns>Texture resource handle</returns>
-    TextureResource GetOrCreate(ITextureDefinition definition);
+    TextureResource GetOrCreate(TextureDefinition definition);
     
     /// <summary>
     /// Releases a texture resource, decrementing reference count.
     /// If count reaches zero, the resource is destroyed.
     /// </summary>
     /// <param name="definition">Texture definition to release</param>
-    void Release(ITextureDefinition definition);
+    void Release(TextureDefinition definition);
 }

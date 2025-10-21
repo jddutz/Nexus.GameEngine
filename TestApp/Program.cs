@@ -92,6 +92,7 @@ class Program
                 .AddSingleton<IGeometryResourceManager, GeometryResourceManager>()
                 .AddSingleton<IShaderResourceManager, ShaderResourceManager>()
                 .AddSingleton<Nexus.GameEngine.Resources.Textures.ITextureResourceManager, Nexus.GameEngine.Resources.Textures.TextureResourceManager>()
+                .AddSingleton<Nexus.GameEngine.Resources.Fonts.IFontResourceManager, Nexus.GameEngine.Resources.Fonts.FontResourceManager>()
                 .AddSingleton<IResourceManager, ResourceManager>()
                 .AddSingleton<IContentManager, ContentManager>()
                 .AddSingleton<IComponentFactory, ComponentFactory>()

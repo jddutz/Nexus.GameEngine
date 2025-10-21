@@ -65,8 +65,8 @@ public partial class VerticalLayout(IWindowService windowService)
     /// <summary>
     /// Arranges child components vertically with spacing and alignment.
     /// </summary>
-    /// <param name="children">Collection of layoutable child components to arrange</param>
-    protected override void OnLayout(IReadOnlyList<ILayoutable> children)
+    /// <param name="children">Collection of UI child components to arrange</param>
+    protected override void OnLayout(IReadOnlyList<UserInterfaceComponent> children)
     {
         if (children.Count == 0)
             return;

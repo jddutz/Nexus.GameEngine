@@ -12,12 +12,12 @@ public interface IGeometryResourceManager : IDisposable
     /// </summary>
     /// <param name="definition">Geometry definition containing vertex data</param>
     /// <returns>Geometry resource handle</returns>
-    GeometryResource GetOrCreate(IGeometryDefinition definition);
+    GeometryResource GetOrCreate(GeometryDefinition definition);
     
     /// <summary>
     /// Releases a geometry resource, decrementing its reference count.
     /// If reference count reaches zero and not flagged as persistent, the resource is destroyed.
     /// </summary>
     /// <param name="definition">Geometry definition to release</param>
-    void Release(IGeometryDefinition definition);
+    void Release(GeometryDefinition definition);
 }

@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Shaders;
 using Nexus.GameEngine.Resources.Textures;
@@ -24,6 +25,11 @@ public interface IResourceManager : IDisposable
     /// Texture resource manager for image textures.
     /// </summary>
     ITextureResourceManager Textures { get; }
+    
+    /// <summary>
+    /// Font resource manager for font atlases and glyph metrics.
+    /// </summary>
+    IFontResourceManager Fonts { get; }
     
     // Future: IAudioResourceManager Audio { get; }
 }

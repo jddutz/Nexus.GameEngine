@@ -6,9 +6,8 @@ using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Shaders.Definitions;
-using Nexus.GameEngine.Resources.Textures.Definitions;
+using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Resources.Textures;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
@@ -34,7 +33,7 @@ public partial class ImageTextureBackground(
         /// Texture definition to load.
         /// Required. Use a static texture definition from your resource definitions class (e.g., TestResources.UvGridTexture).
         /// </summary>
-        public required Resources.Textures.ITextureDefinition TextureDefinition { get; set; }
+        public required TextureDefinition TextureDefinition { get; set; }
         
         /// <summary>
         /// Image placement mode.
@@ -51,7 +50,7 @@ public partial class ImageTextureBackground(
     private Resources.Textures.TextureResource? _texture;
     private DescriptorSet? _textureDescriptorSet;
     
-    private Resources.Textures.ITextureDefinition? _textureDefinition;
+    private TextureDefinition? _textureDefinition;
     private int _placement = BackgroundImagePlacement.FillCenter;
 
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
@@ -76,7 +75,7 @@ public partial class ImageTextureBackground(
         
         // Build pipeline for image texture rendering
         _pipeline = pipelineManager.GetBuilder()
-            .WithShader(new ImageTextureShader())
+            .WithShader(ShaderDefinitions.ImageTexture)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
             .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
@@ -89,7 +88,7 @@ public partial class ImageTextureBackground(
         _texture = resources.Textures.GetOrCreate(_textureDefinition);
         
         // Create descriptor set for texture
-        var shader = new ImageTextureShader();
+        var shader = ShaderDefinitions.ImageTexture;
         if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
         {
             throw new InvalidOperationException(
@@ -108,7 +107,7 @@ public partial class ImageTextureBackground(
             binding: 0);
         
         // Create textured quad geometry
-        _geometry = resources.Geometry.GetOrCreate(new TexturedQuad());
+        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
     }
 
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
@@ -174,7 +173,7 @@ public partial class ImageTextureBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(new TexturedQuad());
+            resources.Geometry.Release(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

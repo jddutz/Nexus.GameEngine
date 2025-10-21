@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.GUI.Abstractions;
 
 namespace Nexus.GameEngine.GUI.Components;
 
@@ -19,7 +20,7 @@ public record BorderTemplate
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
 public partial class Border()
-    : RuntimeComponent
+    : UserInterfaceComponent
 {
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]

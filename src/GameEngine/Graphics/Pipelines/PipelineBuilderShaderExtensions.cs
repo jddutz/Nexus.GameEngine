@@ -32,7 +32,7 @@ public static class PipelineBuilderShaderExtensions
     /// <param name="shaderDefinition">The shader definition to use.</param>
     /// <returns>The builder instance for method chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown if shader definition is null.</exception>
-    public static IPipelineBuilder WithShader(this IPipelineBuilder builder, IShaderDefinition shaderDefinition)
+    public static IPipelineBuilder WithShader(this IPipelineBuilder builder, ShaderDefinition shaderDefinition)
     {
         if (builder is PipelineBuilder impl)
         {

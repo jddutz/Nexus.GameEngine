@@ -11,28 +11,20 @@ namespace Nexus.GameEngine.Resources.Textures;
 /// Implements texture resource management with caching, reference counting, and Vulkan image creation.
 /// Loads textures from embedded resources using StbImageSharp.
 /// </summary>
-public unsafe class TextureResourceManager : ITextureResourceManager
+public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefinition, TextureResource>, ITextureResourceManager
 {
-    private readonly ILogger<TextureResourceManager> _logger;
-    private readonly IGraphicsContext _context;
     private readonly IBufferManager _bufferManager;
     private readonly Graphics.Commands.ICommandPoolManager _commandPoolManager;
-    private readonly Vk _vk;
-    
-    private readonly Dictionary<string, (TextureResource Resource, int RefCount)> _cache = [];
-    private readonly object _lock = new();
     
     public TextureResourceManager(
         ILoggerFactory loggerFactory,
         IGraphicsContext context,
         IBufferManager bufferManager,
         Graphics.Commands.ICommandPoolManager commandPoolManager)
+        : base(loggerFactory, context)
     {
-        _logger = loggerFactory.CreateLogger<TextureResourceManager>();
-        _context = context;
         _bufferManager = bufferManager;
         _commandPoolManager = commandPoolManager;
-        _vk = context.VulkanApi;
         
         // Configure StbImage: do NOT flip images vertically on load
         // PNG images are stored with (0,0) at top-left, matching our UV coordinate system
@@ -41,93 +33,67 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         StbImage.stbi_set_flip_vertically_on_load(0);
     }
     
-    /// <inheritdoc />
-    public TextureResource GetOrCreate(ITextureDefinition definition)
+    /// <summary>
+    /// Gets a string key for logging purposes (uses texture name).
+    /// </summary>
+    protected override string GetResourceKey(TextureDefinition definition)
     {
-        lock (_lock)
-        {
-            // Check cache
-            if (_cache.TryGetValue(definition.Name, out var cached))
-            {                
-                _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
-                return cached.Resource;
-            }
-            
-            // Load texture
-            
-            var resource = CreateTexture(definition);
-            
-            _cache[definition.Name] = (resource, 1);
-            
-            return resource;
-        }
+        return definition.Name;
     }
     
-    /// <inheritdoc />
-    public void Release(ITextureDefinition definition)
+    /// <summary>
+    /// Creates a new texture resource from a definition.
+    /// Loads texture data from source and creates Vulkan image resources.
+    /// </summary>
+    protected override TextureResource CreateResource(TextureDefinition definition)
     {
-        lock (_lock)
+        // 1. Load texture data from source
+        var sourceData = definition.Source.Load();
+        
+        // 2. Validate source data
+        if (sourceData.PixelData == null || sourceData.PixelData.Length == 0)
         {
-            if (!_cache.TryGetValue(definition.Name, out var cached))
-            {
-                return;
-            }
-            
-            var newRefCount = cached.RefCount - 1;
-            
-            if (newRefCount > 0)
-            {
-                _cache[definition.Name] = (cached.Resource, newRefCount);
-            }
-            else
-            {
-                
-                // Destroy texture resources
-                DestroyTextureResource(cached.Resource);
-                _cache.Remove(definition.Name);
-            }
+            throw new InvalidOperationException($"Texture source '{definition.Name}' returned null or empty pixel data");
         }
+        
+        if (sourceData.Width <= 0 || sourceData.Height <= 0)
+        {
+            throw new InvalidOperationException($"Texture source '{definition.Name}' returned invalid dimensions: {sourceData.Width}x{sourceData.Height}");
+        }
+        
+        // 3. Create Vulkan texture from source data
+        return CreateVulkanTexture(sourceData, definition.Name);
     }
     
-    private TextureResource CreateTexture(ITextureDefinition definition)
+    /// <summary>
+    /// Creates Vulkan texture resources from texture source data.
+    /// This is the low-level Vulkan implementation that pins memory, creates images, and uploads data.
+    /// </summary>
+    private TextureResource CreateVulkanTexture(TextureSourceData sourceData, string name)
     {
-        // 1. Load image from embedded resource
-        var imageData = LoadImageFromEmbeddedResource(definition.FilePath, definition.SourceAssembly);
+        // Pin the pixel data for upload
+        var pixelDataHandle = GCHandle.Alloc(sourceData.PixelData, GCHandleType.Pinned);
         
         try
         {
-            // 2. Determine format based on color space and component count
-            // Use SRGB format for color textures (albedo, UI, etc.) - GPU will convert to linear during sampling
-            // Use UNORM format for data textures (normals, masks, test images with raw data)
-            var format = (definition.IsSrgb, imageData.Components) switch
-            {
-                (true, ColorComponents.RedGreenBlueAlpha) => Format.R8G8B8A8Srgb,
-                (true, ColorComponents.RedGreenBlue) => Format.R8G8B8Srgb,
-                (true, ColorComponents.GreyAlpha) => Format.R8G8Srgb,
-                (true, ColorComponents.Grey) => Format.R8Srgb,
-                (false, ColorComponents.RedGreenBlueAlpha) => Format.R8G8B8A8Unorm,
-                (false, ColorComponents.RedGreenBlue) => Format.R8G8B8Unorm,
-                (false, ColorComponents.GreyAlpha) => Format.R8G8Unorm,
-                (false, ColorComponents.Grey) => Format.R8Unorm,
-                _ => throw new NotSupportedException($"Unsupported image format: {imageData.Components}")
-            };
+            var pixelPtr = pixelDataHandle.AddrOfPinnedObject();
             
-            // 3. Create Vulkan image
-            var image = CreateVulkanImage(imageData.Width, imageData.Height, format);
+            // 1. Create Vulkan image
+            var image = CreateVulkanImage(sourceData.Width, sourceData.Height, sourceData.Format);
             
-            // 4. Allocate and bind memory
+            // 2. Allocate and bind memory
             var imageMemory = AllocateImageMemory(image);
             
-            // 5. Upload pixels via staging buffer
-            UploadPixelsToImage(image, imageData.Pixels, imageData.Width, imageData.Height);
+            // 3. Upload pixels via staging buffer
+            UploadPixelsToImage(image, pixelPtr, sourceData.Width, sourceData.Height, sourceData.Format);
             
-            // 6. Transition image layout to shader read (image is now in TransferDstOptimal after upload)
-            TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, format);
+            // 4. Transition image layout to shader read
+            TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, sourceData.Format);
             
-            // 7. Create image view
-            var imageView = CreateImageView(image, format);
+            // 5. Create image view
+            var imageView = CreateImageView(image, sourceData.Format);
             
-            // 8. Create sampler
+            // 6. Create sampler
             var sampler = CreateSampler();
             
             return new TextureResource(
@@ -135,75 +101,16 @@ public unsafe class TextureResourceManager : ITextureResourceManager
                 imageMemory,
                 imageView,
                 sampler,
-                (uint)imageData.Width,
-                (uint)imageData.Height,
-                format,
-                definition.Name);
+                (uint)sourceData.Width,
+                (uint)sourceData.Height,
+                sourceData.Format,
+                name);
         }
         finally
         {
-            // Free pixel data from StbImage
-            Marshal.FreeHGlobal(imageData.Pixels);
+            // Unpin the pixel data
+            pixelDataHandle.Free();
         }
-    }
-    
-    private struct ImageData
-    {
-        public IntPtr Pixels;
-        public int Width;
-        public int Height;
-        public ColorComponents Components;
-    }
-    
-    private ImageData LoadImageFromEmbeddedResource(string filePath, System.Reflection.Assembly? sourceAssembly)
-    {
-        // Use provided assembly or default to GameEngine assembly
-        var assembly = sourceAssembly ?? typeof(TextureResourceManager).Assembly;
-        
-        // Convert path to embedded resource name
-        // For GameEngine: "Resources/Textures/uvmap.png" -> "Nexus.GameEngine.Resources.Textures.uvmap.png"
-        // For other assemblies: "Resources/Textures/test.png" -> "{AssemblyName}.Resources.Textures.test.png"
-        var assemblyName = assembly.GetName().Name;
-        var resourceName = $"{assemblyName}.{filePath.Replace('/', '.')}";
-        
-        using var stream = assembly.GetManifestResourceStream(resourceName);
-        
-        if (stream == null)
-        {
-            throw new FileNotFoundException(
-                $"Texture resource not found: {resourceName} in assembly {assemblyName} (from path: {filePath})");
-        }
-        
-        // Read stream into memory
-        using var memoryStream = new MemoryStream();
-        stream.CopyTo(memoryStream);
-        var imageData = memoryStream.ToArray();
-        
-        // Load image with StbImage
-        ImageResult image;
-        fixed (byte* ptr = imageData)
-        {
-            using var imageStream = new UnmanagedMemoryStream(ptr, imageData.Length);
-            image = ImageResult.FromStream(imageStream, ColorComponents.RedGreenBlueAlpha);
-        }
-        
-        if (image == null)
-        {
-            throw new InvalidOperationException($"Failed to load image from: {filePath}");
-        }
-        
-        // Allocate unmanaged memory for pixel data (will be freed by caller)
-        var pixelDataSize = image.Width * image.Height * (int)image.Comp;
-        var pixels = (byte*)Marshal.AllocHGlobal(pixelDataSize);
-        Marshal.Copy(image.Data, 0, (IntPtr)pixels, pixelDataSize);
-        
-        return new ImageData
-        {
-            Pixels = (IntPtr)pixels,
-            Width = image.Width,
-            Height = image.Height,
-            Components = image.Comp
-        };
     }
     
     private Image CreateVulkanImage(int width, int height, Format format)
@@ -266,9 +173,23 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         return imageMemory;
     }
     
-    private void UploadPixelsToImage(Image image, IntPtr pixels, int width, int height)
+    private void UploadPixelsToImage(Image image, IntPtr pixels, int width, int height, Format format = Format.R8G8B8A8Srgb)
     {
-        var imageSize = (ulong)(width * height * 4); // RGBA = 4 bytes per pixel
+        // Calculate bytes per pixel based on format
+        int bytesPerPixel = format switch
+        {
+            Format.R8Unorm => 1,
+            Format.R8Srgb => 1,
+            Format.R8G8Unorm => 2,
+            Format.R8G8Srgb => 2,
+            Format.R8G8B8Unorm => 3,
+            Format.R8G8B8Srgb => 3,
+            Format.R8G8B8A8Unorm => 4,
+            Format.R8G8B8A8Srgb => 4,
+            _ => 4 // Default to RGBA for compatibility
+        };
+        
+        var imageSize = (ulong)(width * height * bytesPerPixel);
         
         // Create staging buffer
         var stagingBuffer = CreateStagingBuffer(imageSize, out var stagingMemory);
@@ -282,7 +203,7 @@ public unsafe class TextureResourceManager : ITextureResourceManager
             _vk.UnmapMemory(_context.Device, stagingMemory);
             
             // Transition image to transfer destination
-            TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, Format.R8G8B8A8Srgb);
+            TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, format);
             
             // Copy buffer to image
             CopyBufferToImage(stagingBuffer, image, (uint)width, (uint)height);
@@ -540,7 +461,11 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         throw new InvalidOperationException("Failed to find suitable memory type");
     }
     
-    private void DestroyTextureResource(TextureResource resource)
+    /// <summary>
+    /// Destroys a texture resource, freeing all Vulkan handles.
+    /// Called by base class when reference count reaches zero.
+    /// </summary>
+    protected override void DestroyResource(TextureResource resource)
     {
         if (resource.Sampler.Handle != 0)
         {
@@ -557,23 +482,6 @@ public unsafe class TextureResourceManager : ITextureResourceManager
         if (resource.ImageMemory.Handle != 0)
         {
             _vk.FreeMemory(_context.Device, resource.ImageMemory, null);
-        }
-        
-    }
-    
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        lock (_lock)
-        {
-            
-            // Destroy all texture resources
-            foreach (var (resource, _) in _cache.Values)
-            {
-                DestroyTextureResource(resource);
-            }
-            
-            _cache.Clear();
         }
     }
 }

@@ -148,18 +148,25 @@ public class ContentManager(
 
     public void OnUpdate(double deltaTime)
     {
-        if (Viewport == null)
+        try
         {
-            var activeComponents = content.Values
-                .OfType<IRuntimeComponent>()
-                .Where(c => c.IsActive);
+            if (Viewport == null)
+            {
+                var activeComponents = content.Values
+                    .OfType<IRuntimeComponent>()
+                    .Where(c => c.IsActive);
 
-            foreach (var component in activeComponents)
-                component.Update(deltaTime);
+                foreach (var component in activeComponents)
+                    component.Update(deltaTime);
+            }
+            else
+            {
+                Viewport?.Update(deltaTime);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Viewport?.Update(deltaTime);
+            _logger.LogError(ex, "Exception occurred during Update loop");
         }
     }
 

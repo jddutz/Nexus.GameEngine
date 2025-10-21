@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics.Pipelines;
@@ -39,17 +40,26 @@ public record PipelineDescriptor
     public required string Name { get; init; }
 
     /// <summary>
-    /// Path to compiled SPIR-V vertex shader (.spv file).
+    /// Shader resource containing compiled shader modules.
+    /// If provided, takes precedence over shader paths.
     /// </summary>
-    public required string VertexShaderPath { get; init; }
+    public ShaderResource? ShaderResource { get; init; }
+
+    /// <summary>
+    /// Path to compiled SPIR-V vertex shader (.spv file).
+    /// Legacy - only used if ShaderResource is not provided.
+    /// </summary>
+    public string? VertexShaderPath { get; init; }
 
     /// <summary>
     /// Path to compiled SPIR-V fragment shader (.spv file).
+    /// Legacy - only used if ShaderResource is not provided.
     /// </summary>
-    public required string FragmentShaderPath { get; init; }
+    public string? FragmentShaderPath { get; init; }
 
     /// <summary>
     /// Optional path to compiled SPIR-V geometry shader (.spv file).
+    /// Legacy - only used if ShaderResource is not provided.
     /// </summary>
     public string? GeometryShaderPath { get; init; }
 

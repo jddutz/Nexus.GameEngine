@@ -4,10 +4,11 @@
 layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 
-// Push constants for UV bounds
+// Push constants for UV bounds and tint color
 layout(push_constant) uniform PushConstants {
     vec2 uvMin;
     vec2 uvMax;
+    vec4 tintColor;
 } pc;
 
 // Output to fragment shader

@@ -18,7 +18,7 @@ public class PipelineBuilder(
 {    
     // Internal state accessible by extension methods
     internal ShaderResource? Shader { get; set; }
-    internal IShaderDefinition? ShaderDefinition { get; set; }
+    internal ShaderDefinition? ShaderDefinition { get; set; }
     internal IResourceManager Resources { get; } = resources;
     internal ISwapChain SwapChain { get; } = swapChain;
     internal IDescriptorManager DescriptorManager { get; } = descriptorManager;
@@ -59,8 +59,9 @@ public class PipelineBuilder(
         var descriptor = new PipelineDescriptor
         {
             Name = name ?? GenerateAutomaticName(),
-            VertexShaderPath = Shader.Definition.VertexShaderPath,
-            FragmentShaderPath = Shader.Definition.FragmentShaderPath,
+            ShaderResource = Shader,  // Pass the loaded shader resource with compiled modules
+            VertexShaderPath = Shader.Definition.Name + ".vert",  // Legacy fallback for tracking
+            FragmentShaderPath = Shader.Definition.Name + ".frag",  // Legacy fallback for tracking
             VertexInputDescription = Shader.Definition.InputDescription,
             PushConstantRanges = Shader.Definition.PushConstantRanges,
             DescriptorSetLayouts = descriptorSetLayouts,

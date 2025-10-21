@@ -12,12 +12,12 @@ public interface IShaderResourceManager : IDisposable
     /// </summary>
     /// <param name="definition">Shader definition containing paths and input description</param>
     /// <returns>Shader resource handle</returns>
-    ShaderResource GetOrCreate(IShaderDefinition definition);
+    ShaderResource GetOrCreate(ShaderDefinition definition);
     
     /// <summary>
     /// Releases a shader resource, decrementing its reference count.
     /// If reference count reaches zero and not flagged as persistent, the resource is destroyed.
     /// </summary>
     /// <param name="definition">Shader definition to release</param>
-    void Release(IShaderDefinition definition);
+    void Release(ShaderDefinition definition);
 }

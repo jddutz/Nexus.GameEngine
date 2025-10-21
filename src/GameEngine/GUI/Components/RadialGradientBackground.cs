@@ -8,8 +8,7 @@ using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Shaders.Definitions;
+using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
@@ -123,7 +122,7 @@ public partial class RadialGradientBackground(
         
         // Build pipeline for radial gradient rendering
         _pipeline = pipelineManager.GetBuilder()
-            .WithShader(new RadialGradientShader())
+            .WithShader(ShaderDefinitions.RadialGradient)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
             .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
@@ -133,7 +132,7 @@ public partial class RadialGradientBackground(
 
 
         // Create position-only full-screen quad geometry
-        _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
+        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for gradient
         CreateGradientUBO(_gradientDefinition);
@@ -164,7 +163,7 @@ public partial class RadialGradientBackground(
         
         
         // Get or create descriptor set layout
-        var shader = new RadialGradientShader();
+        var shader = ShaderDefinitions.RadialGradient;
         if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
         {
             throw new InvalidOperationException(
@@ -238,7 +237,7 @@ public partial class RadialGradientBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(new UniformColorQuad());
+            resources.Geometry.Release(GeometryDefinitions.UniformColorQuad);
             _geometry = null;
         }
         

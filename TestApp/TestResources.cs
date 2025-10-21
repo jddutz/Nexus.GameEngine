@@ -1,5 +1,5 @@
 using System.Reflection;
-using Nexus.GameEngine.Resources.Textures.Definitions;
+using Nexus.GameEngine.Resources.Textures;
 
 namespace TestApp;
 
@@ -13,19 +13,25 @@ public static class TestResources
     /// UV grid texture for visual testing of image placement and transformations.
     /// Contains linear coordinate data (not sRGB color data).
     /// </summary>
-    public static readonly SimpleTextureDefinition UvGridTexture = new(
-        FilePath: "Resources/Textures/uvgrid.png",
-        IsSrgb: false,  // Linear data, not sRGB color
-        SourceAssembly: Assembly.GetExecutingAssembly()  // Load from TestApp assembly
-    );
+    public static readonly TextureDefinition UvGridTexture = new()
+    {
+        Name = "uvgrid",
+        Source = new EmbeddedPngTextureSource(
+            "Resources/Textures/uvgrid.png",
+            Assembly.GetExecutingAssembly(),
+            isSrgb: false)  // Linear data, not sRGB color
+    };
     
     /// <summary>
     /// Test image where R channel = X coordinate (0-255) and G channel = Y coordinate (0-255).
     /// Contains linear coordinate data for programmatic testing.
     /// </summary>
-    public static readonly SimpleTextureDefinition ImageTestTexture = new(
-        FilePath: "Resources/Textures/image_test.png",
-        IsSrgb: false,  // Linear data, not sRGB color
-        SourceAssembly: Assembly.GetExecutingAssembly()  // Load from TestApp assembly
-    );
+    public static readonly TextureDefinition ImageTestTexture = new()
+    {
+        Name = "image_test",
+        Source = new EmbeddedPngTextureSource(
+            "Resources/Textures/image_test.png",
+            Assembly.GetExecutingAssembly(),
+            isSrgb: false)  // Linear data, not sRGB color
+    };
 }

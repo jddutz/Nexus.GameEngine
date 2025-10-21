@@ -8,8 +8,7 @@ using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Shaders.Definitions;
+using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI.Components;
@@ -90,7 +89,7 @@ public partial class LinearGradientBackground(
         
         // Build pipeline for linear gradient rendering
         _pipeline = pipelineManager.GetBuilder()
-            .WithShader(new LinearGradientShader())
+            .WithShader(ShaderDefinitions.LinearGradient)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
             .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
@@ -100,7 +99,7 @@ public partial class LinearGradientBackground(
 
 
         // Create position-only full-screen quad geometry
-        _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
+        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for gradient
         CreateGradientUBO(_gradientDefinition);
@@ -131,7 +130,7 @@ public partial class LinearGradientBackground(
         
         
         // Get or create descriptor set layout
-        var shader = new LinearGradientShader();
+        var shader = ShaderDefinitions.LinearGradient;
         if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
         {
             throw new InvalidOperationException(
@@ -192,7 +191,7 @@ public partial class LinearGradientBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(new UniformColorQuad());
+            resources.Geometry.Release(GeometryDefinitions.UniformColorQuad);
             _geometry = null;
         }
         

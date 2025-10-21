@@ -21,7 +21,7 @@ public class ShaderResource
     /// <summary>
     /// Shader definition containing input description and validation.
     /// </summary>
-    public IShaderDefinition Definition { get; }
+    public ShaderDefinition Definition { get; }
     
     /// <summary>
     /// Name of this shader resource.
@@ -31,7 +31,7 @@ public class ShaderResource
     /// <summary>
     /// Internal constructor - only ShaderResourceManager should create these.
     /// </summary>
-    internal ShaderResource(ShaderModule vertexShader, ShaderModule fragmentShader, IShaderDefinition definition)
+    internal ShaderResource(ShaderModule vertexShader, ShaderModule fragmentShader, ShaderDefinition definition)
     {
         VertexShader = vertexShader;
         FragmentShader = fragmentShader;

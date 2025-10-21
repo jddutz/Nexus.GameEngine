@@ -131,9 +131,11 @@ public unsafe class PipelineManager : IPipelineManager
 
         _pipelines.TryAdd(descriptor.Name, cachedPipeline);
 
-        // Track shader dependencies
-        TrackShaderDependency(descriptor.VertexShaderPath, descriptor.Name);
-        TrackShaderDependency(descriptor.FragmentShaderPath, descriptor.Name);
+        // Track shader dependencies (if using legacy path-based loading)
+        if (descriptor.VertexShaderPath != null)
+            TrackShaderDependency(descriptor.VertexShaderPath, descriptor.Name);
+        if (descriptor.FragmentShaderPath != null)
+            TrackShaderDependency(descriptor.FragmentShaderPath, descriptor.Name);
         if (descriptor.GeometryShaderPath != null)
             TrackShaderDependency(descriptor.GeometryShaderPath, descriptor.Name);
 
@@ -279,8 +281,8 @@ public unsafe class PipelineManager : IPipelineManager
             {
                 Name = kvp.Key,
                 Handle = cached.Handle,
-                VertexShaderPath = cached.Descriptor.VertexShaderPath,
-                FragmentShaderPath = cached.Descriptor.FragmentShaderPath,
+                VertexShaderPath = cached.Descriptor.VertexShaderPath ?? cached.Descriptor.ShaderResource?.Name + ".vert" ?? "unknown",
+                FragmentShaderPath = cached.Descriptor.FragmentShaderPath ?? cached.Descriptor.ShaderResource?.Name + ".frag" ?? "unknown",
                 GeometryShaderPath = cached.Descriptor.GeometryShaderPath,
                 AccessCount = cached.AccessCount,
                 CreatedAt = cached.CreatedAt,
@@ -298,7 +300,6 @@ public unsafe class PipelineManager : IPipelineManager
     public bool ValidatePipelineDescriptor(PipelineDescriptor descriptor)
     {
         // TODO: Implement proper validation
-        // - Check shader file exists
         // - Validate vertex input matches shader expectations
         // - Check render pass compatibility
         // - Validate descriptor set layouts
@@ -308,14 +309,18 @@ public unsafe class PipelineManager : IPipelineManager
             return false;
         }
 
-        if (string.IsNullOrEmpty(descriptor.VertexShaderPath))
+        // Must have either ShaderResource or shader paths
+        if (descriptor.ShaderResource == null)
         {
-            return false;
-        }
+            if (string.IsNullOrEmpty(descriptor.VertexShaderPath))
+            {
+                return false;
+            }
 
-        if (string.IsNullOrEmpty(descriptor.FragmentShaderPath))
-        {
-            return false;
+            if (string.IsNullOrEmpty(descriptor.FragmentShaderPath))
+            {
+                return false;
+            }
         }
 
         if (descriptor.RenderPass.Handle == 0)
@@ -365,9 +370,22 @@ public unsafe class PipelineManager : IPipelineManager
 
         try
         {
-            // Load and create shader modules
-            var vertShaderModule = CreateShaderModule(descriptor.VertexShaderPath);
-            var fragShaderModule = CreateShaderModule(descriptor.FragmentShaderPath);
+            // Get shader modules - prefer ShaderResource, fall back to loading from paths
+            ShaderModule vertShaderModule;
+            ShaderModule fragShaderModule;
+            
+            if (descriptor.ShaderResource != null)
+            {
+                // Use pre-loaded shader modules from ShaderResource
+                vertShaderModule = descriptor.ShaderResource.VertexShader;
+                fragShaderModule = descriptor.ShaderResource.FragmentShader;
+            }
+            else
+            {
+                // Legacy path: Load shader modules from file paths
+                vertShaderModule = CreateShaderModule(descriptor.VertexShaderPath!);
+                fragShaderModule = CreateShaderModule(descriptor.FragmentShaderPath!);
+            }
 
             if (vertShaderModule.Handle == 0 || fragShaderModule.Handle == 0)
             {
@@ -522,8 +540,18 @@ public unsafe class PipelineManager : IPipelineManager
                 null,
                 &pipeline);
 
-            // Cleanup shader modules (no longer needed after pipeline creation)
-            CleanupShaderModules(vertShaderModule, fragShaderModule, shaderStages);
+            // Cleanup shader modules (only if we loaded them from paths, not from ShaderResource)
+            bool shouldCleanupShaders = descriptor.ShaderResource == null;
+            if (shouldCleanupShaders)
+            {
+                CleanupShaderModules(vertShaderModule, fragShaderModule, shaderStages);
+            }
+            else
+            {
+                // Still need to free string pointers
+                SilkMarshal.Free((nint)shaderStages[0].PName);
+                SilkMarshal.Free((nint)shaderStages[1].PName);
+            }
             
             // Free temporary GC handles for vertex input descriptions
             CleanupTempGCHandles();

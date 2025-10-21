@@ -7,151 +7,108 @@ namespace Nexus.GameEngine.Resources.Shaders;
 /// <summary>
 /// Implements shader resource management with caching and reference counting.
 /// </summary>
-public class ShaderResourceManager : IShaderResourceManager
+public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, ShaderResource>, IShaderResourceManager
 {
-    private readonly ILogger<ShaderResourceManager> _logger;
-    private readonly IGraphicsContext _context;
-    private readonly Vk _vk;
-    
-    private readonly Dictionary<string, (ShaderResource Resource, int RefCount)> _cache = [];
-    private readonly object _lock = new();
-    
     public ShaderResourceManager(ILoggerFactory loggerFactory, IGraphicsContext context)
+        : base(loggerFactory, context)
     {
-        _logger = loggerFactory.CreateLogger<ShaderResourceManager>();
-        _context = context;
-        _vk = context.VulkanApi;
     }
     
-    /// <inheritdoc />
-    public ShaderResource GetOrCreate(IShaderDefinition definition)
+    /// <summary>
+    /// Gets a string key for logging purposes using the shader definition's name.
+    /// </summary>
+    protected override string GetResourceKey(ShaderDefinition definition)
     {
-        lock (_lock)
-        {
-            // Check cache
-            if (_cache.TryGetValue(definition.Name, out var cached))
-            {                
-                _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
-                return cached.Resource;
-            }
-            
-            // Load shader modules
-            
-            var vertShaderModule = CreateShaderModule(definition.VertexShaderPath);
-            var fragShaderModule = CreateShaderModule(definition.FragmentShaderPath);
-            
-            if (vertShaderModule.Handle == 0 || fragShaderModule.Handle == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Failed to load shader modules for '{definition.Name}'");
-            }
-            
-            var resource = new ShaderResource(vertShaderModule, fragShaderModule, definition);
-            
-            _cache[definition.Name] = (resource, 1);
-            
-            
-            return resource;
-        }
+        return definition.Name;
     }
     
-    private unsafe ShaderModule CreateShaderModule(string shaderPath)
+    /// <summary>
+    /// Creates a new shader resource from a definition by loading SPIR-V and creating shader modules.
+    /// </summary>
+    protected override ShaderResource CreateResource(ShaderDefinition definition)
     {
-        try
+        // Load SPIR-V from source
+        var sourceData = definition.Source.Load();
+        
+        // Validate SPIR-V data
+        if (sourceData.VertexSpirV == null || sourceData.VertexSpirV.Length == 0)
         {
-            // Convert path to embedded resource name
-            // "Shaders/vert.spv" -> "Nexus.GameEngine.Shaders.vert.spv"
-            var resourceName = $"Nexus.GameEngine.{shaderPath.Replace('/', '.')}";
-            
-            var assembly = typeof(ShaderResourceManager).Assembly;
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            
-            if (stream == null) return default;
-
-            // Read SPIR-V bytes
-            using var memoryStream = new MemoryStream();
-            stream.CopyTo(memoryStream);
-            var code = memoryStream.ToArray();
-
-
-            // Create shader module
-            fixed (byte* codePtr = code)
-            {
-                var createInfo = new ShaderModuleCreateInfo
-                {
-                    SType = StructureType.ShaderModuleCreateInfo,
-                    CodeSize = (nuint)code.Length,
-                    PCode = (uint*)codePtr
-                };
-
-                ShaderModule shaderModule;
-                var result = _vk.CreateShaderModule(_context.Device, &createInfo, null, &shaderModule);
-                
-                if (result != Result.Success)
-                {
-                    return default;
-                }
-
-                return shaderModule;
-            }
+            throw new InvalidOperationException(
+                $"Vertex shader SPIR-V is null or empty for shader '{definition.Name}'");
         }
-        catch
+        
+        if (sourceData.FragmentSpirV == null || sourceData.FragmentSpirV.Length == 0)
         {
+            throw new InvalidOperationException(
+                $"Fragment shader SPIR-V is null or empty for shader '{definition.Name}'");
+        }
+        
+        // Create shader modules
+        var vertShaderModule = CreateShaderModule(sourceData.VertexSpirV);
+        var fragShaderModule = CreateShaderModule(sourceData.FragmentSpirV);
+        
+        if (vertShaderModule.Handle == 0 || fragShaderModule.Handle == 0)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create shader modules for '{definition.Name}'");
+        }
+        
+        _logger.LogDebug("Created shader resource: {ShaderName} (Vertex: {VertexHandle}, Fragment: {FragmentHandle})",
+            definition.Name, vertShaderModule.Handle, fragShaderModule.Handle);
+        
+        return new ShaderResource(vertShaderModule, fragShaderModule, definition);
+    }
+    
+    /// <summary>
+    /// Creates a Vulkan shader module from SPIR-V bytecode.
+    /// </summary>
+    private unsafe ShaderModule CreateShaderModule(byte[] spirvCode)
+    {
+        if (spirvCode == null || spirvCode.Length == 0)
+        {
+            _logger.LogError("Cannot create shader module from null or empty SPIR-V data");
             return default;
         }
-    }
-    
-    /// <inheritdoc />
-    public void Release(IShaderDefinition definition)
-    {
-        lock (_lock)
+
+        fixed (byte* codePtr = spirvCode)
         {
-            if (!_cache.TryGetValue(definition.Name, out var cached))
+            var createInfo = new ShaderModuleCreateInfo
             {
-                return;
-            }
+                SType = StructureType.ShaderModuleCreateInfo,
+                CodeSize = (nuint)spirvCode.Length,
+                PCode = (uint*)codePtr
+            };
+
+            ShaderModule shaderModule;
+            var result = _vk.CreateShaderModule(_context.Device, &createInfo, null, &shaderModule);
             
-            var newRefCount = cached.RefCount - 1;
-            
-            if (newRefCount > 0)
-            {                
-                _cache[definition.Name] = (cached.Resource, newRefCount);
-            }
-            else
+            if (result != Result.Success)
             {
-                
-                // Destroy shader modules
-                DestroyShaderResource(cached.Resource);
-                _cache.Remove(definition.Name);
+                _logger.LogError("Failed to create shader module: {Result}", result);
+                return default;
             }
+
+            return shaderModule;
         }
     }
     
-    private unsafe void DestroyShaderResource(ShaderResource resource)
+    /// <summary>
+    /// Destroys a shader resource by destroying both vertex and fragment shader modules.
+    /// </summary>
+    protected override unsafe void DestroyResource(ShaderResource resource)
     {
         if (resource.VertexShader.Handle != 0)
         {
             _vk.DestroyShaderModule(_context.Device, resource.VertexShader, null);
+            _logger.LogDebug("Destroyed vertex shader module: {ShaderName} (Handle: {Handle})", 
+                resource.Name, resource.VertexShader.Handle);
         }
+        
         if (resource.FragmentShader.Handle != 0)
         {
             _vk.DestroyShaderModule(_context.Device, resource.FragmentShader, null);
-        }
-    }
-    
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        lock (_lock)
-        {
-            
-            // Destroy all shader modules
-            foreach (var (resource, _) in _cache.Values)
-            {
-                DestroyShaderResource(resource);
-            }
-            
-            _cache.Clear();
+            _logger.LogDebug("Destroyed fragment shader module: {ShaderName} (Handle: {Handle})", 
+                resource.Name, resource.FragmentShader.Handle);
         }
     }
 }

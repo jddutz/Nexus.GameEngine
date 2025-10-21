@@ -98,9 +98,9 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
         }
 
         // Try to get size from parent layout component
-        if (Parent is ILayoutable parentLayout)
+        if (Parent is UserInterfaceComponent parentUi)
         {
-            var parentBounds = parentLayout.GetBounds();
+            var parentBounds = parentUi.GetBounds();
             return new Vector2D<float>(parentBounds.Size.X, parentBounds.Size.Y);
         }
 
@@ -124,21 +124,21 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
 
     /// <summary>
     /// Performs layout of child components if needed.
-    /// Collects all ILayoutable immediate child components and calls OnLayout.
+    /// Collects all UserInterfaceComponent immediate child components and calls OnLayout.
     /// </summary>
     public void Layout()
     {
         if (!_needsLayout || !IsEnabled)
             return;
 
-        // Collect all immediate child components that implement ILayoutable
-        var layoutableChildren = Children
+        // Collect all immediate child components that are UI components
+        var uiChildren = Children
             .Where(c => c.IsEnabled)
-            .OfType<ILayoutable>()
+            .OfType<UserInterfaceComponent>()
             .ToList();
 
         // Call the derived class implementation
-        OnLayout(layoutableChildren);
+        OnLayout(uiChildren);
 
         _needsLayout = false;
     }
@@ -146,8 +146,8 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
     /// <summary>
     /// Override in derived classes to implement specific layout logic.
     /// </summary>
-    /// <param name="children">Collection of layoutable child components to arrange</param>
-    protected abstract void OnLayout(IReadOnlyList<ILayoutable> children);
+    /// <param name="children">Collection of UI child components to arrange</param>
+    protected abstract void OnLayout(IReadOnlyList<UserInterfaceComponent> children);
 
     /// <summary>
     /// Called when a child component is added. Invalidates layout.

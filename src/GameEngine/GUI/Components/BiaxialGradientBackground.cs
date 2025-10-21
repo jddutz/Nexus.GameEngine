@@ -7,8 +7,7 @@ using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Shaders.Definitions;
+using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
@@ -99,7 +98,7 @@ public partial class BiaxialGradientBackground(
 
         // Build pipeline for biaxial gradient rendering
         _pipeline = pipelineManager.GetBuilder()
-            .WithShader(new BiaxialGradientShader())
+            .WithShader(ShaderDefinitions.BiaxialGradient)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
             .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
@@ -109,7 +108,7 @@ public partial class BiaxialGradientBackground(
 
 
         // Create position-only full-screen quad geometry
-        _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
+        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for corner colors
         CreateCornerColorsUBO();
@@ -134,7 +133,7 @@ public partial class BiaxialGradientBackground(
         
         
         // Get or create descriptor set layout
-        var shader = new BiaxialGradientShader();
+        var shader = ShaderDefinitions.BiaxialGradient;
         if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
         {
             throw new InvalidOperationException(
@@ -226,7 +225,7 @@ public partial class BiaxialGradientBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(new UniformColorQuad());
+            resources.Geometry.Release(GeometryDefinitions.UniformColorQuad);
             _geometry = null;
         }
         

@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Nexus.GameEngine</AssemblyName>
     <RootNamespace>Nexus.GameEngine</RootNamespace>
 
     <!-- Emit source generator files to disk for debugging -->
@@ -40,14 +41,12 @@
     <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
     <PackageReference Include="StbImageSharp" Version="2.27.14" />
+    <PackageReference Include="StbTrueTypeSharp" Version="1.26.12" />
   </ItemGroup>
 
   <!-- Embedded Resources -->
   <ItemGroup>
-    <EmbeddedResource Include="Shaders\**\*.spv" />
-    <EmbeddedResource Include="Resources\Textures\**\*.png" />
-    <EmbeddedResource Include="Resources\Textures\**\*.jpg" />
-    <EmbeddedResource Include="Resources\Textures\**\*.jpeg" />
+    <EmbeddedResource Include="EmbeddedResources\**\*.*" />
   </ItemGroup>
 
   <!-- Source Generators and Analyzers -->

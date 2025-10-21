@@ -119,31 +119,4 @@ public partial class StaticCamera : RuntimeComponent, ICamera
             InitializeMatrices();
         }
     }
-
-    // IOrthographicController implementation - no-op for static camera
-    // Static cameras should not change their projection at runtime
-    public void SetWidth(float width)
-    {
-        // No-op: StaticCamera projection is fixed
-    }
-
-    public void SetHeight(float height)
-    {
-        // No-op: StaticCamera projection is fixed
-    }
-
-    public void SetSize(float width, float height)
-    {
-        // No-op: StaticCamera projection is fixed
-    }
-
-    public void SetNearPlane(float nearPlane)
-    {
-        // No-op: StaticCamera clipping planes are fixed
-    }
-
-    public void SetFarPlane(float farPlane)
-    {
-        // No-op: StaticCamera clipping planes are fixed
-    }
 }

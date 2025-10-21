@@ -21,6 +21,12 @@ public struct ImageTexturePushConstants
     public Vector2D<float> UvMax;
     
     /// <summary>
+    /// Tint color to multiply the texture by (RGBA).
+    /// Use (1, 1, 1, 1) for no tint (white = original texture colors).
+    /// </summary>
+    public Vector4D<float> TintColor;
+    
+    /// <summary>
     /// Creates push constants from calculated UV bounds.
     /// </summary>
     /// <param name="uvMin">Minimum UV coordinates</param>
@@ -31,7 +37,8 @@ public struct ImageTexturePushConstants
         return new ImageTexturePushConstants
         {
             UvMin = uvMin,
-            UvMax = uvMax
+            UvMax = uvMax,
+            TintColor = new Vector4D<float>(1, 1, 1, 1)  // Default to white (no tint)
         };
     }
 }

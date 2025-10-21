@@ -1,104 +1,71 @@
 ﻿using Microsoft.Extensions.Logging;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 
 namespace Nexus.GameEngine.Resources.Geometry;
 
 /// <summary>
 /// Implements geometry resource management with caching and reference counting.
+/// Extends VulkanResourceManager to leverage base class functionality.
 /// </summary>
-public class GeometryResourceManager : IGeometryResourceManager
+public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition, GeometryResource>, IGeometryResourceManager
 {
     private readonly IBufferManager _bufferManager;
-    private readonly ILogger<GeometryResourceManager> _logger;
     
-    private readonly Dictionary<string, (GeometryResource Resource, int RefCount)> _cache = [];
-    private readonly object _lock = new();
-    
-    public GeometryResourceManager(IBufferManager bufferManager, ILoggerFactory loggerFactory)
+    public GeometryResourceManager(IBufferManager bufferManager, ILoggerFactory loggerFactory, IGraphicsContext context)
+        : base(loggerFactory, context)
     {
         _bufferManager = bufferManager;
-        _logger = loggerFactory.CreateLogger<GeometryResourceManager>();
     }
     
     /// <inheritdoc />
-    public GeometryResource GetOrCreate(IGeometryDefinition definition)
+    protected override string GetResourceKey(GeometryDefinition definition)
     {
-        lock (_lock)
-        {
-            // Check cache
-            if (_cache.TryGetValue(definition.Name, out var cached))
-            {
-                _cache[definition.Name] = (cached.Resource, cached.RefCount + 1);
-                return cached.Resource;
-            }
-            
-            // Create new resource            
-            var vertexData = definition.GetVertexData();
-            
-            // Debug: Log vertex data for TexturedQuad (TRACE level for performance)
-            if (definition.Name == "TexturedQuad" && vertexData.Length >= 64)
-            {
-                var bytes = vertexData.ToArray();
-                for (int i = 0; i < 4; i++)
-                {
-                    var offset = i * 16;
-                    var vertexBytes = string.Join("-", bytes.Skip(offset).Take(16).Select(b => b.ToString("X2")));
-                }
-            }
-            
-            var (buffer, memory) = _bufferManager.CreateVertexBuffer(vertexData);
-            
-            var resource = new GeometryResource(
-                buffer,
-                memory,
-                definition.VertexCount,
-                definition.Stride,
-                definition.Name);
-            
-            _cache[definition.Name] = (resource, 1);
-            
-            
-            return resource;
-        }
+        return definition.Name;
     }
     
     /// <inheritdoc />
-    public void Release(IGeometryDefinition definition)
+    protected override GeometryResource CreateResource(GeometryDefinition definition)
     {
-        lock (_lock)
+        _logger.LogDebug("Loading geometry data from source: {Name}", definition.Name);
+        
+        // Load vertex data from source
+        var sourceData = definition.Source.Load();
+        
+        // Validate source data
+        if (sourceData.VertexData == null || sourceData.VertexData.Length == 0)
         {
-            if (!_cache.TryGetValue(definition.Name, out var cached))
-            {
-                return;
-            }
-            
-            var newRefCount = cached.RefCount - 1;
-            
-            if (newRefCount > 0)
-            {
-                _cache[definition.Name] = (cached.Resource, newRefCount);
-            }
-            else
-            {
-                
-                _bufferManager.DestroyBuffer(cached.Resource.Buffer, cached.Resource.Memory);
-                _cache.Remove(definition.Name);
-            }
+            throw new InvalidOperationException($"Geometry source returned null or empty vertex data for '{definition.Name}'");
         }
+        
+        if (sourceData.VertexCount == 0)
+        {
+            throw new InvalidOperationException($"Geometry source returned zero vertex count for '{definition.Name}'");
+        }
+        
+        if (sourceData.Stride == 0)
+        {
+            throw new InvalidOperationException($"Geometry source returned zero stride for '{definition.Name}'");
+        }
+        
+        // Create Vulkan vertex buffer
+        _logger.LogDebug("Creating vertex buffer: {Name}, VertexCount={VertexCount}, Stride={Stride}, Size={Size} bytes",
+            definition.Name, sourceData.VertexCount, sourceData.Stride, sourceData.VertexData.Length);
+        
+        var (buffer, memory) = _bufferManager.CreateVertexBuffer(sourceData.VertexData);
+        
+        return new GeometryResource(
+            buffer,
+            memory,
+            sourceData.VertexCount,
+            sourceData.Stride,
+            definition.Name);
     }
     
     /// <inheritdoc />
-    public void Dispose()
+    protected override void DestroyResource(GeometryResource resource)
     {
-        lock (_lock)
-        {
-            
-            foreach (var (name, cached) in _cache)
-            {
-                _bufferManager.DestroyBuffer(cached.Resource.Buffer, cached.Resource.Memory);
-            }
-            
-            _cache.Clear();
-        }
+        _logger.LogDebug("Destroying geometry resource: {Name}", resource.Name);
+        _bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
     }
 }

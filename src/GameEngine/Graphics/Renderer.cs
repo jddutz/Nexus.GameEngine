@@ -1,6 +1,6 @@
+using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
-using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Vulkan;
@@ -13,6 +13,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Manages image acquisition, command recording, and presentation.
 /// </summary>
 public unsafe class Renderer(
+    ILoggerFactory loggerFactory,
     IGraphicsContext context,
     ISwapChain swapChain,
     ISyncManager syncManager,
@@ -20,6 +21,7 @@ public unsafe class Renderer(
     IContentManager contentManager)
     : IRenderer
 {    
+    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
 
@@ -28,54 +30,61 @@ public unsafe class Renderer(
 
     public void OnRender(double deltaTime)
     {
-        if (contentManager.Viewport.Content == null)
+        try
         {
-            throw new InvalidOperationException("ContentManager.Viewport.Content is null, nothing to render.");
+            if (contentManager.Viewport.Content == null)
+            {
+                throw new InvalidOperationException("ContentManager.Viewport.Content is null, nothing to render.");
+            }
+
+            // Skip rendering if window is minimized (swapchain extent is 0x0)
+            if (swapChain.SwapchainExtent.Width == 0 || swapChain.SwapchainExtent.Height == 0)
+            {
+                return;
+            }
+
+            // Prepare frame synchronization and acquire next image
+            var (frameSync, imageIndex, imageSync) = PrepareFrame();
+
+            BeforeRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
+
+            // Create render context for this frame
+            var renderContext = new RenderContext
+            {
+                Camera = contentManager.Viewport.Camera,
+                Viewport = contentManager.Viewport,
+                AvailableRenderPasses = RenderPasses.All,
+                RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
+                DeltaTime = deltaTime
+            };
+
+            // Collect and sort draw commands from component tree
+            var (activePasses, passCommandSets) = CollectDrawCommands(renderContext);
+
+            // Allocate and record command buffer
+            _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
+
+            // Allocate command buffer for this frame
+            var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
+
+            // Record rendering commands
+            RecordCommandBuffer(commandBuffers[0], imageIndex, renderContext, activePasses, passCommandSets);
+
+            // Submit commands to GPU
+            SubmitFrame(commandBuffers[0], frameSync, imageSync);
+
+            // Present rendered image to screen
+            PresentFrame(imageIndex, imageSync);
+
+            AfterRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
+
+            // Move to next frame
+            _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
         }
-
-        // Skip rendering if window is minimized (swapchain extent is 0x0)
-        if (swapChain.SwapchainExtent.Width == 0 || swapChain.SwapchainExtent.Height == 0)
+        catch (Exception ex)
         {
-            return;
+            _logger.LogError(ex, "Exception occurred during Render loop");
         }
-
-        // Prepare frame synchronization and acquire next image
-        var (frameSync, imageIndex, imageSync) = PrepareFrame();
-
-        BeforeRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
-
-        // Create render context for this frame
-        var renderContext = new RenderContext
-        {
-            Camera = contentManager.Viewport.Camera,
-            Viewport = contentManager.Viewport,
-            AvailableRenderPasses = RenderPasses.All,
-            RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
-            DeltaTime = deltaTime
-        };
-
-        // Collect and sort draw commands from component tree
-        var (activePasses, passCommandSets) = CollectDrawCommands(renderContext);
-
-        // Allocate and record command buffer
-        _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
-
-        // Allocate command buffer for this frame
-        var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
-
-        // Record rendering commands
-        RecordCommandBuffer(commandBuffers[0], imageIndex, renderContext, activePasses, passCommandSets);
-
-        // Submit commands to GPU
-        SubmitFrame(commandBuffers[0], frameSync, imageSync);
-
-        // Present rendered image to screen
-        PresentFrame(imageIndex, imageSync);
-
-        AfterRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
-
-        // Move to next frame
-        _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
     }
 
     /// <summary>
@@ -444,7 +453,7 @@ public unsafe class Renderer(
                 context.VulkanApi.CmdPushConstants(
                     commandBuffer,
                     pipelineLayout,
-                    ShaderStageFlags.VertexBit,  // Image texture uses vertex shader for UV bounds
+                    ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,  // Both shaders access push constants
                     0,  // offset
                     size,
                     dataPtr);
