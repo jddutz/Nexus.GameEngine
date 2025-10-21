@@ -9,7 +9,7 @@ namespace Nexus.GameEngine.Input.Components;
 /// of child input binding components. When this mapping is active, all child
 /// input bindings are activated. When deactivated, all child bindings are deactivated.
 /// </summary>
-public partial class InputMap : RuntimeComponent, IInputMapController
+public partial class InputMap : RuntimeComponent
 {
 
     /// <summary>
@@ -129,9 +129,4 @@ public partial class InputMap : RuntimeComponent, IInputMapController
     {
         return GetChildren<T>();
     }
-
-    // IInputMapController implementation - delegate to generated Set methods
-    void IInputMapController.SetDescription(string description) => SetDescription(description);
-    void IInputMapController.SetPriority(int priority) => SetPriority(priority);
-    void IInputMapController.SetEnabledByDefault(bool enabledByDefault) => SetEnabledByDefault(enabledByDefault);
 }

@@ -38,11 +38,8 @@ public unsafe class PipelineManager : IPipelineManager
     private int _invalidationCount;
     private double _totalCreationTimeMs;
 
-    // Error pipeline for visual debugging
-    private Pipeline? _errorPipeline;
-
     // Temporary GC handles for vertex input descriptions during pipeline creation
-    private readonly List<GCHandle> _tempGCHandles = new();
+    private readonly List<GCHandle> _tempGCHandles = [];
     private readonly ISwapChain _swapChain;
 
     public PipelineManager(
@@ -329,15 +326,19 @@ public unsafe class PipelineManager : IPipelineManager
         return true;
     }
 
+    private PipelineHandle? _errorPipeline = null;
+
     /// <inheritdoc/>
     public PipelineHandle GetErrorPipeline(RenderPass renderPass)
     {
         // TODO: Create actual error pipeline with pink/magenta shader
         // For now, return invalid handle
-        if (_errorPipeline == null || _errorPipeline.Value.Handle == 0)
+        if (_errorPipeline == null || !_errorPipeline.Value.IsValid)
         {
+            // Create a simple error pipeline (placeholder)
+            _errorPipeline = PipelineHandle.Invalid;
         }
-        return _errorPipeline != null ? new PipelineHandle(_errorPipeline.Value, default) : PipelineHandle.Invalid;
+        return _errorPipeline.Value;
     }
 
     /// <summary>
@@ -535,7 +536,7 @@ public unsafe class PipelineManager : IPipelineManager
 
             return (pipeline, pipelineLayout);
         }
-        catch (Exception ex)
+        catch
         {
             CleanupTempGCHandles();
             return default;
@@ -593,7 +594,7 @@ public unsafe class PipelineManager : IPipelineManager
                 return shaderModule;
             }
         }
-        catch (Exception ex)
+        catch
         {
             return default;
         }
@@ -721,7 +722,7 @@ public unsafe class PipelineManager : IPipelineManager
     {
         _shaderToPipelines.AddOrUpdate(
             shaderPath,
-            _ => new HashSet<string> { pipelineName },
+            _ => [pipelineName],
             (_, set) =>
             {
                 lock (set)

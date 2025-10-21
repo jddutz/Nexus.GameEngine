@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// Simple orthographic camera for rendering UI components and textures. Fixed position and orientation, placed at high Z.
 /// </summary>
-public partial class StaticCamera : RuntimeComponent, ICamera, IOrthographicController
+public partial class StaticCamera : RuntimeComponent, ICamera
 {
     /// <summary>
     /// Template for configuring Static cameras.

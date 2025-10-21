@@ -23,7 +23,7 @@ namespace Nexus.GameEngine.Input.Components;
 public partial class KeyBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
-    : InputBinding(windowService, actionFactory), IKeyBindingController
+    : InputBinding(windowService, actionFactory)
 {
     public new record Template : InputBinding.Template
     {
@@ -133,10 +133,6 @@ public partial class KeyBinding(
         }
         return true;
     }
-
-    // IKeyBindingController implementation - delegate to generated Set methods
-    void IKeyBindingController.SetKey(Key key) => SetKey(key);
-    void IKeyBindingController.SetModifierKeys(params Key[] modifierKeys) => SetModifierKeys(modifierKeys);
 
     public void AddModifierKey(Key modifierKey)
     {

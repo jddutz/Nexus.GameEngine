@@ -11,7 +11,7 @@ public class GeometryResourceManager : IGeometryResourceManager
     private readonly IBufferManager _bufferManager;
     private readonly ILogger<GeometryResourceManager> _logger;
     
-    private readonly Dictionary<string, (GeometryResource Resource, int RefCount)> _cache = new();
+    private readonly Dictionary<string, (GeometryResource Resource, int RefCount)> _cache = [];
     private readonly object _lock = new();
     
     public GeometryResourceManager(IBufferManager bufferManager, ILoggerFactory loggerFactory)

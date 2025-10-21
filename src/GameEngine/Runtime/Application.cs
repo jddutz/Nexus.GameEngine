@@ -49,59 +49,25 @@ public class Application(IServiceProvider services) : IApplication
         window.Load += () =>
         {
             logger.LogDebug("Window.Load event. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
-            
-            try
+        
+            logger.LogDebug("Creating ContentManager and Renderer...");
+            var contentManager = services.GetRequiredService<IContentManager>();
+            var renderer = services.GetRequiredService<IRenderer>();
+            logger.LogDebug("Renderer created. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
+
+            if (startupTemplate == null)
             {
-                logger.LogDebug("Creating ContentManager and Renderer...");
-                var contentManager = services.GetRequiredService<IContentManager>();
-                var renderer = services.GetRequiredService<IRenderer>();
-                logger.LogDebug("Renderer created. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
-
-                if (startupTemplate == null)
-                {
-                    return;
-                }
-
-                // Load the startup template - this creates the viewport and content
-                logger.LogDebug("Loading startup template: {TemplateName}", startupTemplate.Name);
-                contentManager.Load(startupTemplate);
-
-                window.Update += dt =>
-                {
-                    try
-                    {
-                        contentManager.OnUpdate(dt);
-                    }
-                    catch (Exception ex)
-                    {
-                    }
-                };
-
-                window.Render += dt =>
-                {
-                    try
-                    {
-                        renderer.OnRender(dt);
-                    }
-                    catch (Exception ex)
-                    {
-                    }
-                };
+                return;
             }
-            catch (Exception ex)
-            {
-            }
+
+            // Load the startup template - this creates the viewport and content
+            logger.LogDebug("Loading startup template: {TemplateName}", startupTemplate.Name);
+            contentManager.Load(startupTemplate);
+
+            window.Update += contentManager.OnUpdate;
+            window.Render += renderer.OnRender;
         };
 
-        try
-        {
-            logger.LogDebug("Calling window.Run()...");
-            window.Run();
-            logger.LogDebug("window.Run() completed.");
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
+        window.Run();
     }
 }

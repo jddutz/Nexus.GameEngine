@@ -13,7 +13,7 @@ public class ShaderResourceManager : IShaderResourceManager
     private readonly IGraphicsContext _context;
     private readonly Vk _vk;
     
-    private readonly Dictionary<string, (ShaderResource Resource, int RefCount)> _cache = new();
+    private readonly Dictionary<string, (ShaderResource Resource, int RefCount)> _cache = [];
     private readonly object _lock = new();
     
     public ShaderResourceManager(ILoggerFactory loggerFactory, IGraphicsContext context)
@@ -95,7 +95,7 @@ public class ShaderResourceManager : IShaderResourceManager
                 return shaderModule;
             }
         }
-        catch (Exception ex)
+        catch
         {
             return default;
         }

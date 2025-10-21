@@ -39,7 +39,7 @@ public unsafe class CommandPool : ICommandPool
     private int _trimCount;
 
     // Track allocated buffers for cleanup
-    private readonly List<CommandBuffer> _allocatedBuffers = new();
+    private readonly List<CommandBuffer> _allocatedBuffers = [];
     private bool _disposed;
 
     /// <summary>

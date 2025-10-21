@@ -19,7 +19,7 @@ public unsafe class TextureResourceManager : ITextureResourceManager
     private readonly Graphics.Commands.ICommandPoolManager _commandPoolManager;
     private readonly Vk _vk;
     
-    private readonly Dictionary<string, (TextureResource Resource, int RefCount)> _cache = new();
+    private readonly Dictionary<string, (TextureResource Resource, int RefCount)> _cache = [];
     private readonly object _lock = new();
     
     public TextureResourceManager(

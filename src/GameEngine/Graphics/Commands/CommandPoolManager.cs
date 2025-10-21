@@ -18,7 +18,7 @@ public class CommandPoolManager : ICommandPoolManager
     private readonly ConcurrentDictionary<CommandPoolType, ICommandPool> _poolsByType = new();
     
     // All managed pools (including custom ones)
-    private readonly List<ICommandPool> _allPools = new();
+    private readonly List<ICommandPool> _allPools = [];
     private readonly object _poolsLock = new();
 
     private bool _disposed;

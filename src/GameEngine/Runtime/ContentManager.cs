@@ -132,7 +132,7 @@ public class ContentManager(
                 return null;
             }
         }
-        catch (Exception ex)
+        catch
         {
             return null;
         }

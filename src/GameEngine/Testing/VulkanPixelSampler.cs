@@ -29,7 +29,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
     
     private Vector2D<int>[] _sampleCoordinates = Array.Empty<Vector2D<int>>();
     private bool _isActive;
-    private readonly List<Vector4D<float>?[]> _capturedResults = new();
+    private readonly List<Vector4D<float>?[]> _capturedResults = [];
 
     public VulkanPixelSampler(
         ILoggerFactory loggerFactory,

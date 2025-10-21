@@ -15,7 +15,7 @@ public unsafe class DescriptorManager : IDescriptorManager
     private readonly Vk _vk;
     
     // Descriptor pools (create new pools when exhausted)
-    private readonly List<DescriptorPool> _descriptorPools = new();
+    private readonly List<DescriptorPool> _descriptorPools = [];
     private int _currentPoolIndex = 0;
     private const uint DescriptorsPerPool = 1000; // How many descriptor sets per pool
     

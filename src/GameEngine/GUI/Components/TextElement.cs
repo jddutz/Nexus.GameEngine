@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.GUI.Components;
 /// A UI component that displays text.
 /// </summary>
 public partial class TextElement()
-    : RuntimeComponent, IDrawable, ITextController
+    : RuntimeComponent, IDrawable
 {
     public new record Template : RuntimeComponent.Template
     {
@@ -119,13 +119,6 @@ public partial class TextElement()
         }
     }
 
-    // IGuiController.SetVisible implementation - wrapper that calls generated method
-    void IGuiController.SetVisible(bool visible) => SetIsVisible(visible);
-
-    // ITextController implementations - wrappers that call generated Set methods
-    void ITextController.SetText(string? text) => SetText(text ?? string.Empty);
-    void ITextController.SetColor(Vector4D<float> color) => SetColor(color);
-
     public void SetColor(float r, float g, float b, float a = 1.0f)
     {
         SetColor(new Vector4D<float>(r, g, b, a));
@@ -144,10 +137,6 @@ public partial class TextElement()
         {
         }
     }
-
-    void ITextController.SetFontSize(float fontSize) => SetFontSize(fontSize);
-    void ITextController.SetFontName(string fontName) => SetFontName(fontName);
-    void ITextController.SetAlignment(TextAlignment alignment) => SetAlignment(alignment);
 
     public void AnimateColor(Vector4D<float> targetColor, float factor)
     {

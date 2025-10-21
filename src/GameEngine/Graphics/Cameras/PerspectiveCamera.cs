@@ -7,7 +7,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// A typical 3D perspective camera with configurable FOV, view range, and perspective control.
 /// </summary>
-public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraController, IPerspectiveController
+public partial class PerspectiveCamera : RuntimeComponent, ICamera
 {
     /// <summary>
     /// Template for configuring Perspective cameras.
@@ -181,11 +181,6 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
 
         return new Vector2D<int>(screenX, screenY);
     }
-
-    // ICameraController implementation - wrapper methods that call generated Set methods
-    void ICameraController.SetPosition(Vector3D<float> position) => SetPosition(position);
-    void ICameraController.SetForward(Vector3D<float> forward) => SetForward(forward);
-    void ICameraController.SetUp(Vector3D<float> up) => SetUp(up);
     
     public void Translate(Vector3D<float> translation)
     {
@@ -196,12 +191,6 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera, ICameraContr
     {
         SetForward(Vector3D.Normalize(target - Position));
     }
-
-    // IPerspectiveController implementation - wrapper methods that call generated Set methods
-    void IPerspectiveController.SetFieldOfView(float fov) => SetFieldOfView(fov);
-    void IPerspectiveController.SetNearPlane(float nearPlane) => SetNearPlane(nearPlane);
-    void IPerspectiveController.SetFarPlane(float farPlane) => SetFarPlane(farPlane);
-    void IPerspectiveController.SetAspectRatio(float aspectRatio) => SetAspectRatio(aspectRatio);
 
     /// <summary>
     /// Configure the component using the specified template.

@@ -23,7 +23,7 @@ namespace Nexus.GameEngine.Input.Components;
 public abstract partial class InputBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
-    : RuntimeComponent, IInputBindingController
+    : RuntimeComponent
 {
 
     public new record Template : RuntimeComponent.Template
@@ -188,7 +188,4 @@ public abstract partial class InputBinding(
     /// Unsubscribe from input events. Must be implemented by derived classes.
     /// </summary>
     protected abstract void UnsubscribeFromInputEvents();
-
-    // IInputBindingController implementation - delegate to generated Set method
-    void IInputBindingController.SetActionId(ActionId actionId) => SetActionId(actionId);
 }

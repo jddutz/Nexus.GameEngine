@@ -85,32 +85,25 @@ public partial class LinearGradientBackground(
             throw new InvalidOperationException("LinearGradientBackground requires a Gradient definition");
         }
 
-        try
-        {
-            // Validate gradient
-            _gradientDefinition.Validate();
-            
-            // Build pipeline for linear gradient rendering
-            _pipeline = pipelineManager.GetBuilder()
-                .WithShader(new LinearGradientShader())
-                .WithRenderPasses(RenderPasses.Main)
-                .WithTopology(PrimitiveTopology.TriangleStrip)
-                .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-                .WithDepthTest()
-                .WithDepthWrite()
-                .Build("LinearGradientBackground_Pipeline");
+        // Validate gradient
+        _gradientDefinition.Validate();
+        
+        // Build pipeline for linear gradient rendering
+        _pipeline = pipelineManager.GetBuilder()
+            .WithShader(new LinearGradientShader())
+            .WithRenderPasses(RenderPasses.Main)
+            .WithTopology(PrimitiveTopology.TriangleStrip)
+            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
+            .WithDepthTest()
+            .WithDepthWrite()
+            .Build("LinearGradientBackground_Pipeline");
 
 
-            // Create position-only full-screen quad geometry
-            _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
+        // Create position-only full-screen quad geometry
+        _geometry = resources.Geometry.GetOrCreate(new UniformColorQuad());
 
-            // Create UBO and descriptor set for gradient
-            CreateGradientUBO(_gradientDefinition);
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
+        // Create UBO and descriptor set for gradient
+        CreateGradientUBO(_gradientDefinition);
     }
 
     /// <summary>

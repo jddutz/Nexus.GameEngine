@@ -46,7 +46,6 @@ public partial class ImageTextureBackground(
 
     private GeometryResource? _geometry;
     private PipelineHandle _pipeline;
-    private int _drawCallCount = 0;
     
     // Texture resources
     private Resources.Textures.TextureResource? _texture;
@@ -74,49 +73,42 @@ public partial class ImageTextureBackground(
         {
             throw new InvalidOperationException("ImageTextureBackground requires a TextureDefinition to be set");
         }
+        
+        // Build pipeline for image texture rendering
+        _pipeline = pipelineManager.GetBuilder()
+            .WithShader(new ImageTextureShader())
+            .WithRenderPasses(RenderPasses.Main)
+            .WithTopology(PrimitiveTopology.TriangleStrip)
+            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
+            .WithDepthTest()
+            .WithDepthWrite()
+            .Build("ImageTextureBackground_Pipeline");
 
-        try
+
+        // Load texture with specified definition
+        _texture = resources.Textures.GetOrCreate(_textureDefinition);
+        
+        // Create descriptor set for texture
+        var shader = new ImageTextureShader();
+        if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
         {
-            // Build pipeline for image texture rendering
-            _pipeline = pipelineManager.GetBuilder()
-                .WithShader(new ImageTextureShader())
-                .WithRenderPasses(RenderPasses.Main)
-                .WithTopology(PrimitiveTopology.TriangleStrip)
-                .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-                .WithDepthTest()
-                .WithDepthWrite()
-                .Build("ImageTextureBackground_Pipeline");
-
-
-            // Load texture with specified definition
-            _texture = resources.Textures.GetOrCreate(_textureDefinition);
-            
-            // Create descriptor set for texture
-            var shader = new ImageTextureShader();
-            if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Shader {shader.Name} does not define descriptor set layout bindings");
-            }
-            
-            var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
-            _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
-            
-            // Update descriptor set with texture
-            descriptorManager.UpdateDescriptorSet(
-                _textureDescriptorSet.Value,
-                _texture.ImageView,
-                _texture.Sampler,
-                ImageLayout.ShaderReadOnlyOptimal,
-                binding: 0);
-            
-            // Create textured quad geometry
-            _geometry = resources.Geometry.GetOrCreate(new TexturedQuad());
+            throw new InvalidOperationException(
+                $"Shader {shader.Name} does not define descriptor set layout bindings");
         }
-        catch (Exception ex)
-        {
-            throw;
-        }
+        
+        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
+        _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
+        
+        // Update descriptor set with texture
+        descriptorManager.UpdateDescriptorSet(
+            _textureDescriptorSet.Value,
+            _texture.ImageView,
+            _texture.Sampler,
+            ImageLayout.ShaderReadOnlyOptimal,
+            binding: 0);
+        
+        // Create textured quad geometry
+        _geometry = resources.Geometry.GetOrCreate(new TexturedQuad());
     }
 
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)

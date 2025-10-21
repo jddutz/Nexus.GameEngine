@@ -15,7 +15,7 @@ public sealed class SyncManager : ISyncManager
     private readonly IGraphicsContext _context;
     private readonly ILogger _logger;
     private readonly FrameSync[] _frameSyncs;
-    private readonly Dictionary<uint, ImageSync> _imageSyncs = new();
+    private readonly Dictionary<uint, ImageSync> _imageSyncs = [];
     private readonly object _imageSyncLock = new();
     private readonly Stopwatch _waitStopwatch = new();
     
@@ -60,7 +60,7 @@ public sealed class SyncManager : ISyncManager
             }
 
         }
-        catch (Exception ex)
+        catch
         {
             Dispose();
             throw;
@@ -377,13 +377,7 @@ public sealed class SyncManager : ISyncManager
 
 
         // Wait for device to finish all work before destroying sync primitives
-        try
-        {
-            DeviceWaitIdle();
-        }
-        catch (Exception ex)
-        {
-        }
+        DeviceWaitIdle();
 
         var device = _context.Device;
         var vk = _context.VulkanApi;

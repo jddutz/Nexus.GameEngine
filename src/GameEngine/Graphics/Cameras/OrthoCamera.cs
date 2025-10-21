@@ -7,7 +7,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// Orthographic camera for simulating 2D using 3D world coordinates. Orientation is fixed.
 /// </summary>
-public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController, IOrthographicController
+public partial class OrthoCamera : RuntimeComponent, ICamera
 {
     /// <summary>
     /// Template for configuring Orthographic cameras.
@@ -57,13 +57,6 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
     private Vector3D<float> _position = Vector3D<float>.Zero;
 
     private bool _matricesDirty = true;
-
-    // Property change callbacks - set matrices dirty when camera properties change
-    partial void OnWidthChanged(float oldValue) => _matricesDirty = true;
-    partial void OnHeightChanged(float oldValue) => _matricesDirty = true;
-    partial void OnNearPlaneChanged(float oldValue) => _matricesDirty = true;
-    partial void OnFarPlaneChanged(float oldValue) => _matricesDirty = true;
-    partial void OnPositionChanged(Vector3D<float> oldValue) => _matricesDirty = true;
 
     // Fixed orientation for orthographic camera
     public Vector3D<float> Forward { get; } = -Vector3D<float>.UnitZ;
@@ -197,22 +190,7 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
         return new Vector2D<int>(screenX, screenY);
     }
 
-    // ICameraController implementation - wrapper methods that call generated Set methods
-    void ICameraController.SetPosition(Vector3D<float> position) => SetPosition(position);
-
     public void Translate(Vector3D<float> translation) => SetPosition(Position + translation);
-
-    void ICameraController.SetForward(Vector3D<float> forward)
-    {
-        // OrthoCamera has fixed forward direction (-Z), but we'll allow it for interface compatibility
-        // In practice, this would be ignored since Forward is fixed for orthographic cameras
-    }
-
-    void ICameraController.SetUp(Vector3D<float> up)
-    {
-        // OrthoCamera has fixed up direction (+Y), but we'll allow it for interface compatibility
-        // In practice, this would be ignored since Up is fixed for orthographic cameras
-    }
 
     public void LookAt(Vector3D<float> target)
     {
@@ -221,17 +199,9 @@ public partial class OrthoCamera : RuntimeComponent, ICamera, ICameraController,
         SetPosition(new Vector3D<float>(target.X, target.Y, Position.Z));
     }
 
-    // IOrthographicController implementation - wrapper methods that call generated Set methods
-    void IOrthographicController.SetWidth(float width) => SetWidth(width);
-    void IOrthographicController.SetHeight(float height) => SetHeight(height);
-
     public void SetSize(float width, float height)
     {
         SetWidth(width);
         SetHeight(height);
     }
-
-    void IOrthographicController.SetNearPlane(float nearPlane) => SetNearPlane(nearPlane);
-    void IOrthographicController.SetFarPlane(float farPlane) => SetFarPlane(farPlane);
-
 }

@@ -61,13 +61,7 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         foreach (var update in _deferredUpdates)
         {
-            try
-            {
-                update();
-            }
-            catch (Exception ex)
-            {
-            }
+            update();
         }
 
         _deferredUpdates.Clear();
