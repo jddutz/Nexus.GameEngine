@@ -1,33 +1,29 @@
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Data;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Components;
-using Nexus.GameEngine.Input;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
-using System.Numerics;
 
-namespace TestApp.TestComponents;
+namespace TestApp.TestComponents.BackgroundLayer;
 
 /// <summary>
-/// Tests RadialGradientBackground component.
-/// Validates that radial gradient shaders work correctly.
+/// Tests LinearGradientBackground with vertical gradient.
+/// Validates that gradient shaders work correctly with angle = 90°.
 /// 
-/// Single frame test: White (center) → Black (edges) from center point (0.5, 0.5)
+/// Single frame test: Blue (top) → Yellow (bottom) at angle 90°
 /// </summary>
-public partial class BackgroundLayerRadialGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class BackgroundLayerVertGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;
     private readonly int frameCount = 1;
 
-    // White to Black radial gradient
+    // Blue to Yellow vertical gradient
     private static readonly GradientDefinition gradient = GradientDefinition.TwoColor(
-        Colors.White,  // Position 0.0 (center)
-        Colors.Black   // Position 1.0 (edges)
+        Colors.Blue,   // Position 0.0 (top when angle = 90°)
+        Colors.Yellow  // Position 1.0 (bottom when angle = 90°)
     );
 
     // Helper to linearly interpolate between two colors
@@ -45,25 +41,20 @@ public partial class BackgroundLayerRadialGradientTest(IPixelSampler pixelSample
     {
         base.OnConfigure(componentTemplate);
 
-        CreateChild(new RadialGradientBackground.Template()
+        CreateChild(new LinearGradientBackground.Template()
         {
             Gradient = gradient,
-            Center = new Vector2D<float>(0.5f, 0.5f),  // Center of screen in normalized [0,1] coordinates
-            Radius = 0.5f  // Radius that reaches edges
+            Angle = MathF.PI / 2f  // Vertical (90 degrees = π/2 radians)
         });
 
         var window = windowService.GetWindow();
         int offset = 2;
 
-        // Sample center, quarter-way, and edge along horizontal line
-        // With aspect-corrected circular gradient on 1920x1080 (aspect ~1.78):
-        // - Center (0.5, 0.5) → distance 0.0 → White (t=0.0)
-        // - Quarter (0.625, 0.5) → scaled distance ~0.22 → light blend (t=~0.44)
-        // - Edge (1.0, 0.5) → scaled distance ~0.89 → very dark (t=~1.78, clamped to 1.0)
+        // Sample top edge, center, bottom edge (vertical line through middle)
         pixelSampler.SampleCoordinates = [
-            new(window.Size.X / 2, window.Size.Y / 2),           // Center → White
-            new(window.Size.X * 5 / 8, window.Size.Y / 2),       // Quarter-way → light gray
-            new(window.Size.X - offset, window.Size.Y / 2),      // Right edge → Black
+            new(window.Size.X / 2, offset),                      // Top edge → Blue
+            new(window.Size.X / 2, window.Size.Y / 2),          // Center → blend
+            new(window.Size.X / 2, window.Size.Y - offset),     // Bottom edge → Yellow
         ];
         
         pixelSampler.Enabled = true;
@@ -99,22 +90,18 @@ public partial class BackgroundLayerRadialGradientTest(IPixelSampler pixelSample
 
         if (samples == null || samples.Length == 0) yield break;
 
-        // Expected: Radial gradient White (center) → Black (edges)
-        // With 1920x1080 aspect ratio (~1.78):
-        // - Center (0.5, 0.5): distance = 0, t = 0.0 → White
-        // - Quarter (0.625, 0.5): distance = 0.125 * 1.78 = 0.22, t = 0.22/0.5 = 0.44 → lighter gray
-        // - Right edge (1.0, 0.5): distance = 0.5 * 1.78 = 0.89, t = 0.89/0.5 = 1.78 (clamped to 1.0) → Black
+        // Expected: Vertical gradient Blue (top) → Yellow (bottom)
         var expected = new[] {
-            Colors.White,                                  // Center: t = 0.0
-            LerpColor(Colors.White, Colors.Black, 0.44f),  // Quarter: t ≈ 0.44
-            Colors.Black                                   // Edge: t = 1.0 (clamped)
+            Colors.Blue,                                  // Top: Blue
+            LerpColor(Colors.Blue, Colors.Yellow, 0.5f), // Center: 50% blend
+            Colors.Yellow                                 // Bottom: Yellow
         };
         
         for (int i = 0; i < samples[0].Length; i++)
         {
             yield return new()
             {
-                TestName = $"Radial gradient Pixel[{i}] color check",
+                TestName = $"Vertical gradient Pixel[{i}] color check",
                 ExpectedResult = PixelAssertions.DescribeColor(expected[i]),
                 ActualResult = PixelAssertions.DescribeColor(samples[0][i]),
                 Passed = PixelAssertions.ColorsMatch(samples[0][i], expected[i], tolerance: 0.05f)

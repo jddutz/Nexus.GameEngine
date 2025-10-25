@@ -7,16 +7,16 @@ using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
-namespace TestApp.TestComponents;
+namespace TestApp.TestComponents.BackgroundLayer;
 
 /// <summary>
-/// Tests ImageTextureBackground with FillTopRight placement.
-/// Validates that image anchors to top-right corner when cropping.
+/// Tests ImageTextureBackground with FillBottomLeft placement.
+/// Validates that image anchors to bottom-left corner when cropping.
 /// 
 /// Uses image_test.png (256x256 square): R channel = X coordinate (0-255), G channel = Y coordinate (0-255)
-/// Expected: Shows top-right portion, crops bottom and left when both dimensions need cropping
+/// Expected: Shows bottom-left portion, crops top and right when both dimensions need cropping
 /// </summary>
-public partial class ImagePlacementFillTopRightTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class ImagePlacementFillBottomLeftTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;
@@ -30,17 +30,17 @@ public partial class ImagePlacementFillTopRightTest(IPixelSampler pixelSampler, 
         CreateChild(new ImageTextureBackground.Template()
         {
             TextureDefinition = TestResources.ImageTestTexture,
-            Placement = BackgroundImagePlacement.FillTopRight
+            Placement = BackgroundImagePlacement.FillBottomLeft
         });
 
         var window = windowService.GetWindow();
         int offset = 10;
 
-        // Sample top-right corner area
+        // Sample bottom-left corner area
         pixelSampler.SampleCoordinates = [
-            new(window.Size.X - offset, offset),                    // Top-right corner
-            new(3 * window.Size.X / 4, offset),                     // Top edge, right quadrant
-            new(window.Size.X - offset, window.Size.Y / 4),         // Right edge, top quadrant
+            new(offset, window.Size.Y - offset),                    // Bottom-left corner
+            new(window.Size.X / 4, window.Size.Y - offset),         // Bottom edge, left quadrant
+            new(offset, 3 * window.Size.Y / 4),                     // Left edge, bottom quadrant
         ];
         
         pixelSampler.Enabled = true;
@@ -68,7 +68,7 @@ public partial class ImagePlacementFillTopRightTest(IPixelSampler pixelSampler, 
 
         yield return new TestResult
         {
-            TestName = $"{nameof(ImagePlacementFillTopRightTest)}: Sampled output should not be null",
+            TestName = $"{nameof(ImagePlacementFillBottomLeftTest)}: Sampled output should not be null",
             ExpectedResult = "not null",
             ActualResult = samples == null ? "null" : samples.Length.ToString(),
             Passed = samples != null && samples.Length > 0
@@ -80,18 +80,18 @@ public partial class ImagePlacementFillTopRightTest(IPixelSampler pixelSampler, 
 
         // Calculate expected UV bounds
         var (uvMin, uvMax) = BackgroundImagePlacement.CalculateUVBounds(
-            BackgroundImagePlacement.FillTopRight,
+            BackgroundImagePlacement.FillBottomLeft,
             ImageSize, ImageSize,
             window.Size.X, window.Size.Y);
 
         // Expected colors at sampled positions
         var expectedColors = new[] {
-            new Vector4D<float>(uvMax.X, uvMin.Y, 0f, 1f),                              // Top-right corner
-            new Vector4D<float>(0.75f * (uvMax.X - uvMin.X) + uvMin.X, uvMin.Y, 0f, 1f),  // Top edge
-            new Vector4D<float>(uvMax.X, 0.25f * (uvMax.Y - uvMin.Y) + uvMin.Y, 0f, 1f),  // Right edge
+            new Vector4D<float>(uvMin.X, uvMax.Y, 0f, 1f),                              // Bottom-left corner
+            new Vector4D<float>(0.25f * (uvMax.X - uvMin.X) + uvMin.X, uvMax.Y, 0f, 1f),  // Bottom edge
+            new Vector4D<float>(uvMin.X, 0.75f * (uvMax.Y - uvMin.Y) + uvMin.Y, 0f, 1f),  // Left edge
         };
         
-        var pixelDescriptions = new[] { "Top-right corner", "Top edge, right quadrant", "Right edge, top quadrant" };
+        var pixelDescriptions = new[] { "Bottom-left corner", "Bottom edge, left quadrant", "Left edge, bottom quadrant" };
         
         for (int i = 0; i < samples[0].Length; i++)
         {
@@ -100,7 +100,7 @@ public partial class ImagePlacementFillTopRightTest(IPixelSampler pixelSampler, 
             
             yield return new()
             {
-                TestName = $"{nameof(ImagePlacementFillTopRightTest)}: FillTopRight mode {pixelDescriptions[i]}",
+                TestName = $"{nameof(ImagePlacementFillBottomLeftTest)}: FillBottomLeft mode {pixelDescriptions[i]}",
                 Description = $"Sampled at pixel ({coord.X}, {coord.Y})",
                 ExpectedResult = PixelAssertions.DescribeColor(expectedColors[i]),
                 ActualResult = color.HasValue ? PixelAssertions.DescribeColor(color.Value) : "null",

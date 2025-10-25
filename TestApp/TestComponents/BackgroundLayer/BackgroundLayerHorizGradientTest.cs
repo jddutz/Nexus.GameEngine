@@ -1,27 +1,31 @@
+using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Components;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
-namespace TestApp.TestComponents;
+namespace TestApp.TestComponents.BackgroundLayer;
 
 /// <summary>
-/// Tests BiaxialGradientBackground with 4-corner color interpolation.
-/// Validates bilinear interpolation across the screen.
+/// Tests LinearGradientBackground with horizontal gradient.
+/// Validates that gradient shaders and UBO/descriptor system work correctly.
 /// 
-/// Single frame test: 
-/// - Top-left: Red
-/// - Top-right: Green
-/// - Bottom-left: Blue
-/// - Bottom-right: Yellow
+/// Single frame test: Red (left) → Green (right) at angle 0°
 /// </summary>
-public partial class BiaxialGradientBackgroundTest(IPixelSampler pixelSampler, IWindowService windowService)
+public partial class BackgroundLayerHorizGradientTest(IPixelSampler pixelSampler, IWindowService windowService)
     : RuntimeComponent(), ITestComponent
 {
     private int framesRendered = 0;
-    private readonly int frameCount = 1;
+        private readonly int frameCount = 1;
+
+    // Red to Green horizontal gradient
+    private static readonly GradientDefinition gradient = GradientDefinition.TwoColor(
+        Colors.Red,    // Position 0.0 (left)
+        Colors.Green   // Position 1.0 (right)
+    );
 
     // Helper to linearly interpolate between two colors
     private static Vector4D<float> LerpColor(Vector4D<float> a, Vector4D<float> b, float t)
@@ -38,25 +42,20 @@ public partial class BiaxialGradientBackgroundTest(IPixelSampler pixelSampler, I
     {
         base.OnConfigure(componentTemplate);
 
-        // Create biaxial gradient with 4 corner colors
-        CreateChild(new BiaxialGradientBackground.Template()
+        CreateChild(new LinearGradientBackground.Template()
         {
-            TopLeft = Colors.Red,
-            TopRight = Colors.Green,
-            BottomLeft = Colors.Blue,
-            BottomRight = Colors.Yellow
+            Gradient = gradient,
+            Angle = 0f  // Horizontal (0 radians)
         });
 
         var window = windowService.GetWindow();
         int offset = 2;
 
-        // Sample the 4 corners and center point
+        // Sample left edge, center, right edge (horizontal line through middle)
         pixelSampler.SampleCoordinates = [
-            new(offset, offset),                                  // Top-left → Red
-            new(window.Size.X - offset, offset),                  // Top-right → Green
-            new(offset, window.Size.Y - offset),                  // Bottom-left → Blue
-            new(window.Size.X - offset, window.Size.Y - offset),  // Bottom-right → Yellow
-            new(window.Size.X / 2, window.Size.Y / 2),           // Center → blend of all 4
+            new(offset, window.Size.Y / 2),                      // Left edge → Red
+            new(window.Size.X / 2, window.Size.Y / 2),          // Center → blend
+            new(window.Size.X - offset, window.Size.Y / 2),     // Right edge → Green
         ];
         
         pixelSampler.Enabled = true;
@@ -92,33 +91,18 @@ public partial class BiaxialGradientBackgroundTest(IPixelSampler pixelSampler, I
 
         if (samples == null || samples.Length == 0) yield break;
 
-        // Expected colors:
-        // Corners should be exact, center should be average of all 4
-        var topEdge = LerpColor(Colors.Red, Colors.Green, 0.5f);      // Top center
-        var bottomEdge = LerpColor(Colors.Blue, Colors.Yellow, 0.5f); // Bottom center
-        var center = LerpColor(topEdge, bottomEdge, 0.5f);             // True center
-        
+        // Expected: Horizontal gradient Red (left) → Green (right)
         var expected = new[] {
-            Colors.Red,     // Top-left corner
-            Colors.Green,   // Top-right corner
-            Colors.Blue,    // Bottom-left corner
-            Colors.Yellow,  // Bottom-right corner
-            center          // Center point (blend of all 4)
-        };
-        
-        var descriptions = new[] {
-            "Top-left (Red)",
-            "Top-right (Green)",
-            "Bottom-left (Blue)",
-            "Bottom-right (Yellow)",
-            "Center (blended)"
+            Colors.Red,                                 // Left: Red
+            LerpColor(Colors.Red, Colors.Green, 0.5f), // Center: 50% blend
+            Colors.Green                                // Right: Green
         };
         
         for (int i = 0; i < samples[0].Length; i++)
         {
             yield return new()
             {
-                TestName = $"Biaxial gradient Pixel[{i}] {descriptions[i]} color check",
+                TestName = $"Horizontal gradient Pixel[{i}] color check",
                 ExpectedResult = PixelAssertions.DescribeColor(expected[i]),
                 ActualResult = PixelAssertions.DescribeColor(samples[0][i]),
                 Passed = PixelAssertions.ColorsMatch(samples[0][i], expected[i], tolerance: 0.05f)
