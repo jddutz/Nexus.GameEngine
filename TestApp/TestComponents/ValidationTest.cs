@@ -1,4 +1,3 @@
-using System.Runtime.Serialization;
 using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
@@ -10,10 +9,14 @@ namespace TestApp.TestComponents;
 /// Unit test component that verifies validation layers are working by triggering specific validation scenarios
 /// and checking that expected messages are logged. Uses a state machine approach: OnUpdate (Arrange), GetDrawCommands (Act), GetTestResults (Assert).
 /// </summary>
-[TestRunnerIgnore(reason: "Validation tests all passed but continue output false errors via console log")]
 public partial class ValidationTest(IGraphicsContext context)
-    : RuntimeComponent, IDrawable, ITestComponent
+    : TestComponent, IDrawable
 {
+    // Validation tests are disabled to suppress misleading ERROR results
+    // Re-activate to test Vulkan validation layer configuration
+    //[TestComponentTemplate]
+    public new record Template : TestComponent.Template { }
+
     private record TestData
     {
         public string Name = "";
@@ -57,7 +60,7 @@ public partial class ValidationTest(IGraphicsContext context)
 
     public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
-        if (!IsActive)
+        if (!IsActive())
             yield break;
 
         switch (frameCount)
@@ -157,7 +160,7 @@ public partial class ValidationTest(IGraphicsContext context)
         catch { }
     }
 
-    public IEnumerable<TestResult> GetTestResults()
+    public override IEnumerable<TestResult> GetTestResults()
     {
         foreach (var test in testData)
         {
@@ -166,12 +169,12 @@ public partial class ValidationTest(IGraphicsContext context)
             
             yield return new()
             {
-                TestName = test.Name,
-                Description = "Testing VkValidationLayer implementation",
                 ExpectedResult = "Log output results > 0",
                 ActualResult = results.Count.ToString(),
                 Passed = test.Passed
             };
         }
     }
+
+    bool IDrawable.IsVisible() => true;
 }

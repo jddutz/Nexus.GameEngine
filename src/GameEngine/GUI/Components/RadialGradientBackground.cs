@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Animation;
+﻿using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Data;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -63,12 +61,11 @@ public partial class RadialGradientBackground(
         /// Set to (1, 1) for circular gradients on any viewport size.
         /// Default: (1, 1) - circular with aspect correction
         /// </summary>
-        public Vector2D<float> Scale { get; set; } = new(1f, 1f);
+        public Vector2D<float> GradientScale { get; set; } = new(1f, 1f);
     }
 
     private GeometryResource? _geometry;
     private PipelineHandle _pipeline;
-    private int _drawCallCount = 0;
     
     // UBO and descriptor set for gradient definition
     private Silk.NET.Vulkan.Buffer? _gradientUboBuffer;
@@ -93,7 +90,7 @@ public partial class RadialGradientBackground(
     /// Scale factors for elliptical gradients. Can be animated.
     /// </summary>
     [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
-    private Vector2D<float> _scale = new(1f, 1f);
+    private Vector2D<float> _gradientScale = new(1f, 1f);
 
     protected override void OnConfigure(IComponentTemplate? componentTemplate)
     {
@@ -104,7 +101,7 @@ public partial class RadialGradientBackground(
             _gradientDefinition = template.Gradient;
             SetCenter(template.Center);
             SetRadius(template.Radius);
-            SetScale(template.Scale);
+            SetGradientScale(template.GradientScale);
         }
     }
 
@@ -188,15 +185,13 @@ public partial class RadialGradientBackground(
         if (_geometry == null || !_gradientDescriptorSet.HasValue)
             yield break;
 
-        _drawCallCount++;
-
         // Calculate aspect-corrected scale for circular gradients
         var viewport = context.Viewport.VulkanViewport;
         float aspectRatio = viewport.Width / viewport.Height;
         
         // Apply aspect ratio correction to user-provided scale
         // If user wants circular (1,1), this becomes (aspectRatio, 1) for non-square viewports
-        var effectiveScale = new Vector2D<float>(_scale.X * aspectRatio, _scale.Y);
+        var effectiveScale = new Vector2D<float>(_gradientScale.X * aspectRatio, _gradientScale.Y);
 
         // Use push constants for center, radius, and scale (allows animation)
         var pushConstants = new RadialGradientPushConstants 

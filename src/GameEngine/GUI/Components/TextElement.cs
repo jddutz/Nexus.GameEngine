@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Animation;
-using Nexus.GameEngine.Components;
+﻿using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
@@ -8,7 +6,6 @@ using Nexus.GameEngine.GUI.Abstractions;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
@@ -23,7 +20,7 @@ public partial class TextElement(
     IPipelineManager pipelineManager,
     IResourceManager resources,
     IDescriptorManager descriptorManager)
-    : UserInterfaceComponent, IDrawable
+    : UserInterfaceComponent
 {
     // Default text style used when no style is specified
     private static readonly TextStyle DefaultTextStyle = new()
@@ -58,7 +55,7 @@ public partial class TextElement(
         /// <summary>
         /// Whether the text element should be rendered.
         /// </summary>
-        public bool IsVisible { get; set; } = true;
+        public bool Visible { get; set; } = true;
     }
 
     // ComponentProperty fields - generator creates public properties with deferred updates
@@ -67,9 +64,6 @@ public partial class TextElement(
 
     [ComponentProperty]
     private TextStyle _style = DefaultTextStyle;
-
-    [ComponentProperty]
-    private bool _isVisible = true;
 
     // GPU resources
     private FontResource? _fontResource;
@@ -83,13 +77,13 @@ public partial class TextElement(
     // Property change callbacks
     partial void OnTextChanged(string? oldValue)
     {
-        if (IsActive)
+        if (IsActive())
             RegenerateGeometry();
     }
 
     partial void OnStyleChanged(TextStyle? oldValue)
     {
-        if (IsActive)
+        if (IsActive())
         {
             // Release old font and load new one
             if (oldValue != null)
@@ -101,7 +95,7 @@ public partial class TextElement(
         }
     }
 
-    public bool ShouldRender => IsVisible && !string.IsNullOrEmpty(_text);
+    public bool ShouldRender => IsVisible() && !string.IsNullOrEmpty(_text);
     public uint RenderPriority => 1000; // UI text layer (high priority)
 
     /// <summary>
@@ -131,7 +125,7 @@ public partial class TextElement(
         {
             SetText(template.Text ?? string.Empty);
             SetStyle(template.Style ?? DefaultTextStyle);
-            SetIsVisible(template.IsVisible);
+            SetVisible(template.Visible);
         }
     }
 
@@ -286,7 +280,7 @@ public partial class TextElement(
         return vertices;
     }
 
-    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
         if (_geometry == null || !_textureDescriptorSet.HasValue || _fontResource == null)
             yield break;

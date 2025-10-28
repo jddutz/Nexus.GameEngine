@@ -12,7 +12,7 @@ namespace Nexus.GameEngine.GUI.Abstractions;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract partial class LayoutBase : RuntimeComponent, IDrawable
+public abstract partial class LayoutBase : DrawableComponent
 {
 
     /// <summary>
@@ -43,15 +43,6 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
             _window.Resize += OnWindowResize;
         }
     }
-    
-    /// <summary>
-    /// Whether this component should be rendered.
-    /// When false, GetDrawCommands will not be called and component is skipped during rendering.
-    /// Generated property: IsVisible (read-only), SetIsVisible(...) method for updates.
-    /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Fast, Interpolation = InterpolationMode.Step)]
-    private bool _isVisible = true;
-
 
     public Vector2D<float> PreferredSize { get; set; }
 
@@ -196,7 +187,7 @@ public abstract partial class LayoutBase : RuntimeComponent, IDrawable
     /// <summary>
     /// Layout components don't issue their own draw commands - they arrange children.
     /// </summary>
-    public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context) => [];
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context) => [];
 
     protected override void OnDeactivate()
     {

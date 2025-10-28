@@ -8,16 +8,16 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Nexus.GameEngine.Analyzers;
 
 /// <summary>
-/// Analyzer NX1001: Ensures classes implementing IRuntimeComponent are declared partial.
+/// Analyzer NX1001: Ensures classes deriving from ComponentBase are declared partial.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
 {
     public const string DiagnosticId = "NX1001";
 
-    private static readonly LocalizableString Title = "Class implementing IRuntimeComponent must be declared partial";
-    private static readonly LocalizableString MessageFormat = "Class '{0}' implements IRuntimeComponent but is not declared partial. Source generation requires partial classes.";
-    private static readonly LocalizableString Description = "Classes implementing IRuntimeComponent must be declared partial to allow source generation of animated property implementations.";
+    private static readonly LocalizableString Title = "Class deriving from ComponentBase must be declared partial";
+    private static readonly LocalizableString MessageFormat = "Class '{0}' derives from ComponentBase but is not declared partial. Source generation requires partial classes.";
+    private static readonly LocalizableString Description = "Classes deriving from ComponentBase must be declared partial to allow source generation of animated property implementations.";
     private const string Category = "Design";
 
     private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
@@ -45,11 +45,10 @@ public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
 
         if (classSymbol is null) return;
 
-        // Check if class implements IRuntimeComponent
-        var implementsInterface = classSymbol.AllInterfaces
-            .Any(i => i.Name == "IRuntimeComponent");
+        // Check if class derives from ComponentBase
+        var derivesFromComponentBase = InheritsFromComponentBase(classSymbol);
 
-        if (!implementsInterface) return;
+        if (!derivesFromComponentBase) return;
 
         // Check if class is partial
         var isPartial = classDecl.Modifiers.Any(SyntaxKind.PartialKeyword);
@@ -59,5 +58,17 @@ public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
             var diagnostic = Diagnostic.Create(Rule, classDecl.Identifier.GetLocation(), classSymbol.Name);
             context.ReportDiagnostic(diagnostic);
         }
+    }
+
+    private static bool InheritsFromComponentBase(INamedTypeSymbol classSymbol)
+    {
+        var current = classSymbol.BaseType;
+        while (current != null)
+        {
+            if (current.Name == "ComponentBase")
+                return true;
+            current = current.BaseType;
+        }
+        return false;
     }
 }

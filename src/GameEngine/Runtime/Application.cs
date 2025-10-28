@@ -38,6 +38,15 @@ public class Application(IServiceProvider services) : IApplication
         window.FramebufferResize += size =>
         {
             logger.LogDebug("Window.FramebufferResize event. FramebufferSize: {Width}x{Height}", size.X, size.Y);
+            
+            // Trigger swapchain recreation on framebuffer resize
+            // This handles window resize, minimize/restore, and fullscreen transitions
+            var swapChain = services.GetService<ISwapChain>();
+            if (swapChain != null)
+            {
+                logger.LogDebug("Triggering swapchain recreation due to framebuffer resize");
+                swapChain.Recreate();
+            }
         };
         
         window.StateChanged += state =>

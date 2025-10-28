@@ -9,11 +9,11 @@ using Microsoft.CodeAnalysis.Text;
 namespace Nexus.GameEngine.SourceGenerators;
 
 /// <summary>
-/// Incremental source generator that creates animated property implementations
-/// for auto-properties in classes implementing IRuntimeComponent.
+/// Incremental source generator that creates component property implementations
+/// for fields decorated with [ComponentProperty] attribute in classes deriving from ComponentBase.
 /// </summary>
 [Generator]
-public class AnimatedPropertyGenerator : IIncrementalGenerator
+public class ComponentPropertyGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -42,14 +42,25 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
     {
         var classDecl = (ClassDeclarationSyntax)context.Node;
 
-        // Check if class implements IRuntimeComponent
+        // Check if class derives from ComponentBase
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDecl);
         if (classSymbol is null) return null;
 
-        var implementsInterface = classSymbol.AllInterfaces
-            .Any(i => i.Name == "IRuntimeComponent");
+        var derivesFromComponentBase = InheritsFromComponentBase(classSymbol);
 
-        return implementsInterface ? classDecl : null;
+        return derivesFromComponentBase ? classDecl : null;
+    }
+
+    private static bool InheritsFromComponentBase(INamedTypeSymbol classSymbol)
+    {
+        var current = classSymbol.BaseType;
+        while (current != null)
+        {
+            if (current.Name == "ComponentBase")
+                return true;
+            current = current.BaseType;
+        }
+        return false;
     }
 
     private static void Execute(
@@ -322,7 +333,7 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
                 var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 // Start inline array animation (only if component is active)
                 sb.AppendLine($"        // Only animate if component is active and duration > 0; otherwise apply immediately");
-                sb.AppendLine($"        if (IsActive && duration > 0f)");
+                sb.AppendLine($"        if (IsActive() && duration > 0f)");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            // Deep copy the current array to avoid reference issues during animation");
                 sb.AppendLine($"            if ({fieldName} != null)");
@@ -348,7 +359,7 @@ public class AnimatedPropertyGenerator : IIncrementalGenerator
             }
             else
             {
-                sb.AppendLine($"        if (IsActive && duration > 0f)");
+                sb.AppendLine($"        if (IsActive() && duration > 0f)");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            {animFieldName}.StartAnimation({fieldName}, {targetFieldName}, 0.0); // TODO: Use TimeProvider");
                 sb.AppendLine($"            _isDirty = true;");

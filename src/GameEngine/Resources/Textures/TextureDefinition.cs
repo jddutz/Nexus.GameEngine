@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Resources.Textures;
-
 namespace Nexus.GameEngine.Resources.Textures;
 
 /// <summary>

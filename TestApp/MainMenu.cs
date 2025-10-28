@@ -1,8 +1,6 @@
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI.Components;
 using Nexus.GameEngine.Input.Components;
-using Nexus.GameEngine.Resources;
 using Silk.NET.Input;
 
 namespace TestApp;

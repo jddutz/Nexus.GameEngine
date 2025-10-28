@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Resources.Textures;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Resources.Textures;

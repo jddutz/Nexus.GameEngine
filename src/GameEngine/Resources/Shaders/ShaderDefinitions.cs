@@ -1,7 +1,4 @@
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
 using Silk.NET.Vulkan;
 using System.Reflection;
 using System.Runtime.CompilerServices;

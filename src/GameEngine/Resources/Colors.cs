@@ -9,13 +9,23 @@ namespace Nexus.GameEngine.Resources;
 public static class Colors
 {
     // Helper method to convert ARGB hex to Vector4D<float> RGBA
-    private static Vector4D<float> FromArgb(uint argb)
+    public static Vector4D<float> FromArgb(uint argb)
     {
         var a = ((argb >> 24) & 0xFF) / 255.0f;
         var r = ((argb >> 16) & 0xFF) / 255.0f;
         var g = ((argb >> 8) & 0xFF) / 255.0f;
         var b = (argb & 0xFF) / 255.0f;
         return new Vector4D<float>(r, g, b, a);
+    }
+
+    public static Vector4D<float> Lerp(Vector4D<float> a, Vector4D<float> b, float t)
+    {
+        return new Vector4D<float>(
+            a.X + (b.X - a.X) * t,
+            a.Y + (b.Y - a.Y) * t,
+            a.Z + (b.Z - a.Z) * t,
+            a.W + (b.W - a.W) * t
+        );
     }
 
     // Standard named colors

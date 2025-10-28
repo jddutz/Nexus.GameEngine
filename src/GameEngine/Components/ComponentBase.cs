@@ -1,16 +1,13 @@
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Base class containing infrastructure properties for components.
-/// This class does NOT implement IRuntimeComponent to prevent source generation
-/// from processing infrastructure properties. Only derived classes that implement
-/// IRuntimeComponent will have their properties auto-generated.
+/// Classes deriving from ComponentBase with [ComponentProperty] fields will have
+/// animated properties generated via source generation.
 /// </summary>
-public abstract class ComponentBase
+public abstract partial class ComponentBase
 {
     /// <summary>
     /// Factory used to create new components.
@@ -63,4 +60,12 @@ public abstract class ComponentBase
             _enabled = value;
         }
     }
+
+    /// <summary>
+    /// Updates animated properties for this component.
+    /// Override this method in derived classes to process deferred property animations.
+    /// Called during Update() before OnUpdate().
+    /// </summary>
+    /// <param name="deltaTime">Time elapsed in seconds since the previous update.</param>
+    protected virtual void UpdateAnimations(double deltaTime) { }
 }

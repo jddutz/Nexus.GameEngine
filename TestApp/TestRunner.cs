@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
+using Silk.NET.Windowing;
 using System.Diagnostics;
+using System.Reflection;
 using TestApp.TestComponents;
 
 namespace TestApp;
@@ -14,50 +16,64 @@ namespace TestApp;
 /// TestRunner is a RuntimeComponent that discovers and executes integration tests.
 /// It manages test lifecycle, result output, and application exit based on test outcomes.
 /// </summary>
-public partial class TestRunner(
-    IWindowService windowService)
-    : RuntimeComponent
+public partial class TestRunner : RuntimeComponent
 {
+    private readonly IWindow window;
+
     /// <summary>
     /// Configuration template for the TestRunner component.
     /// </summary>
     public new record Template : RuntimeComponent.Template { }
 
-    private Queue<Type> _testComponents = new();
+    private readonly List<ComponentTest> tests = [];
+    private readonly Stopwatch stopwatch = new();
+    private int framesRendered = 0;
+    private int currentTestIndex = 0;
 
-    int framesRendered = 0;
-    int discovered = 0;
-    private Stopwatch _stopwatch = new();
-    private bool _resultsOutputted = false;
+    public TestRunner(IWindowService windowService)
+    {
+        window = windowService.GetWindow();
 
-    /// <summary>
-    /// Activates the TestRunner, discovers all ITestComponent types in the assembly, and starts the stopwatch.
-    /// </summary>
+    tests.AddRange(DiscoverTests());
+    }
+
     protected override void OnActivate()
     {
-        Logger?.LogDebug("TestRunner activation started.");
-        foreach (var type in GetType().Assembly.GetTypes())
+        base.OnActivate();
+        stopwatch.Start();
+    }
+
+    private static IEnumerable<ComponentTest> DiscoverTests()
+    {
+        // Find all public static fields of type TestComponent.Template with a [Test] attribute
+        var fields = typeof(TestComponent)
+            .Assembly
+            .GetTypes()
+            .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static))
+            .ToList();
+
+        foreach (var field in fields)
         {
-            if (type.IsAssignableTo(typeof(ITestComponent)) && !type.IsAbstract && !type.IsInterface)
+            if (!typeof(TestComponent.Template).IsAssignableFrom(field.FieldType))
+                continue;
+
+            var testAttr = field.GetCustomAttribute<TestAttribute>();
+            if (testAttr == null)
+                continue;
+
+            var template = field.GetValue(null) as TestComponent.Template;
+            if (template == null)
+                continue;
+
+            var name = !string.IsNullOrEmpty(template.Name) ? template.Name : field.DeclaringType?.Name ?? field.Name;
+            var desc = testAttr.Description;
+
+            yield return new ComponentTest(template)
             {
-                // Check if the test component has the TestRunnerIgnore attribute
-                var ignoreAttribute = type.GetCustomAttributes(typeof(TestRunnerIgnoreAttribute), false)
-                    .FirstOrDefault() as TestRunnerIgnoreAttribute;
-                
-                if (ignoreAttribute != null)
-                {
-                    Logger?.LogInformation("Skipping test component {TypeName}: {Reason}", type.FullName, ignoreAttribute.Reason);
-                    continue;
-                }
-                
-                _testComponents.Enqueue(type);
-                Logger?.LogDebug("Discovered concrete test component: {TypeName}", type.FullName);
-                discovered++;
-            }
+                TestName = name,
+                Description = desc
+            };
         }
-        Logger?.LogInformation("Total test components discovered: {Count}", discovered);
-        _stopwatch.Start();
-        Logger?.LogDebug("TestRunner activation complete. Stopwatch started.");
     }
 
     /// <summary>
@@ -69,57 +85,41 @@ public partial class TestRunner(
     {
         framesRendered++;
 
-        bool isTestStillRunning = false;
-        foreach (var child in Children)
+        if (Children.Where(c => c.IsActive()).Any()) return;
+
+        if (currentTestIndex < tests.Count)
         {
-            if (child.IsActive)
+            var test = tests[currentTestIndex++];
+            
+            if (test != null && test.Template != null)
             {
-                isTestStillRunning = true;
+                var child = CreateChild(test.Template);
+                if (child is ITestComponent testComponent)
+                {
+                    testComponent?.Activate();
+                    test.TestComponent = testComponent;
+                }
             }
+
+            return;
         }
 
-        if (isTestStillRunning) return;
+        Deactivate();
+    }
 
-        if (_testComponents.TryDequeue(out Type? t) && t is Type testComponentType)
+    protected override void OnDeactivate()
+    {
+        stopwatch.Stop();
+        
+        OutputTestResults();
+
+        try
         {
-            Logger?.LogInformation("Instantiating test component: {TypeName}", testComponentType.FullName);
-            var testComponent = CreateChild(testComponentType);
-
-            if (testComponent != null)
-            {
-                testComponent.Name = testComponentType.Name;
-                Logger?.LogInformation("Test component created: {TypeName} with name '{Name}'", testComponent.GetType().FullName, testComponent.Name);
-
-                // CRITICAL: Activate the component so it participates in the update lifecycle
-                Logger?.LogInformation("Activating test component: {Name}", testComponent.Name);
-                testComponent.Activate();
-                Logger?.LogInformation("Test component activation complete. IsActive: {IsActive}", testComponent.IsActive);
-            }
-            else
-            {
-                Logger?.LogError("Failed to create test component: {TypeName}", testComponentType.FullName);
-            }
+            window.Close();
         }
-        else
+        catch
         {
-            if (!_resultsOutputted)
-            {
-                Logger?.LogInformation("All test components executed. Stopping stopwatch and outputting results.");
-                _stopwatch.Stop();
-                OutputTestResults();
-                _resultsOutputted = true;
-            }
-
-            // Exit the application by closing the window
-            try
-            {
-                windowService.GetWindow().Close();
-            }
-            catch (Exception ex)
-            {
-                Logger?.LogError(ex, "Failed to close window, using Environment.Exit as fallback");
-                Environment.Exit(Environment.ExitCode);
-            }
+            Environment.Exit(Environment.ExitCode);
         }
     }
 
@@ -128,37 +128,41 @@ public partial class TestRunner(
     /// </summary>
     private void OutputTestResults()
     {
-        var componentCount = 0;
         var passed = new List<TestResult>();
         var failed = new List<TestResult>();
 
-        foreach (var testComponent in GetChildren<ITestComponent>())
+        foreach (var test in tests)
         {
-            componentCount++;
+            if (test.TestComponent is null) continue;
 
-            foreach (var result in testComponent.GetTestResults())
+            var results = test.TestComponent.GetTestResults();
+
+            foreach (var result in results)
             {
-                if (!string.IsNullOrEmpty(result.Description))
-                    Logger?.LogTrace("{Description}", result.Description);
+                if (!string.IsNullOrEmpty(test.TestName))
+                    Logger?.LogTrace("{TestName}", test.TestName);
+
+                if (!string.IsNullOrEmpty(test.Description))
+                    Logger?.LogTrace("{Description}", test.Description);
+
+                Logger?.LogInformation(
+                    "{TestName} {Description}: {Output}",
+                    test.TestName,
+                    test.Description,
+                    result
+                );
 
                 if (result.Passed)
                 {
                     passed.Add(result);
-                    Logger?.LogInformation("PASS|{TestComponentName} {TestName}{Description}: {Output}", testComponent.Name, result.TestName, result.Description, result.Output);
                 }
                 else
                 {
                     failed.Add(result);
-                    Logger?.LogWarning("FAIL|{TestComponentName} {TestName}{Description}: {Output}", testComponent.Name, result.TestName, result.Description, result.Output);
-
-                    if (result.Exception is Exception ex)
-                    {
-                        Logger?.LogTrace("{Exception}\n{StackTrace}", ex.Message, ex.StackTrace);
-                    }
                 }
             }
         }
-        
+
         const string RESULTS_SUMMARY = "\n=== TEST RUN SUMMARY ===\n"
             + "Test Components Discovered: {TestComponents}\n"
             + "Number of Test Results: {TotalCount}\n"
@@ -171,25 +175,17 @@ public partial class TestRunner(
 
         Logger?.LogInformation(
             RESULTS_SUMMARY,
-            componentCount,
+            tests.Count,
             passed.Count + failed.Count,
             passed.Count,
             failed.Count,
-            _stopwatch.ElapsedMilliseconds,
+            stopwatch.ElapsedMilliseconds,
             framesRendered,
-            framesRendered / _stopwatch.Elapsed.TotalSeconds,
+            framesRendered / stopwatch.Elapsed.TotalSeconds,
             passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]"
             );
 
         // Set exit code
         Environment.ExitCode = failed.Count == 0 ? 0 : 1;
-    }
-
-    /// <summary>
-    /// Disposes the TestRunner and releases resources.
-    /// </summary>
-    protected override void OnDispose()
-    {
-        base.OnDispose();
     }
 }

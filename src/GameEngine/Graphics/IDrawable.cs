@@ -12,7 +12,7 @@ public interface IDrawable : IRuntimeComponent
     /// The renderer will skip calling GetDrawCommands() if this is false.
     /// Should be implemented as a [ComponentProperty] for deferred updates and animation support.
     /// </summary>
-    bool IsVisible { get; }
+    bool IsVisible();
 
     /// <summary>
     /// Gets draw commands for this component.

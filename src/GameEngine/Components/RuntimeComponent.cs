@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices.Marshalling;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Nexus.GameEngine.Components;
 
@@ -232,17 +231,17 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
     /// <summary>
     /// Whether this component is currently active and should participate in updates.
+    /// Changes to Active are deferred until the next frame boundary to ensure temporal consistency.
+    /// Use IsActive() to check if component is both Enabled and Active.
     /// </summary>
+    [ComponentProperty]
     private bool _active = false;
-    public bool IsActive
-    {
-        get => IsEnabled && _active;
-        set
-        {
-            if (_active == value) return;
-            _active = value;
-        }
-    }
+
+    /// <summary>
+    /// Returns whether this component is currently active and enabled.
+    /// This is the combined state that determines if the component participates in updates.
+    /// </summary>
+    public bool IsActive() => IsEnabled && Active;
 
     public event EventHandler<EventArgs>? Activating;
     public event EventHandler<EventArgs>? Activated;
@@ -267,8 +266,8 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
             child.Activate();
         }
 
-        // Set active state after successful activation
-        IsActive = true;
+        // Set active state after successful activation (deferred until next frame)
+        SetActive(true);
 
         Activated?.Invoke(this, EventArgs.Empty);
     }
@@ -298,18 +297,20 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
     /// </summary>
     public void Update(double deltaTime)
     {
-        if (!IsActive)
-        {
-            return;
-        }
-
         IsUpdating = true;
 
         Updating?.Invoke(this, EventArgs.Empty);
 
-        // Apply deferred updates  root to leaf
-        // so deferred updates are done before the first OnUpdate()
+        // Apply deferred updates first (root to leaf) so activation state changes take effect
+        // This must happen before IsActive() check to handle activation on first frame
         if (IsEnabled) UpdateAnimations(deltaTime);
+        
+        // Check if component should continue updating after applying deferred state changes
+        if (!IsActive())
+        {
+            IsUpdating = false;
+            return;
+        }
 
         // Create a snapshot of children to allow collection modifications during update
         foreach (var child in Children.ToArray())
@@ -324,8 +325,6 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
         Updated?.Invoke(this, EventArgs.Empty);
         IsUpdating = false;
     }
-
-    protected virtual void UpdateAnimations(double deltaTime) { }
 
     #endregion
 
@@ -391,8 +390,8 @@ public partial class RuntimeComponent : ComponentBase, IRuntimeComponent, IDispo
 
         Deactivating?.Invoke(this, EventArgs.Empty);
 
-        // Set inactive state before deactivating children
-        IsActive = false;
+        // Set inactive state before deactivating children (deferred until next frame)
+        SetActive(false);
 
         // Deactivate leaf to root
         foreach (var child in Children)

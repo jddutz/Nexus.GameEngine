@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Linq.Expressions;
 
 namespace Nexus.GameEngine.Data.Binding

@@ -154,7 +154,7 @@ public class ContentManager(
             {
                 var activeComponents = content.Values
                     .OfType<IRuntimeComponent>()
-                    .Where(c => c.IsActive);
+                    .Where(c => c.IsActive());
 
                 foreach (var component in activeComponents)
                     component.Update(deltaTime);

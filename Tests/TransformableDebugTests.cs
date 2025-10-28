@@ -1,5 +1,4 @@
 using Silk.NET.Maths;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace Nexus.GameEngine.Components.Tests;

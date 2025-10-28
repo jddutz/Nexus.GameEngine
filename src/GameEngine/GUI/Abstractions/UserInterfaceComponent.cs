@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
@@ -8,7 +8,7 @@ namespace Nexus.GameEngine.GUI.Abstractions;
 /// Extends Transformable to add 2D UI-specific positioning and bounds management.
 /// Provides layout system integration through SetBounds/GetBounds.
 /// </summary>
-public abstract partial class UserInterfaceComponent : Transformable
+public abstract partial class UserInterfaceComponent : DrawableComponent
 {
     /// <summary>
     /// The 2D bounds of this UI component (position and size in screen space).

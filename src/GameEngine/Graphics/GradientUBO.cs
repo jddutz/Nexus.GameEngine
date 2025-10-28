@@ -1,4 +1,3 @@
-using Silk.NET.Maths;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 

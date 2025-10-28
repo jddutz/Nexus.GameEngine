@@ -43,8 +43,9 @@ public interface IRuntimeComponent : IDisposable
     /// <summary>
     /// Whether this component is currently active (successfully activated and valid).
     /// Components automatically become inactive when validation fails.
+    /// This combines the component's Enabled and Active states for temporal consistency.
     /// </summary>
-    bool IsActive { get; }
+    bool IsActive();
 
     /// <summary>
     /// Gets whether the component is valid (no validation errors).

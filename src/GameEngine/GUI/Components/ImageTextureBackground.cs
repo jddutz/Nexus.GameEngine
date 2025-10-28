@@ -1,9 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Components;
+﻿using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Shaders;

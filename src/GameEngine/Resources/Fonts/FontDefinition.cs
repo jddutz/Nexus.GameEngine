@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Resources.Fonts;
-
 namespace Nexus.GameEngine.Resources.Fonts;
 
 /// <summary>

@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Graphics;
@@ -12,15 +11,23 @@ namespace Nexus.GameEngine.Graphics;
 /// - public bool IsVisible { get; }
 /// - public void SetIsVisible(bool value, float duration = -1f, InterpolationMode interpolation = default)
 /// </summary>
-public abstract partial class DrawableComponent : RuntimeComponent, IDrawable
+public abstract partial class DrawableComponent : Transformable, IDrawable
 {
     /// <summary>
     /// Whether this component should be rendered.
     /// When false, GetDrawCommands will not be called and component is skipped during rendering.
-    /// Generated property: IsVisible (read-only), SetIsVisible(...) method for updates.
+    /// Changes to Visible are deferred until the next frame boundary to ensure temporal consistency.
+    /// Use IsVisible() to check if component is both Enabled and Visible.
+    /// Source generator will create: public bool Visible { get; } and SetVisible() method.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Fast, Interpolation = InterpolationMode.Step)]
-    private bool _isVisible = true;
+    [ComponentProperty]
+    private bool _visible = true;
+
+    /// <summary>
+    /// Returns whether this component should be rendered (combines Enabled and Visible states).
+    /// This is the combined state that determines if the component participates in rendering.
+    /// </summary>
+    public bool IsVisible() => IsEnabled && Visible;
 
     /// <summary>
     /// Gets draw commands for this component.

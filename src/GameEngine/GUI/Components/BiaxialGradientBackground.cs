@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Animation;
+﻿using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
@@ -172,22 +171,22 @@ public partial class BiaxialGradientBackground(
     /// </summary>
     partial void OnTopLeftChanged(Vector4D<float> oldValue)
     {
-        if (IsActive) UpdateCornerColorsUBO();
+        if (IsActive()) UpdateCornerColorsUBO();
     }
 
     partial void OnTopRightChanged(Vector4D<float> oldValue)
     {
-        if (IsActive) UpdateCornerColorsUBO();
+        if (IsActive()) UpdateCornerColorsUBO();
     }
 
     partial void OnBottomLeftChanged(Vector4D<float> oldValue)
     {
-        if (IsActive) UpdateCornerColorsUBO();
+        if (IsActive()) UpdateCornerColorsUBO();
     }
 
     partial void OnBottomRightChanged(Vector4D<float> oldValue)
     {
-        if (IsActive) UpdateCornerColorsUBO();
+        if (IsActive()) UpdateCornerColorsUBO();
     }
 
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
