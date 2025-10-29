@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Animation;
+namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Defines the interpolation strategy for animating property values.

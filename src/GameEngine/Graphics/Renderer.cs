@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
@@ -11,6 +12,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <summary>
 /// Vulkan renderer implementation that orchestrates frame rendering.
 /// Manages image acquisition, command recording, and presentation.
+/// Uses IViewportManager for viewport management capabilities.
 /// </summary>
 public unsafe class Renderer(
     ILoggerFactory loggerFactory,
@@ -18,9 +20,10 @@ public unsafe class Renderer(
     ISwapChain swapChain,
     ISyncManager syncManager,
     ICommandPoolManager commandPoolManager,
-    IContentManager contentManager)
+    IViewportManager viewportManager,
+    IWindowService windowService)
     : IRenderer
-{    
+{
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
@@ -32,11 +35,6 @@ public unsafe class Renderer(
     {
         try
         {
-            if (contentManager.Viewport.Content == null)
-            {
-                throw new InvalidOperationException("ContentManager.Viewport.Content is null, nothing to render.");
-            }
-
             // Skip rendering if window is minimized (swapchain extent is 0x0)
             if (swapChain.SwapchainExtent.Width == 0 || swapChain.SwapchainExtent.Height == 0)
             {
@@ -48,42 +46,57 @@ public unsafe class Renderer(
 
             BeforeRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
 
-            // Create render context for this frame
-            var renderContext = new RenderContext
+            int viewportCount = 0;
+
+            foreach (var viewport in viewportManager.Viewports.Where(vp => vp.IsActive()))
             {
-                Camera = contentManager.Viewport.Camera,
-                Viewport = contentManager.Viewport,
-                AvailableRenderPasses = RenderPasses.All,
-                RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
-                DeltaTime = deltaTime
-            };
+                viewportCount++;
 
-            // Collect and sort draw commands from component tree
-            var (activePasses, passCommandSets) = CollectDrawCommands(renderContext);
+                // Create render context for this frame
+                var renderContext = new RenderContext
+                {
+                    Camera = viewport.Camera,
+                    Viewport = viewport,
+                    AvailableRenderPasses = RenderPasses.All,
+                    RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
+                    DeltaTime = deltaTime
+                };
 
-            // Allocate and record command buffer
-            _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
+                // Collect and sort draw commands from component tree
+                var (activePasses, passCommandSets) = CollectDrawCommands(renderContext);
 
-            // Allocate command buffer for this frame
-            var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
+                // Allocate and record command buffer
+                _graphicsCommandPool ??= commandPoolManager.GetOrCreatePool(CommandPoolType.Graphics);
 
-            // Record rendering commands
-            RecordCommandBuffer(commandBuffers[0], imageIndex, renderContext, activePasses, passCommandSets);
+                // Allocate command buffer for this frame
+                var commandBuffers = _graphicsCommandPool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
 
-            // Submit commands to GPU
-            SubmitFrame(commandBuffers[0], frameSync, imageSync);
+                // Record rendering commands
+                RecordCommandBuffer(commandBuffers[0], imageIndex, renderContext, activePasses, passCommandSets);
 
-            // Present rendered image to screen
-            PresentFrame(imageIndex, imageSync);
+                // Submit commands to GPU
+                SubmitFrame(commandBuffers[0], frameSync, imageSync);
+            }
 
-            AfterRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
+            if (viewportCount > 0)
+            {
+                // Present rendered image to screen
+                PresentFrame(imageIndex, imageSync);
 
-            // Move to next frame
-            _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
+                AfterRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
+
+                // Move to next frame
+                _currentFrameIndex = (_currentFrameIndex + 1) % syncManager.MaxFramesInFlight;
+            }
+            else
+            {
+                throw new InvalidOperationException("No active viewports to render.");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception occurred during Render loop");
+            windowService.GetWindow().Close();
         }
     }
 
@@ -139,8 +152,13 @@ public unsafe class Renderer(
         // Main pass always executes to handle initial image layout transitions
         // UI pass always executes to transition image to PresentSrcKhr for presentation
         uint activePasses = RenderPasses.Main | RenderPasses.UI;
-        var componentStack = new Stack<IRuntimeComponent>();
-        componentStack.Push(contentManager.Viewport.Content!);
+        var componentStack = new Stack<IComponent>();
+        
+        // Collect commands from the viewport's content tree
+        if (renderContext.Viewport?.Content != null)
+        {
+            componentStack.Push(renderContext.Viewport.Content);
+        }
         
         while (componentStack.Count > 0)
         {

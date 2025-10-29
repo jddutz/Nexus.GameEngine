@@ -33,7 +33,7 @@ public partial class ImagePlacementFillCenterTest(
         ]
     };
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         var window = windowService.GetWindow();
         var imageSize = 256;

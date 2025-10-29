@@ -54,9 +54,9 @@ public partial class InputMap : RuntimeComponent
     /// Configure the input mapping using the provided template.
     /// </summary>
     /// <param name="componentTemplate">Template containing configuration data</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {
@@ -113,7 +113,7 @@ public partial class InputMap : RuntimeComponent
     /// Get all input binding components that are children of this mapping.
     /// </summary>
     /// <returns>Enumerable of input binding components</returns>
-    public IEnumerable<IRuntimeComponent> GetInputBindings()
+    public IEnumerable<IComponent> GetInputBindings()
     {
         return Children.Where(child =>
             child.GetType().IsGenericType &&
@@ -125,7 +125,7 @@ public partial class InputMap : RuntimeComponent
     /// </summary>
     /// <typeparam name="T">Type of input binding to retrieve</typeparam>
     /// <returns>Enumerable of input binding components of the specified type</returns>
-    public IEnumerable<T> GetInputBindings<T>() where T : IRuntimeComponent
+    public IEnumerable<T> GetInputBindings<T>() where T : IComponent
     {
         return GetChildren<T>();
     }

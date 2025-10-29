@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.Components;
@@ -38,13 +38,13 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // ANIMATED PROPERTIES (with ComponentProperty attribute)
     // ==========================================
     
-    [ComponentProperty(Duration = 0.2f, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
     
-    [ComponentProperty(Duration = 0.2f, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Quaternion<float> _rotation = Quaternion<float>.Identity;
     
-    [ComponentProperty(Duration = 0.2f, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
     
     // ==========================================
@@ -285,7 +285,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // CONFIGURATION
     // ==========================================
     
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

@@ -3,7 +3,6 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Animation;
 
 namespace Nexus.GameEngine.GUI.Abstractions;
 
@@ -42,6 +41,8 @@ public abstract partial class LayoutBase : DrawableComponent
         {
             _window.Resize += OnWindowResize;
         }
+
+        ChildCollectionChanged += OnChildCollectionChanged;
     }
 
     public Vector2D<float> PreferredSize { get; set; }
@@ -119,13 +120,13 @@ public abstract partial class LayoutBase : DrawableComponent
     /// </summary>
     public void Layout()
     {
-        if (!_needsLayout || !IsEnabled)
+        if (!_needsLayout || !IsActive())
             return;
 
         // Collect all immediate child components that are UI components
         var uiChildren = Children
-            .Where(c => c.IsEnabled)
             .OfType<UserInterfaceComponent>()
+            .Where(c => c.IsActive())
             .ToList();
 
         // Call the derived class implementation
@@ -141,29 +142,16 @@ public abstract partial class LayoutBase : DrawableComponent
     protected abstract void OnLayout(IReadOnlyList<UserInterfaceComponent> children);
 
     /// <summary>
-    /// Called when a child component is added. Invalidates layout.
-    /// </summary>
-    public override void AddChild(IRuntimeComponent child)
-    {
-        base.AddChild(child);
-        InvalidateLayout();
-    }
-
-    /// <summary>
-    /// Called when a child component is removed. Invalidates layout.
-    /// </summary>
-    public override void RemoveChild(IRuntimeComponent child)
-    {
-        base.RemoveChild(child);
-        InvalidateLayout();
-    }
-
-    /// <summary>
     /// Called during activation. Ensures layout is performed.
     /// </summary>
     protected override void OnActivate()
     {
         base.OnActivate();
+        InvalidateLayout();
+    }
+
+    private void OnChildCollectionChanged(object? sender, ChildCollectionChangedEventArgs e)
+    {
         InvalidateLayout();
     }
 

@@ -1,5 +1,4 @@
-﻿using Nexus.GameEngine.Animation;
-using Nexus.GameEngine.Components;
+﻿using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -66,21 +65,21 @@ public partial class BiaxialGradientBackground(
     /// <summary>
     /// Corner colors. Can be animated using ComponentProperty.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector4D<float> _topLeft = Colors.Black;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector4D<float> _topRight = Colors.Black;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector4D<float> _bottomLeft = Colors.Black;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector4D<float> _bottomRight = Colors.Black;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
         
         if (componentTemplate is Template template)
         {

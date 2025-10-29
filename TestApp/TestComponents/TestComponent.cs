@@ -14,7 +14,7 @@ public partial class TestComponent : RuntimeComponent, ITestComponent
     public int Updates { get; private set; } = 0;
     public int FrameCount { get; protected set; } = 1;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

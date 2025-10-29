@@ -49,9 +49,9 @@ public partial class HorizontalLayout(IWindowService windowService)
     /// Configure this HorizontalLayout using the specified template.
     /// </summary>
     /// <param name="template">Template containing layout configuration</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {

@@ -117,9 +117,9 @@ public partial class TextElement(
     /// Configure the text element using the provided template.
     /// </summary>
     /// <param name="componentTemplate">Template containing configuration data</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {

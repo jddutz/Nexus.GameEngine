@@ -44,7 +44,7 @@ public partial class ImagePlacementStretchTest(
         return new Vector4D<float>(x / 255f, y / 255f, 0f, 1f);
     }
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         var window = windowService.GetWindow();
         var offset = 2;

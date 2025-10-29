@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Components;
 
@@ -25,7 +25,6 @@ public sealed class PropertyAnimation<T> where T : struct
 
     private T _startValue;
     private T _endValue;
-    private double _startTime;
     private double _elapsed;
 
     /// <summary>
@@ -34,11 +33,10 @@ public sealed class PropertyAnimation<T> where T : struct
     /// <param name="startValue">The starting value.</param>
     /// <param name="endValue">The target value.</param>
     /// <param name="currentTime">The current time in seconds.</param>
-    public void StartAnimation(T startValue, T endValue, double currentTime)
+    public void StartAnimation(T startValue, T endValue)
     {
         _startValue = startValue;
         _endValue = endValue;
-        _startTime = currentTime;
         _elapsed = 0.0;
         IsAnimating = Duration > 0;
     }
@@ -97,12 +95,6 @@ public sealed class PropertyAnimation<T> where T : struct
     /// </summary>
     private T Interpolate(T start, T end, float t)
     {
-        // Check if type implements IInterpolatable<T> (for custom user types)
-        if (start is IInterpolatable<T> interpolatable)
-        {
-            return interpolatable.Interpolate(end, t, Interpolation);
-        }
-
         // Fallback: Use dynamic to attempt operator-based interpolation
         // This works for types with operator+ and operator* overloads (vectors, matrices, etc.)
         try

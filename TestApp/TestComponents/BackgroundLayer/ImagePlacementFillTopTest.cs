@@ -37,7 +37,7 @@ public partial class ImagePlacementFillTopTest(
     private IWindow window => windowService.GetWindow();
     private const int ImageSize = 256;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         var window = windowService.GetWindow();
         var offset = 2;

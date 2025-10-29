@@ -87,9 +87,9 @@ public partial class MouseBinding<TAction>(
     /// Configure the mouse binding using the provided template.
     /// </summary>
     /// <param name="template">Template containing configuration data</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {

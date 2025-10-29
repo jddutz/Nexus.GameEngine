@@ -1,7 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Drawing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Graphics.Cameras;
+using Nexus.GameEngine.Resources;
 using Silk.NET.Windowing;
 
 namespace Nexus.GameEngine.Runtime;
@@ -20,7 +23,7 @@ public class Application(IServiceProvider services) : IApplication
     /// This method blocks until the window is closed.
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
-    public void Run(WindowOptions windowOptions, IComponentTemplate startupTemplate)
+    public void Run(WindowOptions windowOptions, Configurable.Template startupTemplate)
     {
         var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(Application));
         var windowService = services.GetRequiredService<IWindowService>();
@@ -59,19 +62,24 @@ public class Application(IServiceProvider services) : IApplication
         {
             logger.LogDebug("Window.Load event. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
         
-            logger.LogDebug("Creating ContentManager and Renderer...");
             var contentManager = services.GetRequiredService<IContentManager>();
+            var viewportManager = services.GetRequiredService<IViewportManager>();
             var renderer = services.GetRequiredService<IRenderer>();
-            logger.LogDebug("Renderer created. FramebufferSize: {Width}x{Height}", window.FramebufferSize.X, window.FramebufferSize.Y);
 
-            if (startupTemplate == null)
-            {
-                return;
-            }
+            if (startupTemplate == null) return;
 
-            // Load the startup template - this creates the viewport and content
+            var mainViewport = viewportManager.CreateViewport();
+            
+            // Load content through ContentManager, then assign to Renderer's viewport
             logger.LogDebug("Loading startup template: {TemplateName}", startupTemplate.Name);
-            contentManager.Load(startupTemplate);
+
+            mainViewport.Content = contentManager.Load(startupTemplate);
+
+            if (!mainViewport.Activate())
+            {
+                logger.LogError("Viewport activation failed.");
+                window.Close();
+            }
 
             window.Update += contentManager.OnUpdate;
             window.Render += renderer.OnRender;

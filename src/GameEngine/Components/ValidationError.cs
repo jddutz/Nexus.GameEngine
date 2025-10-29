@@ -3,12 +3,12 @@ namespace Nexus.GameEngine.Components;
 /// <summary>
 /// Represents a validation error found during component tree validation.
 /// </summary>
-public class ValidationError(IRuntimeComponent component, string message, ValidationSeverityEnum severity = ValidationSeverityEnum.Error)
+public class ValidationError(IConfigurable component, string message, ValidationSeverityEnum severity = ValidationSeverityEnum.Error)
 {
     /// <summary>
     /// The component that failed validation.
     /// </summary>
-    public IRuntimeComponent RuntimeComponent { get; set; } = component;
+    public IConfigurable Component { get; set; } = component;
 
     /// <summary>
     /// A descriptive message about the validation error.
@@ -20,9 +20,6 @@ public class ValidationError(IRuntimeComponent component, string message, Valida
     /// </summary>
     public ValidationSeverityEnum Severity { get; set; } = severity;
 
-    public override string ToString()
-    {
-        var componentName = RuntimeComponent.Name ?? RuntimeComponent.GetType().Name;
-        return $"[{Severity}] {componentName}: {Message}";
-    }
+    public override string ToString() =>
+        $"[{Severity}] {Component.GetType().Name}: {Message}";
 }

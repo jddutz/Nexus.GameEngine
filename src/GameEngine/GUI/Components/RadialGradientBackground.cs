@@ -1,5 +1,4 @@
-﻿using Nexus.GameEngine.Animation;
-using Nexus.GameEngine.Components;
+﻿using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -77,24 +76,24 @@ public partial class RadialGradientBackground(
     /// <summary>
     /// Center point of the radial gradient in normalized [0,1] coordinates. Can be animated.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector2D<float> _center = new(0.5f, 0.5f);
 
     /// <summary>
     /// Radius of the radial gradient. Can be animated.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private float _radius = 0.5f;
 
     /// <summary>
     /// Scale factors for elliptical gradients. Can be animated.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private Vector2D<float> _gradientScale = new(1f, 1f);
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
         
         if (componentTemplate is Template template)
         {

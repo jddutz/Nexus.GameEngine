@@ -8,16 +8,16 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Nexus.GameEngine.Analyzers;
 
 /// <summary>
-/// Analyzer NX1001: Ensures classes deriving from ComponentBase are declared partial.
+/// Analyzer NX1001: Ensures classes deriving from Entity are declared partial.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
 {
     public const string DiagnosticId = "NX1001";
 
-    private static readonly LocalizableString Title = "Class deriving from ComponentBase must be declared partial";
-    private static readonly LocalizableString MessageFormat = "Class '{0}' derives from ComponentBase but is not declared partial. Source generation requires partial classes.";
-    private static readonly LocalizableString Description = "Classes deriving from ComponentBase must be declared partial to allow source generation of animated property implementations.";
+    private static readonly LocalizableString Title = "Class deriving from Entity must be declared partial";
+    private static readonly LocalizableString MessageFormat = "Class '{0}' derives from Entity but is not declared partial. Source generation requires partial classes.";
+    private static readonly LocalizableString Description = "Classes deriving from Entity must be declared partial to allow source generation of animated property implementations.";
     private const string Category = "Design";
 
     private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
@@ -45,7 +45,7 @@ public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
 
         if (classSymbol is null) return;
 
-        // Check if class derives from ComponentBase
+        // Check if class derives from Entity
         var derivesFromComponentBase = InheritsFromComponentBase(classSymbol);
 
         if (!derivesFromComponentBase) return;
@@ -65,7 +65,7 @@ public class ComponentPartialClassAnalyzer : DiagnosticAnalyzer
         var current = classSymbol.BaseType;
         while (current != null)
         {
-            if (current.Name == "ComponentBase")
+            if (current.Name == "Entity")
                 return true;
             current = current.BaseType;
         }

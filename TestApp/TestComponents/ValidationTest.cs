@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Silk.NET.Vulkan;
@@ -31,7 +30,7 @@ public partial class ValidationTest(IGraphicsContext context)
     /// When false, GetDrawCommands will not be called and component is skipped during rendering.
     /// Generated property: IsVisible (read-only), SetIsVisible(...) method for updates.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Fast, Interpolation = InterpolationMode.Step)]
+    [ComponentProperty]
     private bool _isVisible = true;
 
 

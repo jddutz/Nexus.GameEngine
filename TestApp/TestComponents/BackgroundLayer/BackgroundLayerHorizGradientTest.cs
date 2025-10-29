@@ -38,7 +38,7 @@ public partial class BackgroundLayerHorizGradientTest(
 
     private IWindow window => windowService.GetWindow();
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         var offset = 2;
 

@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.SourceGenerators;
 
 /// <summary>
 /// Incremental source generator that creates component property implementations
-/// for fields decorated with [ComponentProperty] attribute in classes deriving from ComponentBase.
+/// for fields decorated with [ComponentProperty] attribute in classes deriving from Entity.
 /// </summary>
 [Generator]
 public class ComponentPropertyGenerator : IIncrementalGenerator
@@ -42,7 +42,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
     {
         var classDecl = (ClassDeclarationSyntax)context.Node;
 
-        // Check if class derives from ComponentBase
+        // Check if class derives from Entity
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDecl);
         if (classSymbol is null) return null;
 
@@ -56,7 +56,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         var current = classSymbol.BaseType;
         while (current != null)
         {
-            if (current.Name == "ComponentBase")
+            if (current.Name == "Entity")
                 return true;
             current = current.BaseType;
         }
@@ -117,9 +117,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 Type = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 TypeSymbol = field.Type,
                 IsCollection = isCollection,
-                HasAnimationAttribute = true,
-                Duration = GetAttributeValue<float>(animationAttr, "Duration", 0f),
-                Interpolation = GetAttributeValue<int>(animationAttr, "Interpolation", 0)
+                // Duration and Interpolation are now runtime parameters, not attribute properties
+                DefaultValue = GetFieldDefaultValue(field)
             });
         }
 
@@ -151,6 +150,23 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             return char.ToUpper(fieldName[0]) + fieldName.Substring(1);
 
         return fieldName;
+    }
+
+    private static string GetFieldDefaultValue(IFieldSymbol field)
+    {
+        // Try to get the initializer value from syntax
+        var syntax = field.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+        if (syntax is VariableDeclaratorSyntax variableDeclarator && 
+            variableDeclarator.Initializer != null)
+        {
+            return variableDeclarator.Initializer.Value.ToString();
+        }
+        
+        // Return type-appropriate default
+        if (field.Type.IsValueType)
+            return $"default({field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
+        
+        return "default!";
     }
 
     private static T GetAttributeValue<T>(AttributeData? attribute, string propertyName, T defaultValue)
@@ -211,8 +227,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             GenerateProperty(sb, prop);
         }
 
-        // Generate UpdateAnimations method
-        GenerateUpdateAnimationsMethod(sb, properties);
+        // Generate ApplyUpdates method
+        GenerateApplyUpdatesMethod(sb, properties);
 
         sb.AppendLine("}");
 
@@ -246,8 +262,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
 
         sb.AppendLine($"    // Generated property: {prop.Name} (from field {fieldName})");
 
-        // For value types, we can't use nullable to track initialization, so use a separate bool flag
-        // For reference types, we could use nullable, but for consistency use the flag approach for all types
+        // Target field to store the pending value
         sb.AppendLine($"    private bool {targetFieldName}__initialized;");
         sb.AppendLine($"    private {prop.Type} {targetFieldName}__value = default!;");
         sb.AppendLine($"    private {prop.Type} {targetFieldName}");
@@ -259,37 +274,6 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         // Cache EqualityComparer to avoid property access overhead
         sb.AppendLine($"    private static readonly global::System.Collections.Generic.EqualityComparer<{prop.Type}> {fieldName}__comparer = global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default;");
 
-        if (prop.HasAnimationAttribute && prop.Duration > 0)
-        {
-            var animFieldName = $"{fieldName}Animation";
-            
-            // Check if this is an array property that needs special handling
-            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
-            {
-                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                // Generate inline animation tracking fields (no ArrayPropertyAnimation class needed)
-                sb.AppendLine($"    // Inline animation state for {prop.Name} (array property)");
-                sb.AppendLine($"    private class {animFieldName}State");
-                sb.AppendLine("    {");
-                sb.AppendLine($"        public bool IsAnimating {{ get; set; }}");
-                sb.AppendLine($"        public float Duration {{ get; set; }} = {prop.Duration}f;");
-                sb.AppendLine("    }");
-                sb.AppendLine($"    private {animFieldName}State {animFieldName} = new();");
-                sb.AppendLine($"    private {elementType}[] {animFieldName}_startValue = default!;");
-                sb.AppendLine($"    private {elementType}[] {animFieldName}_endValue = default!;");
-                sb.AppendLine($"    private {elementType}[] {animFieldName}_buffer = default!; // Reusable buffer to avoid per-frame allocation");
-                sb.AppendLine($"    private double {animFieldName}_elapsed;");
-            }
-            else
-            {
-                sb.AppendLine($"    private global::Nexus.GameEngine.Components.PropertyAnimation<{prop.Type}> {animFieldName} = new()");
-                sb.AppendLine("    {");
-                sb.AppendLine($"        Duration = {prop.Duration}f,");
-                sb.AppendLine($"        Interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode){prop.Interpolation}");
-                sb.AppendLine("    };");
-            }
-        }
-
         sb.AppendLine();
         
         // Generate read-only property
@@ -300,89 +284,22 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine();
         
         // Generate Set method with optional duration and interpolation parameters
-        // Use -1 as sentinel value for "use attribute default"
-        var defaultInterpolation = prop.Interpolation;
-        sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = -1f, global::Nexus.GameEngine.Animation.InterpolationMode interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode)(-1))");
+        // Default is 0f duration (instant on next frame) and Step interpolation
+        sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = 0f, global::Nexus.GameEngine.Components.InterpolationMode interpolation = global::Nexus.GameEngine.Components.InterpolationMode.Step)");
         sb.AppendLine("    {");
         sb.AppendLine($"        if ({fieldName}__comparer.Equals({targetFieldName}, value))");
         sb.AppendLine("            return;");
         sb.AppendLine();
         sb.AppendLine($"        {targetFieldName} = value;");
+        sb.AppendLine($"        _isDirty = true;");
         sb.AppendLine();
-        sb.AppendLine($"        // Use attribute defaults if not specified (-1 sentinel)");
-        sb.AppendLine($"        if (duration < 0f)");
-        sb.AppendLine($"            duration = {prop.Duration}f;");
-        sb.AppendLine($"        if ((int)interpolation < 0)");
-        sb.AppendLine($"            interpolation = (global::Nexus.GameEngine.Animation.InterpolationMode){prop.Interpolation};");
-
-        if (prop.HasAnimationAttribute && prop.Duration > 0)
-        {
-            var animFieldName = $"{fieldName}Animation";
-            
-            sb.AppendLine();
-            sb.AppendLine($"        // Update animation settings if duration > 0");
-            sb.AppendLine($"        if (duration > 0f)");
-            sb.AppendLine("        {");
-            sb.AppendLine($"            {animFieldName}.Duration = duration;");
-            sb.AppendLine($"            {animFieldName}.Interpolation = interpolation;");
-            sb.AppendLine("        }");
-            sb.AppendLine();
-            
-            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
-            {
-                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                // Start inline array animation (only if component is active)
-                sb.AppendLine($"        // Only animate if component is active and duration > 0; otherwise apply immediately");
-                sb.AppendLine($"        if (IsActive() && duration > 0f)");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            // Deep copy the current array to avoid reference issues during animation");
-                sb.AppendLine($"            if ({fieldName} != null)");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                {animFieldName}_startValue = new {elementType}[{fieldName}.Length];");
-                sb.AppendLine($"                global::System.Array.Copy({fieldName}, {animFieldName}_startValue, {fieldName}.Length);");
-                sb.AppendLine("            }");
-                sb.AppendLine($"            else");
-                sb.AppendLine("            {");
-                sb.AppendLine($"                {animFieldName}_startValue = {targetFieldName};");
-                sb.AppendLine("            }");
-                sb.AppendLine($"            {animFieldName}_endValue = {targetFieldName};");
-                sb.AppendLine($"            {animFieldName}_elapsed = 0.0;");
-                sb.AppendLine($"            {animFieldName}.IsAnimating = true;");
-                sb.AppendLine($"            _isDirty = true;");
-                sb.AppendLine($"            OnPropertyAnimationStarted({prop.Name}PropertyName);");
-                sb.AppendLine("        }");
-                sb.AppendLine("        else");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            // Apply immediately during configuration or when duration = 0");
-                sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                sb.AppendLine("        }");
-            }
-            else
-            {
-                sb.AppendLine($"        if (IsActive() && duration > 0f)");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            {animFieldName}.StartAnimation({fieldName}, {targetFieldName}, 0.0); // TODO: Use TimeProvider");
-                sb.AppendLine($"            _isDirty = true;");
-                sb.AppendLine($"            OnPropertyAnimationStarted({prop.Name}PropertyName);");
-                sb.AppendLine("        }");
-                sb.AppendLine("        else");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            // Apply immediately during configuration or when duration = 0");
-                sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                sb.AppendLine("        }");
-            }
-        }
-        else
-        {
-            // Property without animation - always instant, mark dirty for deferred update
-            sb.AppendLine($"        _isDirty = true;");
-        }
-
+        sb.AppendLine($"        // TODO: Store duration and interpolation for animated updates");
+        sb.AppendLine($"        // For now, all updates are instant (applied on next ApplyUpdates call)");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
 
-    private static void GenerateUpdateAnimationsMethod(StringBuilder sb, List<PropertyInfo> properties)
+    private static void GenerateApplyUpdatesMethod(StringBuilder sb, List<PropertyInfo> properties)
     {
         // Generate partial method declarations for property change callbacks
         foreach (var prop in properties)
@@ -395,11 +312,11 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             sb.AppendLine();
         }
 
-        // Generate override of UpdateAnimations method to support inheritance
-        sb.AppendLine("    // Generated animation update override");
-        sb.AppendLine("    protected override void UpdateAnimations(double deltaTime)");
+        // Generate override of ApplyUpdates method to support inheritance
+        sb.AppendLine("    // Generated deferred property update override");
+        sb.AppendLine("    public override void ApplyUpdates(double deltaTime)");
         sb.AppendLine("    {");
-        sb.AppendLine("        base.UpdateAnimations(deltaTime);");
+        sb.AppendLine("        base.ApplyUpdates(deltaTime);");
         sb.AppendLine();
         
         // Generate early-exit check for performance using single _isDirty flag
@@ -410,181 +327,103 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             sb.AppendLine("            return;");
             sb.AppendLine();
         }
-        
-        // Track if any properties are still dirty at the end
-        var animatedProps = properties.Where(p => p.HasAnimationAttribute && p.Duration > 0).ToList();
-        if (animatedProps.Count > 0)
-        {
-            sb.AppendLine("        // Track if any animations are still active");
-            sb.AppendLine("        bool stillAnimating = false;");
-            sb.AppendLine();
-        }
 
         foreach (var prop in properties)
         {
             var fieldName = prop.FieldName;
             var targetFieldName = $"{fieldName}Target";
 
-            if (prop.HasAnimationAttribute && prop.Duration > 0)
+            // All properties are now instant update (animation is TODO for future)
+            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
             {
-                // Animated property
-                var animFieldName = $"{fieldName}Animation";
+                // Arrays - use optimized array comparison (no LINQ overhead)
+                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 
-                if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
+                sb.AppendLine($"        // Array property - using optimized element-wise comparison");
+                sb.AppendLine($"        if ({targetFieldName}__initialized && ({targetFieldName} == null || {fieldName} == null ||");
+                sb.AppendLine($"            {targetFieldName}.Length != {fieldName}.Length ||");
+                sb.AppendLine($"            !ArraysEqual_{prop.Name}({targetFieldName}, {fieldName})))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var oldValue = {fieldName};");
+                // Check if field type allows null (contains ?)
+                var allowsNull = prop.Type.Contains("?");
+                if (allowsNull)
                 {
-                    // Animated array property - inline interpolation for zero-overhead
-                    var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    var elementTypeName = arrayType.ElementType.Name;
-                    
-                    sb.AppendLine($"        if ({animFieldName}.IsAnimating)");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            {animFieldName}_elapsed += deltaTime;");
-                    sb.AppendLine($"            if ({animFieldName}_elapsed >= {animFieldName}.Duration)");
-                    sb.AppendLine("            {");
-                    sb.AppendLine($"                // Animation complete - snap to end value");
-                    sb.AppendLine($"                var oldValue = {fieldName};");
-                    sb.AppendLine($"                {fieldName} = {animFieldName}_endValue;");
-                    sb.AppendLine($"                {animFieldName}.IsAnimating = false;");
-                    sb.AppendLine($"                On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine("            }");
-                    sb.AppendLine("            else");
-                    sb.AppendLine("            {");
-                    sb.AppendLine($"                // Interpolate array elements in-place using reusable buffer");
-                    sb.AppendLine($"                var oldValue = {fieldName};");
-                    sb.AppendLine($"                float t = (float)({animFieldName}_elapsed / {animFieldName}.Duration);");
-                    sb.AppendLine($"                // Apply easing (simplified - just linear for now)");
-                    sb.AppendLine($"                // TODO: Add easing function support");
-                    sb.AppendLine();
-                    sb.AppendLine($"                // Allocate buffer on first use, reuse thereafter (zero per-frame allocation)");
-                    sb.AppendLine($"                if ({animFieldName}_buffer == null || {animFieldName}_buffer.Length != {animFieldName}_startValue.Length)");
-                    sb.AppendLine($"                    {animFieldName}_buffer = new {elementType}[{animFieldName}_startValue.Length];");
-                    sb.AppendLine();
-                    sb.AppendLine($"                for (int i = 0; i < {animFieldName}_buffer.Length; i++)");
-                    sb.AppendLine("                {");
-                    
-                    // Generate optimized interpolation code for the element type
-                    var interpCode = GenerateInterpolationCode(
-                        arrayType.ElementType,
-                        $"{animFieldName}_startValue[i]",
-                        $"{animFieldName}_endValue[i]",
-                        "t");
-                    
-                    sb.AppendLine($"                    {animFieldName}_buffer[i] = {interpCode};");
-                    sb.AppendLine("                }");
-                    sb.AppendLine();
-                    sb.AppendLine($"                {fieldName} = {animFieldName}_buffer;");
-                    sb.AppendLine($"                On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine($"                stillAnimating = true;");
-                    sb.AppendLine("            }");
-                    sb.AppendLine("        }");
+                    sb.AppendLine($"            {fieldName} = {targetFieldName} != null ? new {elementType}[{targetFieldName}.Length] : null;");
+                    sb.AppendLine($"            if ({targetFieldName} != null && {fieldName} != null)");
+                    sb.AppendLine($"                global::System.Array.Copy({targetFieldName}, {fieldName}, {targetFieldName}.Length);");
                 }
                 else
                 {
-                    // Non-array animated property
-                    sb.AppendLine($"        if ({animFieldName}.IsAnimating)");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            {fieldName} = {animFieldName}.Update(deltaTime);");
-                    // For non-array types, only use ! if reference type
-                    var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
-                    sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-                    sb.AppendLine($"            if ({animFieldName}.IsAnimating)");
-                    sb.AppendLine($"                stillAnimating = true;");
-                    sb.AppendLine("        }");
+                    sb.AppendLine($"            {fieldName} = new {elementType}[{targetFieldName}?.Length ?? 0];");
+                    sb.AppendLine($"            if ({targetFieldName} != null)");
+                    sb.AppendLine($"                global::System.Array.Copy({targetFieldName}!, {fieldName}, {targetFieldName}.Length);");
                 }
+                sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
+                sb.AppendLine("        }");
+            }
+            else if (prop.IsCollection)
+            {
+                // Other collections - use SequenceEqual
+                sb.AppendLine($"        // Collection property - using SequenceEqual for value comparison");
+                sb.AppendLine($"        if ({targetFieldName}__initialized && ({targetFieldName} == null || {fieldName} == null ||");
+                sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName})))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var oldValue = {fieldName};");
+                sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
+                sb.AppendLine("        }");
             }
             else
             {
-                // Instant update property
-                if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
-                {
-                    // Arrays - use optimized array comparison (no LINQ overhead)
-                    var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    
-                    sb.AppendLine($"        // Array property - using optimized element-wise comparison");
-                    sb.AppendLine($"        if ({targetFieldName} == null || {fieldName} == null ||");
-                    sb.AppendLine($"            {targetFieldName}.Length != {fieldName}.Length ||");
-                    sb.AppendLine($"            !ArraysEqual({targetFieldName}, {fieldName}))");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            OnPropertyAnimationStarted(nameof({prop.Name}));");
-                    sb.AppendLine($"            // Deep copy array to avoid reference sharing");
-                    // Check if field type allows null (contains ?)
-                    var allowsNull = prop.Type.Contains("?");
-                    if (allowsNull)
-                    {
-                        sb.AppendLine($"            {fieldName} = {targetFieldName} != null ? new {elementType}[{targetFieldName}.Length] : null;");
-                        sb.AppendLine($"            if ({targetFieldName} != null && {fieldName} != null)");
-                        sb.AppendLine($"                global::System.Array.Copy({targetFieldName}, {fieldName}, {targetFieldName}.Length);");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"            {fieldName} = new {elementType}[{targetFieldName}?.Length ?? 0];");
-                        sb.AppendLine($"            if ({targetFieldName} != null)");
-                        sb.AppendLine($"                global::System.Array.Copy({targetFieldName}!, {fieldName}, {targetFieldName}.Length);");
-                    }
-                    sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine("        }");
-                    sb.AppendLine();
-                    
-                    // Generate array comparison helper method (inline for performance)
-                    if (!properties.Any(p => p != prop && p.TypeSymbol is IArrayTypeSymbol at && 
-                        SymbolEqualityComparer.Default.Equals(at.ElementType, arrayType.ElementType)))
-                    {
-                        // Only generate once per element type
-                        sb.AppendLine($"        // Helper for array comparison of {elementType}");
-                        sb.AppendLine($"        static bool ArraysEqual({prop.Type} a, {prop.Type} b)");
-                        sb.AppendLine("        {");
-                        sb.AppendLine("            if (a == null || b == null) return a == b;");
-                        sb.AppendLine("            if (a.Length != b.Length) return false;");
-                        sb.AppendLine("            for (int i = 0; i < a.Length; i++)");
-                        sb.AppendLine($"                if (!global::System.Collections.Generic.EqualityComparer<{elementType}>.Default.Equals(a[i], b[i]))");
-                        sb.AppendLine("                    return false;");
-                        sb.AppendLine("            return true;");
-                        sb.AppendLine("        }");
-                    }
-                }
-                else if (prop.IsCollection)
-                {
-                    // Other collections - use SequenceEqual
-                    sb.AppendLine($"        // Collection property - using SequenceEqual for value comparison");
-                    sb.AppendLine($"        if ({targetFieldName} == null || {fieldName} == null ||");
-                    sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName}))");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                    sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                    sb.AppendLine("        }");
-                }
-                else
-                {
-                    // Non-collection property - use default equality comparer
-                    sb.AppendLine($"        if (!global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals({targetFieldName}, {fieldName}))");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            var oldValue = {fieldName};");
-                    sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                    var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
-                    sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-                    sb.AppendLine("        }");
-                }
+                // Non-collection property - use default equality comparer
+                sb.AppendLine($"        if ({targetFieldName}__initialized && !{fieldName}__comparer.Equals({targetFieldName}, {fieldName}))");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            var oldValue = {fieldName};");
+                sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
+                sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
+                sb.AppendLine("        }");
             }
             sb.AppendLine();
         }
 
-        // Clear dirty flag if no animations are still running
-        if (animatedProps.Count > 0)
+        // Clear dirty flag after processing
+        if (properties.Count > 0)
         {
-            sb.AppendLine("        // Clear dirty flag if all animations are complete");
-            sb.AppendLine("        _isDirty = stillAnimating;");
-        }
-        else if (properties.Count > 0)
-        {
-            // No animated properties, so clear dirty flag after processing
             sb.AppendLine("        // All properties processed, clear dirty flag");
             sb.AppendLine("        _isDirty = false;");
         }
 
         sb.AppendLine("    }");
+        
+        // Generate array comparison helper methods for each unique array element type
+        var arrayProps = properties.Where(p => p.TypeSymbol is IArrayTypeSymbol).ToList();
+        var uniqueArrayTypes = new HashSet<string>();
+        
+        foreach (var prop in arrayProps)
+        {
+            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
+            {
+                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                var methodName = $"ArraysEqual_{prop.Name}";
+                
+                if (uniqueArrayTypes.Add(elementType))
+                {
+                    sb.AppendLine();
+                    sb.AppendLine($"    // Helper for array comparison of {elementType}");
+                    sb.AppendLine($"    private static bool {methodName}({prop.Type} a, {prop.Type} b)");
+                    sb.AppendLine("    {");
+                    sb.AppendLine("        if (a == null || b == null) return a == b;");
+                    sb.AppendLine("        if (a.Length != b.Length) return false;");
+                    sb.AppendLine("        for (int i = 0; i < a.Length; i++)");
+                    sb.AppendLine($"            if (!global::System.Collections.Generic.EqualityComparer<{elementType}>.Default.Equals(a[i], b[i]))");
+                    sb.AppendLine("                return false;");
+                    sb.AppendLine("        return true;");
+                    sb.AppendLine("    }");
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -648,8 +487,6 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         public string Type { get; set; } = string.Empty;
         public ITypeSymbol? TypeSymbol { get; set; }
         public bool IsCollection { get; set; }
-        public bool HasAnimationAttribute { get; set; }
-        public float Duration { get; set; }
-        public int Interpolation { get; set; }
+        public string DefaultValue { get; set; } = string.Empty;
     }
 }

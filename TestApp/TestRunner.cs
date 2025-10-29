@@ -85,12 +85,12 @@ public partial class TestRunner : RuntimeComponent
     {
         framesRendered++;
 
-        if (Children.Where(c => c.IsActive()).Any()) return;
+        if (Children.OfType<ITestComponent>().Where(c => c.IsActive()).Any()) return;
 
         if (currentTestIndex < tests.Count)
         {
             var test = tests[currentTestIndex++];
-            
+
             if (test != null && test.Template != null)
             {
                 var child = CreateChild(test.Template);
@@ -146,10 +146,12 @@ public partial class TestRunner : RuntimeComponent
                     Logger?.LogTrace("{Description}", test.Description);
 
                 Logger?.LogInformation(
-                    "{TestName} {Description}: {Output}",
+                    "[{PassOrFail}]{TestName} {Description}: Expected {Expected}, Actual {Actual}",
+                    result.Passed ? "Pass" : "Fail",
                     test.TestName,
                     test.Description,
-                    result
+                    result.ExpectedResult,
+                    result.ActualResult
                 );
 
                 if (result.Passed)

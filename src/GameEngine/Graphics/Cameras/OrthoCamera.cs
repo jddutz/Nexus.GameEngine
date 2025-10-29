@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
@@ -41,10 +40,10 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
     }
 
     // Animated properties for smooth camera movements
-    [ComponentProperty(Duration = AnimationDuration.Normal)]
+    [ComponentProperty]
     private float _width = 10f;
 
-    [ComponentProperty(Duration = AnimationDuration.Normal)]
+    [ComponentProperty]
     private float _height = 10f;
 
     [ComponentProperty]
@@ -53,7 +52,7 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
     [ComponentProperty]
     private float _farPlane = 1000f;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
+    [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
 
     private bool _matricesDirty = true;
@@ -87,7 +86,7 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
     /// <summary>
     /// Configure the component using the specified template.
     /// </summary>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

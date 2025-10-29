@@ -38,7 +38,7 @@ public partial class BiaxialGradientBackgroundTest(
         ]
     };
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         var window = windowService.GetWindow();
         var offset = 2;

@@ -54,9 +54,9 @@ public partial class KeyBinding(
     /// Configure the gamepad binding using the provided template.
     /// </summary>
     /// <param name="template">Template containing configuration data</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {
@@ -71,7 +71,11 @@ public partial class KeyBinding(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (InputContext == null) return;
+        if (InputContext == null)
+        {
+            Logger?.LogWarning("InputContext is null, cannot subscribe to keyboard events");
+            return;
+        }
 
         foreach (var keyboard in InputContext.Keyboards)
         {

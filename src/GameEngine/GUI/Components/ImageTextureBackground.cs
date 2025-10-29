@@ -51,9 +51,9 @@ public partial class ImageTextureBackground(
     private TextureDefinition? _textureDefinition;
     private int _placement = BackgroundImagePlacement.FillCenter;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
         
         if (componentTemplate is Template template)
         {

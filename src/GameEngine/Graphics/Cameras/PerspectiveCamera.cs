@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Animation;
 using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
@@ -51,16 +50,16 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
     }
 
     // Animated properties with slow easing for smooth camera movements
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
+    [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
+    [ComponentProperty]
     private Vector3D<float> _forward = -Vector3D<float>.UnitZ;
 
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.CubicEaseOut)]
+    [ComponentProperty]
     private Vector3D<float> _up = Vector3D<float>.UnitY;
 
-    [ComponentProperty(Duration = AnimationDuration.Normal, Interpolation = InterpolationMode.CubicEaseOut)]
+    [ComponentProperty]
     private float _fieldOfView = MathF.PI / 4; // 45 degrees
 
     // Instant properties (no animation needed for clipping planes and aspect ratio)
@@ -195,7 +194,7 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
     /// <summary>
     /// Configure the component using the specified template.
     /// </summary>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

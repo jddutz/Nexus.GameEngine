@@ -70,9 +70,9 @@ public abstract partial class InputBinding(
     [ComponentProperty]
     private ActionId _actionId = ActionId.None;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {
@@ -136,7 +136,7 @@ public abstract partial class InputBinding(
     {
         try
         {
-            if (!IsEnabled)
+            if (!IsActive())
                 return;
 
             if (ActionId == ActionId.None)

@@ -1,32 +1,22 @@
-using Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
-/// Marks a backing field for property generation with optional animation support.
-/// Apply this attribute to private fields to generate public properties with deferred updates.
+/// Marks a private field for source-generated deferred property support.
+/// Apply this attribute to a private field to generate a public property and a Set{Property} method.
+/// The generated property supports deferred updates (applied on the next ApplyUpdates call),
+/// and the Set method allows specifying duration and interpolation at the call site.
 /// </summary>
 /// <example>
 /// [ComponentProperty]
 /// private float _fontSize = 12f;
-/// // Generates: public float FontSize { get; set; }
-/// 
-/// [ComponentProperty(Duration = 0.3f, Interpolation = InterpolationMode.Cubic)]
-/// private Vector4D&lt;float&gt; _color = Colors.White;
-/// // Generates animated property with smooth interpolation
+/// // Generates:
+/// //   public float FontSize { get; }
+/// //   public void SetFontSize(float value, float duration = 0f, InterpolationMode interpolation = InterpolationMode.Linear)
+/// // Usage:
+/// //   component.SetFontSize(24f);
 /// </example>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public sealed class ComponentPropertyAttribute : Attribute
-{
-    /// <summary>
-    /// Gets or sets the animation duration in seconds.
-    /// Default is 0 (instant update between frames).
-    /// </summary>
-    public float Duration { get; set; } = 0f;
+public sealed class ComponentPropertyAttribute : Attribute { }
 
-    /// <summary>
-    /// Gets or sets the interpolation mode for the animation.
-    /// Default is Step (instant, works with any type).
-    /// </summary>
-    public InterpolationMode Interpolation { get; set; } = InterpolationMode.Step;
-}

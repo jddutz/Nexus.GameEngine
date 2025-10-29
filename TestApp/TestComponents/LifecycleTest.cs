@@ -15,9 +15,9 @@ public partial class LifecycleTest : TestComponent, ITestComponent
     // Track the order of calls
     private readonly List<string> callOrder = [];
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
         callOrder.Add("OnConfigure");
     }
 

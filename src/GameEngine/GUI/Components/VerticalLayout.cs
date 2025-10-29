@@ -49,9 +49,9 @@ public partial class VerticalLayout(IWindowService windowService)
     /// Configure this VerticalLayout using the specified template.
     /// </summary>
     /// <param name="template">Template containing layout configuration</param>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
 
         if (componentTemplate is Template template)
         {

@@ -85,6 +85,7 @@ class Program
                 .AddSingleton<IDescriptorManager, DescriptorManager>()
                 .AddSingleton<IPipelineManager, PipelineManager>()
                 .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
+                .AddSingleton<IViewportManager, ViewportManager>()
                 .AddSingleton<IRenderer, Renderer>()
                 .AddSingleton<IEventBus, EventBus>()
                 .AddSingleton<IAssetService, AssetService>()
@@ -95,10 +96,9 @@ class Program
                 .AddSingleton<Nexus.GameEngine.Resources.Fonts.IFontResourceManager, Nexus.GameEngine.Resources.Fonts.FontResourceManager>()
                 .AddSingleton<IResourceManager, ResourceManager>()
                 .AddSingleton<IContentManager, ContentManager>()
-                .AddSingleton<IComponentFactory, ComponentFactory>()
                 .AddSingleton<IActionFactory, ActionFactory>()
                 .AddPixelSampling()
-                .AddDiscoveredServices<IRuntimeComponent>()
+                .AddDiscoveredServices<IComponent>()
                 .AddDiscoveredServices<IAction>()
                 .BuildServiceProvider();
 

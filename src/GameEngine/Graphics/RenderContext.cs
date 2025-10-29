@@ -19,7 +19,7 @@ public readonly struct RenderContext
     /// The viewport being rendered to.
     /// Provides viewport dimensions and configuration.
     /// </summary>
-    public required IViewport Viewport { get; init; }
+    public required Viewport Viewport { get; init; }
     
     /// <summary>
     /// Bit mask of all available render passes.

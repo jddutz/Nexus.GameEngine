@@ -1,5 +1,4 @@
-﻿using Nexus.GameEngine.Animation;
-using Nexus.GameEngine.Components;
+﻿using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -59,12 +58,12 @@ public partial class LinearGradientBackground(
     /// <summary>
     /// Gradient rotation angle in radians. Can be animated.
     /// </summary>
-    [ComponentProperty(Duration = AnimationDuration.Slow, Interpolation = InterpolationMode.Linear)]
+    [ComponentProperty]
     private float _angle = 0f;
 
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
-        base.OnConfigure(componentTemplate);
+        base.OnLoad(componentTemplate);
         
         if (componentTemplate is Template template)
         {

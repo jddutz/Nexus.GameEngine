@@ -27,7 +27,7 @@ public abstract partial class DrawableComponent : Transformable, IDrawable
     /// Returns whether this component should be rendered (combines Enabled and Visible states).
     /// This is the combined state that determines if the component participates in rendering.
     /// </summary>
-    public bool IsVisible() => IsEnabled && Visible;
+    public bool IsVisible() => IsValid && IsLoaded && Visible;
 
     /// <summary>
     /// Gets draw commands for this component.

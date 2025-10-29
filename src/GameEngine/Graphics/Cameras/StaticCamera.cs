@@ -107,7 +107,7 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     /// Configure the component using the specified template.
     /// Static camera properties are set once during configuration and never change.
     /// </summary>
-    protected override void OnConfigure(IComponentTemplate? componentTemplate)
+    protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {

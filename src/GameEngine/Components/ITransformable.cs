@@ -1,4 +1,4 @@
-using Nexus.GameEngine.Animation;
+using Nexus.GameEngine.Components;
 using Silk.NET.Maths;
 
 namespace Nexus.GameEngine.Components;
@@ -29,7 +29,7 @@ namespace Nexus.GameEngine.Components;
 /// - Position: Linear interpolation
 /// - Rotation: Quaternion SLERP interpolation
 /// - Scale: Linear interpolation
-/// - Changes are deferred until UpdateAnimations() call
+/// - Changes are deferred until ApplyUpdates() call
 /// </para>
 /// </remarks>
 public interface ITransformable
@@ -139,7 +139,7 @@ public interface ITransformable
     
     /// <summary>
     /// Set local position (relative to parent).
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="position">New local position.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -149,7 +149,7 @@ public interface ITransformable
     /// <summary>
     /// Move in world space (absolute direction, ignoring rotation).
     /// Example: Translate(new Vector3D(1, 0, 0)) always moves right regardless of rotation.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="delta">World-space movement delta.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -159,7 +159,7 @@ public interface ITransformable
     /// <summary>
     /// Move in local space (relative to current rotation).
     /// Example: TranslateLocal(new Vector3D(0, 0, -1)) moves forward in the direction the object is facing.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="delta">Local-space movement delta.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -179,7 +179,7 @@ public interface ITransformable
     
     /// <summary>
     /// Set absolute rotation.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="rotation">New rotation quaternion.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -189,7 +189,7 @@ public interface ITransformable
     /// <summary>
     /// Rotate around local X axis (pitch - nod up/down).
     /// Positive radians nod down (right-hand rule: thumb points +X, fingers curl down).
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -199,7 +199,7 @@ public interface ITransformable
     /// <summary>
     /// Rotate around local Y axis (yaw - turn left/right).
     /// Positive radians turn left (right-hand rule: thumb points +Y, fingers curl left).
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -210,7 +210,7 @@ public interface ITransformable
     /// Rotate around local Z axis (roll - tilt side-to-side).
     /// Positive radians tilt counter-clockwise (right-hand rule: thumb points +Z toward viewer, fingers curl CCW).
     /// Most common rotation for 2D sprite orientation.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -219,7 +219,7 @@ public interface ITransformable
     
     /// <summary>
     /// Rotate around arbitrary axis (in local space).
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="axis">Rotation axis (will be normalized).</param>
     /// <param name="radians">Rotation angle in radians.</param>
@@ -230,7 +230,7 @@ public interface ITransformable
     /// <summary>
     /// Orient to face target position.
     /// Uses default world up vector (+Y).
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="target">World position to look at.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -239,7 +239,7 @@ public interface ITransformable
     
     /// <summary>
     /// Orient to face target with specified world up vector.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="target">World position to look at.</param>
     /// <param name="worldUp">World up direction (will be normalized).</param>
@@ -261,7 +261,7 @@ public interface ITransformable
     
     /// <summary>
     /// Set absolute scale.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scale">New scale vector.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -271,7 +271,7 @@ public interface ITransformable
     /// <summary>
     /// Multiply current scale by factor.
     /// Example: ScaleBy(new Vector3D(2, 1, 1)) doubles width while keeping height/depth.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scaleFactor">Scale multiplier per axis.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
@@ -281,7 +281,7 @@ public interface ITransformable
     /// <summary>
     /// Uniform scaling (multiply all axes by same factor).
     /// Example: ScaleUniform(2) doubles size in all dimensions.
-    /// Change is deferred until next UpdateAnimations() call if component is active.
+    /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scaleFactor">Uniform scale multiplier.</param>
     /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
