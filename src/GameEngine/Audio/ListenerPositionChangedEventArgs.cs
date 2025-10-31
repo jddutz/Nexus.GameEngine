@@ -1,5 +1,3 @@
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Audio;
 
 public class ListenerPositionChangedEventArgs(Vector3D<float> oldPosition, Vector3D<float> newPosition) : EventArgs

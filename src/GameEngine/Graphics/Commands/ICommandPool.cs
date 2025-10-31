@@ -1,5 +1,4 @@
 using VkCommandPool = Silk.NET.Vulkan.CommandPool;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics.Commands;
 

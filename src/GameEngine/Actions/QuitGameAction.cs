@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Runtime;
-
 namespace Nexus.GameEngine.Actions;
 
 /// <summary>
@@ -23,7 +19,7 @@ public class QuitGameAction(IWindowService windowService, ILoggerFactory loggerF
     {
         try
         {
-            _logger.LogDebug("Quit game action executed - closing window");
+            Log.Debug("Quit game action executed - closing window");
             _windowService.GetWindow().Close();
             return Task.FromResult(ActionResult.Successful(null, "Application quit requested"));
         }

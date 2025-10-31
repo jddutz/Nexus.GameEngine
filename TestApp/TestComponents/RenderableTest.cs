@@ -80,18 +80,18 @@ public partial class RenderableTest(
             yield break;
         }
 
-        for (int i = 0; i < samples[0].Length; i++)
+        for (int i = 0; i < samples.Length; i++)
         {
             if (!ExpectedResults.TryGetValue(i, out Vector4D<float>[]? expected)) continue;
             if (expected == null) continue;
 
-            if (expected.Length > i)
+            for (int x = 0; x < expected.Length; x++)
             {
                 yield return new()
                 {
-                    ExpectedResult = $"Pixel[{i}] {PixelAssertions.DescribeColor(expected[i])}",
-                    ActualResult = PixelAssertions.DescribeColor(samples[0][i]),
-                    Passed = PixelAssertions.ColorsMatch(samples[0][i], expected[i], tolerance: 0.05f)
+                    ExpectedResult = $"({SampleCoordinates[x].X}, {SampleCoordinates[x].Y}) {PixelAssertions.DescribeColor(expected[x])}",
+                    ActualResult = PixelAssertions.DescribeColor(samples[i][x]),
+                    Passed = PixelAssertions.ColorsMatch(samples[i][x], expected[x], tolerance: 0.05f)
                 };
             }
         }

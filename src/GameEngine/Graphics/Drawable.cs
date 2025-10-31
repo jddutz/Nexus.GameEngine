@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Components;
-
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
@@ -11,8 +9,19 @@ namespace Nexus.GameEngine.Graphics;
 /// - public bool IsVisible { get; }
 /// - public void SetIsVisible(bool value, float duration = -1f, InterpolationMode interpolation = default)
 /// </summary>
-public abstract partial class DrawableComponent : Transformable, IDrawable
+public abstract partial class Drawable : Transformable, IDrawable
 {
+    /// <summary>
+    /// Template for configuring Drawable components.
+    /// </summary>
+    public new record Template : Transformable.Template
+    {
+        public bool Visible { get; set; } = true;
+    }
+    
+    public required IResourceManager ResourceManager { get; set; }
+    public required PipelineHandle Pipeline { get; set; }
+    
     /// <summary>
     /// Whether this component should be rendered.
     /// When false, GetDrawCommands will not be called and component is skipped during rendering.

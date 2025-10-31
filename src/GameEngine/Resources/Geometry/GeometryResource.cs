@@ -1,4 +1,3 @@
-using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Nexus.GameEngine.Resources.Geometry;

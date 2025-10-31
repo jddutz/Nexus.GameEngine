@@ -1,4 +1,3 @@
-using Silk.NET.Vulkan;
 using StbImageSharp;
 using System.Reflection;
 using System.Runtime.InteropServices;

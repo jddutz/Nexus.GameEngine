@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Components;
-
 namespace Nexus.GameEngine.Actions;
 
 /// <summary>
@@ -23,13 +20,13 @@ public class ActionFactory(IServiceProvider serviceProvider, ILoggerFactory logg
         // Handle None/empty ActionId
         if (actionId == ActionId.None || actionId.ActionType == null)
         {
-            _logger.LogDebug("Cannot execute action: ActionId is None or invalid");
+            Log.Debug("Cannot execute action: ActionId is None or invalid");
             return ActionResult.Failed("ActionId is None or invalid");
         }
 
         try
         {
-            _logger.LogDebug("Executing action: {ActionType} ({ActionId})",
+            Log.Debug("Executing action: {ActionType} ({ActionId})",
                 actionId.ActionType.Name, actionId.Identifier);
 
             // Resolve action instance from DI container
@@ -38,22 +35,21 @@ public class ActionFactory(IServiceProvider serviceProvider, ILoggerFactory logg
             if (action == null)
             {
                 var errorMessage = $"Action type '{actionId.ActionType.Name}' is not registered in the service container";
-                _logger.LogError(errorMessage);
+                Log.Error(errorMessage);
                 return ActionResult.Failed(errorMessage);
             }
 
             // Execute the action with the provided context
             var result = await action.ExecuteAsync(context);
 
-            _logger.LogDebug("Action execution completed: {ActionType} - Success: {Success}",
-                actionId.ActionType.Name, result.Success);
+            Log.Debug($"Action execution completed: {actionId.ActionType.Name} - Success: {result.Success}");
 
             return result;
         }
         catch (Exception ex)
         {
             var errorMessage = $"Error executing action '{actionId.ActionType.Name}': {ex.Message}";
-            _logger.LogError(ex, errorMessage);
+            Log.Exception(ex, errorMessage);
             return ActionResult.Failed(ex);
         }
     }

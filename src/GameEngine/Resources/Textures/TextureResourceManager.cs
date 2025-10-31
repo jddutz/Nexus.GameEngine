@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Buffers;
-using Silk.NET.Vulkan;
-using StbImageSharp;
+﻿using StbImageSharp;
 using System.Runtime.InteropServices;
 
 namespace Nexus.GameEngine.Resources.Textures;

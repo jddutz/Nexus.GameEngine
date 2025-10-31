@@ -1,12 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Runtime;
 using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics.Pipelines;
 
@@ -79,6 +74,26 @@ public unsafe class PipelineManager : IPipelineManager
         {
             throw new InvalidOperationException($"Pipeline '{name}' is undefined.");
         }
+    }
+
+    /// <inheritdoc/>
+    public PipelineHandle GetOrCreate(PipelineDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+
+        // Try to get from cache by name
+        if (_pipelines.TryGetValue(definition.Name, out var cached))
+        {
+            Interlocked.Increment(ref _cacheHits);
+            cached.AccessCount++;
+            cached.LastAccessedAt = DateTime.UtcNow;
+            return new PipelineHandle(cached.Handle, cached.Layout);
+        }
+
+        // Build using definition's configuration
+        var builder = GetBuilder();
+        builder = definition.ConfigureBuilder(builder);
+        return builder.Build(definition.Name);
     }
 
     /// <inheritdoc/>
@@ -588,7 +603,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (stream == null)
             {
-                _logger.LogError("Could not find embedded resource: {ResourceName} for shader: {ShaderPath}", resourceName, shaderPath);
+                Log.Error("Could not find embedded resource: {ResourceName} for shader: {ShaderPath}", resourceName, shaderPath);
                 return default;
             }
 
@@ -597,7 +612,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (bytesRead != code.Length)
             {
-                _logger.LogWarning("Shader read incomplete: Read {BytesRead} of {ExpectedBytes} bytes", bytesRead, code.Length);
+                Log.Warning("Shader read incomplete: Read {bytesRead} of {code.Length} bytes");
                 return default;
             }
             
@@ -615,7 +630,7 @@ public unsafe class PipelineManager : IPipelineManager
                 
                 if (result != Result.Success)
                 {
-                    _logger.LogError("Failed to create shader module for {ShaderPath}: {Result}", shaderPath, result);
+                    Log.Error($"Failed to create shader module for {shaderPath}: {result}");
                     return default;
                 }
 

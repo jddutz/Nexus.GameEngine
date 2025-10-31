@@ -1,8 +1,4 @@
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Commands;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Nexus.GameEngine.Testing;
@@ -44,7 +40,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         _vk = context.VulkanApi;
         _enabled = false;
         
-        _logger.LogWarning("VulkanPixelSampler created - this service impacts performance and should only be used for testing");
+        Log.Warning("VulkanPixelSampler created - this service impacts performance and should only be used for testing");
     }
 
     /// <inheritdoc />
@@ -89,13 +85,13 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
             
             if (_enabled)
             {
-                _logger.LogInformation("Pixel sampling ENABLED - performance will be impacted");
+                Log.Info("Pixel sampling ENABLED - performance will be impacted");
                 InitializeStagingResources();
                 _swapChain.BeforePresent += OnBeforePresent;
             }
             else
             {
-                _logger.LogInformation("Pixel sampling DISABLED");
+                Log.Info("Pixel sampling DISABLED");
                 _swapChain.BeforePresent -= OnBeforePresent;
                 CleanupStagingResources();
                 _capturedResults.Clear();  // Clear results when disabling
@@ -122,7 +118,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         
         if (!IsAvailable)
         {
-            _logger.LogWarning("Pixel sampling not available - returning nulls");
+            Log.Warning("Pixel sampling not available - returning nulls");
             return results;
         }
 
@@ -150,7 +146,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
                 // Validate coordinates
                 if (x < 0 || x >= extent.Width || y < 0 || y >= extent.Height)
                 {
-                    _logger.LogWarning("Pixel coordinates out of bounds: ({X}, {Y})", x, y);
+                    Log.Warning($"Pixel coordinates out of bounds: ({x}, {y})");
                     results[i] = null;
                     continue;
                 }
@@ -346,8 +342,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         // Calculate buffer size: width * height * 4 bytes per pixel (RGBA)
         _bufferSize = (ulong)(extent.Width * extent.Height * 4);
         
-        _logger.LogDebug("Creating staging buffer for pixel sampling: {Width}x{Height} = {Size} bytes",
-            extent.Width, extent.Height, _bufferSize);
+        Log.Debug($"Creating staging buffer for pixel sampling: {extent.Width}x{extent.Height} = {_bufferSize} bytes");
         
         // Create staging buffer
         var bufferInfo = new BufferCreateInfo
@@ -363,7 +358,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
             var result = _vk.CreateBuffer(_context.Device, &bufferInfo, null, pBuffer);
             if (result != Result.Success)
             {
-                _logger.LogError("Failed to create staging buffer: {Result}", result);
+                Log.Error($"Failed to create staging buffer: {result}");
                 throw new Exception($"Failed to create staging buffer: {result}");
             }
         }
@@ -386,7 +381,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
             if (result != Result.Success)
             {
                 _vk.DestroyBuffer(_context.Device, _stagingBuffer, null);
-                _logger.LogError("Failed to allocate staging buffer memory: {Result}", result);
+                Log.Error($"Failed to allocate staging buffer memory: {result}");
                 throw new Exception($"Failed to allocate staging buffer memory: {result}");
             }
         }
@@ -394,15 +389,14 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         // Bind buffer memory
         _vk.BindBufferMemory(_context.Device, _stagingBuffer, _stagingMemory, 0);
         
-        _logger.LogDebug("Staging buffer created successfully: handle={Buffer}, size={Size}",
-            _stagingBuffer.Handle, _bufferSize);
+        Log.Debug($"Staging buffer created successfully: handle={_stagingBuffer.Handle}, size={_bufferSize}");
     }
 
     private void CleanupStagingResources()
     {
         if (_stagingBuffer.Handle != 0)
         {
-            _logger.LogDebug("Destroying staging buffer: handle={Buffer}", _stagingBuffer.Handle);
+            Log.Debug($"Destroying staging buffer: handle={_stagingBuffer.Handle}");
             
             // Wait for device to finish using the buffer
             _vk.DeviceWaitIdle(_context.Device);
@@ -442,6 +436,6 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         
         CleanupStagingResources();
         _disposed = true;
-        _logger.LogDebug("VulkanPixelSampler disposed");
+        Log.Debug("VulkanPixelSampler disposed");
     }
 }

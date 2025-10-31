@@ -1,14 +1,4 @@
-﻿using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
-using Nexus.GameEngine.Resources.Textures;
-using Silk.NET.Vulkan;
-
-namespace Nexus.GameEngine.GUI.Components;
+﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with an image texture.
@@ -20,7 +10,7 @@ public partial class ImageTextureBackground(
     IPipelineManager pipelineManager,
     IResourceManager resources,
     IDescriptorManager descriptorManager)
-    : DrawableComponent, IDrawable
+    : Drawable, IDrawable
 {
     /// <summary>
     /// Template for configuring ImageTextureBackground components.

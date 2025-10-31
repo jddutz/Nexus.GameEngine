@@ -1,8 +1,3 @@
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Shaders;
-using Silk.NET.Vulkan;
-
 namespace Nexus.GameEngine.Graphics.Pipelines;
 
 /// <summary>

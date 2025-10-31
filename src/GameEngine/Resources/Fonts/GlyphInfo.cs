@@ -1,5 +1,3 @@
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Resources.Fonts;
 
 /// <summary>

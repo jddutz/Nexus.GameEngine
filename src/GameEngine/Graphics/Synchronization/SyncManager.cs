@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Silk.NET.Vulkan;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using VkSemaphore = Silk.NET.Vulkan.Semaphore;
 using VkFence = Silk.NET.Vulkan.Fence;
 

@@ -1,7 +1,4 @@
-﻿
-using Microsoft.Extensions.Logging;
-
-namespace Nexus.GameEngine.Components;
+﻿namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Manages reusable content trees that can be assigned to viewports.
@@ -13,7 +10,6 @@ public class ContentManager(
     IServiceProvider serviceProvider) 
     : IContentManager
 {
-    private readonly ILogger logger = loggerFactory.CreateLogger<ContentManager>();
     private readonly Dictionary<string, IComponent> content = [];
     private bool _disposed;
 
@@ -34,14 +30,14 @@ public class ContentManager(
     {
         if (string.IsNullOrEmpty(template.Name))
         {
-            logger.LogWarning("Cannot load content with empty template name");
+            Log.Warning("Cannot load content with empty template name");
             return null;
         }
 
         // Try to get existing content first
         if (content.TryGetValue(template.Name, out var existingComponent))
         {
-            logger.LogDebug("Returning existing content '{ContentName}'", template.Name);
+            Log.Debug("Returning existing content '{ContentName}'", template.Name);
             return existingComponent;
         }
 
@@ -59,18 +55,18 @@ public class ContentManager(
                     ActivateComponentTree(created);
                 }
 
-                logger.LogInformation("Loaded content '{ContentName}'", template.Name);
+                Log.Info("Loaded content '{ContentName}'", template.Name);
                 return created;
             }
             else
             {
-                logger.LogError("Failed to create content from template '{TemplateName}' - CreateInstance returned null", template.Name);
+                Log.Error("Failed to create content from template '{TemplateName}' - CreateInstance returned null", template.Name);
                 return null;
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception while creating content from template '{TemplateName}'", template.Name);
+            Log.Exception(ex, "Exception while creating content from template '{TemplateName}'", template.Name);
             return null;
         }
     }
@@ -170,53 +166,53 @@ public class ContentManager(
     {
         if (template == null)
         {
-            logger?.LogDebug("CreateInstance called with null template");
+            Log.Debug("CreateInstance called with null template");
             return null;
         }
 
         // Try to get the component type from the template's containing class
         var componentType = template.GetType().DeclaringType;
 
-        logger.LogDebug("Inferred component type: {TypeName}", componentType?.Name ?? "null");
+        Log.Debug("Inferred component type: {TypeName}", componentType?.Name ?? "null");
 
         // Type-safety: Ensure the type implements IComponent
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            logger.LogDebug("Component type is null or doesn't implement IComponent");
+            Log.Debug("Component type is null or doesn't implement IComponent");
             return null;
         }
 
         // Check if the type can be instantiated
         if (componentType.IsAbstract)
         {
-            logger.LogWarning("Cannot create instance of abstract type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
+            Log.Warning("Cannot create instance of abstract type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
             return null;
         }
 
         if (componentType.IsInterface)
         {
-            logger.LogWarning("Cannot create instance of interface type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
+            Log.Warning("Cannot create instance of interface type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
             return null;
         }
 
         if (componentType.IsGenericTypeDefinition)
         {
-            logger.LogWarning("Cannot create instance of generic type definition: {TypeName}. Specify concrete type arguments.", componentType.Name);
+            Log.Warning("Cannot create instance of generic type definition: {TypeName}. Specify concrete type arguments.", componentType.Name);
             return null;
         }
 
         if (componentType.IsSealed && componentType.IsAbstract) // static class
         {
-            logger.LogWarning("Cannot create instance of static class: {TypeName}", componentType.Name);
+            Log.Warning("Cannot create instance of static class: {TypeName}", componentType.Name);
             return null;
         }
 
-        logger.LogDebug("Creating {Name} component ({TypeName})", template.Name ?? "unnamed", componentType.Name);
+        Log.Debug("Creating {Name} component ({TypeName})", template.Name ?? "unnamed", componentType.Name);
 
         // Create and configure the component
         var result = Create(componentType, template);
 
-        logger.LogDebug("Component creation result: {Result}", result != null ? "SUCCESS" : "FAILED");
+        Log.Debug("Component creation result: {Result}", result != null ? "SUCCESS" : "FAILED");
 
         return result;
     }
@@ -240,7 +236,7 @@ public class ContentManager(
             if (component is IRuntimeComponent runtimeComponent)
             {
                 runtimeComponent.Activate();
-                logger.LogDebug("Activated component {Name} ({Type})", component.Name ?? "unnamed", component.GetType().Name);
+                Log.Debug("Activated component {Name} ({Type})", component.Name ?? "unnamed", component.GetType().Name);
                 // RuntimeComponent.Activate() recursively activates IRuntimeComponent children
                 // So we don't need to traverse them manually - continue to next component
                 continue;
@@ -339,13 +335,13 @@ public class ContentManager(
             // Clean up unloaded components
             foreach (var key in unloadedKeys)
             {
-                logger.LogDebug("Removing unloaded component {Name} from content manager", key);
+                Log.Debug("Removing unloaded component {Name} from content manager", key);
                 content.Remove(key);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception occurred during Update loop");
+            Log.Exception(ex, "Exception occurred during Update loop");
         }
     }
 

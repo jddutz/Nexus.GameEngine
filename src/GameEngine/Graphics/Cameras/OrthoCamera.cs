@@ -1,6 +1,3 @@
-using Nexus.GameEngine.Components;
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Graphics.Cameras;
 
 /// <summary>
@@ -82,6 +79,8 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
 
     private Matrix4X4<float> _viewMatrix;
     private Matrix4X4<float> _projectionMatrix;
+    private Matrix4X4<float> _viewProjectionMatrix;
+    private bool _viewProjectionDirty = true;
 
     /// <summary>
     /// Configure the component using the specified template.
@@ -114,6 +113,20 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
         _projectionMatrix = Matrix4X4.CreateOrthographic(_width, _height, _nearPlane, _farPlane);
 
         _matricesDirty = false;
+        _viewProjectionDirty = true; // Mark combined matrix as dirty
+    }
+
+    public Matrix4X4<float> GetViewProjectionMatrix()
+    {
+        // Ensure view and projection are up to date first
+        if (_matricesDirty) UpdateMatrices();
+        
+        if (_viewProjectionDirty)
+        {
+            _viewProjectionMatrix = _viewMatrix * _projectionMatrix;
+            _viewProjectionDirty = false;
+        }
+        return _viewProjectionMatrix;
     }
 
     /// <summary>

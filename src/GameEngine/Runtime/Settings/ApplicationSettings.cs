@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Graphics;
-
 namespace Nexus.GameEngine.Runtime.Settings;
 
 /// <summary>

@@ -16,6 +16,8 @@ public abstract partial class Configurable : Entity, IConfigurable
     public event EventHandler<EventArgs>? Validated;
     public event EventHandler<EventArgs>? ValidationFailed;
 
+    public bool IsLoaded { get; set; } = false;
+
     /// <summary>
     /// Override in derived classes to implement component-specific configuration.
     /// Parent is Loadd before calling this method.
@@ -34,9 +36,9 @@ public abstract partial class Configurable : Entity, IConfigurable
     {
         Loading?.Invoke(this, new(template));
 
-        OnLoad(template);
-
         Name = template.Name ?? GetType().Name;
+
+        OnLoad(template);
 
         // Apply deferred property updates immediately so Name and other properties are set
         ApplyUpdates(0);
@@ -44,11 +46,7 @@ public abstract partial class Configurable : Entity, IConfigurable
         // Validate the component after configuration
         Validate();
 
-        // Mark component as loaded after configuration completes
-        if (this is IComponent component)
-        {
-            component.IsLoaded = true;
-        }
+        IsLoaded = true;
 
         Loaded?.Invoke(this, new(template));
     }

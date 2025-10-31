@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Resources.Shaders;
-
 namespace Nexus.GameEngine.Graphics.Pipelines;
 
 /// <summary>

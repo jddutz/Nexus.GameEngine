@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Assets.Build.Models;
 using Nexus.GameEngine.Assets.Build.Management;
 
@@ -31,18 +30,18 @@ public class BuildIntegrationService(
 
         try
         {
-            _logger.LogInformation("Starting asset processing for platform: {Platform}, configuration: {Configuration}",
+            Log.Info("Starting asset processing for platform: {Platform}, configuration: {Configuration}",
                 request.TargetPlatform, request.Configuration);
 
             // Discover assets to process
             var assetFiles = DiscoverAssets(request);
-            _logger.LogInformation("Found {Count} assets to process", assetFiles.Count);
+            Log.Info("Found {assetFiles.Count} assets to process");
 
             if (assetFiles.Count == 0)
             {
                 result.Success = true;
                 result.EndTime = DateTime.UtcNow;
-                _logger.LogInformation("No assets to process");
+                Log.Info("No assets to process");
                 return result;
             }
 
@@ -51,14 +50,14 @@ public class BuildIntegrationService(
 
             // Check which assets need processing
             var contextsToProcess = FilterAssetsNeedingProcessing(contexts, request);
-            _logger.LogInformation("Processing {Count} assets (skipping {Skip} up-to-date assets)",
-                contextsToProcess.Count, contexts.Count - contextsToProcess.Count);
+            var skipped = contexts.Count - contextsToProcess.Count;
+            Log.Info("Processing {contextsToProcess.Count} assets (skipping {skipped} up-to-date assets)");
 
             if (contextsToProcess.Count == 0)
             {
                 result.Success = true;
                 result.EndTime = DateTime.UtcNow;
-                _logger.LogInformation("All assets are up-to-date");
+                Log.Info("All assets are up-to-date");
                 return result;
             }
 
@@ -88,8 +87,7 @@ public class BuildIntegrationService(
             result.Success = result.FailedAssets == 0;
             result.EndTime = DateTime.UtcNow;
 
-            _logger.LogInformation("Asset processing completed. Success: {Success}/{Total}, Errors: {Errors}",
-                result.SuccessfulAssets, result.ProcessedAssets, result.FailedAssets);
+            Log.Info($"Asset processing completed. Success: {result.SuccessfulAssets}/{result.ProcessedAssets}, Errors: {result.FailedAssets}");
 
             // Generate build manifest
             if (result.Success && request.GenerateManifest)
@@ -99,7 +97,7 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Asset processing failed");
+            Log.Exception(ex, "Asset processing failed");
             result.Success = false;
             result.Errors.Add($"Build failed: {ex.Message}");
             result.EndTime = DateTime.UtcNow;
@@ -125,7 +123,7 @@ public class BuildIntegrationService(
 
         try
         {
-            _logger.LogInformation("Cleaning assets for platform: {Platform}, configuration: {Configuration}",
+            Log.Info("Cleaning assets for platform: {Platform}, configuration: {Configuration}",
                 request.TargetPlatform, request.Configuration);
 
             var outputDir = GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration);
@@ -141,19 +139,18 @@ public class BuildIntegrationService(
                     foreach (var file in files)
                     {
                         File.Delete(file);
-                        _logger.LogDebug("Deleted: {File}", file);
+                        Log.Debug("Deleted: {File}", file);
                     }
                 });
 
                 // Remove empty directories
                 RemoveEmptyDirectories(outputDir);
 
-                _logger.LogInformation("Cleaned {Count} files from {Directory}",
-                    result.DeletedFiles, outputDir);
+                Log.Info($"Cleaned {result.DeletedFiles} files from {outputDir}");
             }
             else
             {
-                _logger.LogInformation("Output directory does not exist: {Directory}", outputDir);
+                Log.Info("Output directory does not exist: {Directory}", outputDir);
             }
 
             result.Success = true;
@@ -161,7 +158,7 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Asset cleaning failed");
+            Log.Exception(ex, "Asset cleaning failed");
             result.Success = false;
             result.ErrorMessage = ex.Message;
             result.EndTime = DateTime.UtcNow;
@@ -178,7 +175,7 @@ public class BuildIntegrationService(
         {
             if (!Directory.Exists(inputDir))
             {
-                _logger.LogWarning("Input directory does not exist: {Directory}", inputDir);
+                Log.Warning("Input directory does not exist: {Directory}", inputDir);
                 continue;
             }
 
@@ -213,7 +210,7 @@ public class BuildIntegrationService(
             var processors = _processorManager.GetProcessorsForAsset(assetFile, request.TargetPlatform);
             if (!processors.Any())
             {
-                _logger.LogDebug("No processor found for asset: {Asset}", assetFile);
+                Log.Debug("No processor found for asset: {Asset}", assetFile);
                 continue;
             }
 
@@ -290,7 +287,7 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Error checking if asset needs processing: {Asset}", context.InputPath);
+            Log.Exception(ex, "Error checking if asset needs processing: {Asset}", context.InputPath);
             return true; // Process on error to be safe
         }
     }
@@ -313,12 +310,12 @@ public class BuildIntegrationService(
             if (!Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
-                _logger.LogDebug("Removed empty directory: {Directory}", directory);
+                Log.Debug("Removed empty directory: {Directory}", directory);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to remove empty directory: {Directory}", directory);
+            Log.Exception(ex, "Failed to remove empty directory: {Directory}", directory);
         }
     }
 
@@ -349,11 +346,11 @@ public class BuildIntegrationService(
             await File.WriteAllTextAsync(manifestPath, json);
             result.ManifestFile = manifestPath;
 
-            _logger.LogInformation("Generated build manifest: {Manifest}", manifestPath);
+            Log.Info("Generated build manifest: {Manifest}", manifestPath);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to generate build manifest");
+            Log.Exception(ex, "Failed to generate build manifest");
         }
     }
 

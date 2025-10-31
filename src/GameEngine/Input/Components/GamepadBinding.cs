@@ -1,9 +1,3 @@
-using Nexus.GameEngine.Actions;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Runtime;
-
-using Silk.NET.Input;
-
 namespace Nexus.GameEngine.Input.Components;
 
 /// <summary>

@@ -1,5 +1,5 @@
 using Nexus.GameEngine.Actions;
-using Nexus.GameEngine.Components;
+using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Input.Components;
 using Silk.NET.Input;
 
@@ -14,7 +14,7 @@ public static partial class Templates
     /// MainMenu template defines the root component tree for the TestApp main menu.
     /// Includes the TestRunner and key bindings for toggling fullscreen and quitting the application.
     /// </summary>
-    public static readonly Component.Template MainMenu = new()
+    public static readonly Element.Template MainMenu = new()
     {
         // Set required properties here
         Name = "MainMenu",

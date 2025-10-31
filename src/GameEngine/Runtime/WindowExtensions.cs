@@ -1,6 +1,3 @@
-using Silk.NET.Maths;
-using Silk.NET.Windowing;
-
 namespace Nexus.GameEngine.Runtime;
 
 public static class WindowExtensions

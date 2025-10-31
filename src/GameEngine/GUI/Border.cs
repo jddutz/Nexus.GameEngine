@@ -1,10 +1,4 @@
-﻿using Silk.NET.Maths;
-
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI.Abstractions;
-using Nexus.GameEngine.Graphics;
-
-namespace Nexus.GameEngine.GUI.Components;
+﻿namespace Nexus.GameEngine.GUI;
 
 /// <summary>
 /// Component Template
@@ -17,8 +11,8 @@ public record BorderTemplate
 /// Runtime border component that implements event-driven rendering behavior.
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
-public partial class Border()
-    : UserInterfaceComponent
+public partial class Border(IPipelineManager pipelineManager, IResourceManager resources)
+    : Element(pipelineManager, resources)
 {
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]

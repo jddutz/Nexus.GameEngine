@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+﻿using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace Nexus.GameEngine.Graphics.Buffers;
 

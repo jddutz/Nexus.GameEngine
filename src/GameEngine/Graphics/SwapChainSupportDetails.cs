@@ -1,5 +1,3 @@
-using Silk.NET.Vulkan;
-
 /// <summary>
 /// Details about swap chain support for a physical device.
 /// </summary>

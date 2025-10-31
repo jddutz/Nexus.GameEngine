@@ -1,5 +1,3 @@
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Physics.Triggers;
 
 /// <summary>

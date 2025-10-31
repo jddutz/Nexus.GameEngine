@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
 
 namespace Nexus.GameEngine.Events;
 
@@ -63,7 +62,7 @@ public class EventBus(ILoggerFactory loggerFactory) : IEventBus
                     subscription.SubscriptionId,
                     ex);
 
-                _logger.LogDebug("Event handling error: {HandlingException}", handlingException);
+                Log.Debug($"Event handling error: {handlingException}");
                 EventHandlingError?.Invoke(handlingException);
             }
         }
@@ -116,7 +115,7 @@ public class EventBus(ILoggerFactory loggerFactory) : IEventBus
                     subscription.SubscriptionId,
                     ex);
 
-                _logger.LogDebug("Async event handling error: {HandlingException}", handlingException);
+                Log.Debug($"Async event handling error: {handlingException}");
                 EventHandlingError?.Invoke(handlingException);
             }
         }

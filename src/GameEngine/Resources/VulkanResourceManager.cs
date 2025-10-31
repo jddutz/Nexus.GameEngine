@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics;
-using Silk.NET.Vulkan;
-
 namespace Nexus.GameEngine.Resources;
 
 /// <summary>
@@ -46,11 +42,11 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
             if (_cache.TryGetValue(definition, out var cached))
             {
                 _cache[definition] = (cached.Resource, cached.RefCount + 1);
-                _logger.LogDebug("Resource cache hit: {DefinitionKey}", GetResourceKey(definition));
+                Log.Debug($"Resource cache hit: {GetResourceKey(definition)}");
                 return cached.Resource;
             }
             
-            _logger.LogDebug("Creating new resource: {DefinitionKey}", GetResourceKey(definition));
+            Log.Debug($"Creating new resource: {GetResourceKey(definition)}");
             
             // Create new resource (template method - implemented by subclass)
             var resource = CreateResource(definition);
@@ -73,7 +69,7 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
         {
             if (!_cache.TryGetValue(definition, out var cached))
             {
-                _logger.LogWarning("Attempted to release non-cached resource: {DefinitionKey}", GetResourceKey(definition));
+                Log.Warning($"Attempted to release non-cached resource: {GetResourceKey(definition)}");
                 return;
             }
             
@@ -82,12 +78,11 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
             if (newRefCount > 0)
             {
                 _cache[definition] = (cached.Resource, newRefCount);
-                _logger.LogDebug("Resource ref count decremented: {DefinitionKey}, RefCount={RefCount}", 
-                    GetResourceKey(definition), newRefCount);
+                Log.Debug($"Resource ref count decremented: {GetResourceKey(definition)}, RefCount={newRefCount}");
             }
             else
             {
-                _logger.LogDebug("Destroying resource (ref count reached zero): {DefinitionKey}", GetResourceKey(definition));
+                Log.Debug($"Destroying resource (ref count reached zero): {GetResourceKey(definition)}");
                 
                 // Destroy resource (template method - implemented by subclass)
                 DestroyResource(cached.Resource);
@@ -131,16 +126,14 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
     {
         lock (_lock)
         {
-            _logger.LogInformation("Disposing {ResourceManagerType}: {CachedCount} resources", 
-                GetType().Name, _cache.Count);
+            Log.Info($"Disposing {GetType().Name}: {_cache.Count} resources");
             
             // Destroy all cached resources
             foreach (var (definition, (resource, refCount)) in _cache)
             {
                 if (refCount > 1)
                 {
-                    _logger.LogWarning("Resource still has {RefCount} references during dispose: {DefinitionKey}", 
-                        refCount, GetResourceKey(definition));
+                    Log.Warning($"Resource still has {refCount} references during dispose: {GetResourceKey(definition)}");
                 }
                 
                 DestroyResource(resource);

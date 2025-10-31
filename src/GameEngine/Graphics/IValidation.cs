@@ -1,5 +1,3 @@
-using Silk.NET.Vulkan;
-
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>

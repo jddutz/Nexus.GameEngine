@@ -1,11 +1,3 @@
-using Microsoft.Extensions.Logging;
-
-using Nexus.GameEngine.Actions;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Runtime;
-
-using Silk.NET.Input;
-
 namespace Nexus.GameEngine.Input.Components;
 
 /// <summary>
@@ -60,7 +52,7 @@ public partial class KeyBinding(
 
         if (componentTemplate is Template template)
         {
-            Logger?.LogDebug("Binding KeyDown event for {Key}", template.Key);
+            Log.Debug($"Binding KeyDown event for {template.Key}");
             SetKey(template.Key);
             SetModifierKeys(template.ModifierKeys);
         }

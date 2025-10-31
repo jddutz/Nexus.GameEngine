@@ -1,23 +1,20 @@
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI.Abstractions;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Maths;
-
-namespace Nexus.GameEngine.GUI.Components;
+namespace Nexus.GameEngine.GUI.Layout;
 
 /// <summary>
 /// A layout component that arranges its children vertically.
 /// Child components are positioned one above the other with configurable spacing and alignment.
 /// </summary>
-public partial class VerticalLayout(IWindowService windowService)
-    : LayoutBase(windowService)
+public partial class VerticalLayout(
+    IPipelineManager pipelineManager,
+    IResourceManager resourceManager)
+    : Layout(pipelineManager, resourceManager)
 {
 
     /// <summary>
     /// Template for configuring VerticalLayout components.
     /// Defines the properties for arranging child components vertically.
     /// </summary>
-    public new record Template : LayoutBase.Template
+    public new record Template : Layout.Template
     {
         /// <summary>
         /// Horizontal alignment of child components within the layout.
@@ -27,7 +24,7 @@ public partial class VerticalLayout(IWindowService windowService)
         /// <summary>
         /// Spacing between child components in pixels.
         /// </summary>
-        public float Spacing { get; init; } = 0f;
+        public int Spacing { get; init; } = 0;
     }
 
     /// <summary>
@@ -38,12 +35,7 @@ public partial class VerticalLayout(IWindowService windowService)
     /// <summary>
     /// Spacing between child components in pixels.
     /// </summary>
-    public float Spacing { get; set; } = 0f;
-
-    /// <summary>
-    /// Padding around the layout container.
-    /// </summary>
-    public Padding Padding { get; set; } = Padding.Zero;
+    public int Spacing { get; set; } = 0;
 
     /// <summary>
     /// Configure this VerticalLayout using the specified template.
@@ -57,8 +49,6 @@ public partial class VerticalLayout(IWindowService windowService)
         {
             Alignment = template.Alignment;
             Spacing = template.Spacing;
-            Padding = template.Padding;
-            InvalidateLayout();
         }
     }
 
@@ -66,32 +56,49 @@ public partial class VerticalLayout(IWindowService windowService)
     /// Arranges child components vertically with spacing and alignment.
     /// </summary>
     /// <param name="children">Collection of UI child components to arrange</param>
-    protected override void OnLayout(IReadOnlyList<UserInterfaceComponent> children)
+    protected override void UpdateLayout()
     {
-        if (children.Count == 0)
-            return;
+        var children = GetChildren<Element>().ToArray();
 
-        float currentY = Padding.Top;
-        float maxWidth = children.Max(c => c.GetBounds().Size.X);
-
+        // Measure children
+        int maxHeight = 0;
+        int maxWidth = 0;
         foreach (var child in children)
         {
-            var childBounds = child.GetBounds();
+            if (child.Size.X > maxWidth) maxWidth = child.Size.X;
+            if (child.Size.Y > maxHeight) maxHeight = child.Size.Y;
+        }
 
-            // Calculate X position based on alignment
-            float x = Alignment switch
+        var pY = 0;
+
+        // Arrange children
+        foreach (var child in children)
+        {
+            // TODO: Calculate X based on alignment and LayoutMode
+            var x = Alignment switch
             {
                 HorizontalAlignment.Left => Padding.Left,
-                HorizontalAlignment.Center => Padding.Left + (maxWidth - childBounds.Size.X) / 2,
-                HorizontalAlignment.Right => Padding.Left + maxWidth - childBounds.Size.X,
+                HorizontalAlignment.Center => Padding.Left + (maxWidth - child.Bounds.Size.X) / 2,
+                HorizontalAlignment.Right => Padding.Left + maxWidth - child.Bounds.Size.X,
+                HorizontalAlignment.Stretch => Padding.Left,
                 _ => Padding.Left
             };
 
+            // TODO: Calculate Y based on alignment and LayoutMode
+            var y = pY;
+
+            // TODO: Calculate W based on LayoutMode
+            var w = child.Bounds.Size.X;
+
+            // TODO: Calculate H based on LayoutMode
+            var h = child.Bounds.Size.Y;
+
             // Set child bounds
-            child.SetBounds(new Rectangle<float>(x, currentY, childBounds.Size.X, childBounds.Size.Y));
+            var newBounds = new Rectangle<int>(x, y, w, h);
+            child.SetBounds(newBounds);
 
             // Move to next position
-            currentY += childBounds.Size.Y + Spacing;
+            pY += child.Bounds.Size.Y + Spacing;
         }
     }
 }

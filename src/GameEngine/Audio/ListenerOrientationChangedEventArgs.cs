@@ -1,5 +1,3 @@
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Audio;
 
 public class ListenerOrientationChangedEventArgs(Vector3D<float> oldForward, Vector3D<float> newForward, Vector3D<float> oldUp, Vector3D<float> newUp) : EventArgs

@@ -1,6 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
-using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Graphics.Commands;
 
@@ -112,7 +110,7 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error resetting command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
+                    Log.Exception(ex, $"Error resetting command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
         }
@@ -135,7 +133,7 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error trimming command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
+                    Log.Exception(ex, $"Error trimming command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
         }
@@ -262,7 +260,7 @@ public class CommandPoolManager : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error disposing command pool for queue family {QueueFamily}", pool.QueueFamilyIndex);
+                    Log.Exception(ex, $"Error disposing command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
 

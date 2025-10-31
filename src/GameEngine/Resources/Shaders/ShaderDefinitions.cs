@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Graphics;
-using Silk.NET.Vulkan;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using static Nexus.GameEngine.Graphics.Pipelines.VertexInputDescriptions;
@@ -26,7 +24,7 @@ public static class ShaderDefinitions
             "EmbeddedResources/Shaders/biaxial_gradient.vert.spv",
             "EmbeddedResources/Shaders/biaxial_gradient.frag.spv",
             GameEngineAssembly),
-        InputDescription = Position2D,
+        InputDescription = VertexInputDescriptions.Position2D,
         PushConstantRanges = null,
         DescriptorSetLayoutBindings =
         [
@@ -106,7 +104,7 @@ public static class ShaderDefinitions
             "EmbeddedResources/Shaders/linear_gradient.vert.spv",
             "EmbeddedResources/Shaders/linear_gradient.frag.spv",
             GameEngineAssembly),
-        InputDescription = Position2D,
+        InputDescription = VertexInputDescriptions.Position2D,
         PushConstantRanges =
         [
             new PushConstantRange
@@ -141,7 +139,7 @@ public static class ShaderDefinitions
             "EmbeddedResources/Shaders/radial_gradient.vert.spv",
             "EmbeddedResources/Shaders/radial_gradient.frag.spv",
             GameEngineAssembly),
-        InputDescription = Position2D,
+        InputDescription = VertexInputDescriptions.Position2D,
         PushConstantRanges =
         [
             new PushConstantRange
@@ -176,14 +174,15 @@ public static class ShaderDefinitions
             "EmbeddedResources/Shaders/uniform_color.vert.spv",
             "EmbeddedResources/Shaders/uniform_color.frag.spv",
             GameEngineAssembly),
-        InputDescription = Position2D,
+        InputDescription = VertexInputDescriptions.Position2D,
         PushConstantRanges =
         [
             new PushConstantRange
             {
+                // Vertex shader uses a mat4 (64 bytes) + vec4 (16 bytes) = 80 bytes
                 StageFlags = ShaderStageFlags.VertexBit,
                 Offset = 0,
-                Size = (uint)Unsafe.SizeOf<UniformColorPushConstants>() // 16 bytes
+                Size = (uint)Unsafe.SizeOf<TransformedColorPushConstants>() // 80 bytes
             }
         ],
         DescriptorSetLayoutBindings = null

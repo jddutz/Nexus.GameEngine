@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Buffers;
-
-namespace Nexus.GameEngine.Resources.Geometry;
+﻿namespace Nexus.GameEngine.Resources.Geometry;
 
 /// <summary>
 /// Implements geometry resource management with caching and reference counting.
@@ -27,7 +23,7 @@ public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition,
     /// <inheritdoc />
     protected override GeometryResource CreateResource(GeometryDefinition definition)
     {
-        _logger.LogDebug("Loading geometry data from source: {Name}", definition.Name);
+        Log.Debug("Loading geometry data from source: {Name}", definition.Name);
         
         // Load vertex data from source
         var sourceData = definition.Source.Load();
@@ -49,8 +45,7 @@ public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition,
         }
         
         // Create Vulkan vertex buffer
-        _logger.LogDebug("Creating vertex buffer: {Name}, VertexCount={VertexCount}, Stride={Stride}, Size={Size} bytes",
-            definition.Name, sourceData.VertexCount, sourceData.Stride, sourceData.VertexData.Length);
+        Log.Debug($"Creating vertex buffer: {definition.Name}, VertexCount={sourceData.VertexCount}, Stride={sourceData.Stride}, Size={sourceData.VertexData.Length} bytes");
         
         var (buffer, memory) = _bufferManager.CreateVertexBuffer(sourceData.VertexData);
         
@@ -65,7 +60,7 @@ public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition,
     /// <inheritdoc />
     protected override void DestroyResource(GeometryResource resource)
     {
-        _logger.LogDebug("Destroying geometry resource: {Name}", resource.Name);
+        Log.Debug("Destroying geometry resource: {Name}", resource.Name);
         _bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
     }
 }

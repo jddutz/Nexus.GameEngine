@@ -1,10 +1,9 @@
-using Nexus.GameEngine.Components;
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Graphics.Cameras;
 
 /// <summary>
-/// Simple orthographic camera for rendering UI components and textures. Fixed position and orientation, placed at high Z.
+/// Orthographic camera for UI rendering. Creates a pixel-to-NDC projection matrix
+/// that transforms pixel coordinates to normalized device coordinates.
+/// The viewport dimensions must be set via <see cref="SetViewportSize"/> before rendering.
 /// </summary>
 public partial class StaticCamera : RuntimeComponent, ICamera
 {
@@ -14,29 +13,28 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     public new record Template : RuntimeComponent.Template
     {
         /// <summary>
-        /// Size of the orthographic projection for UI rendering.
-        /// Large enough to accommodate various UI element sizes.
-        /// </summary>
-        public float OrthographicSize { get; set; } = 200000f;
-
-        /// <summary>
         /// Near clipping plane distance.
+        /// Default: -1 (UI elements can be at Z=0)
         /// </summary>
-        public float NearPlane { get; set; } = -50000f;
+        public float NearPlane { get; set; } = -1f;
 
         /// <summary>
         /// Far clipping plane distance.
+        /// Default: 1 (UI elements can be at Z=0)
         /// </summary>
-        public float FarPlane { get; set; } = 50000f;
+        public float FarPlane { get; set; } = 1f;
     }
 
-    // Static readonly properties - configured once at initialization
-    public float OrthographicSize { get; private set; } = 200000f;
-    public float NearPlane { get; private set; } = -50000f;
-    public float FarPlane { get; private set; } = 50000f;
+    // Viewport dimensions in pixels
+    private float _viewportWidth = 1920f;  // Default fallback
+    private float _viewportHeight = 1080f; // Default fallback
 
-    // Fixed position at high Z value to avoid conflicts with 3D objects
-    public Vector3D<float> Position { get; } = new Vector3D<float>(0, 0, 100000f);
+    // Clipping plane distances
+    public float NearPlane { get; private set; } = -1f;
+    public float FarPlane { get; private set; } = 1f;
+
+    // Fixed position for UI rendering (identity view matrix)
+    public Vector3D<float> Position { get; } = Vector3D<float>.Zero;
     public Vector3D<float> Forward { get; } = -Vector3D<float>.UnitZ;
     public Vector3D<float> Up { get; } = Vector3D<float>.UnitY;
     public Vector3D<float> Right { get; } = Vector3D<float>.UnitX;
@@ -44,20 +42,55 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     public Matrix4X4<float> ViewMatrix { get; private set; }
     public Matrix4X4<float> ProjectionMatrix { get; private set; }
 
-    public StaticCamera()
+    // Cached view-projection matrix
+    private Matrix4X4<float> _viewProjectionMatrix;
+    private bool _viewProjectionDirty = true;
+
+    /// <summary>
+    /// Updates the camera's projection matrix to match the viewport dimensions.
+    /// This should be called by the viewport whenever its size changes.
+    /// </summary>
+    /// <param name="width">Viewport width in pixels</param>
+    /// <param name="height">Viewport height in pixels</param>
+    public void SetViewportSize(float width, float height)
     {
+        if (Math.Abs(_viewportWidth - width) < 0.01f && Math.Abs(_viewportHeight - height) < 0.01f)
+            return; // No change
+
+        _viewportWidth = width;
+        _viewportHeight = height;
         InitializeMatrices();
     }
 
     private void InitializeMatrices()
     {
-        // Create view matrix looking down the negative Z axis
-        var target = Position + Forward;
-        ViewMatrix = Matrix4X4.CreateLookAt(Position, target, Up);
+        // Identity view matrix (UI coordinates are in screen space)
+        ViewMatrix = Matrix4X4<float>.Identity;
 
-        // Create a very large orthographic projection for UI rendering
-        // Use a large range to accommodate various UI element depths
-        ProjectionMatrix = Matrix4X4.CreateOrthographic(OrthographicSize, OrthographicSize, NearPlane, FarPlane);
+        // Create pixel-to-NDC orthographic projection
+        // CreateOrthographicOffCenter maps:
+        // (0, 0) in pixel space -> (-1, 1) in NDC (top-left)
+        // (width, height) in pixel space -> (1, -1) in NDC (bottom-right)
+        ProjectionMatrix = Matrix4X4.CreateOrthographicOffCenter(
+            0f,              // left
+            _viewportWidth,  // right
+            _viewportHeight, // bottom (flipped for Vulkan)
+            0f,              // top (flipped for Vulkan)
+            NearPlane,
+            FarPlane);
+
+        // Mark cached matrix as dirty
+        _viewProjectionDirty = true;
+    }
+
+    public Matrix4X4<float> GetViewProjectionMatrix()
+    {
+        if (_viewProjectionDirty)
+        {
+            _viewProjectionMatrix = ViewMatrix * ProjectionMatrix;
+            _viewProjectionDirty = false;
+        }
+        return _viewProjectionMatrix;
     }
 
     public bool IsVisible(Box3D<float> bounds)
@@ -68,16 +101,9 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     public Ray3D<float> ScreenToWorldRay(Vector2D<int> screenPoint, int screenWidth, int screenHeight)
     {
-        // Convert screen coordinates to world space for UI interaction
-        var normalizedX = (2.0f * screenPoint.X) / screenWidth - 1.0f;
-        var normalizedY = 1.0f - (2.0f * screenPoint.Y) / screenHeight;
-
-        // Calculate world position based on the large orthographic projection
-        var worldX = normalizedX * OrthographicSize * 0.5f;
-        var worldY = normalizedY * OrthographicSize * 0.5f;
-
-        // Ray origin is at the camera position offset by screen coordinates
-        var rayOrigin = Position + (Right * worldX) + (Up * worldY);
+        // For UI camera, screen coordinates ARE world coordinates (pixels)
+        // Ray origin is at the screen point in pixel space
+        var rayOrigin = new Vector3D<float>(screenPoint.X, screenPoint.Y, 0);
 
         // Ray direction is always forward for orthographic projection
         return new Ray3D<float>(rayOrigin, Forward);
@@ -85,38 +111,28 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     public Vector2D<int> WorldToScreenPoint(Vector3D<float> worldPoint, int screenWidth, int screenHeight)
     {
-        // Transform world point relative to camera position
-        var relativeToCamera = worldPoint - Position;
-
-        // Project onto camera's right and up vectors
-        var rightProjection = Vector3D.Dot(relativeToCamera, Right);
-        var upProjection = Vector3D.Dot(relativeToCamera, Up);
-
-        // Normalize based on the orthographic projection size
-        var normalizedX = rightProjection / (OrthographicSize * 0.5f);
-        var normalizedY = upProjection / (OrthographicSize * 0.5f);
-
-        // Convert to screen coordinates
-        var screenX = (int)((normalizedX + 1.0f) * 0.5f * screenWidth);
-        var screenY = (int)((1.0f - normalizedY) * 0.5f * screenHeight);
-
-        return new Vector2D<int>(screenX, screenY);
+        // For UI camera, world coordinates (pixels) ARE screen coordinates
+        return new Vector2D<int>((int)worldPoint.X, (int)worldPoint.Y);
     }
 
     /// <summary>
     /// Configure the component using the specified template.
-    /// Static camera properties are set once during configuration and never change.
     /// </summary>
     protected override void OnLoad(Configurable.Template? componentTemplate)
     {
         if (componentTemplate is Template template)
         {
-            OrthographicSize = template.OrthographicSize;
             NearPlane = template.NearPlane;
             FarPlane = template.FarPlane;
-
-            // Initialize matrices with configured values
-            InitializeMatrices();
         }
+    }
+
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+
+        // Initialize matrices with default viewport size
+        // Viewport will call SetViewportSize() with actual dimensions
+        InitializeMatrices();
     }
 }

@@ -1,10 +1,5 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Vulkan;
 using System.Runtime.InteropServices;
 
 namespace Nexus.GameEngine.Graphics;
@@ -95,7 +90,7 @@ public unsafe class Renderer(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception occurred during Render loop");
+            Log.Exception(ex, "Exception occurred during Render loop");
             windowService.GetWindow().Close();
         }
     }
@@ -472,6 +467,19 @@ public unsafe class Renderer(
                     commandBuffer,
                     pipelineLayout,
                     ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,  // Both shaders access push constants
+                    0,  // offset
+                    size,
+                    dataPtr);
+                break;
+            }
+            case TransformedColorPushConstants transformedColor:
+            {
+                var size = (uint)Marshal.SizeOf<TransformedColorPushConstants>();
+                var dataPtr = &transformedColor;
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    pipelineLayout,
+                    ShaderStageFlags.VertexBit,  // Vertex shader reads the matrix and color
                     0,  // offset
                     size,
                     dataPtr);

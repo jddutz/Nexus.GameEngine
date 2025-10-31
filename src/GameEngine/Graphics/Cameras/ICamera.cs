@@ -1,6 +1,3 @@
-using Nexus.GameEngine.Components;
-using Silk.NET.Maths;
-
 namespace Nexus.GameEngine.Graphics.Cameras;
 
 public interface ICamera : IRuntimeComponent
@@ -15,6 +12,14 @@ public interface ICamera : IRuntimeComponent
     /// Gets the projection matrix used to project 3D coordinates to 2D screen space.
     /// </summary>
     Matrix4X4<float> ProjectionMatrix { get; }
+
+    /// <summary>
+    /// Gets the combined view-projection matrix (ViewMatrix * ProjectionMatrix).
+    /// This is commonly used for transforming vertices from world space to NDC.
+    /// Implementations should cache this value to avoid recomputing every frame.
+    /// </summary>
+    /// <returns>The combined view-projection transformation matrix</returns>
+    Matrix4X4<float> GetViewProjectionMatrix();
 
     /// <summary>
     /// Gets the camera's position in world space.

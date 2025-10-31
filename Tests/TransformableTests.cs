@@ -446,7 +446,7 @@ public class TransformableTests
 
         // Act
         var transform = new Transformable();
-        transform.Configure(template);
+        transform.Load(template);
 
         // Assert
         Assert.Equal(template.Position, transform.Position);

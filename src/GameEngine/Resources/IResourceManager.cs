@@ -1,8 +1,3 @@
-using Nexus.GameEngine.Resources.Fonts;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
-using Nexus.GameEngine.Resources.Textures;
-
 namespace Nexus.GameEngine.Resources;
 
 /// <summary>

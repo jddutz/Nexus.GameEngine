@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Graphics.Cameras;
-
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
@@ -39,4 +37,12 @@ public readonly struct RenderContext
     /// Can be used for time-based animations or effects during rendering.
     /// </summary>
     public required double DeltaTime { get; init; }
+
+    /// <summary>
+    /// Gets the combined view-projection matrix from the camera.
+    /// Cached by the camera to avoid recomputing every frame.
+    /// UI components can use this to transform pixel-space vertices to NDC in shaders.
+    /// </summary>
+    public Matrix4X4<float> ViewProjectionMatrix => 
+        Camera?.GetViewProjectionMatrix() ?? Matrix4X4<float>.Identity;
 }

@@ -2,9 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 
 namespace Nexus.GameEngine.Graphics;
@@ -76,7 +74,7 @@ public unsafe class Validation : IValidation
                       .AppendLine($"  {string.Join("\n  ", _layerNames)}");
                 }
 
-                logger.LogInformation(sb.ToString());
+                Log.Info(sb.ToString());
             }
             
             // In production/release mode without debugger, be completely quiet
@@ -88,58 +86,58 @@ public unsafe class Validation : IValidation
         {
             if (!debuggerAttached)
             {
-                logger.LogWarning("=== VALIDATION LAYERS ENABLED (NO DEBUGGER) ===");
-                logger.LogWarning("Performance impact: Validation layers cause significant performance degradation");
-                logger.LogWarning("For production deployment, disable validation layers:");
-                logger.LogWarning("1. Set 'EnableValidationLayers: false' in GraphicsSettings configuration");
-                logger.LogWarning("2. This improves runtime performance substantially");
+                Log.Warning("=== VALIDATION LAYERS ENABLED (NO DEBUGGER) ===");
+                Log.Warning("Performance impact: Validation layers cause significant performance degradation");
+                Log.Warning("For production deployment, disable validation layers:");
+                Log.Warning("1. Set 'EnableValidationLayers: false' in GraphicsSettings configuration");
+                Log.Warning("2. This improves runtime performance substantially");
             }
             else
             {
-                logger.LogInformation("=== VALIDATION LAYERS ENABLED (DEBUGGER DETECTED) ===");
-                logger.LogInformation("Development mode: Validation layers active for debugging");
+                Log.Info("=== VALIDATION LAYERS ENABLED (DEBUGGER DETECTED) ===");
+                Log.Info("Development mode: Validation layers active for debugging");
             }
 
             // Check if SDK validation layers are available
             if (_layerNames.Length == 0)
             {
-                logger.LogError("=== VULKAN SDK VALIDATION LAYERS REQUIRED ===");
-                logger.LogError("Validation is enabled but no SDK validation layers are available.");
-                logger.LogError("Available layers on this system: GPU driver layers only");
-                logger.LogError("SDK validation layers (like VK_LAYER_KHRONOS_validation) are required for validation.");
-                logger.LogError("");
-                logger.LogError("To install SDK validation layers:");
-                logger.LogError("1. Download Vulkan SDK from: https://vulkan.lunarg.com/sdk/home");
-                logger.LogError("2. Install the SDK for your platform");
-                logger.LogError("3. Restart your development environment");
-                logger.LogError("4. Verification: Run 'vulkaninfo' and check for validation layers");
-                logger.LogError("");
-                logger.LogError("Note: GPU driver layers alone cannot provide validation functionality.");
+                Log.Error("=== VULKAN SDK VALIDATION LAYERS REQUIRED ===");
+                Log.Error("Validation is enabled but no SDK validation layers are available.");
+                Log.Error("Available layers on this system: GPU driver layers only");
+                Log.Error("SDK validation layers (like VK_LAYER_KHRONOS_validation) are required for validation.");
+                Log.Error("");
+                Log.Error("To install SDK validation layers:");
+                Log.Error("1. Download Vulkan SDK from: https://vulkan.lunarg.com/sdk/home");
+                Log.Error("2. Install the SDK for your platform");
+                Log.Error("3. Restart your development environment");
+                Log.Error("4. Verification: Run 'vulkaninfo' and check for validation layers");
+                Log.Error("");
+                Log.Error("Note: GPU driver layers alone cannot provide validation functionality.");
                 return;
             }
 
             // Configure validation layers
-            logger.LogInformation("Configuration: Available layers: [{Layers}]", string.Join(", ", _layerNames));
+            Log.Info($"Configuration: Available layers: [{string.Join(", ", _layerNames)}]");
 
             _vk = vk;
             _instance = instance;
 
-            logger.LogDebug("Setting up debug messenger...");
+            Log.Debug("Setting up debug messenger...");
             
             ExtDebugUtils debugUtils;
             if (!vk.TryGetInstanceExtension(instance, out debugUtils))
             {
-                logger.LogError("VK_EXT_debug_utils extension not available");
-                logger.LogError("Validation messages will not be captured!");
+                Log.Error("VK_EXT_debug_utils extension not available");
+                Log.Error("Validation messages will not be captured!");
                 return;
             }
             
             _debugUtils = debugUtils;
-            logger.LogDebug("VK_EXT_debug_utils extension acquired");
+            Log.Debug("VK_EXT_debug_utils extension acquired");
 
             CreateDebugMessenger();
             _isInitialized = true;
-            logger.LogInformation("Validation layers initialized successfully - debug messenger active");
+            Log.Info("Validation layers initialized successfully - debug messenger active");
         }
     }
 
@@ -169,9 +167,9 @@ public unsafe class Validation : IValidation
         
         if (shouldLogDetails)
         {
-            logger.LogInformation("=== VULKAN SDK VALIDATION LAYER DETECTION ===");
-            logger.LogInformation("Configuration: EnableValidationLayers={EnableValidationLayers}", _vkSettings.EnableValidationLayers);
-            logger.LogInformation("Requested layer patterns: [{Patterns}]", string.Join(", ", _vkSettings.EnabledValidationLayers));
+            Log.Info("=== VULKAN SDK VALIDATION LAYER DETECTION ===");
+            Log.Info($"Configuration: EnableValidationLayers={_vkSettings.EnableValidationLayers}");
+            Log.Info($"Requested layer patterns: [{string.Join(", ", _vkSettings.EnabledValidationLayers)}]");
         }
 
         var vk = Vk.GetApi();
@@ -181,19 +179,19 @@ public unsafe class Validation : IValidation
         
         if (shouldLogDetails)
         {
-            logger.LogDebug("EnumerateInstanceLayerProperties (count query) returned: {Result}, LayerCount: {Count}", enumResult, layerCount);
+            Log.Debug($"EnumerateInstanceLayerProperties (count query) returned: {enumResult}, LayerCount: {layerCount}");
         }
 
         if (layerCount == 0)
         {
             if (_vkSettings.EnableValidationLayers)
             {
-                logger.LogError("[X] NO VULKAN LAYERS FOUND - SDK installation required for validation");
-                logger.LogError("To install the Vulkan SDK:");
-                logger.LogError("  1. Download from: https://vulkan.lunarg.com/sdk/home");
-                logger.LogError("  2. Install for your platform (Windows/Linux/macOS)");
-                logger.LogError("  3. Restart your development environment");
-                logger.LogError("  4. Verify installation with 'vulkaninfo' command");
+                Log.Error("[X] NO VULKAN LAYERS FOUND - SDK installation required for validation");
+                Log.Error("To install the Vulkan SDK:");
+                Log.Error("  1. Download from: https://vulkan.lunarg.com/sdk/home");
+                Log.Error("  2. Install for your platform (Windows/Linux/macOS)");
+                Log.Error("  3. Restart your development environment");
+                Log.Error("  4. Verify installation with 'vulkaninfo' command");
             }
             // Be completely quiet if validation disabled and no debugger
             return [];
@@ -201,14 +199,14 @@ public unsafe class Validation : IValidation
 
         if (shouldLogDetails)
         {
-            logger.LogInformation("Found {LayerCount} total Vulkan layers on system", layerCount);
+            Log.Info($"Found {layerCount} total Vulkan layers on system");
         }
 
         var availableLayers = new LayerProperties[layerCount];
         fixed (LayerProperties* pAvailableLayers = availableLayers)
         {
             enumResult = vk.EnumerateInstanceLayerProperties(&layerCount, pAvailableLayers);
-            logger.LogDebug("EnumerateInstanceLayerProperties (data query) returned: {Result}", enumResult);
+            Log.Debug($"EnumerateInstanceLayerProperties (data query) returned: {enumResult}");
         }
 
         var availableLayerNames = new List<string>();
@@ -230,7 +228,7 @@ public unsafe class Validation : IValidation
                 validationLayers.Add(layerName);
                 if (shouldLogDetails)
                 {
-                    logger.LogInformation("[+] Found VALIDATION layer: {Layer} (v{Version}) - {Description}", layerName, version, description);
+                    Log.Info($"[+] Found VALIDATION layer: {layerName} (v{version}) - {description}");
                 }
             }
             else
@@ -238,7 +236,7 @@ public unsafe class Validation : IValidation
                 driverLayers.Add(layerName);
                 if (shouldLogDetails)
                 {
-                    logger.LogDebug("[D] Found DRIVER layer: {Layer} (v{Version}) - {Description}", layerName, version, description);
+                    Log.Debug($"[D] Found DRIVER layer: {layerName} (v{version}) - {description}");
                 }
             }
         }
@@ -247,10 +245,10 @@ public unsafe class Validation : IValidation
 
         if (shouldLogDetails)
         {
-            logger.LogInformation("=== LAYER ANALYSIS ===");
-            logger.LogInformation("Total layers found: {Total}", layerCount);
-            logger.LogInformation("Validation layers: {Count} [{Layers}]", validationLayers.Count, string.Join(", ", validationLayers));
-            logger.LogInformation("Driver/GPU layers: {Count} [{Layers}]", driverLayers.Count, string.Join(", ", driverLayers));
+            Log.Info("=== LAYER ANALYSIS ===");
+            Log.Info($"Total layers found: {layerCount}");
+            Log.Info($"Validation layers: {validationLayers.Count} [{string.Join(", ", validationLayers)}]");
+            Log.Info($"Driver/GPU layers: {driverLayers.Count} [{string.Join(", ", driverLayers)}]");
         }
 
         // Check for SDK installation indicators
@@ -260,13 +258,13 @@ public unsafe class Validation : IValidation
 
         if (hasSdkLayers && shouldLogDetails)
         {
-            logger.LogInformation("[+] VULKAN SDK DETECTED: Standard validation layers are available");
+            Log.Info("[+] VULKAN SDK DETECTED: Standard validation layers are available");
         }
         else if (_vkSettings.EnableValidationLayers)
         {
             // Only warn about missing SDK when validation is enabled
-            logger.LogWarning("[!] VULKAN SDK NOT DETECTED: Only GPU driver layers found");
-            logger.LogWarning("For development, install the Vulkan SDK from: https://vulkan.lunarg.com/sdk/home");
+            Log.Warning("[!] VULKAN SDK NOT DETECTED: Only GPU driver layers found");
+            Log.Warning("For development, install the Vulkan SDK from: https://vulkan.lunarg.com/sdk/home");
         }
         // Be completely quiet if validation disabled and no debugger
 
@@ -275,8 +273,8 @@ public unsafe class Validation : IValidation
         {
             if (shouldLogDetails)
             {
-                logger.LogInformation("=== PRIORITY-BASED LAYER SELECTION ===");
-                logger.LogDebug("Wildcard '*' detected - using priority-based layer selection");
+                Log.Info("=== PRIORITY-BASED LAYER SELECTION ===");
+                Log.Debug("Wildcard '*' detected - using priority-based layer selection");
             }
 
             // Try each priority set until we find one where all layers are available
@@ -285,7 +283,7 @@ public unsafe class Validation : IValidation
             {
                 if (shouldLogDetails)
                 {
-                    logger.LogDebug("Trying priority set {Index}: [{Layers}]", priorityIndex, string.Join(", ", layerSet));
+                    Log.Debug($"Trying priority set {priorityIndex}: [{string.Join(", ", layerSet)}]");
                 }
                 
                 var missingLayers = layerSet.Where(layer => !availableLayerNamesSet.Contains(layer)).ToList();
@@ -294,8 +292,8 @@ public unsafe class Validation : IValidation
                 {
                     if (shouldLogDetails)
                     {
-                        logger.LogInformation("[+] PRIORITY SET {Index} MATCHED: [{Layers}]", priorityIndex, string.Join(", ", layerSet));
-                        logger.LogInformation("Selected validation layers (priority match): {Layers}", string.Join(", ", layerSet));
+                        Log.Info($"[+] PRIORITY SET {priorityIndex} MATCHED: [{string.Join(", ", layerSet)}]");
+                        Log.Info($"Selected validation layers (priority match): {string.Join(", ", layerSet)}");
                     }
                     return layerSet;
                 }
@@ -303,7 +301,7 @@ public unsafe class Validation : IValidation
                 {
                     if (shouldLogDetails)
                     {
-                        logger.LogDebug("[-] Priority set {Index} incomplete - missing: [{Missing}]", priorityIndex, string.Join(", ", missingLayers));
+                        Log.Debug($"[-] Priority set {priorityIndex} incomplete - missing: [{string.Join(", ", missingLayers)}]");
                     }
                 }
                 
@@ -312,9 +310,9 @@ public unsafe class Validation : IValidation
 
             if (_vkSettings.EnableValidationLayers)
             {
-                logger.LogWarning("[-] NO PRIORITY VALIDATION LAYER SET FOUND");
-                logger.LogWarning("Available layers: [{Available}]", string.Join(", ", availableLayerNames));
-                logger.LogWarning("None of the predefined validation layer sets are completely available on this system.");
+                Log.Warning("[-] NO PRIORITY VALIDATION LAYER SET FOUND");
+                Log.Warning("Available layers: [{Available}]", string.Join(", ", availableLayerNames));
+                Log.Warning("None of the predefined validation layer sets are completely available on this system.");
             }
             // Be quiet if validation disabled and no debugger
             return [];
@@ -333,13 +331,13 @@ public unsafe class Validation : IValidation
                 {
                     // Convert wildcard to regex: * -> .*
                     regexPattern = "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$";
-                    logger.LogDebug("Pattern '{Pattern}' converted to regex: {Regex}", pattern, regexPattern);
+                    Log.Debug($"Pattern '{pattern}' converted to regex: {regexPattern}");
                 }
                 else if (pattern.Contains('.') || pattern.Contains('[') || pattern.Contains('^'))
                 {
                     // Looks like a regex pattern
                     regexPattern = pattern;
-                    logger.LogDebug("Using pattern as regex: {Pattern}", pattern);
+                    Log.Debug($"Using pattern as regex: {pattern}");
                 }
                 else
                 {
@@ -347,11 +345,11 @@ public unsafe class Validation : IValidation
                     if (availableLayerNames.Contains(pattern))
                     {
                         selectedLayers.Add(pattern);
-                        logger.LogDebug("Exact match found: {Layer}", pattern);
+                        Log.Debug($"Exact match found: {pattern}");
                     }
                     else
                     {
-                        logger.LogWarning("Requested layer '{Layer}' not available on this system", pattern);
+                        Log.Warning($"Requested layer '{pattern}' not available on this system");
                     }
                     continue;
                 }
@@ -365,21 +363,20 @@ public unsafe class Validation : IValidation
                     if (matches.Count > 0)
                     {
                         selectedLayers.AddRange(matches);
-                        logger.LogDebug("Pattern '{Pattern}' matched {Count} layer(s): {Layers}",
-                            pattern, matches.Count, string.Join(", ", matches));
+                        Log.Debug($"Pattern '{pattern}' matched {matches.Count} layer(s): {string.Join(", ", matches)}");
                     }
                     else
                     {
-                        logger.LogWarning("Pattern '{Pattern}' did not match any available layers", pattern);
+                        Log.Warning($"Pattern '{pattern}' did not match any available layers");
                     }
                 }
                 catch (RegexMatchTimeoutException)
                 {
-                    logger.LogError("Regex pattern '{Pattern}' timed out during matching", pattern);
+                    Log.Error($"Regex pattern '{pattern}' timed out during matching");
                 }
                 catch (ArgumentException ex)
                 {
-                    logger.LogError(ex, "Invalid regex pattern '{Pattern}': {Message}", pattern, ex.Message);
+                    Log.Exception(ex, $"Invalid regex pattern '{pattern}': {ex.Message}");
                 }
             }
 
@@ -388,28 +385,28 @@ public unsafe class Validation : IValidation
 
             if (distinctLayers.Length > 0)
             {
-                logger.LogInformation("Selected validation layers (pattern match): {Layers}", string.Join(", ", distinctLayers));
+                Log.Info($"Selected validation layers (pattern match): {string.Join(", ", distinctLayers)}");
                 return distinctLayers;
             }
             else
             {
-                logger.LogWarning("No validation layers matched the configured patterns");
+                Log.Warning("No validation layers matched the configured patterns");
                 return [];
             }
         }
 
         // No configuration provided - use priority-based selection as fallback
-        logger.LogDebug("No validation layer configuration - using priority-based selection");
+                Log.Debug("No validation layer configuration - using priority-based selection");
         foreach (var layerSet in ValidationLayerPriority)
         {
             if (layerSet.All(availableLayerNames.Contains))
             {
-                logger.LogInformation("Selected validation layers (default priority): {Layers}", string.Join(", ", layerSet));
+                Log.Info($"Selected validation layers (default priority): {string.Join(", ", layerSet)}");
                 return layerSet;
             }
         }
 
-        logger.LogWarning("No validation layers available");
+        Log.Warning("No validation layers available");
         return [];
     }
 
@@ -418,7 +415,7 @@ public unsafe class Validation : IValidation
     /// </summary>
     private void CreateDebugMessenger()
     {
-        logger.LogInformation("=== CREATING VULKAN DEBUG MESSENGER ===");
+        Log.Info("=== CREATING VULKAN DEBUG MESSENGER ===");
         
         var severityFlags = DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
 
@@ -426,32 +423,32 @@ public unsafe class Validation : IValidation
         if (logger.IsEnabled(LogLevel.Trace) || logger.IsEnabled(LogLevel.Debug))
         {
             severityFlags |= DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt;
-            logger.LogDebug("[+] Enabled VERBOSE validation messages (LogLevel.Trace/Debug)");
+            Log.Debug("[+] Enabled VERBOSE validation messages (LogLevel.Trace/Debug)");
         }
 
         if (logger.IsEnabled(LogLevel.Information))
         {
             severityFlags |= DebugUtilsMessageSeverityFlagsEXT.InfoBitExt;
-            logger.LogDebug("[+] Enabled INFO validation messages (LogLevel.Information)");
+            Log.Debug("[+] Enabled INFO validation messages (LogLevel.Information)");
         }
 
         if (logger.IsEnabled(LogLevel.Warning))
         {
             severityFlags |= DebugUtilsMessageSeverityFlagsEXT.WarningBitExt;
-            logger.LogDebug("[+] Enabled WARNING validation messages (LogLevel.Warning)");
+            Log.Debug("[+] Enabled WARNING validation messages (LogLevel.Warning)");
         }
         
-        logger.LogDebug("[+] Enabled ERROR validation messages (always enabled)");
-        logger.LogInformation("Debug messenger severity flags: {Flags}", severityFlags);
+        Log.Debug("[+] Enabled ERROR validation messages (always enabled)");
+    Log.Info($"Debug messenger severity flags: {severityFlags}");
 
         var messageTypes = DebugUtilsMessageTypeFlagsEXT.GeneralBitExt |
                           DebugUtilsMessageTypeFlagsEXT.ValidationBitExt |
                           DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt;
                           
-        logger.LogInformation("Debug messenger message types: {Types}", messageTypes);
-        logger.LogDebug("  - GENERAL: System-level messages");
-        logger.LogDebug("  - VALIDATION: API usage validation errors");
-        logger.LogDebug("  - PERFORMANCE: Performance-related warnings");
+    Log.Info($"Debug messenger message types: {messageTypes}");
+        Log.Debug("  - GENERAL: System-level messages");
+        Log.Debug("  - VALIDATION: API usage validation errors");
+        Log.Debug("  - PERFORMANCE: Performance-related warnings");
 
         var createInfo = new DebugUtilsMessengerCreateInfoEXT
         {
@@ -461,21 +458,21 @@ public unsafe class Validation : IValidation
             PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback
         };
 
-        logger.LogDebug("Creating debug messenger with Vulkan API...");
+        Log.Debug("Creating debug messenger with Vulkan API...");
         fixed (DebugUtilsMessengerEXT* pMessenger = &_debugMessenger)
         {
             var result = _debugUtils!.CreateDebugUtilsMessenger(_instance, &createInfo, null, pMessenger);
 
             if (result != Result.Success)
             {
-                logger.LogError("[-] FAILED TO CREATE DEBUG MESSENGER: {Result}", result);
-                logger.LogError("Validation messages will not be captured!");
+                Log.Error($"[-] FAILED TO CREATE DEBUG MESSENGER: {result}");
+                Log.Error("Validation messages will not be captured!");
                 throw new Exception($"Failed to create debug messenger: {result}");
             }
         }
 
-        logger.LogInformation("[+] DEBUG MESSENGER CREATED SUCCESSFULLY (Handle: {Handle})", _debugMessenger.Handle);
-        logger.LogInformation("[*] Validation layer setup complete - ready to capture validation messages!");
+        Log.Info($"[+] DEBUG MESSENGER CREATED SUCCESSFULLY (Handle: {_debugMessenger.Handle})");
+        Log.Info("[*] Validation layer setup complete - ready to capture validation messages!");
     }
 
     /// <summary>
@@ -509,7 +506,7 @@ public unsafe class Validation : IValidation
             _ => "[DEBUG] VULKAN"
         };
 
-        logger.Log(logLevel, "{Icon} [{MessageType}] {Message}", severityIcon, messageTypes, message);
+    logger.Log(logLevel, $"{severityIcon} [{messageTypes}] {message}");
 
 
         return Vk.False;
@@ -520,7 +517,7 @@ public unsafe class Validation : IValidation
         if (_isInitialized && _debugMessenger.Handle != 0)
         {
             _debugUtils!.DestroyDebugUtilsMessenger(_instance, _debugMessenger, null);
-            logger.LogDebug("Debug messenger destroyed");
+            Log.Debug("Debug messenger destroyed");
         }
 
         _debugUtils?.Dispose();

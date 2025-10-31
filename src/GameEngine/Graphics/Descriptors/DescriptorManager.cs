@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Silk.NET.Vulkan;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace Nexus.GameEngine.Graphics.Descriptors;
 

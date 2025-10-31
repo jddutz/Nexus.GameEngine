@@ -1,7 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Vulkan;
+﻿using Microsoft.Extensions.Options;
 using Silk.NET.Vulkan.Extensions.KHR;
 
 using Semaphore = Silk.NET.Vulkan.Semaphore;

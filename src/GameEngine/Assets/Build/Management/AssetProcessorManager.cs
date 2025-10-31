@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Assets.Build.Models;
 
 namespace Nexus.GameEngine.Assets.Build.Management;
@@ -24,10 +23,10 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
         {
             if (!_processors.Contains(processor))
             {
+                var extensions = string.Join(", ", processor.SupportedExtensions);
                 _processors.Add(processor);
                 _processors.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-                _logger.LogDebug("Registered asset processor with priority {Priority} for extensions: {Extensions}",
-                    processor.Priority, string.Join(", ", processor.SupportedExtensions));
+                Log.Debug($"Registered asset processor with priority {processor.Priority} for extensions: {extensions}");
             }
         }
     }
@@ -45,7 +44,7 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
         {
             if (_processors.Remove(processor))
             {
-                _logger.LogDebug("Unregistered asset processor for extensions: {Extensions}",
+                Log.Debug("Unregistered asset processor for extensions: {Extensions}",
                     string.Join(", ", processor.SupportedExtensions));
             }
         }
@@ -84,8 +83,7 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
 
         if (processor == null)
         {
-            _logger.LogWarning("No processor found for asset: {Asset} (platform: {Platform})",
-                context.InputPath, context.TargetPlatform);
+            Log.Warning($"No processor found for asset: {context.InputPath} (platform: {context.TargetPlatform})");
 
             return new AssetProcessingResult
             {
@@ -96,7 +94,7 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
 
         try
         {
-            _logger.LogDebug("Processing asset {Asset} with {ProcessorType}",
+            Log.Debug("Processing asset {Asset} with {ProcessorType}",
                 context.InputPath, processor.GetType().Name);
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -107,20 +105,19 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
 
             if (result.Success)
             {
-                _logger.LogDebug("Successfully processed asset {Asset} in {Time}ms",
-                    context.InputPath, result.ProcessingTime.TotalMilliseconds);
+                Log.Debug($"Successfully processed asset {context.InputPath} in {result.ProcessingTime.TotalMilliseconds}ms");
             }
             else
             {
-                _logger.LogError("Failed to process asset {Asset}: {Error}",
-                    context.InputPath, result.ErrorMessage);
+                Log.Error("Failed to process asset {Asset}: {Error}",
+                    context.InputPath, result.ErrorMessage ?? "Unknown Error");
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception occurred while processing asset {Asset}", context.InputPath);
+            Log.Exception(ex, "Exception occurred while processing asset {context.InputPath}");
 
             return new AssetProcessingResult
             {
@@ -193,7 +190,7 @@ public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAss
         {
             var count = _processors.Count;
             _processors.Clear();
-            _logger.LogDebug("Cleared {Count} registered processors", count);
+            Log.Debug($"Cleared {count} registered processors");
         }
     }
 

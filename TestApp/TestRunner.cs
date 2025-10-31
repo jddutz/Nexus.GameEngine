@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Windowing;
@@ -18,12 +17,12 @@ namespace TestApp;
 /// </summary>
 public partial class TestRunner : RuntimeComponent
 {
-    private readonly IWindow window;
-
     /// <summary>
     /// Configuration template for the TestRunner component.
     /// </summary>
     public new record Template : RuntimeComponent.Template { }
+
+    private readonly IWindow window;
 
     private readonly List<ComponentTest> tests = [];
     private readonly Stopwatch stopwatch = new();
@@ -139,19 +138,8 @@ public partial class TestRunner : RuntimeComponent
 
             foreach (var result in results)
             {
-                if (!string.IsNullOrEmpty(test.TestName))
-                    Logger?.LogTrace("{TestName}", test.TestName);
-
-                if (!string.IsNullOrEmpty(test.Description))
-                    Logger?.LogTrace("{Description}", test.Description);
-
-                Logger?.LogInformation(
-                    "[{PassOrFail}]{TestName} {Description}: Expected {Expected}, Actual {Actual}",
-                    result.Passed ? "Pass" : "Fail",
-                    test.TestName,
-                    test.Description,
-                    result.ExpectedResult,
-                    result.ActualResult
+                Nexus.GameEngine.Log.Info(
+                    $"[{(result.Passed ? "Pass" : "Fail")}]{test.TestName} {test.Description}: Expected {result.ExpectedResult}, Actual {result.ActualResult}"
                 );
 
                 if (result.Passed)
@@ -165,27 +153,18 @@ public partial class TestRunner : RuntimeComponent
             }
         }
 
-        const string RESULTS_SUMMARY = "\n=== TEST RUN SUMMARY ===\n"
-            + "Test Components Discovered: {TestComponents}\n"
-            + "Number of Test Results: {TotalCount}\n"
-            + "Passed: {PassCount}\n"
-            + "Failed: {FailCount}\n"
-            + "Total Time: {TotalTime:F2}ms\n"
-            + "Frames Rendered: {FramesRendered}\n"
-            + "Avg FPS: {AverageFPS:F0}\n"
-            + "Overall Result: {OverallResult}";
+        var resultsSummary = $"Test run complete!\n"
+            + $"====== SUMMARY ======\n"
+            + $"Test Components Discovered: {tests.Count}\n"
+            + $"Number of Test Results: {passed.Count + failed.Count}\n"
+            + $"Passed: {passed.Count}\n"
+            + $"Failed: {failed.Count}\n"
+            + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
+            + $"Frames Rendered: {framesRendered}\n"
+            + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds}\n"
+            + $"Overall Result: {(passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]")}";
 
-        Logger?.LogInformation(
-            RESULTS_SUMMARY,
-            tests.Count,
-            passed.Count + failed.Count,
-            passed.Count,
-            failed.Count,
-            stopwatch.ElapsedMilliseconds,
-            framesRendered,
-            framesRendered / stopwatch.Elapsed.TotalSeconds,
-            passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]"
-            );
+        Nexus.GameEngine.Log.Debug(resultsSummary);
 
         // Set exit code
         Environment.ExitCode = failed.Count == 0 ? 0 : 1;

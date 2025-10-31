@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using VkCommandPool = Silk.NET.Vulkan.CommandPool;
-using Silk.NET.Vulkan;
+﻿using VkCommandPool = Silk.NET.Vulkan.CommandPool;
 
 namespace Nexus.GameEngine.Graphics.Commands;
 

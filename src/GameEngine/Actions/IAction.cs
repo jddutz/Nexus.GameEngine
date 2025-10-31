@@ -1,5 +1,3 @@
-using Nexus.GameEngine.Components;
-
 namespace Nexus.GameEngine.Actions;
 
 /// <summary>

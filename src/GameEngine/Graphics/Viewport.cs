@@ -1,14 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics.Cameras;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
-using Silk.NET.Windowing;
-
-namespace Nexus.GameEngine.Graphics;
+﻿namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
 /// Represents a rendering region within a window, managing normalized coordinates, camera, and content for Vulkan-based rendering.
@@ -229,11 +219,11 @@ public class Viewport(ILogger logger, IWindow window)
             if (logger != null)
             {
                 if (!validDimensions)
-                    logger.LogWarning("Viewport activation failed: Invalid dimensions (Width={Width}, Height={Height})", Width, Height);
+                    Log.Warning($"Viewport activation failed: Invalid dimensions (Width={Width}, Height={Height})");
                 if (!validContent)
-                    logger.LogWarning("Viewport activation failed: Content is null");
+                    Log.Warning("Viewport activation failed: Content is null");
                 if (!validVulkanState)
-                    logger.LogWarning("Viewport activation failed: Vulkan state is invalid (Viewport/Scissor missing or needs update)");
+                    Log.Warning("Viewport activation failed: Vulkan state is invalid (Viewport/Scissor missing or needs update)");
             }
         }
         return _active;
@@ -305,6 +295,12 @@ public class Viewport(ILogger logger, IWindow window)
             Offset = new Offset2D((int)pixelX, (int)pixelY),
             Extent = new Extent2D((uint)pixelWidth, (uint)pixelHeight)
         };
+
+        // Notify StaticCamera of viewport size changes
+        if (Camera is StaticCamera staticCamera)
+        {
+            staticCamera.SetViewportSize(pixelWidth, pixelHeight);
+        }
 
         _vulkanStateNeedsUpdate = false;
     }

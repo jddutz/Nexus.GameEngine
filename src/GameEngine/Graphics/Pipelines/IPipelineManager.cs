@@ -1,5 +1,3 @@
-using Silk.NET.Vulkan;
-
 namespace Nexus.GameEngine.Graphics.Pipelines;
 
 /// <summary>
@@ -72,6 +70,24 @@ public interface IPipelineManager : IDisposable
     /// </list>
     /// </remarks>
     PipelineHandle GetOrCreatePipeline(PipelineDescriptor descriptor);
+
+    /// <summary>
+    /// Gets or creates a pipeline using a pipeline definition.
+    /// If a pipeline with the definition's name exists in cache, returns it.
+    /// Otherwise, builds a new pipeline using the definition's configuration and caches it.
+    /// This is the preferred method for creating pipelines from static definitions.
+    /// </summary>
+    /// <param name="definition">Pipeline definition containing name and configuration.</param>
+    /// <returns>Pipeline handle containing Pipeline and PipelineLayout.</returns>
+    /// <exception cref="ArgumentNullException">If definition is null.</exception>
+    /// <remarks>
+    /// Use with static pipeline definitions for automatic caching and reuse:
+    /// <code>
+    /// var pipeline = pipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
+    /// </code>
+    /// All components using the same definition will share the same pipeline instance.
+    /// </remarks>
+    PipelineHandle GetOrCreate(PipelineDefinition definition);
 
     /// <summary>
     /// Creates a new pipeline builder for fluent pipeline configuration.

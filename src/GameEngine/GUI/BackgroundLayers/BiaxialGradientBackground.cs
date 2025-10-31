@@ -1,15 +1,4 @@
-﻿using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Buffers;
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
-
-namespace Nexus.GameEngine.GUI.Components;
+﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with biaxial (4-corner) gradient.
@@ -22,7 +11,7 @@ public partial class BiaxialGradientBackground(
     IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
-    : DrawableComponent, IDrawable
+    : Drawable, IDrawable
 {
     /// <summary>
     /// Template for configuring BiaxialGradientBackground components.

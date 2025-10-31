@@ -1,4 +1,3 @@
-using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 
 namespace Nexus.GameEngine.Graphics;

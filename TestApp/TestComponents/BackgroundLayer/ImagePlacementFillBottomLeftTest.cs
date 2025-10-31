@@ -1,6 +1,6 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.GUI;
-using Nexus.GameEngine.GUI.Components;
+using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;

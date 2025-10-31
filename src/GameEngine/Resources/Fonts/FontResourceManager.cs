@@ -1,9 +1,4 @@
-using Microsoft.Extensions.Logging;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Buffers;
 using Nexus.GameEngine.Graphics.Commands;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
 using StbTrueTypeSharp;
 using System.Runtime.InteropServices;
 
@@ -47,8 +42,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
     /// </summary>
     protected override FontResource CreateResource(FontDefinition definition)
     {
-        _logger.LogInformation("Loading font: {FontName} @ {FontSize}px, Range: {CharRange}",
-            definition.Name, definition.FontSize, definition.CharacterRange);
+        Log.Info($"Loading font: {definition.Name} @ {definition.FontSize}px, Range: {definition.CharacterRange}");
 
         // Load font file using source
         var sourceData = definition.Source.Load();
@@ -63,8 +57,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         // Create and return resource
         var resource = new FontResource(atlasTexture, glyphs, lineHeight, ascender, descender, definition.FontSize);
 
-        _logger.LogInformation("Font loaded successfully: {GlyphCount} glyphs, {LineHeight}px line height",
-            glyphs.Count, lineHeight);
+        Log.Info($"Font loaded successfully: {glyphs.Count} glyphs, {lineHeight}px line height");
 
         return resource;
     }
@@ -222,8 +215,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
                 rowHeight = Math.Max(rowHeight, glyphHeight);
             }
 
-            _logger?.LogDebug("Generated font atlas: {Width}x{Height}, {GlyphCount} glyphs",
-                AtlasWidth, AtlasHeight, glyphs.Count);
+            Log.Debug($"Generated font atlas: {AtlasWidth}x{AtlasHeight}, {glyphs.Count} glyphs");
 
             return (atlasData, glyphs, lineHeight, ascender, descender);
         }

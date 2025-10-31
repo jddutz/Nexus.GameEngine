@@ -1,7 +1,3 @@
-using Silk.NET.Windowing;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Runtime;
-
 namespace Nexus.GameEngine.Actions;
 
 /// <summary>

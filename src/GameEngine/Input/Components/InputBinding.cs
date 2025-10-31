@@ -1,10 +1,3 @@
-using Microsoft.Extensions.Logging;
-
-using Nexus.GameEngine.Actions;
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Input;
-
 namespace Nexus.GameEngine.Input.Components;
 
 /// <summary>
@@ -51,7 +44,7 @@ public abstract partial class InputBinding(
             catch (InvalidOperationException ex) when (ex.Message.Contains("view was not initialized"))
             {
                 // Window view not ready yet - this is expected during early component lifecycle
-                Logger?.LogDebug("Input context not available yet, window view not initialized");
+                Log.Debug("Input context not available yet, window view not initialized");
                 return null;
             }
             catch (Exception ex)
@@ -114,12 +107,12 @@ public abstract partial class InputBinding(
         {
             if (InputContext == null)
             {
-                Logger?.LogDebug("Input context not available, cannot activate {ComponentType}", GetType().Name);
+                Log.Debug($"Input context not available, cannot activate {GetType().Name}");
                 return;
             }
 
             SubscribeToInputEvents();
-            Logger?.LogDebug("{ComponentType} activated and listening for input", GetType().Name);
+            Log.Debug($"{GetType().Name} activated and listening for input");
         }
         catch (Exception ex)
         {
@@ -141,27 +134,27 @@ public abstract partial class InputBinding(
 
             if (ActionId == ActionId.None)
             {
-                Logger?.LogDebug("No action configured for {InputDescription} on {ComponentType}", inputDescription, GetType().Name);
+                Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
                 return;
             }
 
             if (_actionFactory == null)
             {
-                Logger?.LogDebug("ActionFactory not available for {InputDescription} on {ComponentType}", inputDescription, GetType().Name);
+                Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
                 return;
             }
 
-            Logger?.LogDebug("Executing action for {InputDescription} - ActionId: {ActionIdentifier}", inputDescription, ActionId.Identifier);
+            Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
 
             var result = await _actionFactory.ExecuteAsync(ActionId, this);
 
             if (result.Success)
             {
-                Logger?.LogDebug("Action executed successfully for {InputDescription}: {ResultMessage}", inputDescription, result.Message);
+                Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
             }
             else
             {
-                Logger?.LogDebug("Action execution failed for {InputDescription}: {ResultMessage}", inputDescription, result.Message);
+                Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
             }
         }
         catch (Exception ex)
@@ -176,7 +169,7 @@ public abstract partial class InputBinding(
     protected override void OnDeactivate()
     {
         UnsubscribeFromInputEvents();
-        Logger?.LogDebug("{ComponentType} deactivated", GetType().Name);
+        Log.Debug($"{GetType().Name} deactivated");
     }
 
     /// <summary>

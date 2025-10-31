@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace Nexus.GameEngine.Assets.Build.Models;
 
 /// <summary>

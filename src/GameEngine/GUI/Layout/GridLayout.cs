@@ -1,16 +1,13 @@
-using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI.Abstractions;
-using Nexus.GameEngine.Runtime;
-using Silk.NET.Maths;
-
-namespace Nexus.GameEngine.GUI.Components;
+namespace Nexus.GameEngine.GUI.Layout;
 
 /// <summary>
 /// A layout component that arranges its children in a grid pattern.
 /// Child components are positioned in rows and columns with configurable spacing and alignment.
 /// </summary>
-public partial class GridLayout(IWindowService windowService)
-    : LayoutBase(windowService)
+public partial class GridLayout(
+    IPipelineManager pipelineManager,
+    IResourceManager resourceManager)
+    : Layout(pipelineManager, resourceManager)
 {
     /// <summary>
     /// Template for configuring GridLayout components.
@@ -31,12 +28,12 @@ public partial class GridLayout(IWindowService windowService)
         /// <summary>
         /// Horizontal spacing between grid cells in pixels.
         /// </summary>
-        public float ColumnSpacing { get; init; } = 0f;
+        public int ColumnSpacing { get; init; } = 0;
 
         /// <summary>
         /// Vertical spacing between grid cells in pixels.
         /// </summary>
-        public float RowSpacing { get; init; } = 0f;
+        public int RowSpacing { get; init; } = 0;
 
         /// <summary>
         /// Horizontal alignment of child components within their grid cells.
@@ -72,12 +69,12 @@ public partial class GridLayout(IWindowService windowService)
     /// <summary>
     /// Horizontal spacing between grid cells in pixels.
     /// </summary>
-    public float ColumnSpacing { get; set; } = 0f;
+    public int ColumnSpacing { get; set; } = 0;
 
     /// <summary>
     /// Vertical spacing between grid cells in pixels.
     /// </summary>
-    public float RowSpacing { get; set; } = 0f;
+    public int RowSpacing { get; set; } = 0;
 
     /// <summary>
     /// Horizontal alignment of child components within their grid cells.
@@ -88,11 +85,6 @@ public partial class GridLayout(IWindowService windowService)
     /// Vertical alignment of child components within their grid cells.
     /// </summary>
     public VerticalAlignment VerticalAlignment { get; set; } = VerticalAlignment.Center;
-
-    /// <summary>
-    /// Padding around the entire grid container.
-    /// </summary>
-    public Padding Padding { get; set; } = Padding.Zero;
 
     /// <summary>
     /// Whether grid cells should have uniform size based on the largest child component.
@@ -115,9 +107,7 @@ public partial class GridLayout(IWindowService windowService)
             RowSpacing = template.RowSpacing;
             HorizontalAlignment = template.HorizontalAlignment;
             VerticalAlignment = template.VerticalAlignment;
-            Padding = template.Padding;
             UniformCellSize = template.UniformCellSize;
-            InvalidateLayout();
         }
     }
 
@@ -125,49 +115,53 @@ public partial class GridLayout(IWindowService windowService)
     /// Arranges child components in a grid pattern with configurable spacing and alignment.
     /// </summary>
     /// <param name="children">Collection of UI child components to arrange</param>
-    protected override void OnLayout(IReadOnlyList<UserInterfaceComponent> children)
+    protected override void UpdateLayout()
     {
-        if (children.Count == 0 || Columns <= 0)
-            return;
+        var children = GetChildren<Element>().ToArray();
+
+        // Measure children
+        int maxHeight = 0;
+        int maxWidth = 0;
+        foreach (var child in children)
+        {
+            if (child.Size.X > maxWidth) maxWidth = child.Size.X;
+            if (child.Size.Y > maxHeight) maxHeight = child.Size.Y;
+        }
 
         // Calculate actual number of rows
-        int actualRows = Rows > 0 ? Rows : (int)Math.Ceiling((double)children.Count / Columns);
+        int actualRows = Rows > 0 ? Rows : (int)Math.Ceiling((double)children.Length / Columns);
 
         // Calculate cell dimensions
-        Vector2D<float> cellSize;
+        Vector2D<int> cellSize;
         if (UniformCellSize)
         {
             // Use the size of the largest child component
-            var maxChildBounds = children.Select(c => c.GetBounds()).ToList();
-            float maxWidth = maxChildBounds.Max(b => b.Size.X);
-            float maxHeight = maxChildBounds.Max(b => b.Size.Y);
-            cellSize = new Vector2D<float>(maxWidth, maxHeight);
+            cellSize = new Vector2D<int>(maxWidth, maxHeight);
         }
         else
         {
             // Calculate available space and divide by grid dimensions
-            var availableSize = GetAvailableSize();
-            float availableWidth = Math.Max(0, availableSize.X - Padding.Left - Padding.Right - (Columns - 1) * ColumnSpacing);
-            float availableHeight = Math.Max(0, availableSize.Y - Padding.Top - Padding.Bottom - (actualRows - 1) * RowSpacing);
-            cellSize = new Vector2D<float>(availableWidth / Columns, availableHeight / actualRows);
+            int availableWidth = Math.Max(0, Bounds.Size.X - Padding.Left - Padding.Right - (Columns - 1) * ColumnSpacing);
+            int availableHeight = Math.Max(0, Bounds.Size.Y - Padding.Top - Padding.Bottom - (actualRows - 1) * RowSpacing);
+            cellSize = new Vector2D<int>(availableWidth / Columns, availableHeight / actualRows);
         }
 
         // Position each child in its grid cell
-        for (int i = 0; i < children.Count; i++)
+        for (int i = 0; i < children.Length; i++)
         {
             var child = children[i];
-            var childBounds = child.GetBounds();
+            var childBounds = child.Bounds;
 
             // Calculate grid position
             int row = i / Columns;
             int col = i % Columns;
 
             // Calculate cell position
-            float cellX = Padding.Left + col * (cellSize.X + ColumnSpacing);
-            float cellY = Padding.Top + row * (cellSize.Y + RowSpacing);
+            int cellX = Padding.Left + col * (cellSize.X + ColumnSpacing);
+            int cellY = Padding.Top + row * (cellSize.Y + RowSpacing);
 
             // Calculate child position within cell based on alignment
-            float childX = HorizontalAlignment switch
+            int x = HorizontalAlignment switch
             {
                 HorizontalAlignment.Left => cellX,
                 HorizontalAlignment.Center => cellX + (cellSize.X - childBounds.Size.X) / 2,
@@ -176,7 +170,7 @@ public partial class GridLayout(IWindowService windowService)
                 _ => cellX
             };
 
-            float childY = VerticalAlignment switch
+            int y = VerticalAlignment switch
             {
                 VerticalAlignment.Top => cellY,
                 VerticalAlignment.Center => cellY + (cellSize.Y - childBounds.Size.Y) / 2,
@@ -185,15 +179,17 @@ public partial class GridLayout(IWindowService windowService)
                 _ => cellY
             };
 
-            // Handle stretch alignment by resizing the child
-            Vector2D<float> childSize = childBounds.Size;
-            if (HorizontalAlignment == HorizontalAlignment.Stretch)
-                childSize = childSize with { X = cellSize.X };
-            if (VerticalAlignment == VerticalAlignment.Stretch)
-                childSize = childSize with { Y = cellSize.Y };
+            var w = HorizontalAlignment == HorizontalAlignment.Stretch
+                ? child.Bounds.Size.X
+                : cellSize.X;
+            
+            var h = VerticalAlignment == VerticalAlignment.Stretch
+                ? child.Bounds.Size.Y
+                : cellSize.Y;
 
             // Set child bounds
-            child.SetBounds(new Rectangle<float>(childX, childY, childSize.X, childSize.Y));
+            var newBounds = new Rectangle<int>(x, y, w, h);
+            child.SetBounds(newBounds);
         }
     }
 }

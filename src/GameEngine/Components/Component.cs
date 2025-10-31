@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace Nexus.GameEngine.Components;
 
 public partial class Component
@@ -8,6 +6,20 @@ public partial class Component
     public new record Template : Configurable.Template
     {
         public Template[] Subcomponents { get; set; } = [];
+    }
+
+    protected override void OnLoad(Configurable.Template? componentTemplate)
+    {
+        base.OnLoad(componentTemplate);
+
+        // Mark component as loaded after configuration completes
+        if (componentTemplate is Template template)
+        {
+            foreach(var subcomponentTemplate in template.Subcomponents)
+            {
+                CreateChild(subcomponentTemplate);
+            }
+        }
     }
 
     /// <summary>
@@ -19,8 +31,6 @@ public partial class Component
     /// Factory used to create new components.
     /// </summary>
     public IContentManager? ContentManager { get; set; }
-
-    public bool IsLoaded { get; set; } = false;
 
     public event EventHandler<EventArgs>? Unloading;
     public event EventHandler<EventArgs>? Unloaded;
@@ -84,9 +94,7 @@ public partial class Component
             return null;
         }
 
-
         var component = ContentManager?.CreateInstance(template);
-
 
         if (component == null) return null;
 

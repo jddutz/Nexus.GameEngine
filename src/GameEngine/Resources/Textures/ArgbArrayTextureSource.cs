@@ -1,6 +1,3 @@
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
-
 namespace Nexus.GameEngine.Resources.Textures;
 
 /// <summary>

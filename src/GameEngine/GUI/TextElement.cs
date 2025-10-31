@@ -1,16 +1,4 @@
-﻿using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.GUI.Abstractions;
-using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Fonts;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Shaders;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
-
-namespace Nexus.GameEngine.GUI.Components;
+﻿namespace Nexus.GameEngine.GUI;
 
 /// <summary>
 /// A UI component that displays text using font atlases.
@@ -18,9 +6,9 @@ namespace Nexus.GameEngine.GUI.Components;
 /// </summary>
 public partial class TextElement(
     IPipelineManager pipelineManager,
-    IResourceManager resources,
+    IResourceManager resourceManager,
     IDescriptorManager descriptorManager)
-    : UserInterfaceComponent
+    : Element(pipelineManager, resourceManager)
 {
     // Default text style used when no style is specified
     private static readonly TextStyle DefaultTextStyle = new()
@@ -65,10 +53,9 @@ public partial class TextElement(
     [ComponentProperty]
     private TextStyle _style = DefaultTextStyle;
 
-    // GPU resources
+    // GPU ResourceManager
     private FontResource? _fontResource;
     private GeometryResource? _geometry;
-    private PipelineHandle _pipeline;
     private DescriptorSet? _textureDescriptorSet;
     private GeometryDefinition? _currentGeometryDefinition;
 
@@ -87,9 +74,9 @@ public partial class TextElement(
         {
             // Release old font and load new one
             if (oldValue != null)
-                resources.Fonts.Release(oldValue.Font);
+                ResourceManager.Fonts.Release(oldValue.Font);
             
-            _fontResource = resources.Fonts.GetOrCreate(_style.Font);
+            _fontResource = ResourceManager.Fonts.GetOrCreate(_style.Font);
             UpdateDescriptorSet();
             RegenerateGeometry();
         }
@@ -127,25 +114,14 @@ public partial class TextElement(
             SetStyle(template.Style ?? DefaultTextStyle);
             SetVisible(template.Visible);
         }
+
+        // Load font resource
+        _fontResource = ResourceManager.Fonts.GetOrCreate(_style.Font);
     }
 
     protected override void OnActivate()
     {
         base.OnActivate();
-
-        // Load font resource
-        _fontResource = resources.Fonts.GetOrCreate(_style.Font);
-
-        // Build pipeline for text rendering (uses ImageTextureShader)
-        _pipeline = pipelineManager.GetBuilder()
-            .WithShader(ShaderDefinitions.ImageTexture)
-            .WithRenderPasses(RenderPasses.UI)
-            .WithTopology(PrimitiveTopology.TriangleStrip)
-            .WithCullMode(CullModeFlags.None)
-            .WithDepthTest()
-            .WithDepthWrite()
-            .WithBlending()  // Enable alpha blending for text
-            .Build("TextElement_Pipeline");
 
         // Create descriptor set for font atlas texture
         UpdateDescriptorSet();
@@ -185,7 +161,7 @@ public partial class TextElement(
             // Clear geometry if no text
             if (_currentGeometryDefinition != null)
             {
-                resources.Geometry.Release(_currentGeometryDefinition);
+                ResourceManager.Geometry.Release(_currentGeometryDefinition);
                 _currentGeometryDefinition = null;
                 _geometry = null;
             }
@@ -193,23 +169,23 @@ public partial class TextElement(
         }
 
         // Generate vertices from text
-        var vertices = GenerateTextVertices(_text, _fontResource, GetBounds(), _style.Alignment);
+        var vertices = GenerateTextVertices(_text, _fontResource, Bounds, _style.Alignment);
 
         // Release old geometry if it exists
         if (_currentGeometryDefinition != null)
         {
-            resources.Geometry.Release(_currentGeometryDefinition);
+            ResourceManager.Geometry.Release(_currentGeometryDefinition);
         }
 
         // Create new geometry definition
         _currentGeometryDefinition = CreateTextGeometryDefinition(vertices);
-        _geometry = resources.Geometry.GetOrCreate(_currentGeometryDefinition);
+        _geometry = ResourceManager.Geometry.GetOrCreate(_currentGeometryDefinition);
     }
 
     private List<Vertex<Vector2D<float>, Vector2D<float>>> GenerateTextVertices(
         string text,
         FontResource font,
-        Rectangle<float> bounds,
+        Rectangle<int> bounds,
         TextAlignment alignment)
     {
         var vertices = new List<Vertex<Vector2D<float>, Vector2D<float>>>();
@@ -299,7 +275,7 @@ public partial class TextElement(
             yield return new DrawCommand
             {
                 RenderMask = RenderPasses.UI,
-                Pipeline = _pipeline,
+                Pipeline = Pipeline,
                 VertexBuffer = _geometry.Buffer,
                 FirstVertex = (uint)(i * 4),  // Each glyph has 4 vertices
                 VertexCount = 4,
@@ -321,7 +297,7 @@ public partial class TextElement(
         // Release geometry
         if (_currentGeometryDefinition != null)
         {
-            resources.Geometry.Release(_currentGeometryDefinition);
+            ResourceManager.Geometry.Release(_currentGeometryDefinition);
             _currentGeometryDefinition = null;
             _geometry = null;
         }
@@ -329,7 +305,7 @@ public partial class TextElement(
         // Release font resource
         if (_style != null)
         {
-            resources.Fonts.Release(_style.Font);
+            ResourceManager.Fonts.Release(_style.Font);
             _fontResource = null;
         }
 

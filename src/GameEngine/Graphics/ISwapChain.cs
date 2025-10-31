@@ -1,5 +1,3 @@
-using Silk.NET.Vulkan;
-
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Nexus.GameEngine.Graphics;

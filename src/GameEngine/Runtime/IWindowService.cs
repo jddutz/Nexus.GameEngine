@@ -1,6 +1,3 @@
-using Silk.NET.Input;
-using Silk.NET.Windowing;
-
 namespace Nexus.GameEngine.Runtime;
 
 /// <summary>
