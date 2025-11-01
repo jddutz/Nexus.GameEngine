@@ -11,29 +11,7 @@ public partial class LinearGradientBackground(
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
-    /// <summary>
-    /// Template for configuring LinearGradientBackground components.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// The gradient definition (color stops).
-        /// Required. Use GradientDefinition.TwoColor() for simple gradients.
-        /// </summary>
-        public GradientDefinition? Gradient { get; set; }
-        
-        /// <summary>
-        /// Rotation angle in radians.
-        /// 0 = horizontal (left to right)
-        /// PI/2 = vertical (top to bottom)
-        /// PI = horizontal (right to left)
-        /// Default: 0 (horizontal)
-        /// </summary>
-        public float Angle { get; set; } = 0f;
-    }
-
     private GeometryResource? _geometry;
-    private PipelineHandle _pipeline;
     private int _drawCallCount = 0;
     
     // UBO and descriptor set for gradient definition
@@ -41,53 +19,32 @@ public partial class LinearGradientBackground(
     private DeviceMemory? _gradientUboMemory;
     private DescriptorSet? _gradientDescriptorSet;
     
-    private GradientDefinition? _gradientDefinition;
+    [ComponentProperty]
+    protected GradientDefinition _gradient = GradientDefinition.TwoColor(
+        new Vector4D<float>(0, 0, 0, 1),
+        new Vector4D<float>(1, 1, 1, 1));
 
     /// <summary>
     /// Gradient rotation angle in radians. Can be animated.
     /// </summary>
     [ComponentProperty]
-    private float _angle = 0f;
+    protected float _angle = 0f;
 
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-        
-        if (componentTemplate is Template template)
-        {
-            _gradientDefinition = template.Gradient;
-            SetAngle(template.Angle);
-        }
-    }
+    public override PipelineHandle Pipeline =>
+        PipelineManager.GetOrCreate(PipelineDefinitions.LinearGradient);
 
     protected override void OnActivate()
     {
         base.OnActivate();
 
-        if (_gradientDefinition == null)
-        {
-            throw new InvalidOperationException("LinearGradientBackground requires a Gradient definition");
-        }
-
         // Validate gradient
-        _gradientDefinition.Validate();
-        
-        // Build pipeline for linear gradient rendering
-        _pipeline = PipelineManager.GetBuilder()
-            .WithShader(ShaderDefinitions.LinearGradient)
-            .WithRenderPasses(RenderPasses.Main)
-            .WithTopology(PrimitiveTopology.TriangleStrip)
-            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-            .WithDepthTest()
-            .WithDepthWrite()
-            .Build("LinearGradientBackground_Pipeline");
-
+        _gradient.Validate();
 
         // Create position-only full-screen quad geometry
         _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for gradient
-        CreateGradientUBO(_gradientDefinition);
+        CreateGradientUBO(_gradient);
     }
 
     /// <summary>
@@ -148,7 +105,7 @@ public partial class LinearGradientBackground(
         yield return new DrawCommand
         {
             RenderMask = RenderPasses.Main,
-            Pipeline = _pipeline,
+            Pipeline = Pipeline,
             VertexBuffer = _geometry.Buffer,
             VertexCount = _geometry.VertexCount,
             InstanceCount = 1,

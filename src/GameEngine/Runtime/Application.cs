@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Nexus.GameEngine.GUI;
 
 namespace Nexus.GameEngine.Runtime;
@@ -17,7 +17,7 @@ public class Application(IServiceProvider services) : IApplication
     /// This method blocks until the window is closed.
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
-    public void Run(WindowOptions windowOptions, Element.Template startupTemplate)
+    public void Run(WindowOptions windowOptions, ElementTemplate startupTemplate)
     {
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
@@ -52,7 +52,7 @@ public class Application(IServiceProvider services) : IApplication
             mainViewport.Content = contentManager.Load(startupTemplate);
 
             // Push window size constraints to main viewport's root element
-            // Element.Template parameter ensures this cast should always succeed
+            // ElementTemplate parameter ensures this cast should always succeed
             if (mainViewport.Content is IUserInterfaceElement rootElement)
             {
                 var constraints = new Rectangle<int>(0, 0, window.Size.X, window.Size.Y);

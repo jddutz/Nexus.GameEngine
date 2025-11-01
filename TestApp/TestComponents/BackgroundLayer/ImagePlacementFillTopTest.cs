@@ -20,13 +20,11 @@ public partial class ImagePlacementFillTopTest(
     IWindowService windowService
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("Image placement top center")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static ImagePlacementFillTopTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new ImageTextureBackground.Template()
+            new ImageTextureBackgroundTemplate()
             {
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillTop
@@ -36,35 +34,4 @@ public partial class ImagePlacementFillTopTest(
 
     private IWindow window => windowService.GetWindow();
     private const int ImageSize = 256;
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var window = windowService.GetWindow();
-        var offset = 2;
-        
-        SampleCoordinates = [
-            new(window.Size.X / 4, offset),                         // Top-left quadrant
-            new(window.Size.X / 2, offset),                         // Top-center
-            new(3 * window.Size.X / 4, offset),                     // Top-right quadrant
-        ];
-
-        // Calculate expected UV bounds
-        var (uvMin, uvMax) = BackgroundImagePlacement.CalculateUVBounds(
-            BackgroundImagePlacement.FillTop,
-            ImageSize, ImageSize,
-            window.Size.X, window.Size.Y);
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    new Vector4D<float>(0.25f * (uvMax.X - uvMin.X) + uvMin.X, uvMin.Y, 0f, 1f),  // Left quadrant
-                    new Vector4D<float>(0.5f * (uvMax.X - uvMin.X) + uvMin.X, uvMin.Y, 0f, 1f),   // Center
-                    new Vector4D<float>(0.75f * (uvMax.X - uvMin.X) + uvMin.X, uvMin.Y, 0f, 1f),  // Right quadrant
-                }
-            }
-        };
-    }
 }

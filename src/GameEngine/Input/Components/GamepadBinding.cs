@@ -17,43 +17,6 @@ public partial class GamepadBinding(
     IActionFactory actionFactory)
     : InputBinding(windowService, actionFactory)
 {
-
-    /// <summary>
-    /// Template for configuring gamepad input bindings.
-    /// </summary>
-    public new record Template : InputBinding.Template
-    {
-        /// <summary>
-        /// The gamepad button that triggers this binding.
-        /// </summary>
-        public ButtonName Button { get; init; } = ButtonName.A;
-
-        /// <summary>
-        /// The type of gamepad event to listen for.
-        /// </summary>
-        public GamepadEventType EventType { get; init; } = GamepadEventType.ButtonDown;
-
-        /// <summary>
-        /// For analog inputs (triggers, thumbsticks), the threshold value to trigger the action.
-        /// </summary>
-        public float Threshold { get; init; } = 0.5f;
-
-        /// <summary>
-        /// For thumbstick inputs, the specific thumbstick to monitor.
-        /// </summary>
-        public ThumbstickType ThumbstickType { get; init; } = ThumbstickType.Left;
-
-        /// <summary>
-        /// For trigger inputs, the specific trigger to monitor.
-        /// </summary>
-        public TriggerType TriggerType { get; init; } = TriggerType.Left;
-
-        /// <summary>
-        /// The action type to execute when the gamepad input is triggered.
-        /// </summary>
-        public Type ActionType { get; init; } = typeof(object);
-    }
-
     /// <summary>
     /// The gamepad button that triggers this binding.
     /// </summary>
@@ -91,24 +54,6 @@ public partial class GamepadBinding(
         if (_threshold < 0f || _threshold > 1f)
         {
             _threshold = Math.Clamp(_threshold, 0f, 1f);
-        }
-    }
-
-    /// <summary>
-    /// Configure the gamepad binding using the provided template.
-    /// </summary>
-    /// <param name="template">Template containing configuration data</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            SetButton(template.Button);
-            SetEventType(template.EventType);
-            SetThreshold(template.Threshold);
-            SetThumbstickType(template.ThumbstickType);
-            SetTriggerType(template.TriggerType);
         }
     }
 

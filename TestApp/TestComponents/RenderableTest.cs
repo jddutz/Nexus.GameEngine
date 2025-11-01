@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
@@ -11,15 +12,17 @@ public partial class RenderableTest(
     IPixelSampler pixelSampler
     ) : TestComponent, IDrawable
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("GetDrawCommands() should be called at least once")]
-    public readonly static Template RenderableBaseTest = new();
+    public readonly static RenderableTestTemplate RenderableBaseTest = new();
 
-    public virtual Vector2D<int>[] SampleCoordinates { get; set; } = [];
-    public virtual Dictionary<int, Vector4D<float>[]> ExpectedResults { get; set; } = [];
+    [ComponentProperty]
+    private Vector2D<int>[] _sampleCoordinates = [];
 
-    public uint RenderPriority { get; set; } = 0;
+    [ComponentProperty]
+    private Dictionary<int, Vector4D<float>[]> _expectedResults = [];
+
+    [ComponentProperty]
+    private uint _renderPriority = 0;
     
     public bool IsVisible() => true;
 

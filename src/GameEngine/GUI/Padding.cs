@@ -10,6 +10,11 @@ public record Padding(int Left, int Top, int Right, int Bottom)
     public static Padding Horizontal(int value) => new(value, 0, value, 0);
     public static Padding Vertical(int value) => new(0, value, 0, value);
 
+    /// <summary>
+    /// Creates padding with zero thickness on all sides.
+    /// </summary>
+    public Padding() : this(0, 0, 0, 0) { }
+    
     public Padding(int uniform) : this(uniform, uniform, uniform, uniform) { }
     public Padding(int horizontal, int vertical) : this(horizontal, vertical, horizontal, vertical) { }
 }

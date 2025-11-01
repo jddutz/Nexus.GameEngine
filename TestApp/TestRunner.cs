@@ -17,11 +17,6 @@ namespace TestApp;
 /// </summary>
 public partial class TestRunner : RuntimeComponent
 {
-    /// <summary>
-    /// Configuration template for the TestRunner component.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template { }
-
     private readonly IWindow window;
 
     private readonly List<ComponentTest> tests = [];
@@ -44,7 +39,7 @@ public partial class TestRunner : RuntimeComponent
 
     private static IEnumerable<ComponentTest> DiscoverTests()
     {
-        // Find all public static fields of type TestComponent.Template with a [Test] attribute
+        // Find all public static fields of type Template with a [Test] attribute
         var fields = typeof(TestComponent)
             .Assembly
             .GetTypes()
@@ -53,14 +48,14 @@ public partial class TestRunner : RuntimeComponent
 
         foreach (var field in fields)
         {
-            if (!typeof(TestComponent.Template).IsAssignableFrom(field.FieldType))
+            if (!typeof(Template).IsAssignableFrom(field.FieldType))
                 continue;
 
             var testAttr = field.GetCustomAttribute<TestAttribute>();
             if (testAttr == null)
                 continue;
 
-            var template = field.GetValue(null) as TestComponent.Template;
+            var template = field.GetValue(null) as Template;
             if (template == null)
                 continue;
 

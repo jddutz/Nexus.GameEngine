@@ -11,38 +11,7 @@ public partial class BiaxialGradientBackground(
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
-    /// <summary>
-    /// Template for configuring BiaxialGradientBackground components.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Color at the top-left corner.
-        /// Default: Black
-        /// </summary>
-        public Vector4D<float> TopLeft { get; set; } = Colors.Black;
-        
-        /// <summary>
-        /// Color at the top-right corner.
-        /// Default: Black
-        /// </summary>
-        public Vector4D<float> TopRight { get; set; } = Colors.Black;
-        
-        /// <summary>
-        /// Color at the bottom-left corner.
-        /// Default: Black
-        /// </summary>
-        public Vector4D<float> BottomLeft { get; set; } = Colors.Black;
-        
-        /// <summary>
-        /// Color at the bottom-right corner.
-        /// Default: Black
-        /// </summary>
-        public Vector4D<float> BottomRight { get; set; } = Colors.Black;
-    }
-
     private GeometryResource? _geometry;
-    private PipelineHandle _pipeline;
     
     // UBO and descriptor set for corner colors
     private Silk.NET.Vulkan.Buffer? _colorUboBuffer;
@@ -64,33 +33,12 @@ public partial class BiaxialGradientBackground(
     [ComponentProperty]
     private Vector4D<float> _bottomRight = Colors.Black;
 
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-        
-        if (componentTemplate is Template template)
-        {
-            SetTopLeft(template.TopLeft);
-            SetTopRight(template.TopRight);
-            SetBottomLeft(template.BottomLeft);
-            SetBottomRight(template.BottomRight);
-        }
-    }
+    public override PipelineHandle Pipeline =>
+        PipelineManager.GetOrCreate(PipelineDefinitions.BiaxialGradient);
 
     protected override void OnActivate()
     {
         base.OnActivate();
-
-        // Build pipeline for biaxial gradient rendering
-        _pipeline = PipelineManager.GetBuilder()
-            .WithShader(ShaderDefinitions.BiaxialGradient)
-            .WithRenderPasses(RenderPasses.Main)
-            .WithTopology(PrimitiveTopology.TriangleStrip)
-            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-            .WithDepthTest()
-            .WithDepthWrite()
-            .Build("BiaxialGradientBackground_Pipeline");
-
 
         // Create position-only full-screen quad geometry
         _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
@@ -183,7 +131,7 @@ public partial class BiaxialGradientBackground(
         yield return new DrawCommand
         {
             RenderMask = RenderPasses.Main,
-            Pipeline = _pipeline,
+            Pipeline = Pipeline,
             VertexBuffer = _geometry.Buffer,
             VertexCount = _geometry.VertexCount,
             InstanceCount = 1,

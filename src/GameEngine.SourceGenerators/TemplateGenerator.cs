@@ -1,0 +1,344 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+
+namespace GameEngine.SourceGenerators;
+
+/// <summary>
+/// Incremental source generator that creates Template records and OnLoad methods
+/// from ComponentProperty attributes on component classes.
+/// 
+/// For each component class with [ComponentProperty] fields, generates:
+/// 1. {ComponentName}Template record with properties matching the fields
+/// 2. OnLoad method override that assigns template properties to fields
+/// 3. Optional partial OnLoad hook for custom initialization logic
+/// </summary>
+[Generator]
+public class TemplateGenerator : IIncrementalGenerator
+{
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        // Register syntax provider to find component classes with ComponentProperty attributes
+        var componentClasses = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => IsComponentClass(node),
+                transform: static (ctx, _) => GetComponentClassInfo(ctx))
+            .Where(static info => info != null);
+
+        // Generate template records and OnLoad methods
+        context.RegisterSourceOutput(componentClasses, static (spc, componentInfo) =>
+        {
+            if (componentInfo == null) return;
+            
+            GenerateTemplate(spc, componentInfo);
+            GenerateOnLoadMethod(spc, componentInfo);
+        });
+    }
+
+    /// <summary>
+    /// Checks if the syntax node is a class declaration.
+    /// </summary>
+    private static bool IsComponentClass(SyntaxNode node)
+    {
+        return node is ClassDeclarationSyntax classDecl && classDecl.Modifiers.Any(m => m.ValueText == "partial");
+    }
+
+    /// <summary>
+    /// Extracts component class information including ComponentProperty fields.
+    /// </summary>
+    private static ComponentClassInfo? GetComponentClassInfo(GeneratorSyntaxContext context)
+    {
+        var classDecl = (ClassDeclarationSyntax)context.Node;
+        var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDecl) as INamedTypeSymbol;
+
+        if (classSymbol == null) return null;
+
+        // Check if class derives from IComponent (directly or indirectly)
+        if (!DerivesFromInterface(classSymbol, "IComponent")) return null;
+
+        // Get all fields with ComponentProperty attribute
+        var properties = GetComponentProperties(classSymbol);
+
+        // Only generate for classes with ComponentProperty fields
+        if (properties.Count == 0) return null;
+
+        // Find the base class that also has generated templates (for inheritance)
+        var baseTemplateType = GetBaseTemplateType(classSymbol);
+
+        return new ComponentClassInfo
+        {
+            ClassName = classSymbol.Name,
+            Namespace = classSymbol.ContainingNamespace.ToDisplayString(),
+            Properties = properties,
+            BaseTemplateType = baseTemplateType
+        };
+    }
+
+    /// <summary>
+    /// Gets all ComponentProperty fields from the class and its entire inheritance chain.
+    /// </summary>
+    private static List<PropertyInfo> GetComponentProperties(INamedTypeSymbol classSymbol)
+    {
+        var properties = new List<PropertyInfo>();
+        var currentType = classSymbol;
+
+        // Walk up the inheritance chain and collect all ComponentProperty fields
+        while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
+        {
+            foreach (var field in currentType.GetMembers().OfType<IFieldSymbol>())
+            {
+                var attr = field.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
+
+                if (attr == null) continue;
+
+                // Only include fields declared on this specific type in the chain
+                if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, currentType)) continue;
+
+                properties.Add(new PropertyInfo
+                {
+                    FieldName = field.Name,
+                    PropertyName = GetPropertyNameFromField(field.Name),
+                    Type = field.Type.ToDisplayString(),
+                    DefaultValue = GetDefaultValueExpression(field)
+                });
+            }
+
+            currentType = currentType.BaseType;
+        }
+
+        // Reverse to get base class properties first
+        properties.Reverse();
+        return properties;
+    }
+
+    /// <summary>
+    /// Converts field name (e.g., "_position") to property name (e.g., "Position").
+    /// </summary>
+    private static string GetPropertyNameFromField(string fieldName)
+    {
+        var name = fieldName.TrimStart('_');
+        if (name.Length == 0) return fieldName;
+        return char.ToUpperInvariant(name[0]) + name.Substring(1);
+    }
+
+    /// <summary>
+    /// Gets the default value expression for a field from its initializer.
+    /// </summary>
+    private static string GetDefaultValueExpression(IFieldSymbol field)
+    {
+        var typeName = field.Type.ToDisplayString();
+        
+        // Handle arrays - use [] syntax for non-nullable arrays
+        if (field.Type is IArrayTypeSymbol)
+            return "[]";
+        
+        // Check for generic collection types first (before checking their type arguments)
+        if (field.Type is INamedTypeSymbol fieldNamedType)
+        {
+            var typeNameWithoutNamespace = fieldNamedType.Name;
+            
+            // Handle Dictionary, List, HashSet, etc.
+            if (typeNameWithoutNamespace == "Dictionary" || 
+                typeNameWithoutNamespace == "List" || 
+                typeNameWithoutNamespace == "HashSet" ||
+                typeNameWithoutNamespace == "Queue" ||
+                typeNameWithoutNamespace == "Stack")
+            {
+                return "new()";
+            }
+        }
+        
+        // Handle common default values for primitives and math types
+        if (typeName == "Silk.NET.Maths.Vector3D<float>")
+            return "Vector3D<float>.Zero";
+        if (typeName == "Silk.NET.Maths.Quaternion<float>")
+            return "Quaternion<float>.Identity";
+        if (typeName == "Silk.NET.Maths.Vector4D<float>")
+            return "Vector4D<float>.Zero";
+        if (typeName == "Silk.NET.Maths.Vector2D<float>")
+            return "Vector2D<float>.Zero";
+        if (typeName == "float")
+            return "0f";
+        if (typeName == "int")
+            return "0";
+        if (typeName == "bool")
+            return "false";
+        if (typeName == "string")
+            return "string.Empty";
+        
+        // For reference types (classes, records, interfaces)
+        if (field.Type.IsReferenceType && !field.Type.IsValueType)
+        {
+            // Check if type has a parameterless constructor (including records)
+            // Records always have synthesized parameterless constructors even with required properties
+            if (field.Type is INamedTypeSymbol namedType)
+            {
+                // For records or types with parameterless constructors, use new()
+                if (namedType.IsRecord || 
+                    namedType.Constructors.Any(c => c.Parameters.Length == 0 && c.DeclaredAccessibility == Accessibility.Public))
+                {
+                    return "new()";
+                }
+            }
+            
+            // Otherwise use null! for reference types without suitable constructors
+            return "null!";
+        }
+        
+        // For value types (structs), use default
+        return $"default({typeName})";
+    }
+
+    /// <summary>
+    /// Checks if a type derives from a specific interface.
+    /// </summary>
+    private static bool DerivesFromInterface(INamedTypeSymbol type, string interfaceName)
+    {
+        return type.AllInterfaces.Any(i => i.Name == interfaceName);
+    }
+
+    /// <summary>
+    /// Gets the base template type - always returns "Template" since we're flattening the hierarchy.
+    /// Each generated template includes all properties from the entire inheritance chain.
+    /// </summary>
+    private static string GetBaseTemplateType(INamedTypeSymbol classSymbol)
+    {
+        // Always inherit directly from the base Template class
+        // All properties from the inheritance chain are included in this template
+        return "Nexus.GameEngine.Components.Template";
+    }
+
+    /// <summary>
+    /// Generates the template record for a component class.
+    /// </summary>
+    private static void GenerateTemplate(SourceProductionContext context, ComponentClassInfo info)
+    {
+        var sb = new StringBuilder();
+
+        // Add file header
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+        
+        // Add necessary using statements for common types
+        sb.AppendLine("using Silk.NET.Maths;");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {info.Namespace};");
+        sb.AppendLine();
+        
+        // Generate template record as a separate top-level class
+        sb.AppendLine($"/// <summary>");
+        sb.AppendLine($"/// Auto-generated template for {info.ClassName} component.");
+        sb.AppendLine($"/// Properties correspond to [ComponentProperty] fields.");
+        sb.AppendLine($"/// </summary>");
+        sb.AppendLine($"public record {info.ClassName}Template : {info.BaseTemplateType}");
+        sb.AppendLine("{");
+        
+        // Add ComponentType property override
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Gets the component type for factory instantiation.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    public override Type? ComponentType => typeof({info.ClassName});");
+        sb.AppendLine();
+
+        // Add property for each ComponentProperty field
+        foreach (var prop in info.Properties)
+        {
+            sb.AppendLine($"    /// <summary>");
+            sb.AppendLine($"    /// Template property for {prop.PropertyName}.");
+            sb.AppendLine($"    /// </summary>");
+            sb.AppendLine($"    public {prop.Type} {prop.PropertyName} {{ get; set; }} = {prop.DefaultValue};");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("}");
+
+        context.AddSource($"{info.ClassName}.Template.g.cs", sb.ToString());
+    }
+
+    /// <summary>
+    /// Generates the OnLoad method override for a component class.
+    /// </summary>
+    private static void GenerateOnLoadMethod(SourceProductionContext context, ComponentClassInfo info)
+    {
+        var sb = new StringBuilder();
+
+        // Add file header
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {info.Namespace};");
+        sb.AppendLine();
+        sb.AppendLine($"public partial class {info.ClassName}");
+        sb.AppendLine("{");
+        
+        // Add partial method declaration for custom OnLoad hook
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Optional partial method for custom template loading logic.");
+        sb.AppendLine($"    /// Implement this method in your component class to perform custom initialization.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    partial void OnLoad({info.ClassName}Template template);");
+        sb.AppendLine();
+
+        // Generate OnLoad method override that casts to specific template type
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Loads component from template. Auto-generated override.");
+        sb.AppendLine($"    /// Uses Set methods for all properties from the entire inheritance chain.");
+        sb.AppendLine($"    /// The base Load() method will call ApplyUpdates(0) after this to apply changes immediately.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    protected override void OnLoad(Nexus.GameEngine.Components.Template? componentTemplate)");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        if (componentTemplate is {info.ClassName}Template template)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            // Call base.OnLoad first to handle any base class properties");
+        sb.AppendLine("            base.OnLoad(componentTemplate);");
+        sb.AppendLine();
+        sb.AppendLine("            // Use Set methods for all properties (changes applied via ApplyUpdates in Load())");
+        
+        foreach (var prop in info.Properties)
+        {
+            sb.AppendLine($"            Set{prop.PropertyName}(template.{prop.PropertyName});");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("            // Call partial method hook if implemented");
+        sb.AppendLine("            OnLoad(template);");
+        sb.AppendLine("        }");
+        sb.AppendLine("        else");
+        sb.AppendLine("        {");
+        sb.AppendLine("            // Fall back to base implementation for other template types");
+        sb.AppendLine("            base.OnLoad(componentTemplate);");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+
+        sb.AppendLine("}");
+
+        context.AddSource($"{info.ClassName}.OnLoad.g.cs", sb.ToString());
+    }
+
+    /// <summary>
+    /// Information about a component class with ComponentProperty fields.
+    /// </summary>
+    private class ComponentClassInfo
+    {
+        public string ClassName { get; set; } = string.Empty;
+        public string Namespace { get; set; } = string.Empty;
+        public List<PropertyInfo> Properties { get; set; } = new();
+        public string BaseTemplateType { get; set; } = "Template";
+    }
+
+    /// <summary>
+    /// Information about a ComponentProperty field.
+    /// </summary>
+    private class PropertyInfo
+    {
+        public string FieldName { get; set; } = string.Empty;
+        public string PropertyName { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string DefaultValue { get; set; } = string.Empty;
+    }
+}

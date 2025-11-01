@@ -20,13 +20,11 @@ public partial class BackgroundLayerHorizGradientTest(
     IWindowService windowService
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : RenderableTest.Template { }
-
     [Test("Horizontal gradient test")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static BackgroundLayerHorizGradientTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new LinearGradientBackground.Template()
+            new LinearGradientBackgroundTemplate()
             {
                 Gradient = GradientDefinition.TwoColor(
                     Colors.Blue,   // Position 0.0 (left)
@@ -37,28 +35,4 @@ public partial class BackgroundLayerHorizGradientTest(
     };
 
     private IWindow window => windowService.GetWindow();
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var offset = 2;
-
-        SampleCoordinates = [
-            new(offset, window.Size.Y / 2),                  // Left edge → Red
-            new(window.Size.X / 2, window.Size.Y / 2),       // Center → blend
-            new(window.Size.X - offset, window.Size.Y / 2),  // Right edge → Green
-        ];
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    Colors.Blue,
-                    Colors.Lerp(Colors.Blue, Colors.Yellow, 0.5f),
-                    Colors.Yellow
-                }
-            }
-        };
-    }
 }

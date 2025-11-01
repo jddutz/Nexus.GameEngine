@@ -7,42 +7,20 @@ namespace Nexus.GameEngine.Components;
 /// </summary>
 public partial class Transformable : RuntimeComponent, ITransformable
 {
-    /// <summary>
-    /// Template for configuring Transformable components.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Initial local position relative to parent.
-        /// Default: (0, 0, 0)
-        /// </summary>
-        public Vector3D<float> Position { get; set; } = Vector3D<float>.Zero;
-        
-        /// <summary>
-        /// Initial local rotation.
-        /// Default: Identity (no rotation, facing -Z, up is +Y)
-        /// </summary>
-        public Quaternion<float> Rotation { get; set; } = Quaternion<float>.Identity;
-        
-        /// <summary>
-        /// Initial local scale.
-        /// Default: (1, 1, 1)
-        /// </summary>
-        public Vector3D<float> Scale { get; set; } = new Vector3D<float>(1f, 1f, 1f);
-    }
+    // Template record is auto-generated from [ComponentProperty] fields below
     
     // ==========================================
     // ANIMATED PROPERTIES (with ComponentProperty attribute)
     // ==========================================
     
     [ComponentProperty]
-    private Vector3D<float> _position = Vector3D<float>.Zero;
+    protected Vector3D<float> _position = Vector3D<float>.Zero;
     
     [ComponentProperty]
-    private Quaternion<float> _rotation = Quaternion<float>.Identity;
+    protected Quaternion<float> _rotation = Quaternion<float>.Identity;
     
     [ComponentProperty]
-    private Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
+    protected Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
     
     // ==========================================
     // VELOCITY FIELDS (for continuous animations)
@@ -282,15 +260,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // CONFIGURATION
     // ==========================================
     
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        if (componentTemplate is Template template)
-        {
-            SetPosition(template.Position);
-            SetRotation(template.Rotation);
-            SetScale(template.Scale);
-        }
-    }
+    // OnLoad method is auto-generated from template
     
     // ==========================================
     // UPDATE (Apply velocities)

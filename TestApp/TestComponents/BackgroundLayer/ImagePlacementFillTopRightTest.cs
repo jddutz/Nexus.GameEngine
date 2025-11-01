@@ -15,54 +15,18 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: Shows top-right portion, crops bottom and left when both dimensions need cropping
 /// </summary>
 public partial class ImagePlacementFillTopRightTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("Image placement top right")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static ImagePlacementFillTopRightTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new ImageTextureBackground.Template()
+            new ImageTextureBackgroundTemplate()
             {
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillTopRight
             }
         ]
     };
-    
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var window = windowService.GetWindow();
-        var offset = 2;
-        var imageSize = 256;
-
-        SampleCoordinates = [
-            new(window.Size.X - offset, offset),                    // Top-right corner
-            new(3 * window.Size.X / 4, offset),                     // Top edge, right quadrant
-            new(window.Size.X - offset, window.Size.Y / 4),         // Right edge, top quadrant
-        ];
-
-        // Calculate expected UV bounds
-        var (uvMin, uvMax) = BackgroundImagePlacement.CalculateUVBounds(
-            BackgroundImagePlacement.FillTopRight,
-            imageSize, imageSize,
-            window.Size.X, window.Size.Y);
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    new Vector4D<float>(uvMax.X, uvMin.Y, 0f, 1f),                              // Top-right corner
-                    new Vector4D<float>(0.75f * (uvMax.X - uvMin.X) + uvMin.X, uvMin.Y, 0f, 1f),  // Top edge
-                    new Vector4D<float>(uvMax.X, 0.25f * (uvMax.Y - uvMin.Y) + uvMin.Y, 0f, 1f),  // Right edge
-                }
-            }
-        };
-    }
 }

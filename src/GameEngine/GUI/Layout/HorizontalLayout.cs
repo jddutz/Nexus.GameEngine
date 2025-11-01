@@ -7,24 +7,6 @@ namespace Nexus.GameEngine.GUI.Layout;
 public partial class HorizontalLayout
     : Layout
 {
-
-    /// <summary>
-    /// Template for configuring HorizontalLayout components.
-    /// Defines the properties for arranging child components horizontally.
-    /// </summary>
-    public new record Template : Layout.Template
-    {
-        /// <summary>
-        /// Vertical alignment of child components within the layout.
-        /// </summary>
-        public VerticalAlignment Alignment { get; init; } = VerticalAlignment.Center;
-
-        /// <summary>
-        /// Spacing between child components in pixels.
-        /// </summary>
-        public int Spacing { get; init; } = 0;
-    }
-
     /// <summary>
     /// Vertical alignment of child components within the layout.
     /// </summary>
@@ -34,21 +16,6 @@ public partial class HorizontalLayout
     /// Spacing between child components in pixels.
     /// </summary>
     public int Spacing { get; set; } = 0;
-
-    /// <summary>
-    /// Configure this HorizontalLayout using the specified template.
-    /// </summary>
-    /// <param name="template">Template containing layout configuration</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            Alignment = template.Alignment;
-            Spacing = template.Spacing;
-        }
-    }
 
     /// <summary>
     /// Arranges child components horizontally with spacing and alignment.

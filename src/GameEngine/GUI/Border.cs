@@ -1,11 +1,6 @@
 ﻿namespace Nexus.GameEngine.GUI;
 
-/// <summary>
-/// Component Template
-/// </summary>
-public record BorderTemplate
-{
-}
+// BorderTemplate is auto-generated from [ComponentProperty] fields below
 
 /// <summary>
 /// Runtime border component that implements event-driven rendering behavior.

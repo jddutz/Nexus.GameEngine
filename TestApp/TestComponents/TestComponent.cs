@@ -4,23 +4,10 @@ namespace TestApp.TestComponents;
 
 public partial class TestComponent : RuntimeComponent, ITestComponent
 {
-    public new record Template : RuntimeComponent.Template
-    {
-        public int FrameCount { get; set; }
-    }
-
     public virtual Template[] Templates => [new()];
 
     public int Updates { get; private set; } = 0;
     public int FrameCount { get; protected set; } = 1;
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        if (componentTemplate is Template template)
-        {
-            FrameCount = template.FrameCount;
-        }
-    }
 
     protected override void OnUpdate(double deltaTime)
     {

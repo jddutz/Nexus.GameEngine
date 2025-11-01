@@ -15,70 +15,19 @@ namespace TestApp.TestComponents.UserInterfaceComponents;
 /// This leaves space at the top and left edges to sample the background.
 /// </summary>
 public partial class ColoredRectTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : RenderableTest.Template { }
-
     [Test("ColorRect test")]
-    public readonly static Template TestTemplate = new()
+    public readonly static ColoredRectTestTemplate TestTemplate = new()
     {
         Subcomponents = [
-            new Element.Template()
+            new ElementTemplate()
             {
                 TintColor = Colors.Red,
-                PreferredSize = new Vector2D<int>(200, 100),
+                Bounds = new Rectangle<int>(20, 20, 200, 100),
                 Visible = true
             }
         ]
     };
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        FrameCount = 1600;
-
-        var offset = 2;
-        var window = windowService.GetWindow();
-        var w = window.Size.X;
-        var h = window.Size.Y;
-
-        // Sample points:
-        SampleCoordinates = [
-            // Background margin (top-left corner area before rectangle starts)
-            new(offset, offset),
-            new(200, offset),
-            new(offset, 150),
-
-            // Inside the red rectangle
-            new(102, 102),
-            new(200, 150),
-            new(298, 198),
-
-            // Outside the rectangle (far corner)
-            new(w - offset, h - offset)
-        ];
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    // Background margin -> DarkBlue
-                    Colors.DarkBlue,
-                    Colors.DarkBlue,
-                    Colors.DarkBlue,
-
-                    // Inside rectangle -> Red
-                    Colors.Red,
-                    Colors.Red,
-                    Colors.Red,
-
-                    // Outside rectangle -> DarkBlue
-                    Colors.DarkBlue
-                }
-            }
-        };
-    }
 }

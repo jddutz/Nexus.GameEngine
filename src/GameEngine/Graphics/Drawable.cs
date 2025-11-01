@@ -10,18 +10,15 @@ namespace Nexus.GameEngine.Graphics;
 /// - public void SetIsVisible(bool value, float duration = -1f, InterpolationMode interpolation = default)
 /// </summary>
 public abstract partial class Drawable : Transformable, IDrawable
-{
-    /// <summary>
-    /// Template for configuring Drawable components.
-    /// </summary>
-    public new record Template : Transformable.Template
-    {
-        public bool Visible { get; set; } = true;
-    }
-    
+{    
     public required IResourceManager ResourceManager { get; set; }
     public required IPipelineManager PipelineManager { get; set; }
-    public required PipelineHandle Pipeline { get; set; }
+    
+    /// <summary>
+    /// The graphics pipeline used to render this component.
+    /// Automatically created during activation from GetPipelineDefinition().
+    /// </summary>
+    public abstract PipelineHandle Pipeline { get; }
     
     /// <summary>
     /// Whether this component should be rendered.
@@ -31,7 +28,7 @@ public abstract partial class Drawable : Transformable, IDrawable
     /// Source generator will create: public bool Visible { get; } and SetVisible() method.
     /// </summary>
     [ComponentProperty]
-    private bool _visible = true;
+    protected bool _visible = true;
 
     /// <summary>
     /// Returns whether this component should be rendered (combines Enabled and Visible states).

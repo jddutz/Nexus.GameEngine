@@ -15,53 +15,18 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: When narrow/tall image, shows bottom and clips top; when wide/short, centers horizontally
 /// </summary>
 public partial class ImagePlacementFillBottomTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("Image placement bottom center")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static ImagePlacementFillBottomTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new ImageTextureBackground.Template()
+            new ImageTextureBackgroundTemplate()
             {
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillBottom
             }
         ]
     };
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var window = windowService.GetWindow();
-        var offset = 2;
-        var imageSize = 256;
-        
-        SampleCoordinates = [
-            new(window.Size.X / 4, window.Size.Y - offset),         // Bottom-left quadrant
-            new(window.Size.X / 2, window.Size.Y - offset),         // Bottom-center
-            new(3 * window.Size.X / 4, window.Size.Y - offset),     // Bottom-right quadrant
-        ];
-
-        // Calculate expected UV bounds
-        var (uvMin, uvMax) = BackgroundImagePlacement.CalculateUVBounds(
-            BackgroundImagePlacement.FillBottom,
-            imageSize, imageSize,
-            window.Size.X, window.Size.Y);
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    new Vector4D<float>(0.25f * (uvMax.X - uvMin.X) + uvMin.X, uvMax.Y, 0f, 1f),  // Left quadrant
-                    new Vector4D<float>(0.5f * (uvMax.X - uvMin.X) + uvMin.X, uvMax.Y, 0f, 1f),   // Center
-                    new Vector4D<float>(0.75f * (uvMax.X - uvMin.X) + uvMin.X, uvMax.Y, 0f, 1f),  // Right quadrant
-                }
-            }
-        };
-    }
 }

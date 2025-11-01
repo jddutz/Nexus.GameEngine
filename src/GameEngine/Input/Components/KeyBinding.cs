@@ -17,19 +17,6 @@ public partial class KeyBinding(
     IActionFactory actionFactory)
     : InputBinding(windowService, actionFactory)
 {
-    public new record Template : InputBinding.Template
-    {
-        /// <summary>
-        /// The key that triggers this binding
-        /// </summary>
-        public Key Key { get; set; }
-
-        /// <summary>
-        /// Optional modifier keys required for this binding
-        /// </summary>
-        public Key[] ModifierKeys { get; set; } = [];
-    }
-
     /// <summary>
     /// The key that triggers this binding
     /// </summary>
@@ -41,22 +28,6 @@ public partial class KeyBinding(
     /// </summary>
     [ComponentProperty]
     private Key[] _modifierKeys = [];
-
-    /// <summary>
-    /// Configure the gamepad binding using the provided template.
-    /// </summary>
-    /// <param name="template">Template containing configuration data</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            Log.Debug($"Binding KeyDown event for {template.Key}");
-            SetKey(template.Key);
-            SetModifierKeys(template.ModifierKeys);
-        }
-    }
 
     /// <summary>
     /// Subscribe to the appropriate keyboard events based on configuration.

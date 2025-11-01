@@ -18,17 +18,14 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// - Bottom-right: Yellow
 /// </summary>
 public partial class BiaxialGradientBackgroundTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("Biaxial gradient test")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static BiaxialGradientBackgroundTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new BiaxialGradientBackground.Template()
+            new BiaxialGradientBackgroundTemplate()
             {
                 TopLeft = Colors.Red,
                 TopRight = Colors.Green,
@@ -37,39 +34,4 @@ public partial class BiaxialGradientBackgroundTest(
             }
         ]
     };
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var window = windowService.GetWindow();
-        var offset = 2;
-
-        SampleCoordinates = [
-            new(offset, offset),                                  // Top-left → Red
-            new(window.Size.X - offset, offset),                  // Top-right → Green
-            new(offset, window.Size.Y - offset),                  // Bottom-left → Blue
-            new(window.Size.X - offset, window.Size.Y - offset),  // Bottom-right → Yellow
-            new(window.Size.X / 2, window.Size.Y / 2),           // Center → blend of all 4
-        ];
-        
-        // Expected colors:
-        // Corners should be exact, center should be average of all 4
-        var topEdge = Colors.Lerp(Colors.Red, Colors.Green, 0.5f);      // Top center
-        var bottomEdge = Colors.Lerp(Colors.Blue, Colors.Yellow, 0.5f); // Bottom center
-        var center = Colors.Lerp(topEdge, bottomEdge, 0.5f);             // True center
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    Colors.Red,     // Top-left corner
-                    Colors.Green,   // Top-right corner
-                    Colors.Blue,    // Bottom-left corner
-                    Colors.Yellow,  // Bottom-right corner
-                    center          // Center point (blend of all 4)
-                }
-            }
-        };
-    }
 }

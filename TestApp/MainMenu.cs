@@ -14,23 +14,23 @@ public static partial class Templates
     /// MainMenu template defines the root component tree for the TestApp main menu.
     /// Includes the TestRunner and key bindings for toggling fullscreen and quitting the application.
     /// </summary>
-    public static readonly Element.Template MainMenu = new()
+    public static readonly ElementTemplate MainMenu = new()
     {
         // Set required properties here
         Name = "MainMenu",
         Subcomponents =
         [
-            new TestRunner.Template()
+            new TestRunnerTemplate()
             {
                 Name = "Test Runner"
             },
-            new KeyBinding.Template()
+            new KeyBindingTemplate()
             {
                 Name = "Toggle FullScreen (F12)",
                 Key = Key.F12,
                 ActionId = ActionId.FromType<ToggleFullscreenAction>()
             },
-            new KeyBinding.Template()
+            new KeyBindingTemplate()
             {
                 Name = "Quit (ESC)",
                 Key = Key.Escape,

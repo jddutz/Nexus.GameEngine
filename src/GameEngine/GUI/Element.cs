@@ -8,27 +8,8 @@ namespace Nexus.GameEngine.GUI;
 /// </summary>
 public partial class Element : Drawable, IUserInterfaceElement
 {
-    /// <summary>
-    /// Template for configuring user interface Element components.
-    /// </summary>
-    public new record Template : Drawable.Template
-    {
-        /// <summary>
-        /// The Y position in pixel space.
-        /// Default: 0 (top edge)
-        /// </summary>
-        public Vector2D<int>? PreferredSize { get; set; }
-
-        /// <summary>
-        /// The tint color applied to the component (RGBA).
-        /// Default: White (1, 1, 1, 1)
-        /// </summary>
-        public Vector4D<float> TintColor { get; set; } = Colors.White;
-    }
-
-
     [ComponentProperty]
-    private Rectangle<int> _bounds = new(0, 0, 0, 0);
+    protected Rectangle<int> _bounds = new(0, 0, 0, 0);
 
     partial void OnBoundsChanged(Rectangle<int> oldValue)
     {
@@ -83,7 +64,7 @@ public partial class Element : Drawable, IUserInterfaceElement
     public virtual void OnSizeChanged(Vector2D<int> oldValue) { }
 
     [ComponentProperty]
-    public int _zIndex = 0;
+    protected int _zIndex = 0;
 
     partial void OnZIndexChanged(int oldValue)
     {
@@ -91,9 +72,13 @@ public partial class Element : Drawable, IUserInterfaceElement
     }
 
     [ComponentProperty]
-    private Vector4D<float> _tintColor = Colors.White;
+    protected Vector4D<float> _tintColor = Colors.White;
 
     protected virtual GeometryDefinition GetGeometryDefinition() => GeometryDefinitions.UniformColorQuad;
+
+    public override PipelineHandle Pipeline =>
+        PipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
+        
     protected GeometryResource? Geometry { get; set; }
 
     public virtual void UpdateGeometry()
@@ -103,24 +88,6 @@ public partial class Element : Drawable, IUserInterfaceElement
 
         var newScale = new Vector3D<float>(Size.X, Size.Y, 1.0f);
         SetScale(newScale);
-    }
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        // Get or create shared pipeline for all Element instances
-        Pipeline = PipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
-
-        if (componentTemplate is Template template)
-        {
-            if (template.PreferredSize != null)
-                SetSize(template.PreferredSize.Value);
-
-            SetVisible(template.Visible);
-
-            SetTintColor(template.TintColor);
-        }
     }
 
     protected override void OnActivate()

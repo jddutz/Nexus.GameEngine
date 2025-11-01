@@ -8,90 +8,33 @@ namespace Nexus.GameEngine.Input.Components;
 /// When activated, subscribes directly to mouse events and executes the injected action
 /// when the specified mouse input occurs.
 /// </summary>
-/// <typeparam name="TAction">The type of action to execute when the mouse binding is triggered</typeparam>
 /// <remarks>
 /// Initializes a new instance of the MouseBinding class with dependency injection.
 /// </remarks>
 /// <param name="windowService">The window service to use for getting input context</param>
 /// <param name="actionFactory">The action factory for creating and executing actions</param>
-public partial class MouseBinding<TAction>(
+public partial class MouseBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
     : InputBinding(windowService, actionFactory)
 {
-
-    /// <summary>
-    /// Template for configuring mouse input bindings.
-    /// </summary>
-    public new record Template : InputBinding.Template
-    {
-        /// <summary>
-        /// The mouse button that triggers this binding.
-        /// </summary>
-        public MouseButton Button { get; init; } = MouseButton.Left;
-
-        /// <summary>
-        /// The type of mouse event to listen for.
-        /// </summary>
-        public MouseEventType EventType { get; init; } = MouseEventType.ButtonDown;
-
-        /// <summary>
-        /// Optional modifier keys required for this binding.
-        /// </summary>
-        public Key[] ModifierKeys { get; init; } = [];
-
-        /// <summary>
-        /// The action type to execute when the mouse input is triggered.
-        /// </summary>
-        public Type ActionType { get; init; } = typeof(object);
-    }
-
-    private MouseButton _button = MouseButton.Left;
-    private MouseEventType _eventType = MouseEventType.ButtonDown;
-    private Key[] _modifierKeys = [];
-
     /// <summary>
     /// The mouse button that triggers this binding.
     /// </summary>
-    public MouseButton Button
-    {
-        get => _button;
-        set => _button = value;
-    }
-
+    [ComponentProperty]
+    private MouseButton _button = MouseButton.Left;
+    
     /// <summary>
     /// The type of mouse event to listen for.
     /// </summary>
-    public MouseEventType EventType
-    {
-        get => _eventType;
-        set => _eventType = value;
-    }
-
+    [ComponentProperty]
+    private MouseEventType _eventType = MouseEventType.ButtonDown;
+    
     /// <summary>
     /// Optional modifier keys required for this binding.
     /// </summary>
-    public Key[] ModifierKeys
-    {
-        get => _modifierKeys;
-        set => _modifierKeys = value ?? [];
-    }
-
-    /// <summary>
-    /// Configure the mouse binding using the provided template.
-    /// </summary>
-    /// <param name="template">Template containing configuration data</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            Button = template.Button;
-            EventType = template.EventType;
-            ModifierKeys = template.ModifierKeys;
-        }
-    }
+    [ComponentProperty]
+    private Key[] _modifierKeys = [];
 
     /// <summary>
     /// Subscribe to the appropriate mouse events based on configuration.

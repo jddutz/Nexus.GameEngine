@@ -276,8 +276,9 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
 
         sb.AppendLine();
         
-        // Generate read-only property
-        sb.AppendLine($"    public {prop.Type} {prop.Name}");
+        // Generate read-only property (matching field nullability)
+        var propertyType = prop.Type;
+        sb.AppendLine($"    public {propertyType} {prop.Name}");
         sb.AppendLine("    {");
         sb.AppendLine($"        get => {fieldName};");
         sb.AppendLine("    }");
@@ -355,9 +356,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    sb.AppendLine($"            {fieldName} = new {elementType}[{targetFieldName}?.Length ?? 0];");
-                    sb.AppendLine($"            if ({targetFieldName} != null)");
-                    sb.AppendLine($"                global::System.Array.Copy({targetFieldName}!, {fieldName}, {targetFieldName}.Length);");
+                    sb.AppendLine($"            {fieldName} = {targetFieldName} ?? [];");
                 }
                 sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
                 sb.AppendLine("        }");
@@ -370,7 +369,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName})))");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            var oldValue = {fieldName};");
-                sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                sb.AppendLine($"            {fieldName} = {targetFieldName}!;");
                 sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
                 sb.AppendLine("        }");
             }

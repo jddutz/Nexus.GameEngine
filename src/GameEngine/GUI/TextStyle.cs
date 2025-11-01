@@ -8,8 +8,9 @@ public record TextStyle
 {
     /// <summary>
     /// The font definition specifying which font to use, size, and character range.
+    /// Defaults to a 16pt Roboto Regular font.
     /// </summary>
-    public required FontDefinition Font { get; init; }
+    public FontDefinition Font { get; init; } = new();
     
     /// <summary>
     /// The color of the text (RGBA).

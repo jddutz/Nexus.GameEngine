@@ -19,8 +19,13 @@ public record GradientDefinition
     /// <summary>
     /// Array of gradient stops defining colors at specific positions.
     /// Must be sorted by position in ascending order.
+    /// Defaults to a simple black-to-white gradient.
     /// </summary>
-    public required GradientStop[] Stops { get; init; }
+    public GradientStop[] Stops { get; init; } = 
+    [
+        new GradientStop(0.0f, new Vector4D<float>(0, 0, 0, 1)),
+        new GradientStop(1.0f, new Vector4D<float>(1, 1, 1, 1))
+    ];
     
     /// <summary>
     /// Creates a simple two-color gradient.

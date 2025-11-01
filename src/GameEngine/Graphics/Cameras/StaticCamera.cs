@@ -7,24 +7,6 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// </summary>
 public partial class StaticCamera : RuntimeComponent, ICamera
 {
-    /// <summary>
-    /// Template for configuring Static cameras.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Near clipping plane distance.
-        /// Default: -1 (UI elements can be at Z=0)
-        /// </summary>
-        public float NearPlane { get; set; } = -1f;
-
-        /// <summary>
-        /// Far clipping plane distance.
-        /// Default: 1 (UI elements can be at Z=0)
-        /// </summary>
-        public float FarPlane { get; set; } = 1f;
-    }
-
     // Viewport dimensions in pixels
     private float _viewportWidth = 1920f;  // Default fallback
     private float _viewportHeight = 1080f; // Default fallback
@@ -113,18 +95,6 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     {
         // For UI camera, world coordinates (pixels) ARE screen coordinates
         return new Vector2D<int>((int)worldPoint.X, (int)worldPoint.Y);
-    }
-
-    /// <summary>
-    /// Configure the component using the specified template.
-    /// </summary>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        if (componentTemplate is Template template)
-        {
-            NearPlane = template.NearPlane;
-            FarPlane = template.FarPlane;
-        }
     }
 
     protected override void OnActivate()

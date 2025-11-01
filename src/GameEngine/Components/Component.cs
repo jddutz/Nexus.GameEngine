@@ -3,19 +3,6 @@ namespace Nexus.GameEngine.Components;
 public partial class Component
     : Configurable, IComponent, IDisposable
 {
-    public new record Template : Configurable.Template
-    {
-        public Template[] Subcomponents { get; set; } = [];
-    }
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        // NOTE: Subcomponents are NOT created here because ContentManager may not be set yet.
-        // Subcomponents are created by ContentManager after Load() completes.
-    }
-
     /// <summary>
     /// Content manager used to create and manage subcomponents.
     /// </summary>

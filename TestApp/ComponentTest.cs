@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Components;
 using TestApp.TestComponents;
 
 namespace TestApp;
@@ -5,7 +6,7 @@ namespace TestApp;
 /// <summary>
 /// Defines a test to be executed by TestRunner.
 /// </summary>
-public class ComponentTest(TestComponent.Template template)
+public class ComponentTest(Template template)
 {
     /// <summary>
     /// Name of the test component to be tested
@@ -20,7 +21,7 @@ public class ComponentTest(TestComponent.Template template)
     /// <summary>
     /// Template used to instantiate the test
     /// </summary>
-    public TestComponent.Template Template { get; set; } = template;
+    public Template Template { get; set; } = template;
 
     /// <summary>
     /// Component created by TestRunner to run the test

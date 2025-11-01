@@ -67,7 +67,7 @@ public class ComponentFactory(
     /// ContentManager is responsible for setting the ContentManager reference before calling this.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? Create(Type componentType, Configurable.Template template)
+    public IComponent? Create(Type componentType, Template template)
     {
         var component = Create(componentType);
         if (component == null) return null;
@@ -82,11 +82,11 @@ public class ComponentFactory(
     }
 
     /// <inheritdoc/>
-    public IComponent? Create<T>(Configurable.Template template) where T : IComponent
+    public IComponent? Create<T>(Template template) where T : IComponent
         => Create(typeof(T), template);
 
     /// <inheritdoc/>
-    public IComponent? CreateInstance(Configurable.Template template)
+    public IComponent? CreateInstance(Template template)
     {
         if (template == null)
         {
@@ -94,15 +94,15 @@ public class ComponentFactory(
             return null;
         }
 
-        // Try to get the component type from the template's containing class
-        var componentType = template.GetType().DeclaringType;
+        // Get the component type from the template's ComponentType property
+        var componentType = template.ComponentType;
 
-        Log.Debug($"Inferred component type: {componentType?.Name ?? "null"}");
+        Log.Debug($"Template component type: {componentType?.Name ?? "null"}");
 
         // Type-safety: Ensure the type implements IComponent
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            Log.Debug("Component type is null or doesn't implement IComponent");
+            Log.Debug($"Component type is null or doesn't implement IComponent (template: {template.GetType().Name})");
             return null;
         }
 

@@ -9,23 +9,10 @@ public abstract partial class Layout
     : Element
 {
     /// <summary>
-    /// Template for configuring Layout components.
-    /// Defines the properties for arranging child components.
-    /// </summary>
-    public new record Template : Element.Template
-    {
-
-        /// <summary>
-        /// Padding around the layout container.
-        /// </summary>
-        public Padding Padding { get; init; } = Padding.Zero;
-    }
-
-    /// <summary>
     /// Padding around the layout container.
     /// </summary>
     [ComponentProperty]
-    private Padding _padding = new(0);
+    protected Padding _padding = new(0);
 
     private bool _isLayoutInvalid = true;
 
@@ -34,16 +21,6 @@ public abstract partial class Layout
     public void Invalidate()
     {
         _isLayoutInvalid = true;
-    }
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            SetPadding(template.Padding);
-        }
     }
 
     /// <summary>

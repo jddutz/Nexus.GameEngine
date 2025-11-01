@@ -18,11 +18,6 @@ public abstract partial class InputBinding(
     IActionFactory actionFactory)
     : RuntimeComponent
 {
-
-    public new record Template : RuntimeComponent.Template
-    {
-        public ActionId ActionId { get; set; } = ActionId.None;
-    }
     /// <summary>
     /// Direct access to Silk.NET Input interface for component input handling.
     /// Components use this to register for input events in their Subscribe/Unsubscribe methods.
@@ -47,17 +42,7 @@ public abstract partial class InputBinding(
     /// Gets the action that will be executed when input is triggered.
     /// </summary>
     [ComponentProperty]
-    private ActionId _actionId = ActionId.None;
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            SetActionId(template.ActionId);
-        }
-    }
+    protected ActionId _actionId = ActionId.None;
 
     /// <summary>
     /// Validate the input binding configuration. Override to add specific validation logic.

@@ -8,48 +8,12 @@ public partial class TextElement(
     IDescriptorManager descriptorManager)
     : Element
 {
-    // Default text style used when no style is specified
-    private static readonly TextStyle DefaultTextStyle = new()
-    {
-        Font = new FontDefinition
-        {
-            Name = "Roboto-Regular",
-            Source = new EmbeddedTrueTypeFontSource(
-                "EmbeddedResources/Fonts/Roboto-Regular.ttf",
-                typeof(TextElement).Assembly),
-            FontSize = 16,
-            CharacterRange = CharacterRange.AsciiPrintable,
-            UseSignedDistanceField = false
-        },
-        Color = new Vector4D<float>(1, 1, 1, 1),
-        Alignment = TextAlignment.Left
-    };
-
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// The text content to display.
-        /// </summary>
-        public string? Text { get; set; }
-
-        /// <summary>
-        /// The text style defining font, color, and alignment.
-        /// If not specified, uses default Roboto 16pt white left-aligned text.
-        /// </summary>
-        public TextStyle? Style { get; set; }
-
-        /// <summary>
-        /// Whether the text element should be rendered.
-        /// </summary>
-        public bool Visible { get; set; } = true;
-    }
-
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]
     private string _text = string.Empty;
 
     [ComponentProperty]
-    private TextStyle _style = DefaultTextStyle;
+    private TextStyle _style = null!;
 
     // GPU ResourceManager
     private FontResource? _fontResource;
@@ -97,25 +61,6 @@ public partial class TextElement(
     /// Text elements are leaf components and don't render children.
     /// </summary>
     public bool ShouldRenderChildren => false;
-
-    /// <summary>
-    /// Configure the text element using the provided template.
-    /// </summary>
-    /// <param name="componentTemplate">Template containing configuration data</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            SetText(template.Text ?? string.Empty);
-            SetStyle(template.Style ?? DefaultTextStyle);
-            SetVisible(template.Visible);
-        }
-
-        // Load font resource
-        _fontResource = ResourceManager.Fonts.GetOrCreate(_style.Font);
-    }
 
     protected override void OnActivate()
     {

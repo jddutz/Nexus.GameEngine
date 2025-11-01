@@ -10,65 +10,28 @@ public partial class ImageTextureBackground(
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
-    /// <summary>
-    /// Template for configuring ImageTextureBackground components.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Texture definition to load.
-        /// Required. Use a static texture definition from your resource definitions class (e.g., TestResources.UvGridTexture).
-        /// </summary>
-        public required TextureDefinition TextureDefinition { get; set; }
-        
-        /// <summary>
-        /// Image placement mode.
-        /// Use BackgroundImagePlacement constants (e.g., FillCenter, FitCenter, Stretch).
-        /// Default: FillCenter
-        /// </summary>
-        public int Placement { get; set; } = BackgroundImagePlacement.FillCenter;
-    }
-
     private GeometryResource? _geometry;
-    private PipelineHandle _pipeline;
     
     // Texture resources
     private Resources.Textures.TextureResource? _texture;
     private DescriptorSet? _textureDescriptorSet;
     
-    private TextureDefinition? _textureDefinition;
-    private int _placement = BackgroundImagePlacement.FillCenter;
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
+    [ComponentProperty]
+    protected TextureDefinition _textureDefinition = new()
     {
-        base.OnLoad(componentTemplate);
-        
-        if (componentTemplate is Template template)
-        {
-            _textureDefinition = template.TextureDefinition;
-            _placement = template.Placement;
-        }
-    }
+        Name = "DefaultTexture",
+        Source = new ArgbArrayTextureSource(1, 1, [new Vector4D<float>(1, 1, 1, 1)])
+    };
+    
+    [ComponentProperty]
+    protected int _placement = BackgroundImagePlacement.FillCenter;
+
+    public override PipelineHandle Pipeline =>
+        PipelineManager.GetOrCreate(PipelineDefinitions.ImageTexture);
 
     protected override void OnActivate()
     {
         base.OnActivate();
-
-        if (_textureDefinition == null)
-        {
-            throw new InvalidOperationException("ImageTextureBackground requires a TextureDefinition to be set");
-        }
-        
-        // Build pipeline for image texture rendering
-        _pipeline = PipelineManager.GetBuilder()
-            .WithShader(ShaderDefinitions.ImageTexture)
-            .WithRenderPasses(RenderPasses.Main)
-            .WithTopology(PrimitiveTopology.TriangleStrip)
-            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-            .WithDepthTest()
-            .WithDepthWrite()
-            .Build("ImageTextureBackground_Pipeline");
-
 
         // Load texture with specified definition
         _texture = ResourceManager.Textures.GetOrCreate(_textureDefinition);
@@ -107,7 +70,7 @@ public partial class ImageTextureBackground(
         yield return new DrawCommand
         {
             RenderMask = RenderPasses.Main,
-            Pipeline = _pipeline,
+            Pipeline = Pipeline,
             VertexBuffer = _geometry.Buffer,
             VertexCount = _geometry.VertexCount,
             InstanceCount = 1,

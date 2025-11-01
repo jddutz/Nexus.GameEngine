@@ -31,7 +31,7 @@ public interface IConfigurable : IEntity
     /// Automatically triggers re-validation of the component.
     /// </summary>
     /// <param name="template">Template used for configuration. Can be null for template-less components.</param>
-    void Load(Configurable.Template template);
+    void Load(Template template);
 
     /// <summary>
     /// Validate this component and all its subcomponents.

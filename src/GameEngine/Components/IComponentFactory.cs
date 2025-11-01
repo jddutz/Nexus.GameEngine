@@ -35,7 +35,7 @@ public interface IComponentFactory
     /// <param name="componentType">The type of component to create.</param>
     /// <param name="template">The template to use for configuration.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? Create(Type componentType, Configurable.Template template);
+    IComponent? Create(Type componentType, Template template);
 
     /// <summary>
     /// Creates and configures a component from a template without activation.
@@ -43,7 +43,7 @@ public interface IComponentFactory
     /// <typeparam name="T">The component type to create.</typeparam>
     /// <param name="template">The template to use for configuration.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? Create<T>(Configurable.Template template) where T : IComponent;
+    IComponent? Create<T>(Template template) where T : IComponent;
 
     /// <summary>
     /// Creates a component instance from a template by inferring the type from the template's declaring type.
@@ -54,5 +54,5 @@ public interface IComponentFactory
     /// </summary>
     /// <param name="template">The template to use for instantiation and configuration.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? CreateInstance(Configurable.Template template);
+    IComponent? CreateInstance(Template template);
 }

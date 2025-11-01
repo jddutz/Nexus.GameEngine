@@ -15,17 +15,14 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: Entire texture visible (UV 0,0 to 1,1), potentially distorted to fill viewport
 /// </summary>
 public partial class ImagePlacementStretchTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
-    public new record Template : TestComponent.Template { }
-
     [Test("Image placement stretch")]
-    public readonly static Template BackgroundLayerTest = new()
+    public readonly static ImagePlacementStretchTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new ImageTextureBackground.Template()
+            new ImageTextureBackgroundTemplate()
             {
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.Stretch
@@ -42,34 +39,5 @@ public partial class ImagePlacementStretchTest(
         var x = u * 255f;
         var y = v * 255f;
         return new Vector4D<float>(x / 255f, y / 255f, 0f, 1f);
-    }
-
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        var window = windowService.GetWindow();
-        var offset = 2;
-        
-        SampleCoordinates = [
-            new(offset, offset),                                    // Top-left corner -> UV(0,0) -> RGB(0,0,0)
-            new(window.Size.X - offset, offset),                    // Top-right corner -> UV(1,0) -> RGB(255,0,0)
-            new(offset, window.Size.Y - offset),                    // Bottom-left corner -> UV(0,1) -> RGB(0,255,0)
-            new(window.Size.X - offset, window.Size.Y - offset),    // Bottom-right corner -> UV(1,1) -> RGB(255,255,0)
-            new(window.Size.X / 2, window.Size.Y / 2),              // Center -> UV(0.5,0.5) -> RGB(127,127,0)
-        ];
-
-        ExpectedResults = new Dictionary<int, Vector4D<float>[]>
-        {
-            {
-                0,
-                new[]
-                {
-                    UVToExpectedColor(0f, 0f),      // Top-left
-                    UVToExpectedColor(1f, 0f),      // Top-right
-                    UVToExpectedColor(0f, 1f),      // Bottom-left
-                    UVToExpectedColor(1f, 1f),      // Bottom-right
-                    UVToExpectedColor(0.5f, 0.5f),  // Center
-                }
-            }
-        };
     }
 }

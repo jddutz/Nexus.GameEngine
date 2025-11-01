@@ -5,47 +5,6 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// </summary>
 public partial class PerspectiveCamera : RuntimeComponent, ICamera
 {
-    /// <summary>
-    /// Template for configuring Perspective cameras.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Field of view angle in radians. Default is PI/4 (45 degrees).
-        /// </summary>
-        public float FieldOfView { get; set; } = MathF.PI / 4;
-
-        /// <summary>
-        /// Near clipping plane distance.
-        /// </summary>
-        public float NearPlane { get; set; } = 0.1f;
-
-        /// <summary>
-        /// Far clipping plane distance.
-        /// </summary>
-        public float FarPlane { get; set; } = 1000f;
-
-        /// <summary>
-        /// Aspect ratio (width/height) of the viewport.
-        /// </summary>
-        public float AspectRatio { get; set; } = 16f / 9f;
-
-        /// <summary>
-        /// Position of the camera in world space.
-        /// </summary>
-        public Vector3D<float> Position { get; set; } = Vector3D<float>.Zero;
-
-        /// <summary>
-        /// Forward direction vector of the camera.
-        /// </summary>
-        public Vector3D<float> Forward { get; set; } = -Vector3D<float>.UnitZ;
-
-        /// <summary>
-        /// Up direction vector of the camera.
-        /// </summary>
-        public Vector3D<float> Up { get; set; } = Vector3D<float>.UnitY;
-    }
-
     // Animated properties with slow easing for smooth camera movements
     [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
@@ -202,23 +161,6 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
     public void LookAt(Vector3D<float> target)
     {
         SetForward(Vector3D.Normalize(target - Position));
-    }
-
-    /// <summary>
-    /// Configure the component using the specified template.
-    /// </summary>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        if (componentTemplate is Template template)
-        {
-            SetFieldOfView(template.FieldOfView);
-            SetNearPlane(template.NearPlane);
-            SetFarPlane(template.FarPlane);
-            SetAspectRatio(template.AspectRatio);
-            SetPosition(template.Position);
-            SetForward(template.Forward);
-            SetUp(template.Up);
-        }
     }
 
     // Property change callbacks - mark matrices dirty when camera properties change

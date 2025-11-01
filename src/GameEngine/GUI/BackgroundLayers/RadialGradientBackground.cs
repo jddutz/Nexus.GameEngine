@@ -11,114 +11,51 @@ public partial class RadialGradientBackground(
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
-    /// <summary>
-    /// Template for configuring RadialGradientBackground components.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// The gradient definition (color stops).
-        /// Required. Use GradientDefinition.TwoColor() for simple gradients.
-        /// </summary>
-        public GradientDefinition? Gradient { get; set; }
-        
-        /// <summary>
-        /// Center point of the radial gradient in normalized coordinates [0, 1].
-        /// (0, 0) = top-left corner
-        /// (0.5, 0.5) = screen center
-        /// (1, 1) = bottom-right corner
-        /// Default: (0.5, 0.5) - center of screen
-        /// </summary>
-        public Vector2D<float> Center { get; set; } = new(0.5f, 0.5f);
-        
-        /// <summary>
-        /// Radius of the radial gradient in normalized [0,1] units.
-        /// 0.5 = reaches from center to edges (for a centered gradient)
-        /// 1.0 = reaches corners
-        /// Default: 0.5
-        /// </summary>
-        public float Radius { get; set; } = 0.5f;
-        
-        /// <summary>
-        /// Scale factors for elliptical gradients.
-        /// (1, 1) = use automatic aspect ratio correction for circular gradient (default)
-        /// (2, 1) = ellipse stretched 2x horizontally
-        /// (1, 2) = ellipse stretched 2x vertically
-        /// Set to (1, 1) for circular gradients on any viewport size.
-        /// Default: (1, 1) - circular with aspect correction
-        /// </summary>
-        public Vector2D<float> GradientScale { get; set; } = new(1f, 1f);
-    }
-
     private GeometryResource? _geometry;
-    private PipelineHandle _pipeline;
     
     // UBO and descriptor set for gradient definition
     private Silk.NET.Vulkan.Buffer? _gradientUboBuffer;
     private DeviceMemory? _gradientUboMemory;
     private DescriptorSet? _gradientDescriptorSet;
     
-    private GradientDefinition? _gradientDefinition;
+    [ComponentProperty]
+    protected GradientDefinition _gradient = GradientDefinition.TwoColor(
+        new Vector4D<float>(0, 0, 0, 1),
+        new Vector4D<float>(1, 1, 1, 1));
 
     /// <summary>
     /// Center point of the radial gradient in normalized [0,1] coordinates. Can be animated.
     /// </summary>
     [ComponentProperty]
-    private Vector2D<float> _center = new(0.5f, 0.5f);
+    protected Vector2D<float> _center = new(0.5f, 0.5f);
 
     /// <summary>
     /// Radius of the radial gradient. Can be animated.
     /// </summary>
     [ComponentProperty]
-    private float _radius = 0.5f;
+    protected float _radius = 0.5f;
 
     /// <summary>
     /// Scale factors for elliptical gradients. Can be animated.
     /// </summary>
     [ComponentProperty]
-    private Vector2D<float> _gradientScale = new(1f, 1f);
+    protected Vector2D<float> _gradientScale = new(1f, 1f);
 
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-        
-        if (componentTemplate is Template template)
-        {
-            _gradientDefinition = template.Gradient;
-            SetCenter(template.Center);
-            SetRadius(template.Radius);
-            SetGradientScale(template.GradientScale);
-        }
-    }
+    public override PipelineHandle Pipeline =>
+        PipelineManager.GetOrCreate(PipelineDefinitions.RadialGradient);
 
     protected override void OnActivate()
     {
         base.OnActivate();
 
-        if (_gradientDefinition == null)
-        {
-            throw new InvalidOperationException("RadialGradientBackground requires a Gradient definition");
-        }
-
         // Validate gradient
-        _gradientDefinition.Validate();
-        
-        // Build pipeline for radial gradient rendering
-        _pipeline = PipelineManager.GetBuilder()
-            .WithShader(ShaderDefinitions.RadialGradient)
-            .WithRenderPasses(RenderPasses.Main)
-            .WithTopology(PrimitiveTopology.TriangleStrip)
-            .WithCullMode(CullModeFlags.None)  // No culling for full-screen quad
-            .WithDepthTest()
-            .WithDepthWrite()
-            .Build("RadialGradientBackground_Pipeline");
-
+        _gradient.Validate();
 
         // Create position-only full-screen quad geometry
         _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for gradient
-        CreateGradientUBO(_gradientDefinition);
+        CreateGradientUBO(_gradient);
     }
 
     /// <summary>
@@ -190,7 +127,7 @@ public partial class RadialGradientBackground(
         yield return new DrawCommand
         {
             RenderMask = RenderPasses.Main,
-            Pipeline = _pipeline,
+            Pipeline = Pipeline,
             VertexBuffer = _geometry.Buffer,
             VertexCount = _geometry.VertexCount,
             InstanceCount = 1,

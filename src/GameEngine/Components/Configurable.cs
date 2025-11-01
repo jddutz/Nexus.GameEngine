@@ -2,11 +2,6 @@ namespace Nexus.GameEngine.Components;
 
 public abstract partial class Configurable : Entity, IConfigurable
 {
-    public record Template
-    {
-        public string? Name { get; set; }
-    }
-
     // Configuration Events
     public event EventHandler<ConfigurationEventArgs>? Loading;
     public event EventHandler<ConfigurationEventArgs>? Loaded;
@@ -26,7 +21,7 @@ public abstract partial class Configurable : Entity, IConfigurable
     protected virtual void OnLoad(Template? template) { }
 
     /// <summary>
-    /// Load the component using the specified template.
+    /// Load the component using the specified template (legacy Configurable.Template).
     /// Base implementation calls OnLoad() for component-specific configuration,
     /// then applies initial property updates via ApplyUpdates(0).
     /// This method is sealed to ensure ApplyUpdates is called after OnLoad.

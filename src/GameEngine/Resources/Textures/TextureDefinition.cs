@@ -9,11 +9,13 @@ public record TextureDefinition
     /// <summary>
     /// Unique name for this texture resource.
     /// Used for caching and identification.
+    /// Defaults to "DefaultTexture".
     /// </summary>
-    public required string Name { get; init; }
+    public string Name { get; init; } = "DefaultTexture";
     
     /// <summary>
     /// Source that loads the raw texture pixel data.
+    /// Defaults to a 1x1 white pixel.
     /// </summary>
-    public required ITextureSource Source { get; init; }
+    public ITextureSource Source { get; init; } = new ArgbArrayTextureSource(1, 1, [new Vector4D<float>(1, 1, 1, 1)]);
 }

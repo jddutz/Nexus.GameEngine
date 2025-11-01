@@ -1,4 +1,4 @@
-﻿namespace Nexus.GameEngine.Components;
+namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Manages reusable content trees that can be assigned to viewports.
@@ -25,7 +25,7 @@ public class ContentManager(
     /// Use Create() when you need more control over the activation lifecycle.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? Load(Configurable.Template template, bool activate = true)
+    public IComponent? Load(Template template, bool activate = true)
     {
         if (string.IsNullOrEmpty(template.Name))
         {
@@ -131,7 +131,7 @@ public class ContentManager(
     /// The component is configured but NOT activated.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? Create(Type componentType, Configurable.Template template)
+    public IComponent? Create(Type componentType, Template template)
     {
         // Create component instance without configuration
         var component = componentFactory.Create(componentType);
@@ -147,9 +147,9 @@ public class ContentManager(
         }
 
         // Create subcomponents after configuration is complete
-        if (component is Component componentWithChildren && template is Component.Template componentTemplate)
+        if (component is Component componentWithChildren && template.Subcomponents.Length > 0)
         {
-            foreach (var subTemplate in componentTemplate.Subcomponents)
+            foreach (var subTemplate in template.Subcomponents)
             {
                 componentWithChildren.CreateChild(subTemplate);
             }
@@ -159,22 +159,23 @@ public class ContentManager(
     }
 
     /// <inheritdoc/>
-    public IComponent? Create<T>(Configurable.Template template) where T : IComponent
+    public IComponent? Create<T>(Template template) where T : IComponent
         => Create(typeof(T), template);
 
     /// <summary>
     /// Creates a component instance from a template.
-    /// Infers type, creates component, sets ContentManager, configures, and creates subcomponents.
+    /// Gets type from template's ComponentType property, creates component, sets ContentManager, configures, and creates subcomponents.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? CreateInstance(Configurable.Template template)
+    public IComponent? CreateInstance(Template template)
     {
         if (template == null) return null;
 
-        // Infer component type from the template's declaring type
-        var componentType = template.GetType().DeclaringType;
+        // Get component type from the template's ComponentType property
+        var componentType = template.ComponentType;
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
+            Log.Warning($"Template {template.GetType().Name} has invalid ComponentType: {componentType?.Name ?? "null"}");
             return null;
         }
 

@@ -14,5 +14,5 @@ public interface IApplication
     /// This method blocks until the application is terminated or the window is closed.
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
-    void Run(WindowOptions windowOptions, Element.Template startupTemplate);
+    void Run(WindowOptions windowOptions, ElementTemplate startupTemplate);
 }

@@ -8,26 +8,6 @@ namespace Nexus.GameEngine.Input.Components;
 /// </summary>
 public partial class InputMap : RuntimeComponent
 {
-
-    /// <summary>
-    /// Template for defining input mappings that organize input binding components.
-    /// InputMap serves as a container for InputBinding components and provides
-    /// context-aware input handling through component activation/deactivation.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Description of when this input mapping should be active.
-        /// </summary>
-        public string Description { get; init; } = string.Empty;
-
-        /// <summary>
-        /// Priority level for this input mapping when multiple mappings are active.
-        /// Higher values have higher priority.
-        /// </summary>
-        public int Priority { get; init; } = 0;
-    }
-
     /// <summary>
     /// Description of when this input mapping should be active.
     /// </summary>
@@ -46,21 +26,6 @@ public partial class InputMap : RuntimeComponent
     /// </summary>
     [ComponentProperty]
     private bool _enabledByDefault = true;
-
-    /// <summary>
-    /// Configure the input mapping using the provided template.
-    /// </summary>
-    /// <param name="componentTemplate">Template containing configuration data</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            SetDescription(template.Description ?? string.Empty);
-            SetPriority(template.Priority);
-        }
-    }
 
     /// <summary>
     /// Activate this input mapping and all child input bindings.

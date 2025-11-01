@@ -14,7 +14,7 @@ public partial class RuntimeComponent
     /// Use IsActive() to check if component is both Enabled and Active.
     /// </summary>
     [ComponentProperty]
-    private bool _active = false;
+    protected bool _active = false;
 
     /// <summary>
     /// Returns whether this component is currently active and enabled.

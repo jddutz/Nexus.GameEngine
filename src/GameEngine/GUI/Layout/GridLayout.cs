@@ -8,53 +8,6 @@ public partial class GridLayout
     : Layout
 {
     /// <summary>
-    /// Template for configuring GridLayout components.
-    /// Defines the properties for arranging child components in a grid pattern.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Number of columns in the grid.
-        /// </summary>
-        public int Columns { get; init; } = 1;
-
-        /// <summary>
-        /// Number of rows in the grid. If 0, rows are calculated automatically based on child count and columns.
-        /// </summary>
-        public int Rows { get; init; } = 0;
-
-        /// <summary>
-        /// Horizontal spacing between grid cells in pixels.
-        /// </summary>
-        public int ColumnSpacing { get; init; } = 0;
-
-        /// <summary>
-        /// Vertical spacing between grid cells in pixels.
-        /// </summary>
-        public int RowSpacing { get; init; } = 0;
-
-        /// <summary>
-        /// Horizontal alignment of child components within their grid cells.
-        /// </summary>
-        public HorizontalAlignment HorizontalAlignment { get; init; } = HorizontalAlignment.Center;
-
-        /// <summary>
-        /// Vertical alignment of child components within their grid cells.
-        /// </summary>
-        public VerticalAlignment VerticalAlignment { get; init; } = VerticalAlignment.Center;
-
-        /// <summary>
-        /// Padding around the entire grid container.
-        /// </summary>
-        public Padding Padding { get; init; } = Padding.Zero;
-
-        /// <summary>
-        /// Whether grid cells should have uniform size based on the largest child component.
-        /// </summary>
-        public bool UniformCellSize { get; init; } = false;
-    }
-
-    /// <summary>
     /// Number of columns in the grid.
     /// </summary>
     public int Columns { get; set; } = 1;
@@ -88,26 +41,6 @@ public partial class GridLayout
     /// Whether grid cells should have uniform size based on the largest child component.
     /// </summary>
     public bool UniformCellSize { get; set; } = false;
-
-    /// <summary>
-    /// Configure this GridLayout using the specified template.
-    /// </summary>
-    /// <param name="template">Template containing grid layout configuration</param>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        base.OnLoad(componentTemplate);
-
-        if (componentTemplate is Template template)
-        {
-            Columns = template.Columns;
-            Rows = template.Rows;
-            ColumnSpacing = template.ColumnSpacing;
-            RowSpacing = template.RowSpacing;
-            HorizontalAlignment = template.HorizontalAlignment;
-            VerticalAlignment = template.VerticalAlignment;
-            UniformCellSize = template.UniformCellSize;
-        }
-    }
 
     /// <summary>
     /// Arranges child components in a grid pattern with configurable spacing and alignment.

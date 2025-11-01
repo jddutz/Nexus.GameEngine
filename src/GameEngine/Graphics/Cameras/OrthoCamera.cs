@@ -5,36 +5,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// </summary>
 public partial class OrthoCamera : RuntimeComponent, ICamera
 {
-    /// <summary>
-    /// Template for configuring Orthographic cameras.
-    /// </summary>
-    public new record Template : RuntimeComponent.Template
-    {
-        /// <summary>
-        /// Width of the orthographic projection view.
-        /// </summary>
-        public float Width { get; set; } = 10f;
-
-        /// <summary>
-        /// Height of the orthographic projection view.
-        /// </summary>
-        public float Height { get; set; } = 10f;
-
-        /// <summary>
-        /// Near clipping plane distance.
-        /// </summary>
-        public float NearPlane { get; set; } = -1000f;
-
-        /// <summary>
-        /// Far clipping plane distance.
-        /// </summary>
-        public float FarPlane { get; set; } = 1000f;
-
-        /// <summary>
-        /// Position of the camera in world space.
-        /// </summary>
-        public Vector3D<float> Position { get; set; } = Vector3D<float>.Zero;
-    }
+    // Template is auto-generated from [ComponentProperty] fields below
 
     // Animated properties for smooth camera movements
     [ComponentProperty]
@@ -82,21 +53,7 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
     private Matrix4X4<float> _viewProjectionMatrix;
     private bool _viewProjectionDirty = true;
 
-    /// <summary>
-    /// Configure the component using the specified template.
-    /// </summary>
-    protected override void OnLoad(Configurable.Template? componentTemplate)
-    {
-        if (componentTemplate is Template template)
-        {
-            SetWidth(template.Width);
-            SetHeight(template.Height);
-            SetNearPlane(template.NearPlane);
-            SetFarPlane(template.FarPlane);
-            SetPosition(template.Position);
-            _matricesDirty = true;
-        }
-    }
+    // OnLoad is auto-generated from template
 
     private void UpdateMatrices()
     {
