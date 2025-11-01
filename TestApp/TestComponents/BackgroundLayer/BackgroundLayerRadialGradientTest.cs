@@ -16,8 +16,7 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Single frame test: White (center) → Black (edges) from center point (0.5, 0.5)
 /// </summary>
 public partial class BackgroundLayerRadialGradientTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
     [Test("Radial gradient test")]
@@ -35,8 +34,23 @@ public partial class BackgroundLayerRadialGradientTest(
                 // Radius that reaches edges
                 Radius = 0.5f
             }
-        ]
+        ],
+        SampleCoordinates = [
+            new(960, 540),    // Center - white
+            new(720, 540),    // 25% from center - light gray
+            new(480, 540),    // 50% from center - medium gray
+            new(240, 540),    // 75% from center - dark gray
+            new(0, 540)       // Edge - black
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(1, 1, 1, 1),              // White center (960, 540)
+                new(0.558f, 0.558f, 0.558f, 1),  // Light gray (720, 540)
+                new(0.112f, 0.112f, 0.112f, 1),  // Medium gray (480, 540)
+                new(0.000f, 0.000f, 0.000f, 1),  // Dark gray (240, 540)
+                new(0, 0, 0, 1)               // Black edge (0, 540)
+            ]
+        }
     };
-
-    private IWindow window => windowService.GetWindow();
 }

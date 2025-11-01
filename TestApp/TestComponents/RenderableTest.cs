@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
@@ -13,7 +14,27 @@ public partial class RenderableTest(
     ) : TestComponent, IDrawable
 {
     [Test("GetDrawCommands() should be called at least once")]
-    public readonly static RenderableTestTemplate RenderableBaseTest = new();
+    public readonly static RenderableTestTemplate RenderableBaseTest = new()
+    {
+        SampleCoordinates = [
+            new(960, 540),  // Center
+            new(480, 270),  // Upper-left quadrant
+            new(1440, 270), // Upper-right quadrant
+            new(480, 810),  // Lower-left quadrant
+            new(1440, 810)  // Lower-right quadrant
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            // DarkBlue background at all sample points
+            [0] = [
+                Colors.DarkBlue,  
+                Colors.DarkBlue,
+                Colors.DarkBlue,
+                Colors.DarkBlue,
+                Colors.DarkBlue
+            ]
+        }
+    };
 
     [ComponentProperty]
     private Vector2D<int>[] _sampleCoordinates = [];
@@ -30,9 +51,17 @@ public partial class RenderableTest(
 
     protected override void OnActivate()
     {
+        base.OnActivate();
+        
         pixelSampler.SampleCoordinates = SampleCoordinates;
         pixelSampler.Enabled = SampleCoordinates.Length > 0;
         pixelSampler.Activate();
+        
+        // Explicitly activate all children
+        foreach (var child in Children.OfType<IRuntimeComponent>())
+        {
+            child.Activate();
+        }
     }
 
     public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
@@ -55,7 +84,41 @@ public partial class RenderableTest(
             Passed = FramesRendered >= FrameCount
         };
 
-        if (ExpectedResults.Count == 0) yield break;
+        if (ExpectedResults.Count == 0)
+        {
+            yield return new TestResult
+            {
+                ExpectedResult = "Pixel sampling configured with expected results",
+                ActualResult = "No expected results configured",
+                Passed = false
+            };
+
+            yield break;
+        }
+
+        if (pixelSampler == null)
+        {
+            yield return new TestResult
+            {
+                ExpectedResult = "Pixel sampler is properly configured",
+                ActualResult = "Pixel sampler is null",
+                Passed = false
+            };
+
+            yield break;
+        }
+
+        if (pixelSampler.SampleCoordinates.Length == 0)
+        {
+            yield return new TestResult
+            {
+                ExpectedResult = "Pixel sampler is properly configured",
+                ActualResult = "Sample coordinates == []",
+                Passed = false
+            };
+
+            yield break;
+        }
 
         var samples = pixelSampler.GetResults();
 

@@ -12,7 +12,6 @@ public partial class LinearGradientBackground(
     : Drawable, IDrawable
 {
     private GeometryResource? _geometry;
-    private int _drawCallCount = 0;
     
     // UBO and descriptor set for gradient definition
     private Silk.NET.Vulkan.Buffer? _gradientUboBuffer;
@@ -35,6 +34,7 @@ public partial class LinearGradientBackground(
 
     protected override void OnActivate()
     {
+        Log.Debug($"LinearGradientBackground.OnActivate() - IsValid:{IsValid}, IsLoaded:{IsLoaded}, Visible:{Visible}");
         base.OnActivate();
 
         // Validate gradient
@@ -96,8 +96,6 @@ public partial class LinearGradientBackground(
     {
         if (_geometry == null || !_gradientDescriptorSet.HasValue)
             yield break;
-
-        _drawCallCount++;
 
         // Use push constants for the angle (allows animation)
         var pushConstants = new LinearGradientPushConstants { Angle = _angle };

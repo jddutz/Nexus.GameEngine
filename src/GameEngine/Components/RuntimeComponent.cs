@@ -29,6 +29,13 @@ public partial class RuntimeComponent
 
     public void Activate()
     {
+        // Enforce constraint: A component can only be activated if its parent is active (or it has no parent)
+        if (Parent is IRuntimeComponent runtimeParent && !runtimeParent.IsActive())
+        {
+            Log.Warning($"Cannot activate {GetType().Name} '{Name}' because parent {runtimeParent.GetType().Name} is not active");
+            return;
+        }
+
         // Validate before activation (uses cached results if available)
         if (!Validate())
         {
@@ -38,15 +45,17 @@ public partial class RuntimeComponent
         Activating?.Invoke(this, EventArgs.Empty);
 
         // Activate root to leaf
+
+        // Set active state immediately (not deferred) BEFORE activating children
+        // so that child validation can check parent.IsActive() correctly
+        _active = true;
+
         OnActivate();
 
         foreach (var child in Children.OfType<IRuntimeComponent>())
         {
             child.Activate();
         }
-
-        // Set active state after successful activation (deferred until next frame)
-        SetActive(true);
 
         Activated?.Invoke(this, EventArgs.Empty);
     }
@@ -108,8 +117,8 @@ public partial class RuntimeComponent
 
         Deactivating?.Invoke(this, EventArgs.Empty);
 
-        // Set inactive state before deactivating children (deferred until next frame)
-        SetActive(false);
+        // Set inactive state immediately (not deferred) so children can check IsActive() correctly
+        _active = false;
 
         // Deactivate leaf to root
         foreach (var child in Children.OfType<IRuntimeComponent>())
@@ -120,7 +129,5 @@ public partial class RuntimeComponent
         OnDeactivate();
 
         Deactivated?.Invoke(this, EventArgs.Empty);
-
-        SetActive(false);
     }
 }

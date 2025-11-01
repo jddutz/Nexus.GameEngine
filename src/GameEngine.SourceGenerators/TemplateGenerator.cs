@@ -59,14 +59,15 @@ public class TemplateGenerator : IIncrementalGenerator
         // Check if class derives from IComponent (directly or indirectly)
         if (!DerivesFromInterface(classSymbol, "IComponent")) return null;
 
-        // Get all fields with ComponentProperty attribute
+        // Get ComponentProperty fields declared directly on this class (not inherited)
         var properties = GetComponentProperties(classSymbol);
-
-        // Only generate for classes with ComponentProperty fields
-        if (properties.Count == 0) return null;
 
         // Find the base class that also has generated templates (for inheritance)
         var baseTemplateType = GetBaseTemplateType(classSymbol);
+        
+        // Generate template for all IComponent classes to support inheritance,
+        // even if they don't have their own ComponentProperty fields
+        // (they may inherit properties from base classes)
 
         return new ComponentClassInfo
         {
@@ -78,40 +79,36 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Gets all ComponentProperty fields from the class and its entire inheritance chain.
+    /// Gets ComponentProperty fields declared directly on this class (not inherited).
     /// </summary>
     private static List<PropertyInfo> GetComponentProperties(INamedTypeSymbol classSymbol)
     {
         var properties = new List<PropertyInfo>();
-        var currentType = classSymbol;
 
-        // Walk up the inheritance chain and collect all ComponentProperty fields
-        while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
+        // Only get fields declared directly on this class
+        foreach (var field in classSymbol.GetMembers().OfType<IFieldSymbol>())
         {
-            foreach (var field in currentType.GetMembers().OfType<IFieldSymbol>())
+            // Skip fields not declared on this specific type
+            if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, classSymbol)) 
+                continue;
+
+            var attr = field.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
+
+            if (attr == null) continue;
+
+            // Get the syntax node to access the initializer
+            var syntax = field.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
+
+            properties.Add(new PropertyInfo
             {
-                var attr = field.GetAttributes()
-                    .FirstOrDefault(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
-
-                if (attr == null) continue;
-
-                // Only include fields declared on this specific type in the chain
-                if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, currentType)) continue;
-
-                properties.Add(new PropertyInfo
-                {
-                    FieldName = field.Name,
-                    PropertyName = GetPropertyNameFromField(field.Name),
-                    Type = field.Type.ToDisplayString(),
-                    DefaultValue = GetDefaultValueExpression(field)
-                });
-            }
-
-            currentType = currentType.BaseType;
+                FieldName = field.Name,
+                PropertyName = GetPropertyNameFromField(field.Name),
+                Type = field.Type.ToDisplayString(),
+                DefaultValue = GetDefaultValueExpression(field, syntax)
+            });
         }
 
-        // Reverse to get base class properties first
-        properties.Reverse();
         return properties;
     }
 
@@ -127,9 +124,19 @@ public class TemplateGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Gets the default value expression for a field from its initializer.
+    /// First checks if the field has an explicit initializer in source code.
+    /// Falls back to type-based defaults if no initializer is found.
     /// </summary>
-    private static string GetDefaultValueExpression(IFieldSymbol field)
+    private static string GetDefaultValueExpression(IFieldSymbol field, VariableDeclaratorSyntax? syntax)
     {
+        // First, check if there's an explicit initializer in the source code
+        if (syntax?.Initializer?.Value != null)
+        {
+            // Return the initializer expression exactly as written in source
+            return syntax.Initializer.Value.ToString();
+        }
+
+        // Fall back to type-based defaults
         var typeName = field.Type.ToDisplayString();
         
         // Handle arrays - use [] syntax for non-nullable arrays
@@ -202,13 +209,32 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Gets the base template type - always returns "Template" since we're flattening the hierarchy.
-    /// Each generated template includes all properties from the entire inheritance chain.
+    /// Gets the base template type by finding the immediate base class that has ComponentProperty fields.
+    /// Returns the base class's template name, or "Nexus.GameEngine.Components.Template" if no such base exists.
     /// </summary>
     private static string GetBaseTemplateType(INamedTypeSymbol classSymbol)
     {
-        // Always inherit directly from the base Template class
-        // All properties from the inheritance chain are included in this template
+        var baseType = classSymbol.BaseType;
+        
+        // Walk up the inheritance chain to find the first base class with ComponentProperty fields
+        while (baseType != null && baseType.SpecialType != SpecialType.System_Object)
+        {
+            // Check if this base class has any ComponentProperty fields
+            var hasComponentProperties = baseType.GetMembers()
+                .OfType<IFieldSymbol>()
+                .Any(f => SymbolEqualityComparer.Default.Equals(f.ContainingType, baseType) &&
+                         f.GetAttributes().Any(a => a.AttributeClass?.Name == "ComponentPropertyAttribute"));
+            
+            if (hasComponentProperties)
+            {
+                // Found a base class with ComponentProperty fields - it will have a generated template
+                return $"{baseType.ContainingNamespace.ToDisplayString()}.{baseType.Name}Template";
+            }
+            
+            baseType = baseType.BaseType;
+        }
+        
+        // No base class with ComponentProperty fields found - inherit from base Template
         return "Nexus.GameEngine.Components.Template";
     }
 
@@ -233,7 +259,8 @@ public class TemplateGenerator : IIncrementalGenerator
         // Generate template record as a separate top-level class
         sb.AppendLine($"/// <summary>");
         sb.AppendLine($"/// Auto-generated template for {info.ClassName} component.");
-        sb.AppendLine($"/// Properties correspond to [ComponentProperty] fields.");
+        sb.AppendLine($"/// Properties correspond to [ComponentProperty] fields declared on this class.");
+        sb.AppendLine($"/// Inherits from base class template to preserve property inheritance hierarchy.");
         sb.AppendLine($"/// </summary>");
         sb.AppendLine($"public record {info.ClassName}Template : {info.BaseTemplateType}");
         sb.AppendLine("{");
@@ -287,8 +314,9 @@ public class TemplateGenerator : IIncrementalGenerator
         // Generate OnLoad method override that casts to specific template type
         sb.AppendLine($"    /// <summary>");
         sb.AppendLine($"    /// Loads component from template. Auto-generated override.");
-        sb.AppendLine($"    /// Uses Set methods for all properties from the entire inheritance chain.");
-        sb.AppendLine($"    /// The base Load() method will call ApplyUpdates(0) after this to apply changes immediately.");
+        sb.AppendLine($"    /// Assigns values directly to backing fields, bypassing the deferred update system.");
+        sb.AppendLine($"    /// Target properties will automatically return backing field values until explicitly set.");
+        sb.AppendLine($"    /// This ensures immediate configuration without going through animations.");
         sb.AppendLine($"    /// </summary>");
         sb.AppendLine($"    protected override void OnLoad(Nexus.GameEngine.Components.Template? componentTemplate)");
         sb.AppendLine("    {");
@@ -297,11 +325,11 @@ public class TemplateGenerator : IIncrementalGenerator
         sb.AppendLine("            // Call base.OnLoad first to handle any base class properties");
         sb.AppendLine("            base.OnLoad(componentTemplate);");
         sb.AppendLine();
-        sb.AppendLine("            // Use Set methods for all properties (changes applied via ApplyUpdates in Load())");
+        sb.AppendLine("            // Assign directly to backing fields (target properties auto-return these until explicitly set)");
         
         foreach (var prop in info.Properties)
         {
-            sb.AppendLine($"            Set{prop.PropertyName}(template.{prop.PropertyName});");
+            sb.AppendLine($"            {prop.FieldName} = template.{prop.PropertyName};");
         }
 
         sb.AppendLine();

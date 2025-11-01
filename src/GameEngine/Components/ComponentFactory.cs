@@ -30,23 +30,10 @@ public class ComponentFactory(
             return null;
 
         // Set ResourceManager and PipelineManager for drawable components
-        if (component is IDrawable drawable)
+        if (component is Drawable drawable)
         {
-            var drawableType = drawable.GetType();
-            
-            // Set ResourceManager property if it exists
-            var resourceManagerProp = drawableType.GetProperty("ResourceManager");
-            if (resourceManagerProp != null && resourceManagerProp.CanWrite)
-            {
-                resourceManagerProp.SetValue(drawable, resourceManager);
-            }
-            
-            // Set PipelineManager property if it exists
-            var pipelineManagerProp = drawableType.GetProperty("PipelineManager");
-            if (pipelineManagerProp != null && pipelineManagerProp.CanWrite)
-            {
-                pipelineManagerProp.SetValue(drawable, pipelineManager);
-            }
+            drawable.ResourceManager = resourceManager;
+            drawable.PipelineManager = pipelineManager;
         }
 
         return component;

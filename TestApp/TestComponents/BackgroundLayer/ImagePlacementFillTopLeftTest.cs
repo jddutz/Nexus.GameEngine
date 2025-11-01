@@ -27,6 +27,23 @@ public partial class ImagePlacementFillTopLeftTest(
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillTopLeft
             }
-        ]
+        ],
+        SampleCoordinates = [
+            new(0, 0),        // Top-left corner
+            new(480, 0),      // Top edge
+            new(0, 270),      // Left edge
+            new(480, 270),    // Interior
+            new(960, 540)     // Further interior
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(0, 0, 0, 1),            // Top-left visible (0, 0)
+                new(0.25f, 0, 0, 1),        // 25% across (480, 0)
+                new(0, 0.138f, 0, 1),       // 25% down (0, 270)
+                new(0.25f, 0.138f, 0, 1),   // Interior (480, 270)
+                new(0.503f, 0.279f, 0, 1)   // Center (960, 540)
+            ]
+        }
     };
 }

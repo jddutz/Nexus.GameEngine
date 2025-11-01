@@ -1,3 +1,4 @@
+using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Windowing;
@@ -90,7 +91,9 @@ public partial class TestRunner : RuntimeComponent
                 var child = CreateChild(test.Template);
                 if (child is ITestComponent testComponent)
                 {
-                    testComponent?.Activate();
+                    // Explicitly activate the test component
+                    Log.Debug($"Activating test component {testComponent.GetType().Name}");
+                    testComponent.Activate();
                     test.TestComponent = testComponent;
                 }
             }

@@ -262,21 +262,16 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
 
         sb.AppendLine($"    // Generated property: {prop.Name} (from field {fieldName})");
 
-        // Target field to store the pending value
-        sb.AppendLine($"    private bool {targetFieldName}__initialized;");
-        sb.AppendLine($"    private {prop.Type} {targetFieldName}__value = default!;");
-        sb.AppendLine($"    private {prop.Type} {targetFieldName}");
-        sb.AppendLine("    {");
-        sb.AppendLine($"        get => {targetFieldName}__initialized ? {targetFieldName}__value : {fieldName};");
-        sb.AppendLine($"        set {{ {targetFieldName}__value = value; {targetFieldName}__initialized = true; }}");
-        sb.AppendLine("    }");
+        // Target field to store the pending value for next frame update
+        sb.AppendLine($"    private bool {targetFieldName}__hasUpdate;");
+        sb.AppendLine($"    private {prop.Type} {targetFieldName} = default!;");
         
         // Cache EqualityComparer to avoid property access overhead
         sb.AppendLine($"    private static readonly global::System.Collections.Generic.EqualityComparer<{prop.Type}> {fieldName}__comparer = global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default;");
 
         sb.AppendLine();
         
-        // Generate read-only property (matching field nullability)
+        // Generate read-only property that returns current value from backing field
         var propertyType = prop.Type;
         sb.AppendLine($"    public {propertyType} {prop.Name}");
         sb.AppendLine("    {");
@@ -288,10 +283,11 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         // Default is 0f duration (instant on next frame) and Step interpolation
         sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = 0f, global::Nexus.GameEngine.Components.InterpolationMode interpolation = global::Nexus.GameEngine.Components.InterpolationMode.Step)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        if ({fieldName}__comparer.Equals({targetFieldName}, value))");
+        sb.AppendLine($"        if ({targetFieldName}__hasUpdate && {fieldName}__comparer.Equals({targetFieldName}, value))");
         sb.AppendLine("            return;");
         sb.AppendLine();
         sb.AppendLine($"        {targetFieldName} = value;");
+        sb.AppendLine($"        {targetFieldName}__hasUpdate = true;");
         sb.AppendLine($"        _isDirty = true;");
         sb.AppendLine();
         sb.AppendLine($"        // TODO: Store duration and interpolation for animated updates");
@@ -341,7 +337,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                 
                 sb.AppendLine($"        // Array property - using optimized element-wise comparison");
-                sb.AppendLine($"        if ({targetFieldName}__initialized && ({targetFieldName} == null || {fieldName} == null ||");
+                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && ({targetFieldName} == null || {fieldName} == null ||");
                 sb.AppendLine($"            {targetFieldName}.Length != {fieldName}.Length ||");
                 sb.AppendLine($"            !ArraysEqual_{prop.Name}({targetFieldName}, {fieldName})))");
                 sb.AppendLine("        {");
@@ -358,6 +354,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 {
                     sb.AppendLine($"            {fieldName} = {targetFieldName} ?? [];");
                 }
+                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
                 sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
                 sb.AppendLine("        }");
             }
@@ -365,21 +362,23 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             {
                 // Other collections - use SequenceEqual
                 sb.AppendLine($"        // Collection property - using SequenceEqual for value comparison");
-                sb.AppendLine($"        if ({targetFieldName}__initialized && ({targetFieldName} == null || {fieldName} == null ||");
+                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && ({targetFieldName} == null || {fieldName} == null ||");
                 sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName})))");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            var oldValue = {fieldName};");
                 sb.AppendLine($"            {fieldName} = {targetFieldName}!;");
+                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
                 sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
                 sb.AppendLine("        }");
             }
             else
             {
                 // Non-collection property - use default equality comparer
-                sb.AppendLine($"        if ({targetFieldName}__initialized && !{fieldName}__comparer.Equals({targetFieldName}, {fieldName}))");
+                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && !{fieldName}__comparer.Equals({targetFieldName}, {fieldName}))");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            var oldValue = {fieldName};");
                 sb.AppendLine($"            {fieldName} = {targetFieldName};");
+                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
                 var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
                 sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
                 sb.AppendLine("        }");

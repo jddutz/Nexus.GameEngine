@@ -19,7 +19,7 @@ public abstract partial class Drawable : Transformable, IDrawable
     /// Automatically created during activation from GetPipelineDefinition().
     /// </summary>
     public abstract PipelineHandle Pipeline { get; }
-    
+
     /// <summary>
     /// Whether this component should be rendered.
     /// When false, GetDrawCommands will not be called and component is skipped during rendering.
@@ -29,6 +29,11 @@ public abstract partial class Drawable : Transformable, IDrawable
     /// </summary>
     [ComponentProperty]
     protected bool _visible = true;
+
+    partial void OnVisibleChanged(bool oldValue)
+    {
+        Log.Debug("IsVisible changed");
+    }
 
     /// <summary>
     /// Returns whether this component should be rendered (combines Enabled and Visible states).

@@ -12,8 +12,10 @@ using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
 using Nexus.GameEngine.Resources;
+using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Resources.Textures;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Runtime.Settings;
 using Nexus.GameEngine.Testing;
@@ -77,8 +79,8 @@ class Program
                 .AddSingleton<IBufferManager, BufferManager>()
                 .AddSingleton<IGeometryResourceManager, GeometryResourceManager>()
                 .AddSingleton<IShaderResourceManager, ShaderResourceManager>()
-                .AddSingleton<Nexus.GameEngine.Resources.Textures.ITextureResourceManager, Nexus.GameEngine.Resources.Textures.TextureResourceManager>()
-                .AddSingleton<Nexus.GameEngine.Resources.Fonts.IFontResourceManager, Nexus.GameEngine.Resources.Fonts.FontResourceManager>()
+                .AddSingleton<ITextureResourceManager, TextureResourceManager>()
+                .AddSingleton<IFontResourceManager, FontResourceManager>()
                 .AddSingleton<IResourceManager, ResourceManager>()
                 .AddSingleton<IComponentFactory, ComponentFactory>()
                 .AddSingleton<IContentManager, ContentManager>()

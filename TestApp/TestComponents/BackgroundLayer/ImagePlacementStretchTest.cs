@@ -27,7 +27,24 @@ public partial class ImagePlacementStretchTest(
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.Stretch
             }
-        ]
+        ],
+        SampleCoordinates = [
+            new(0, 0),        // Top-left UV (0,0)
+            new(1919, 0),     // Top-right UV (1,0)
+            new(0, 1079),     // Bottom-left UV (0,1)
+            new(1919, 1079),  // Bottom-right UV (1,1)
+            new(960, 540)     // Center UV (0.5,0.5)
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(0, 0, 0, 1),      // Top-left: R=0, G=0
+                new(1, 0, 0, 1),      // Top-right: R=255, G=0
+                new(0, 1, 0, 1),      // Bottom-left: R=0, G=255
+                new(1, 1, 0, 1),      // Bottom-right: R=255, G=255
+                new(0.5f, 0.5f, 0, 1) // Center: R=127.5, G=127.5
+            ]
+        }
     };
 
     // Helper to convert UV coordinates to expected RGB color from image_test.png

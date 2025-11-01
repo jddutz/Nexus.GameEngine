@@ -27,6 +27,23 @@ public partial class ImagePlacementFillTopRightTest(
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillTopRight
             }
-        ]
+        ],
+        SampleCoordinates = [
+            new(1919, 0),     // Top-right corner
+            new(1440, 0),     // Top, 75% across
+            new(1919, 270),   // Right edge, 25% down
+            new(1440, 270),   // Interior
+            new(960, 540)     // Center
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(1, 0, 0, 1),            // Top-right: R=255 (1919, 0)
+                new(0.753f, 0, 0, 1),       // 75% across (1440, 0)
+                new(1, 0.138f, 0, 1),       // Right, 25% down (1919, 270)
+                new(0.753f, 0.138f, 0, 1),  // Interior (1440, 270)
+                new(0.503f, 0.279f, 0, 1)   // Center (960, 540)
+            ]
+        }
     };
 }

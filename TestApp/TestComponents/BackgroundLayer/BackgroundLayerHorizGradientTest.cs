@@ -1,4 +1,6 @@
+using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Resources;
@@ -16,8 +18,7 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Single frame test: Red (left) → Green (right) at angle 0°
 /// </summary>
 public partial class BackgroundLayerHorizGradientTest(
-    IPixelSampler pixelSampler,
-    IWindowService windowService
+    IPixelSampler pixelSampler
     ) : RenderableTest(pixelSampler)
 {
     [Test("Horizontal gradient test")]
@@ -31,8 +32,53 @@ public partial class BackgroundLayerHorizGradientTest(
                     Colors.Yellow  // Position 1.0 (right)
                 )
             }
-        ]
+        ],
+
+        SampleCoordinates = [
+            new(0, 540),      // Far left - blue
+            new(480, 540),    // 25% - blue-green blend
+            new(960, 540),    // Center - green
+            new(1440, 540),   // 75% - green-yellow blend
+            new(1919, 540)    // Far right - yellow
+        ],
+
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(0, 0, 1, 1),              // Blue (0, 540)
+                new(0.250f, 0.250f, 0.745f, 1),  // Blue-cyan blend (480, 540)
+                new(0.503f, 0.503f, 0.497f, 1),  // Cyan midpoint (960, 540)
+                new(0.753f, 0.753f, 0.250f, 1),  // Cyan-yellow blend (1440, 540)
+                new(1, 1, 0, 1)               // Yellow (1919, 540)
+            ]
+        }
     };
 
-    private IWindow window => windowService.GetWindow();
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    {
+        Log.Debug($"BackgroundLayerHorizGradientTest.GetDrawCommands() called - Children: {Children.Count()}");
+        
+        foreach (var child in Children)
+        {
+            if (child is IDrawable drawable)
+            {
+                Log.Debug($"  Child {child.GetType().Name} IsVisible: {drawable.IsVisible()}");
+                if (drawable.IsVisible())
+                {
+                    var childCommands = drawable.GetDrawCommands(context).ToList();
+                    Log.Debug($"    Child returned {childCommands.Count} draw commands");
+                    foreach (var cmd in childCommands)
+                    {
+                        yield return cmd;
+                    }
+                }
+            }
+        }
+        
+        // Call base to increment FramesRendered counter
+        foreach (var cmd in base.GetDrawCommands(context))
+        {
+            yield return cmd;
+        }
+    }
 }

@@ -21,10 +21,15 @@ public abstract partial class Configurable : Entity, IConfigurable
     protected virtual void OnLoad(Template? template) { }
 
     /// <summary>
+    /// Partial method called by source generator to initialize target fields with backing field values.
+    /// This ensures both current and target values start identical, avoiding unnecessary updates.
+    /// </summary>
+    partial void InitializeComponentProperties();
+
+    /// <summary>
     /// Load the component using the specified template (legacy Configurable.Template).
     /// Base implementation calls OnLoad() for component-specific configuration,
-    /// then applies initial property updates via ApplyUpdates(0).
-    /// This method is sealed to ensure ApplyUpdates is called after OnLoad.
+    /// then applies all deferred property updates immediately via ApplyUpdates(0).
     /// </summary>
     /// <param name="template">The template to Load from.</param>
     public void Load(Template template)
@@ -35,8 +40,12 @@ public abstract partial class Configurable : Entity, IConfigurable
 
         OnLoad(template);
 
-        // Apply deferred property updates immediately so Name and other properties are set
+        // Apply all deferred property updates from OnLoad (Set* calls)
+        // Use deltaTime=0 for instant application during configuration
         ApplyUpdates(0);
+
+        // Initialize target fields to match backing fields (after Set* calls have been applied)
+        InitializeComponentProperties();
 
         // Validate the component after configuration
         Validate();
@@ -82,18 +91,7 @@ public abstract partial class Configurable : Entity, IConfigurable
     public bool Validate(bool ignoreCached = false)
     {
         // Return cached results if available
-        if (!ignoreCached && _validationState != null)
-        {
-            // Always log validation errors when using cached results, especially for failed validation
-            if (!IsValid && ValidationErrors.Any())
-            {
-                foreach (var error in ValidationErrors)
-                {
-                }
-            }
-
-            return IsValid;
-        }
+        if (!ignoreCached && _validationState != null) return IsValid;
 
         Validating?.Invoke(this, EventArgs.Empty);
 

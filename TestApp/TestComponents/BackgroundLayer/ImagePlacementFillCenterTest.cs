@@ -27,6 +27,23 @@ public partial class ImagePlacementFillCenterTest(
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.FillCenter
             }
-        ]
+        ],
+        SampleCoordinates = [
+            new(960, 540),    // Center
+            new(480, 270),    // Upper-left quadrant
+            new(1440, 270),   // Upper-right quadrant
+            new(480, 810),    // Lower-left quadrant
+            new(1440, 810)    // Lower-right quadrant
+        ],
+        ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
+        {
+            [0] = [
+                new(0.503f, 0.503f, 0, 1),  // Center: R=127.5, G=127.5 (960, 540)
+                new(0.25f, 0.361f, 0, 1),   // Upper-left quadrant (480, 270)
+                new(0.753f, 0.361f, 0, 1),  // Upper-right quadrant (1440, 270)
+                new(0.25f, 0.644f, 0, 1),   // Lower-left quadrant (480, 810)
+                new(0.753f, 0.644f, 0, 1)   // Lower-right quadrant (1440, 810)
+            ]
+        }
     };
 }
