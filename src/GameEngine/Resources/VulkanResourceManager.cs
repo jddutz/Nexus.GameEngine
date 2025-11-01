@@ -8,25 +8,9 @@ namespace Nexus.GameEngine.Resources;
 /// <typeparam name="TResource">GPU resource type (the actual Vulkan handles and data)</typeparam>
 public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposable
     where TDefinition : notnull
-{
-    protected readonly ILogger _logger;
-    protected readonly IGraphicsContext _context;
-    protected readonly Vk _vk;
-    
+{    
     private readonly Dictionary<TDefinition, (TResource Resource, int RefCount)> _cache = [];
     private readonly object _lock = new();
-    
-    /// <summary>
-    /// Creates a new Vulkan resource manager.
-    /// </summary>
-    /// <param name="loggerFactory">Logger factory for creating typed loggers</param>
-    /// <param name="context">Graphics context providing Vulkan device and API access</param>
-    protected VulkanResourceManager(ILoggerFactory loggerFactory, IGraphicsContext context)
-    {
-        _logger = loggerFactory.CreateLogger(GetType());
-        _context = context;
-        _vk = context.VulkanApi;
-    }
     
     /// <summary>
     /// Gets an existing resource from cache or creates a new one.

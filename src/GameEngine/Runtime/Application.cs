@@ -19,7 +19,6 @@ public class Application(IServiceProvider services) : IApplication
     /// <param name="windowOptions">The configuration options for the main application window.</param>
     public void Run(WindowOptions windowOptions, Element.Template startupTemplate)
     {
-        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(Application));
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
 

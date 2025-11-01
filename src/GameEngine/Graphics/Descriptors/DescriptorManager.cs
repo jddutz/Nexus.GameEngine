@@ -6,12 +6,8 @@ namespace Nexus.GameEngine.Graphics.Descriptors;
 /// Implements Vulkan descriptor management: pools, layouts, and sets.
 /// Thread-safe implementation using concurrent collections for multi-threaded loading.
 /// </summary>
-public unsafe class DescriptorManager : IDescriptorManager
-{
-    private readonly IGraphicsContext _context;
-    private readonly ILogger<DescriptorManager> _logger;
-    private readonly Vk _vk;
-    
+public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorManager
+{    
     // Descriptor pools (create new pools when exhausted)
     private readonly List<DescriptorPool> _descriptorPools = [];
     private int _currentPoolIndex = 0;
@@ -23,14 +19,6 @@ public unsafe class DescriptorManager : IDescriptorManager
     // Track allocations for debugging/monitoring
     private int _totalSetsAllocated = 0;
     private int _totalPoolsCreated = 0;
-    
-    public DescriptorManager(IGraphicsContext context, ILoggerFactory loggerFactory)
-    {
-        _context = context;
-        _logger = loggerFactory.CreateLogger<DescriptorManager>();
-        _vk = context.VulkanApi;
-        
-    }
     
     /// <inheritdoc/>
     public DescriptorSetLayout CreateDescriptorSetLayout(DescriptorSetLayoutBinding[] bindings)
@@ -60,7 +48,7 @@ public unsafe class DescriptorManager : IDescriptorManager
             };
             
             DescriptorSetLayout layout;
-            var result = _vk.CreateDescriptorSetLayout(_context.Device, &layoutInfo, null, &layout);
+            var result = context.VulkanApi.CreateDescriptorSetLayout(context.Device, &layoutInfo, null, &layout);
             
             if (result != Result.Success)
             {
@@ -95,7 +83,7 @@ public unsafe class DescriptorManager : IDescriptorManager
         };
         
         DescriptorSet descriptorSet;
-        var result = _vk.AllocateDescriptorSets(_context.Device, &allocInfo, &descriptorSet);
+        var result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
         
         if (result == Result.ErrorOutOfPoolMemory || result == Result.ErrorFragmentedPool)
         {
@@ -104,7 +92,7 @@ public unsafe class DescriptorManager : IDescriptorManager
             pool = GetOrCreatePool();
             allocInfo.DescriptorPool = pool;
             
-            result = _vk.AllocateDescriptorSets(_context.Device, &allocInfo, &descriptorSet);
+            result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
         }
         
         if (result != Result.Success)
@@ -151,7 +139,7 @@ public unsafe class DescriptorManager : IDescriptorManager
         };
         
         // Update the descriptor set
-        _vk.UpdateDescriptorSets(_context.Device, 1, &descriptorWrite, 0, null);
+        context.VulkanApi.UpdateDescriptorSets(context.Device, 1, &descriptorWrite, 0, null);
     }
     
     /// <inheritdoc/>
@@ -198,7 +186,7 @@ public unsafe class DescriptorManager : IDescriptorManager
         };
         
         // Update the descriptor set
-        _vk.UpdateDescriptorSets(_context.Device, 1, &descriptorWrite, 0, null);
+        context.VulkanApi.UpdateDescriptorSets(context.Device, 1, &descriptorWrite, 0, null);
     }
     
     /// <inheritdoc/>
@@ -207,7 +195,7 @@ public unsafe class DescriptorManager : IDescriptorManager
         
         foreach (var pool in _descriptorPools)
         {
-            _vk.ResetDescriptorPool(_context.Device, pool, 0);
+            context.VulkanApi.ResetDescriptorPool(context.Device, pool, 0);
         }
         
         _currentPoolIndex = 0;
@@ -218,19 +206,19 @@ public unsafe class DescriptorManager : IDescriptorManager
     {
         
         // Wait for device to finish
-        _vk.DeviceWaitIdle(_context.Device);
+        context.VulkanApi.DeviceWaitIdle(context.Device);
         
         // Destroy descriptor pools
         foreach (var pool in _descriptorPools)
         {
-            _vk.DestroyDescriptorPool(_context.Device, pool, null);
+            context.VulkanApi.DestroyDescriptorPool(context.Device, pool, null);
         }
         _descriptorPools.Clear();
         
         // Destroy descriptor set layouts
         foreach (var layout in _layoutCache.Values)
         {
-            _vk.DestroyDescriptorSetLayout(_context.Device, layout, null);
+            context.VulkanApi.DestroyDescriptorSetLayout(context.Device, layout, null);
         }
         _layoutCache.Clear();
     }
@@ -284,7 +272,7 @@ public unsafe class DescriptorManager : IDescriptorManager
         };
         
         DescriptorPool pool;
-        var result = _vk.CreateDescriptorPool(_context.Device, &poolInfo, null, &pool);
+        var result = context.VulkanApi.CreateDescriptorPool(context.Device, &poolInfo, null, &pool);
         
         if (result != Result.Success)
         {

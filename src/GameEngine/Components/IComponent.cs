@@ -5,13 +5,7 @@ namespace Nexus.GameEngine.Components;
 /// Defines the contract for component identity, hierarchy, lifecycle, and event management.
 /// </summary>
 public interface IComponent : IConfigurable, IDisposable
-{
-    /// <summary>
-    /// Gets or sets the logger for this component instance.
-    /// Used for diagnostic and debug output.
-    /// </summary>
-    public ILogger? Logger { get; set; }
-    
+{    
     /// <summary>
     /// Gets or sets whether this component is currently loaded.
     /// If false, the component is considered unloaded and can be disposed.

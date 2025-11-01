@@ -6,12 +6,8 @@ namespace Nexus.GameEngine.Graphics.Commands;
 /// Central manager for command pools across different queue families.
 /// Thread-safe pool creation and management.
 /// </summary>
-public class CommandPoolManager : ICommandPoolManager
+public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
 {
-    private readonly ILogger _logger;
-    private readonly IGraphicsContext _context;
-    private readonly ILoggerFactory _loggerFactory;
-
     // Cached pools by type
     private readonly ConcurrentDictionary<CommandPoolType, ICommandPool> _poolsByType = new();
     
@@ -20,16 +16,6 @@ public class CommandPoolManager : ICommandPoolManager
     private readonly object _poolsLock = new();
 
     private bool _disposed;
-
-    public CommandPoolManager(
-        IGraphicsContext context,
-        ILoggerFactory loggerFactory)
-    {
-        _logger = loggerFactory.CreateLogger(nameof(CommandPoolManager));
-        _context = context;
-        _loggerFactory = loggerFactory;
-
-    }
 
     /// <inheritdoc/>
     public ICommandPool GetOrCreatePool(CommandPoolType type)
@@ -55,11 +41,10 @@ public class CommandPoolManager : ICommandPoolManager
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         var pool = new CommandPool(
-            _context,
+            context,
             queueFamilyIndex,
             allowIndividualReset,
-            transient,
-            _loggerFactory);
+            transient);
 
         lock (_poolsLock)
         {
@@ -201,11 +186,10 @@ public class CommandPoolManager : ICommandPoolManager
         uint queueFamilyIndex = 0;
 
         return new CommandPool(
-            _context,
+            context,
             queueFamilyIndex,
             allowIndividualReset: false, // Typically reset entire pool for graphics
-            transient: transient,
-            _loggerFactory);
+            transient: transient);
     }
 
     /// <summary>
@@ -219,11 +203,10 @@ public class CommandPoolManager : ICommandPoolManager
 
 
         return new CommandPool(
-            _context,
+            context,
             queueFamilyIndex,
             allowIndividualReset: false,
-            transient: true, // Transfer commands are typically short-lived
-            _loggerFactory);
+            transient: true);
     }
 
     /// <summary>
@@ -237,11 +220,10 @@ public class CommandPoolManager : ICommandPoolManager
 
 
         return new CommandPool(
-            _context,
+            context,
             queueFamilyIndex,
             allowIndividualReset: false,
-            transient: false, // Compute commands may be reused
-            _loggerFactory);
+            transient: false);
     }
 
     public void Dispose()

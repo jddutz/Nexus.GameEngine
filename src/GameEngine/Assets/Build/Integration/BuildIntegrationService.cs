@@ -7,11 +7,11 @@ namespace Nexus.GameEngine.Assets.Build.Integration;
 /// Service for integrating asset processing into the build pipeline.
 /// </summary>
 public class BuildIntegrationService(
-    IAssetProcessorManager processorManager,
-    ILogger<BuildIntegrationService> logger) : IBuildIntegrationService
+    IAssetProcessorManager processorManager)
+    : IBuildIntegrationService
 {
     private readonly IAssetProcessorManager _processorManager = processorManager ?? throw new ArgumentNullException(nameof(processorManager));
-    private readonly ILogger<BuildIntegrationService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
 
     /// <summary>
     /// Processes assets for the specified build configuration.
@@ -227,7 +227,6 @@ public class BuildIntegrationService(
                 TargetPlatform = ConvertStringToTargetPlatform(request.TargetPlatform),
                 Configuration = request.Configuration,
                 Options = new Dictionary<string, object>(request.ProcessingOptions),
-                Logger = logger,
                 ForceProcessing = request.ForceRebuild
             };
 

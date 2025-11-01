@@ -65,7 +65,7 @@ public partial class KeyBinding(
     {
         if (InputContext == null)
         {
-            Logger?.LogWarning("InputContext is null, cannot subscribe to keyboard events");
+            Log.Warning("InputContext is null, cannot subscribe to keyboard events");
             return;
         }
 

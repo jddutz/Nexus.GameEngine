@@ -30,7 +30,6 @@ namespace Nexus.GameEngine.Graphics;
 /// </remarks>
 public unsafe class Context : IGraphicsContext
 {
-    private readonly ILogger _logger;
     private readonly IValidation? _validationLayers;
     private readonly VulkanSettings _vkSettings;
 
@@ -38,10 +37,8 @@ public unsafe class Context : IGraphicsContext
         IWindowService windowService,
         IOptions<ApplicationSettings> options,
         IOptions<VulkanSettings> vkSettings,
-        ILoggerFactory loggerFactory,
         IValidation? validationLayers = null)
     {
-        _logger = loggerFactory.CreateLogger(nameof(Context));
         _validationLayers = validationLayers;
         _vkSettings = vkSettings.Value;
 

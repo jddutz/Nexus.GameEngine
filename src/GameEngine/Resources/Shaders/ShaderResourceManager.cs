@@ -3,13 +3,9 @@
 /// <summary>
 /// Implements shader resource management with caching and reference counting.
 /// </summary>
-public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, ShaderResource>, IShaderResourceManager
+public class ShaderResourceManager(IGraphicsContext context)
+    : VulkanResourceManager<ShaderDefinition, ShaderResource>, IShaderResourceManager
 {
-    public ShaderResourceManager(ILoggerFactory loggerFactory, IGraphicsContext context)
-        : base(loggerFactory, context)
-    {
-    }
-    
     /// <summary>
     /// Gets a string key for logging purposes using the shader definition's name.
     /// </summary>
@@ -17,7 +13,7 @@ public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, Sha
     {
         return definition.Name;
     }
-    
+
     /// <summary>
     /// Creates a new shader resource from a definition by loading SPIR-V and creating shader modules.
     /// </summary>
@@ -25,35 +21,35 @@ public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, Sha
     {
         // Load SPIR-V from source
         var sourceData = definition.Source.Load();
-        
+
         // Validate SPIR-V data
         if (sourceData.VertexSpirV == null || sourceData.VertexSpirV.Length == 0)
         {
             throw new InvalidOperationException(
                 $"Vertex shader SPIR-V is null or empty for shader '{definition.Name}'");
         }
-        
+
         if (sourceData.FragmentSpirV == null || sourceData.FragmentSpirV.Length == 0)
         {
             throw new InvalidOperationException(
                 $"Fragment shader SPIR-V is null or empty for shader '{definition.Name}'");
         }
-        
+
         // Create shader modules
         var vertShaderModule = CreateShaderModule(sourceData.VertexSpirV);
         var fragShaderModule = CreateShaderModule(sourceData.FragmentSpirV);
-        
+
         if (vertShaderModule.Handle == 0 || fragShaderModule.Handle == 0)
         {
             throw new InvalidOperationException(
                 $"Failed to create shader modules for '{definition.Name}'");
         }
-        
+
         Log.Debug("Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
-        
+
         return new ShaderResource(vertShaderModule, fragShaderModule, definition);
     }
-    
+
     /// <summary>
     /// Creates a Vulkan shader module from SPIR-V bytecode.
     /// </summary>
@@ -75,8 +71,8 @@ public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, Sha
             };
 
             ShaderModule shaderModule;
-            var result = _vk.CreateShaderModule(_context.Device, &createInfo, null, &shaderModule);
-            
+            var result = context.VulkanApi.CreateShaderModule(context.Device, &createInfo, null, &shaderModule);
+
             if (result != Result.Success)
             {
                 Log.Error($"Failed to create shader module: {result}");
@@ -86,7 +82,7 @@ public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, Sha
             return shaderModule;
         }
     }
-    
+
     /// <summary>
     /// Destroys a shader resource by destroying both vertex and fragment shader modules.
     /// </summary>
@@ -94,13 +90,13 @@ public class ShaderResourceManager : VulkanResourceManager<ShaderDefinition, Sha
     {
         if (resource.VertexShader.Handle != 0)
         {
-            _vk.DestroyShaderModule(_context.Device, resource.VertexShader, null);
+            context.VulkanApi.DestroyShaderModule(context.Device, resource.VertexShader, null);
             Log.Debug($"Destroyed vertex shader module: {resource.Name} (Handle: {resource.VertexShader.Handle})");
         }
-        
+
         if (resource.FragmentShader.Handle != 0)
         {
-            _vk.DestroyShaderModule(_context.Device, resource.FragmentShader, null);
+            context.VulkanApi.DestroyShaderModule(context.Device, resource.FragmentShader, null);
             Log.Debug("Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
         }
     }

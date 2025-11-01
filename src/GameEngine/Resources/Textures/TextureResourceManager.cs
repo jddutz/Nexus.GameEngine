@@ -1,5 +1,4 @@
-﻿using StbImageSharp;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Nexus.GameEngine.Resources.Textures;
 
@@ -7,27 +6,11 @@ namespace Nexus.GameEngine.Resources.Textures;
 /// Implements texture resource management with caching, reference counting, and Vulkan image creation.
 /// Loads textures from embedded resources using StbImageSharp.
 /// </summary>
-public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefinition, TextureResource>, ITextureResourceManager
-{
-    private readonly IBufferManager _bufferManager;
-    private readonly Graphics.Commands.ICommandPoolManager _commandPoolManager;
-    
-    public TextureResourceManager(
-        ILoggerFactory loggerFactory,
+public unsafe class TextureResourceManager(
         IGraphicsContext context,
-        IBufferManager bufferManager,
         Graphics.Commands.ICommandPoolManager commandPoolManager)
-        : base(loggerFactory, context)
-    {
-        _bufferManager = bufferManager;
-        _commandPoolManager = commandPoolManager;
-        
-        // Configure StbImage: do NOT flip images vertically on load
-        // PNG images are stored with (0,0) at top-left, matching our UV coordinate system
-        // where V=0 is top and V=1 is bottom (standard Vulkan/D3D texture coordinates).
-        // The TexturedQuad geometry defines UV coordinates to match this convention.
-        StbImage.stbi_set_flip_vertically_on_load(0);
-    }
+        : VulkanResourceManager<TextureDefinition, TextureResource>, ITextureResourceManager
+{
     
     /// <summary>
     /// Gets a string key for logging purposes (uses texture name).
@@ -133,7 +116,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         Image image;
-        var result = _vk.CreateImage(_context.Device, &imageInfo, null, &image);
+        var result = context.VulkanApi.CreateImage(context.Device, &imageInfo, null, &image);
         
         if (result != Result.Success)
         {
@@ -145,7 +128,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
     
     private DeviceMemory AllocateImageMemory(Image image)
     {
-        _vk.GetImageMemoryRequirements(_context.Device, image, out var memRequirements);
+        context.VulkanApi.GetImageMemoryRequirements(context.Device, image, out var memRequirements);
         
         var allocInfo = new MemoryAllocateInfo
         {
@@ -156,14 +139,14 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         DeviceMemory imageMemory;
-        var result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &imageMemory);
+        var result = context.VulkanApi.AllocateMemory(context.Device, &allocInfo, null, &imageMemory);
         
         if (result != Result.Success)
         {
             throw new InvalidOperationException($"Failed to allocate image memory: {result}");
         }
         
-        _vk.BindImageMemory(_context.Device, image, imageMemory, 0);
+        context.VulkanApi.BindImageMemory(context.Device, image, imageMemory, 0);
         
         
         return imageMemory;
@@ -194,9 +177,9 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         {
             // Copy pixel data to staging buffer
             void* data;
-            _vk.MapMemory(_context.Device, stagingMemory, 0, imageSize, 0, &data);
+            context.VulkanApi.MapMemory(context.Device, stagingMemory, 0, imageSize, 0, &data);
             System.Buffer.MemoryCopy((void*)pixels, data, (long)imageSize, (long)imageSize);
-            _vk.UnmapMemory(_context.Device, stagingMemory);
+            context.VulkanApi.UnmapMemory(context.Device, stagingMemory);
             
             // Transition image to transfer destination
             TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, format);
@@ -208,8 +191,8 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         finally
         {
             // Cleanup staging resources
-            _vk.DestroyBuffer(_context.Device, stagingBuffer, null);
-            _vk.FreeMemory(_context.Device, stagingMemory, null);
+            context.VulkanApi.DestroyBuffer(context.Device, stagingBuffer, null);
+            context.VulkanApi.FreeMemory(context.Device, stagingMemory, null);
         }
     }
     
@@ -224,14 +207,14 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         Silk.NET.Vulkan.Buffer buffer;
-        var result = _vk.CreateBuffer(_context.Device, &bufferInfo, null, &buffer);
+        var result = context.VulkanApi.CreateBuffer(context.Device, &bufferInfo, null, &buffer);
         
         if (result != Result.Success)
         {
             throw new InvalidOperationException($"Failed to create staging buffer: {result}");
         }
         
-        _vk.GetBufferMemoryRequirements(_context.Device, buffer, out var memRequirements);
+        context.VulkanApi.GetBufferMemoryRequirements(context.Device, buffer, out var memRequirements);
         
         var allocInfo = new MemoryAllocateInfo
         {
@@ -242,15 +225,15 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         DeviceMemory stagingMemory;
-        result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &stagingMemory);
+        result = context.VulkanApi.AllocateMemory(context.Device, &allocInfo, null, &stagingMemory);
         
         if (result != Result.Success)
         {
-            _vk.DestroyBuffer(_context.Device, buffer, null);
+            context.VulkanApi.DestroyBuffer(context.Device, buffer, null);
             throw new InvalidOperationException($"Failed to allocate staging buffer memory: {result}");
         }
         
-        _vk.BindBufferMemory(_context.Device, buffer, stagingMemory, 0);
+        context.VulkanApi.BindBufferMemory(context.Device, buffer, stagingMemory, 0);
         
         memory = stagingMemory;
         return buffer;
@@ -276,7 +259,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
             ImageExtent = new Extent3D(width, height, 1)
         };
         
-        _vk.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
+        context.VulkanApi.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
         
         EndSingleTimeCommands(commandBuffer);
     }
@@ -327,7 +310,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
             throw new NotSupportedException($"Unsupported layout transition: {oldLayout} -> {newLayout}");
         }
         
-        _vk.CmdPipelineBarrier(
+        context.VulkanApi.CmdPipelineBarrier(
             commandBuffer,
             sourceStage, destinationStage,
             0,
@@ -341,7 +324,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
     private CommandBuffer BeginSingleTimeCommands()
     {
         // Get the graphics pool for one-time commands
-        var pool = _commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
+        var pool = commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
         
         var commandBuffers = pool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
         var commandBuffer = commandBuffers[0];
@@ -352,14 +335,14 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
             Flags = CommandBufferUsageFlags.OneTimeSubmitBit
         };
         
-        _vk.BeginCommandBuffer(commandBuffer, &beginInfo);
+        context.VulkanApi.BeginCommandBuffer(commandBuffer, &beginInfo);
         
         return commandBuffer;
     }
     
     private void EndSingleTimeCommands(CommandBuffer commandBuffer)
     {
-        _vk.EndCommandBuffer(commandBuffer);
+        context.VulkanApi.EndCommandBuffer(commandBuffer);
         
         var submitInfo = new SubmitInfo
         {
@@ -368,12 +351,12 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
             PCommandBuffers = &commandBuffer
         };
         
-        _vk.QueueSubmit(_context.GraphicsQueue, 1, &submitInfo, default);
-        _vk.QueueWaitIdle(_context.GraphicsQueue);
+        context.VulkanApi.QueueSubmit(context.GraphicsQueue, 1, &submitInfo, default);
+        context.VulkanApi.QueueWaitIdle(context.GraphicsQueue);
         
         // Free the command buffer by resetting the pool
         // Note: This is safe because we waited for the queue to be idle
-        var pool = _commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
+        var pool = commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
         pool.FreeCommandBuffers(new[] { commandBuffer });
     }
     
@@ -396,7 +379,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         ImageView imageView;
-        var result = _vk.CreateImageView(_context.Device, &viewInfo, null, &imageView);
+        var result = context.VulkanApi.CreateImageView(context.Device, &viewInfo, null, &imageView);
         
         if (result != Result.Success)
         {
@@ -430,7 +413,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
         };
         
         Sampler sampler;
-        var result = _vk.CreateSampler(_context.Device, &samplerInfo, null, &sampler);
+        var result = context.VulkanApi.CreateSampler(context.Device, &samplerInfo, null, &sampler);
         
         if (result != Result.Success)
         {
@@ -443,7 +426,7 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
     
     private uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
     {
-        _vk.GetPhysicalDeviceMemoryProperties(_context.PhysicalDevice, out var memProperties);
+        context.VulkanApi.GetPhysicalDeviceMemoryProperties(context.PhysicalDevice, out var memProperties);
         
         for (uint i = 0; i < memProperties.MemoryTypeCount; i++)
         {
@@ -465,19 +448,19 @@ public unsafe class TextureResourceManager : VulkanResourceManager<TextureDefini
     {
         if (resource.Sampler.Handle != 0)
         {
-            _vk.DestroySampler(_context.Device, resource.Sampler, null);
+            context.VulkanApi.DestroySampler(context.Device, resource.Sampler, null);
         }
         if (resource.ImageView.Handle != 0)
         {
-            _vk.DestroyImageView(_context.Device, resource.ImageView, null);
+            context.VulkanApi.DestroyImageView(context.Device, resource.ImageView, null);
         }
         if (resource.Image.Handle != 0)
         {
-            _vk.DestroyImage(_context.Device, resource.Image, null);
+            context.VulkanApi.DestroyImage(context.Device, resource.Image, null);
         }
         if (resource.ImageMemory.Handle != 0)
         {
-            _vk.FreeMemory(_context.Device, resource.ImageMemory, null);
+            context.VulkanApi.FreeMemory(context.Device, resource.ImageMemory, null);
         }
     }
 }

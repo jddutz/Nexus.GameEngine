@@ -49,7 +49,6 @@ namespace Nexus.GameEngine.Graphics;
 /// </remarks>
 public unsafe class SwapChain : ISwapChain
 {
-    private readonly ILogger _logger;
     private readonly IGraphicsContext _context;
     private readonly IWindowService _windowService;
     private readonly VulkanSettings _settings;
@@ -79,10 +78,8 @@ public unsafe class SwapChain : ISwapChain
     public SwapChain(
         IGraphicsContext context,
         IWindowService windowService,
-        IOptions<VulkanSettings> settings,
-        ILoggerFactory loggerFactory)
+        IOptions<VulkanSettings> settings)
     {
-        _logger = loggerFactory.CreateLogger(nameof(Swapchain));
         _context = context;
         _windowService = windowService;
         _settings = settings.Value;

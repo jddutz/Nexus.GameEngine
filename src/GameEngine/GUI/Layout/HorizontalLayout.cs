@@ -5,9 +5,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// Child components are positioned side by side with configurable spacing and alignment.
 /// </summary>
 public partial class HorizontalLayout(
-    IPipelineManager pipelineManager,
-    IResourceManager resourceManager)
-    : Layout(pipelineManager, resourceManager)
+    IPipelineManager pipelineManager)
+    : Layout(pipelineManager)
 {
 
     /// <summary>

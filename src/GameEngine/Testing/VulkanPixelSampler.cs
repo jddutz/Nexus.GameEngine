@@ -10,7 +10,6 @@ namespace Nexus.GameEngine.Testing;
 /// </summary>
 public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
 {
-    private readonly ILogger _logger;
     private readonly IGraphicsContext _context;
     private readonly ISwapChain _swapChain;
     private readonly ICommandPoolManager _commandPoolManager;
@@ -28,12 +27,10 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
     private readonly List<Vector4D<float>?[]> _capturedResults = [];
 
     public VulkanPixelSampler(
-        ILoggerFactory loggerFactory,
         IGraphicsContext context,
         ISwapChain swapChain,
         ICommandPoolManager commandPoolManager)
     {
-        _logger = loggerFactory.CreateLogger(nameof(VulkanPixelSampler));
         _context = context;
         _swapChain = swapChain;
         _commandPoolManager = commandPoolManager;

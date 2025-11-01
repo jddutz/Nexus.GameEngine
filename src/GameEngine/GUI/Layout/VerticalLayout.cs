@@ -5,9 +5,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// Child components are positioned one above the other with configurable spacing and alignment.
 /// </summary>
 public partial class VerticalLayout(
-    IPipelineManager pipelineManager,
-    IResourceManager resourceManager)
-    : Layout(pipelineManager, resourceManager)
+    IPipelineManager pipelineManager)
+    : Layout(pipelineManager)
 {
 
     /// <summary>

@@ -5,9 +5,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// Child components are positioned in rows and columns with configurable spacing and alignment.
 /// </summary>
 public partial class GridLayout(
-    IPipelineManager pipelineManager,
-    IResourceManager resourceManager)
-    : Layout(pipelineManager, resourceManager)
+    IPipelineManager pipelineManager)
+    : Layout(pipelineManager)
 {
     /// <summary>
     /// Template for configuring GridLayout components.

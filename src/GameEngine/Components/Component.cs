@@ -23,11 +23,6 @@ public partial class Component
     }
 
     /// <summary>
-    /// Logger, for logging of course
-    /// </summary>
-    public ILogger? Logger { get; set; }
-
-    /// <summary>
     /// Factory used to create new components.
     /// </summary>
     public IContentManager? ContentManager { get; set; }

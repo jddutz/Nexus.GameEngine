@@ -7,8 +7,7 @@ namespace Nexus.GameEngine.GUI;
 /// All coordinates are in NDC space (Normalized Device Coordinates: -1 to 1).
 /// </summary>
 public partial class Element(
-    IPipelineManager pipelineManager,
-    IResourceManager resources)
+    IPipelineManager pipelineManager)
     : Drawable(), IUserInterfaceElement
 {
     /// <summary>

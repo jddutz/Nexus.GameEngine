@@ -6,9 +6,8 @@
 /// </summary>
 public partial class TextElement(
     IPipelineManager pipelineManager,
-    IResourceManager resourceManager,
     IDescriptorManager descriptorManager)
-    : Element(pipelineManager, resourceManager)
+    : Element(pipelineManager)
 {
     // Default text style used when no style is specified
     private static readonly TextStyle DefaultTextStyle = new()

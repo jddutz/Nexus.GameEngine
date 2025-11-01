@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
@@ -57,22 +56,8 @@ class Program
                 })
                 .Build();
 
-            // Configure logging
-            var loggerConfig = new TestLoggerConfiguration();
-            var testLoggerFactory = new TestLoggerFactory(loggerConfig);
-
-            // Create a wrapper that implements ILoggerFactory and delegates to our TestLoggerFactory
-            var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.ClearProviders();
-                builder.SetMinimumLevel(LogLevel.Trace);
-                builder.AddProvider(testLoggerFactory);
-            });
-
             // Build service container
             var services = new ServiceCollection()
-                .AddSingleton(loggerFactory)
-                .AddSingleton(testLoggerFactory)
                 .Configure<ApplicationSettings>(configuration.GetSection("Application"))
                 .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
                 .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))

@@ -4,16 +4,9 @@
 /// Implements geometry resource management with caching and reference counting.
 /// Extends VulkanResourceManager to leverage base class functionality.
 /// </summary>
-public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition, GeometryResource>, IGeometryResourceManager
-{
-    private readonly IBufferManager _bufferManager;
-    
-    public GeometryResourceManager(IBufferManager bufferManager, ILoggerFactory loggerFactory, IGraphicsContext context)
-        : base(loggerFactory, context)
-    {
-        _bufferManager = bufferManager;
-    }
-    
+public class GeometryResourceManager(IBufferManager bufferManager)
+    : VulkanResourceManager<GeometryDefinition, GeometryResource>, IGeometryResourceManager
+{    
     /// <inheritdoc />
     protected override string GetResourceKey(GeometryDefinition definition)
     {
@@ -47,7 +40,7 @@ public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition,
         // Create Vulkan vertex buffer
         Log.Debug($"Creating vertex buffer: {definition.Name}, VertexCount={sourceData.VertexCount}, Stride={sourceData.Stride}, Size={sourceData.VertexData.Length} bytes");
         
-        var (buffer, memory) = _bufferManager.CreateVertexBuffer(sourceData.VertexData);
+        var (buffer, memory) = bufferManager.CreateVertexBuffer(sourceData.VertexData);
         
         return new GeometryResource(
             buffer,
@@ -61,6 +54,6 @@ public class GeometryResourceManager : VulkanResourceManager<GeometryDefinition,
     protected override void DestroyResource(GeometryResource resource)
     {
         Log.Debug("Destroying geometry resource: {Name}", resource.Name);
-        _bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
+        bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
     }
 }

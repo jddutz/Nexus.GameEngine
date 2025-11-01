@@ -11,7 +11,6 @@ namespace Nexus.GameEngine.Graphics.Synchronization;
 public sealed class SyncManager : ISyncManager
 {
     private readonly IGraphicsContext _context;
-    private readonly ILogger _logger;
     private readonly FrameSync[] _frameSyncs;
     private readonly Dictionary<uint, ImageSync> _imageSyncs = [];
     private readonly object _imageSyncLock = new();
@@ -36,14 +35,12 @@ public sealed class SyncManager : ISyncManager
     /// <param name="maxFramesInFlight">Maximum number of frames that can be processed simultaneously (default: 2)</param>
     public SyncManager(
         IGraphicsContext context,
-        ILoggerFactory loggerFactory,
         int maxFramesInFlight = 2)
     {
         if (maxFramesInFlight < 1)
             throw new ArgumentOutOfRangeException(nameof(maxFramesInFlight), "Must be at least 1");
 
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        _logger = loggerFactory.CreateLogger(nameof(SyncManager));
         MaxFramesInFlight = maxFramesInFlight;
 
 

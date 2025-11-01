@@ -6,12 +6,10 @@ namespace Nexus.GameEngine.Graphics;
 /// Manages viewport creation and lifecycle.
 /// </summary>
 public class ViewportManager(
-    ILoggerFactory loggerFactory,
     IWindowService windowService,
     IOptions<GraphicsSettings> graphicsSettings)
     : IViewportManager
 {
-    private ILogger logger = loggerFactory.CreateLogger<ViewportManager>();
     private IWindow window = windowService.GetWindow();
     private readonly SortedSet<Viewport> viewports = new(new ViewportPriorityComparer());
 
@@ -42,7 +40,7 @@ public class ViewportManager(
     {
         var bgColor = backgroundColor ?? graphicsSettings.Value.BackgroundColor ?? Colors.DarkBlue;
 
-        var viewport = new Viewport(logger, window)
+        var viewport = new Viewport(window)
         {
             Camera = camera,
             Content = content,

@@ -4,10 +4,9 @@ namespace Nexus.GameEngine.Actions;
 /// Action factory that resolves actions from DI and executes them with proper error handling.
 /// Designed for high-performance scenarios with fast ActionId-to-Type resolution.
 /// </summary>
-public class ActionFactory(IServiceProvider serviceProvider, ILoggerFactory loggerFactory) : IActionFactory
+public class ActionFactory(IServiceProvider serviceProvider) : IActionFactory
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(ActionFactory));
 
     /// <summary>
     /// Executes an action by resolving it from DI and calling its ExecuteAsync method.

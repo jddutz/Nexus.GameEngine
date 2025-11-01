@@ -3,10 +3,9 @@ namespace Nexus.GameEngine.Actions;
 /// <summary>
 /// Action to quit the game application
 /// </summary>
-public class QuitGameAction(IWindowService windowService, ILoggerFactory loggerFactory) : IAction
+public class QuitGameAction(IWindowService windowService) : IAction
 {
     private readonly IWindowService _windowService = windowService;
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(QuitGameAction));
 
     /// <summary>
     /// Gets the unique ActionId for this action type.

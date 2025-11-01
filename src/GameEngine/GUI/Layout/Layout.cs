@@ -6,9 +6,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
 public abstract partial class Layout(
-    IPipelineManager pipelineManager,
-    IResourceManager resourceManager)
-    : Element(pipelineManager, resourceManager)
+    IPipelineManager pipelineManager)
+    : Element(pipelineManager)
 {
     /// <summary>
     /// Template for configuring Layout components.

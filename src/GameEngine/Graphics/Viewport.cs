@@ -13,7 +13,7 @@
 /// Usage: Assign a camera and content component, set normalized bounds, and add to the renderer's viewport collection.
 /// </para>
 /// </summary>
-public class Viewport(ILogger logger, IWindow window)
+public class Viewport(IWindow window)
 {
     private bool _isValid = true;
     
@@ -216,15 +216,12 @@ public class Viewport(ILogger logger, IWindow window)
         _active = valid;
         if (!valid)
         {
-            if (logger != null)
-            {
-                if (!validDimensions)
-                    Log.Warning($"Viewport activation failed: Invalid dimensions (Width={Width}, Height={Height})");
-                if (!validContent)
-                    Log.Warning("Viewport activation failed: Content is null");
-                if (!validVulkanState)
-                    Log.Warning("Viewport activation failed: Vulkan state is invalid (Viewport/Scissor missing or needs update)");
-            }
+            if (!validDimensions)
+                Log.Warning($"Viewport activation failed: Invalid dimensions (Width={Width}, Height={Height})");
+            if (!validContent)
+                Log.Warning("Viewport activation failed: Content is null");
+            if (!validVulkanState)
+                Log.Warning("Viewport activation failed: Vulkan state is invalid (Viewport/Scissor missing or needs update)");
         }
         return _active;
     }

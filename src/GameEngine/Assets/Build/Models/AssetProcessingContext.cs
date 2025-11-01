@@ -61,11 +61,6 @@ public record AssetProcessingContext
     public Dictionary<string, string> BuildOptions { get; init; } = [];
 
     /// <summary>
-    /// Logger for processing operations.
-    /// </summary>
-    public ILogger? Logger { get; init; }
-
-    /// <summary>
     /// Whether to force processing even if not needed.
     /// </summary>
     public bool ForceProcessing { get; init; }

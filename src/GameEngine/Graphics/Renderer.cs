@@ -10,7 +10,6 @@ namespace Nexus.GameEngine.Graphics;
 /// Uses IViewportManager for viewport management capabilities.
 /// </summary>
 public unsafe class Renderer(
-    ILoggerFactory loggerFactory,
     IGraphicsContext context,
     ISwapChain swapChain,
     ISyncManager syncManager,
@@ -19,7 +18,6 @@ public unsafe class Renderer(
     IWindowService windowService)
     : IRenderer
 {
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Renderer));
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
 

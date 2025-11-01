@@ -36,22 +36,8 @@ public abstract partial class InputBinding(
             if (_inputContext != null)
                 return _inputContext;
 
-            try
-            {
-                _inputContext = windowService.InputContext;
-                return _inputContext;
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("view was not initialized"))
-            {
-                // Window view not ready yet - this is expected during early component lifecycle
-                Log.Debug("Input context not available yet, window view not initialized");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Logger?.LogWarning(ex, "Failed to get input context from window service");
-                return null;
-            }
+            _inputContext = windowService.InputContext;
+            return _inputContext;
         }
     }
 
@@ -103,21 +89,14 @@ public abstract partial class InputBinding(
     /// </summary>
     protected override void OnActivate()
     {
-        try
+        if (InputContext == null)
         {
-            if (InputContext == null)
-            {
-                Log.Debug($"Input context not available, cannot activate {GetType().Name}");
-                return;
-            }
+            Log.Debug($"Input context not available, cannot activate {GetType().Name}");
+            return;
+        }
 
-            SubscribeToInputEvents();
-            Log.Debug($"{GetType().Name} activated and listening for input");
-        }
-        catch (Exception ex)
-        {
-            Logger?.LogWarning(ex, "Failed to activate input binding {ComponentType}, input context may not be ready yet", GetType().Name);
-        }
+        SubscribeToInputEvents();
+        Log.Debug($"{GetType().Name} activated and listening for input");
     }
 
     /// <summary>
@@ -127,39 +106,32 @@ public abstract partial class InputBinding(
     /// <returns>Task representing the async action execution</returns>
     protected async Task ExecuteActionAsync(string inputDescription)
     {
-        try
+        if (!IsActive())
+            return;
+
+        if (ActionId == ActionId.None)
         {
-            if (!IsActive())
-                return;
-
-            if (ActionId == ActionId.None)
-            {
-                Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
-                return;
-            }
-
-            if (_actionFactory == null)
-            {
-                Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
-                return;
-            }
-
-            Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
-
-            var result = await _actionFactory.ExecuteAsync(ActionId, this);
-
-            if (result.Success)
-            {
-                Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
-            }
-            else
-            {
-                Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
-            }
+            Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
+            return;
         }
-        catch (Exception ex)
+
+        if (_actionFactory == null)
         {
-            Logger?.LogError(ex, "Error executing action for {InputDescription}", inputDescription);
+            Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
+            return;
+        }
+
+        Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
+
+        var result = await _actionFactory.ExecuteAsync(ActionId, this);
+
+        if (result.Success)
+        {
+            Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
+        }
+        else
+        {
+            Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
         }
     }
 

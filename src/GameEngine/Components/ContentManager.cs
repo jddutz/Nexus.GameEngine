@@ -6,7 +6,6 @@
 /// Also provides component creation logic previously in ComponentFactory.
 /// </summary>
 public class ContentManager(
-    ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider) 
     : IContentManager
 {
@@ -98,7 +97,6 @@ public class ContentManager(
             return null;
 
         component.ContentManager = this;
-        component.Logger = loggerFactory.CreateLogger(componentType.Name);
 
         // Add to content dictionary if it has a unique name/id
         var nameProp = component.GetType().GetProperty("Name");

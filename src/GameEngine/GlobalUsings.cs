@@ -1,9 +1,6 @@
 // Global usings for Nexus.GameEngine
 // These using statements are automatically available in all C# files in this project
 
-// External dependencies - Microsoft.Extensions
-global using Microsoft.Extensions.Logging;
-
 // External dependencies - Silk.NET
 global using Silk.NET.Input;
 global using Silk.NET.Maths;

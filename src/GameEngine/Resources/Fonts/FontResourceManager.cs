@@ -8,25 +8,12 @@ namespace Nexus.GameEngine.Resources.Fonts;
 /// Manages font resource lifecycle including loading, atlas generation, and caching.
 /// Generates font atlases using StbTrueType and creates GPU textures directly with Vulkan.
 /// </summary>
-public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, FontResource>, IFontResourceManager
+public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolManager commandPoolManager)
+    : VulkanResourceManager<FontDefinition, FontResource>, IFontResourceManager
 {
-    private readonly IBufferManager _bufferManager;
-    private readonly ICommandPoolManager _commandPoolManager;
-
     private const int AtlasWidth = 1024;
     private const int AtlasHeight = 1024;
     private const int Padding = 2; // Padding between glyphs to prevent bleeding
-
-    public FontResourceManager(
-        ILoggerFactory loggerFactory,
-        IGraphicsContext context,
-        IBufferManager bufferManager,
-        ICommandPoolManager commandPoolManager)
-        : base(loggerFactory, context)
-    {
-        _bufferManager = bufferManager;
-        _commandPoolManager = commandPoolManager;
-    }
 
     /// <summary>
     /// Gets a string key for logging purposes.
@@ -178,8 +165,8 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
                 // Check if we're out of vertical space
                 if (currentY + glyphHeight + Padding > AtlasHeight)
                 {
-                    _logger?.LogWarning("Font atlas ran out of space at character '{Char}' (U+{Code:X4}). " +
-                        "Remaining characters will be skipped.", c, (int)c);
+                    Log.Warning($"Font atlas ran out of space at character '{c}' (U+{(int)c:X4}). " +
+                        "Remaining characters will be skipped.");
                     break;
                 }
 
@@ -261,7 +248,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         Image image;
-        var result = _vk.CreateImage(_context.Device, &imageInfo, null, &image);
+        var result = context.VulkanApi.CreateImage(context.Device, &imageInfo, null, &image);
         
         if (result != Result.Success)
         {
@@ -273,7 +260,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
     
     private DeviceMemory AllocateImageMemory(Image image)
     {
-        _vk.GetImageMemoryRequirements(_context.Device, image, out var memRequirements);
+        context.VulkanApi.GetImageMemoryRequirements(context.Device, image, out var memRequirements);
         
         var allocInfo = new MemoryAllocateInfo
         {
@@ -284,14 +271,14 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         DeviceMemory imageMemory;
-        var result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &imageMemory);
+        var result = context.VulkanApi.AllocateMemory(context.Device, &allocInfo, null, &imageMemory);
         
         if (result != Result.Success)
         {
             throw new InvalidOperationException($"Failed to allocate image memory: {result}");
         }
         
-        _vk.BindImageMemory(_context.Device, image, imageMemory, 0);
+        context.VulkanApi.BindImageMemory(context.Device, image, imageMemory, 0);
         
         return imageMemory;
     }
@@ -321,9 +308,9 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         {
             // Copy pixel data to staging buffer
             void* data;
-            _vk.MapMemory(_context.Device, stagingMemory, 0, imageSize, 0, &data);
+            context.VulkanApi.MapMemory(context.Device, stagingMemory, 0, imageSize, 0, &data);
             System.Buffer.MemoryCopy((void*)pixels, data, (long)imageSize, (long)imageSize);
-            _vk.UnmapMemory(_context.Device, stagingMemory);
+            context.VulkanApi.UnmapMemory(context.Device, stagingMemory);
             
             // Transition image to transfer destination
             TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, format);
@@ -335,8 +322,8 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         finally
         {
             // Cleanup staging resources
-            _vk.DestroyBuffer(_context.Device, stagingBuffer, null);
-            _vk.FreeMemory(_context.Device, stagingMemory, null);
+            context.VulkanApi.DestroyBuffer(context.Device, stagingBuffer, null);
+            context.VulkanApi.FreeMemory(context.Device, stagingMemory, null);
         }
     }
     
@@ -351,14 +338,14 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         Silk.NET.Vulkan.Buffer buffer;
-        var result = _vk.CreateBuffer(_context.Device, &bufferInfo, null, &buffer);
+        var result = context.VulkanApi.CreateBuffer(context.Device, &bufferInfo, null, &buffer);
         
         if (result != Result.Success)
         {
             throw new InvalidOperationException($"Failed to create staging buffer: {result}");
         }
         
-        _vk.GetBufferMemoryRequirements(_context.Device, buffer, out var memRequirements);
+        context.VulkanApi.GetBufferMemoryRequirements(context.Device, buffer, out var memRequirements);
         
         var allocInfo = new MemoryAllocateInfo
         {
@@ -369,15 +356,15 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         DeviceMemory stagingMemory;
-        result = _vk.AllocateMemory(_context.Device, &allocInfo, null, &stagingMemory);
+        result = context.VulkanApi.AllocateMemory(context.Device, &allocInfo, null, &stagingMemory);
         
         if (result != Result.Success)
         {
-            _vk.DestroyBuffer(_context.Device, buffer, null);
+            context.VulkanApi.DestroyBuffer(context.Device, buffer, null);
             throw new InvalidOperationException($"Failed to allocate staging buffer memory: {result}");
         }
         
-        _vk.BindBufferMemory(_context.Device, buffer, stagingMemory, 0);
+        context.VulkanApi.BindBufferMemory(context.Device, buffer, stagingMemory, 0);
         
         memory = stagingMemory;
         return buffer;
@@ -403,7 +390,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
             ImageExtent = new Extent3D(width, height, 1)
         };
         
-        _vk.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
+        context.VulkanApi.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, &region);
         
         EndSingleTimeCommands(commandBuffer);
     }
@@ -454,7 +441,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
             throw new NotSupportedException($"Unsupported layout transition: {oldLayout} -> {newLayout}");
         }
         
-        _vk.CmdPipelineBarrier(
+        context.VulkanApi.CmdPipelineBarrier(
             commandBuffer,
             sourceStage, destinationStage,
             0,
@@ -468,7 +455,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
     private CommandBuffer BeginSingleTimeCommands()
     {
         // Get the graphics pool for one-time commands
-        var pool = _commandPoolManager.GetOrCreatePool(CommandPoolType.TransientGraphics);
+        var pool = commandPoolManager.GetOrCreatePool(CommandPoolType.TransientGraphics);
         
         var commandBuffers = pool.AllocateCommandBuffers(1, CommandBufferLevel.Primary);
         var commandBuffer = commandBuffers[0];
@@ -479,14 +466,14 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
             Flags = CommandBufferUsageFlags.OneTimeSubmitBit
         };
         
-        _vk.BeginCommandBuffer(commandBuffer, &beginInfo);
+        context.VulkanApi.BeginCommandBuffer(commandBuffer, &beginInfo);
         
         return commandBuffer;
     }
     
     private void EndSingleTimeCommands(CommandBuffer commandBuffer)
     {
-        _vk.EndCommandBuffer(commandBuffer);
+        context.VulkanApi.EndCommandBuffer(commandBuffer);
         
         var submitInfo = new SubmitInfo
         {
@@ -495,12 +482,12 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
             PCommandBuffers = &commandBuffer
         };
         
-        _vk.QueueSubmit(_context.GraphicsQueue, 1, &submitInfo, default);
-        _vk.QueueWaitIdle(_context.GraphicsQueue);
+        context.VulkanApi.QueueSubmit(context.GraphicsQueue, 1, &submitInfo, default);
+        context.VulkanApi.QueueWaitIdle(context.GraphicsQueue);
         
         // Free the command buffer by resetting the pool
         // Note: This is safe because we waited for the queue to be idle
-        var pool = _commandPoolManager.GetOrCreatePool(CommandPoolType.TransientGraphics);
+        var pool = commandPoolManager.GetOrCreatePool(CommandPoolType.TransientGraphics);
         pool.FreeCommandBuffers(new[] { commandBuffer });
     }
     
@@ -523,7 +510,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         ImageView imageView;
-        var result = _vk.CreateImageView(_context.Device, &viewInfo, null, &imageView);
+        var result = context.VulkanApi.CreateImageView(context.Device, &viewInfo, null, &imageView);
         
         if (result != Result.Success)
         {
@@ -556,7 +543,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
         };
         
         Sampler sampler;
-        var result = _vk.CreateSampler(_context.Device, &samplerInfo, null, &sampler);
+        var result = context.VulkanApi.CreateSampler(context.Device, &samplerInfo, null, &sampler);
         
         if (result != Result.Success)
         {
@@ -568,7 +555,7 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
     
     private uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
     {
-        _vk.GetPhysicalDeviceMemoryProperties(_context.PhysicalDevice, out var memProperties);
+        context.VulkanApi.GetPhysicalDeviceMemoryProperties(context.PhysicalDevice, out var memProperties);
         
         for (uint i = 0; i < memProperties.MemoryTypeCount; i++)
         {
@@ -591,19 +578,19 @@ public unsafe class FontResourceManager : VulkanResourceManager<FontDefinition, 
     {
         if (resource.AtlasTexture.Sampler.Handle != 0)
         {
-            _vk.DestroySampler(_context.Device, resource.AtlasTexture.Sampler, null);
+            context.VulkanApi.DestroySampler(context.Device, resource.AtlasTexture.Sampler, null);
         }
         if (resource.AtlasTexture.ImageView.Handle != 0)
         {
-            _vk.DestroyImageView(_context.Device, resource.AtlasTexture.ImageView, null);
+            context.VulkanApi.DestroyImageView(context.Device, resource.AtlasTexture.ImageView, null);
         }
         if (resource.AtlasTexture.Image.Handle != 0)
         {
-            _vk.DestroyImage(_context.Device, resource.AtlasTexture.Image, null);
+            context.VulkanApi.DestroyImage(context.Device, resource.AtlasTexture.Image, null);
         }
         if (resource.AtlasTexture.ImageMemory.Handle != 0)
         {
-            _vk.FreeMemory(_context.Device, resource.AtlasTexture.ImageMemory, null);
+            context.VulkanApi.FreeMemory(context.Device, resource.AtlasTexture.ImageMemory, null);
         }
     }
 }

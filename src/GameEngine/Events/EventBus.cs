@@ -9,12 +9,11 @@ namespace Nexus.GameEngine.Events;
 /// <remarks>
 /// Initializes a new instance of the EventBus class.
 /// </remarks>
-public class EventBus(ILoggerFactory loggerFactory) : IEventBus
+public class EventBus : IEventBus
 {
     private readonly ConcurrentDictionary<Type, ConcurrentBag<IEventSubscription>> _subscriptions = new();
     private readonly ConcurrentDictionary<Guid, EventSubscription> _subscriptionLookup = new();
     private readonly object _subscriptionLock = new();
-    private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(EventBus));
     private bool _disposed;
 
     /// <summary>

@@ -12,7 +12,6 @@ namespace Nexus.GameEngine.Graphics.Pipelines;
 /// </summary>
 public unsafe class PipelineManager : IPipelineManager
 {
-    private readonly ILogger _logger;
     private readonly IGraphicsContext _context;
     private readonly IWindowService _windowService;
     private readonly IResourceManager _resources;
@@ -42,10 +41,8 @@ public unsafe class PipelineManager : IPipelineManager
         IWindowService windowService,
         ISwapChain swapChain,
         IResourceManager resources,
-        IDescriptorManager descriptorManager,
-        ILoggerFactory loggerFactory)
+        IDescriptorManager descriptorManager)
     {
-        _logger = loggerFactory.CreateLogger(nameof(PipelineManager));
         _context = context;
         _windowService = windowService;
         _swapChain = swapChain;

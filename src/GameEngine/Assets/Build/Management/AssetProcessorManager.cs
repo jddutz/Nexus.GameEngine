@@ -5,9 +5,8 @@ namespace Nexus.GameEngine.Assets.Build.Management;
 /// <summary>
 /// Manages registration and execution of asset processors.
 /// </summary>
-public class AssetProcessorManager(ILogger<AssetProcessorManager> logger) : IAssetProcessorManager
+public class AssetProcessorManager : IAssetProcessorManager
 {
-    private readonly ILogger<AssetProcessorManager> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly List<IAssetProcessor> _processors = [];
     private readonly object _lock = new();
 

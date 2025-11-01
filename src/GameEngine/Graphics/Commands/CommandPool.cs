@@ -17,7 +17,6 @@ namespace Nexus.GameEngine.Graphics.Commands;
 /// </remarks>
 public unsafe class CommandPool : ICommandPool
 {
-    private readonly ILogger _logger;
     private readonly IGraphicsContext _context;
     private readonly Vk _vk;
     private readonly uint _queueFamilyIndex;
@@ -52,10 +51,8 @@ public unsafe class CommandPool : ICommandPool
         IGraphicsContext context,
         uint queueFamilyIndex,
         bool allowIndividualReset,
-        bool transient,
-        ILoggerFactory loggerFactory)
+        bool transient)
     {
-        _logger = loggerFactory.CreateLogger($"{nameof(CommandPool)}:QF{queueFamilyIndex}");
         _context = context;
         _vk = context.VulkanApi;
         _queueFamilyIndex = queueFamilyIndex;

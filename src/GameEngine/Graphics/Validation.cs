@@ -12,7 +12,6 @@ namespace Nexus.GameEngine.Graphics;
 /// </summary>
 public unsafe class Validation : IValidation
 {
-    private readonly ILogger logger;
     private readonly VulkanSettings _vkSettings;
     private readonly string[] _layerNames;
 
@@ -22,9 +21,8 @@ public unsafe class Validation : IValidation
     private DebugUtilsMessengerEXT _debugMessenger;
     private bool _isInitialized;
 
-    public Validation(ILoggerFactory loggerFactory, IOptions<VulkanSettings> options)
+    public Validation(IOptions<VulkanSettings> options)
     {
-        logger = loggerFactory.CreateLogger(nameof(Validation));
         _vkSettings = options.Value;
         _layerNames = DetectValidationLayers();
     }
@@ -418,37 +416,17 @@ public unsafe class Validation : IValidation
         Log.Info("=== CREATING VULKAN DEBUG MESSENGER ===");
         
         var severityFlags = DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
-
-        // Add severity flags based on enabled log levels
-        if (logger.IsEnabled(LogLevel.Trace) || logger.IsEnabled(LogLevel.Debug))
-        {
-            severityFlags |= DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt;
-            Log.Debug("[+] Enabled VERBOSE validation messages (LogLevel.Trace/Debug)");
-        }
-
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            severityFlags |= DebugUtilsMessageSeverityFlagsEXT.InfoBitExt;
-            Log.Debug("[+] Enabled INFO validation messages (LogLevel.Information)");
-        }
-
-        if (logger.IsEnabled(LogLevel.Warning))
-        {
-            severityFlags |= DebugUtilsMessageSeverityFlagsEXT.WarningBitExt;
-            Log.Debug("[+] Enabled WARNING validation messages (LogLevel.Warning)");
-        }
         
-        Log.Debug("[+] Enabled ERROR validation messages (always enabled)");
-    Log.Info($"Debug messenger severity flags: {severityFlags}");
+        Log.Info($"Debug messenger severity flags: {severityFlags}");
 
         var messageTypes = DebugUtilsMessageTypeFlagsEXT.GeneralBitExt |
-                          DebugUtilsMessageTypeFlagsEXT.ValidationBitExt |
-                          DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt;
+                           DebugUtilsMessageTypeFlagsEXT.ValidationBitExt |
+                           DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt;
                           
-    Log.Info($"Debug messenger message types: {messageTypes}");
-        Log.Debug("  - GENERAL: System-level messages");
-        Log.Debug("  - VALIDATION: API usage validation errors");
-        Log.Debug("  - PERFORMANCE: Performance-related warnings");
+        Log.Info($"Debug messenger message types: {messageTypes}");
+            Log.Debug("  - GENERAL: System-level messages");
+            Log.Debug("  - VALIDATION: API usage validation errors");
+            Log.Debug("  - PERFORMANCE: Performance-related warnings");
 
         var createInfo = new DebugUtilsMessengerCreateInfoEXT
         {
@@ -486,16 +464,6 @@ public unsafe class Validation : IValidation
     {
         var message = Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage) ?? string.Empty;
 
-        // Map Vulkan severity to ILogger level
-        var logLevel = messageSeverity switch
-        {
-            DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt => LogLevel.Error,
-            DebugUtilsMessageSeverityFlagsEXT.WarningBitExt => LogLevel.Warning,
-            DebugUtilsMessageSeverityFlagsEXT.InfoBitExt => LogLevel.Information,
-            DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt => LogLevel.Debug,
-            _ => LogLevel.Debug
-        };
-
         // Enhanced logging with clear indicators
         var severityIcon = messageSeverity switch
         {
@@ -506,8 +474,7 @@ public unsafe class Validation : IValidation
             _ => "[DEBUG] VULKAN"
         };
 
-    logger.Log(logLevel, $"{severityIcon} [{messageTypes}] {message}");
-
+        Log.Debug($"{severityIcon} [{messageTypes}] {message}");
 
         return Vk.False;
     }
