@@ -13,7 +13,7 @@ public interface IComponent : IConfigurable, IDisposable
     bool IsLoaded { get; set; }
 
     /// <summary>
-    /// Gets or sets the content manager used to create subcomponents.
+    /// Gets or sets the content manager used to create and manage subcomponents.
     /// </summary>
     IContentManager? ContentManager { get; set; }
 

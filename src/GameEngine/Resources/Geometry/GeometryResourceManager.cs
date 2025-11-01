@@ -16,7 +16,7 @@ public class GeometryResourceManager(IBufferManager bufferManager)
     /// <inheritdoc />
     protected override GeometryResource CreateResource(GeometryDefinition definition)
     {
-        Log.Debug("Loading geometry data from source: {Name}", definition.Name);
+        Log.Debug($"Loading geometry data from source: {definition.Name}");
         
         // Load vertex data from source
         var sourceData = definition.Source.Load();
@@ -53,7 +53,7 @@ public class GeometryResourceManager(IBufferManager bufferManager)
     /// <inheritdoc />
     protected override void DestroyResource(GeometryResource resource)
     {
-        Log.Debug("Destroying geometry resource: {Name}", resource.Name);
+        Log.Debug($"Destroying geometry resource: {resource.Name}");
         bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
     }
 }

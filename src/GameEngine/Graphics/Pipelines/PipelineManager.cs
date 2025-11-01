@@ -600,7 +600,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (stream == null)
             {
-                Log.Error("Could not find embedded resource: {ResourceName} for shader: {ShaderPath}", resourceName, shaderPath);
+                Log.Error($"Could not find embedded resource: {resourceName} for shader: {shaderPath}");
                 return default;
             }
 
@@ -609,7 +609,7 @@ public unsafe class PipelineManager : IPipelineManager
             
             if (bytesRead != code.Length)
             {
-                Log.Warning("Shader read incomplete: Read {bytesRead} of {code.Length} bytes");
+                Log.Warning($"Shader read incomplete: Read {bytesRead} of {code.Length} bytes");
                 return default;
             }
             

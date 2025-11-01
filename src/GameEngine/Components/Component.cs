@@ -12,18 +12,12 @@ public partial class Component
     {
         base.OnLoad(componentTemplate);
 
-        // Mark component as loaded after configuration completes
-        if (componentTemplate is Template template)
-        {
-            foreach(var subcomponentTemplate in template.Subcomponents)
-            {
-                CreateChild(subcomponentTemplate);
-            }
-        }
+        // NOTE: Subcomponents are NOT created here because ContentManager may not be set yet.
+        // Subcomponents are created by ContentManager after Load() completes.
     }
 
     /// <summary>
-    /// Factory used to create new components.
+    /// Content manager used to create and manage subcomponents.
     /// </summary>
     public IContentManager? ContentManager { get; set; }
 

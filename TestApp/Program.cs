@@ -80,6 +80,7 @@ class Program
                 .AddSingleton<Nexus.GameEngine.Resources.Textures.ITextureResourceManager, Nexus.GameEngine.Resources.Textures.TextureResourceManager>()
                 .AddSingleton<Nexus.GameEngine.Resources.Fonts.IFontResourceManager, Nexus.GameEngine.Resources.Fonts.FontResourceManager>()
                 .AddSingleton<IResourceManager, ResourceManager>()
+                .AddSingleton<IComponentFactory, ComponentFactory>()
                 .AddSingleton<IContentManager, ContentManager>()
                 .AddSingleton<IActionFactory, ActionFactory>()
                 .AddPixelSampling()

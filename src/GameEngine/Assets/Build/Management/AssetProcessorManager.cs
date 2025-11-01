@@ -43,8 +43,8 @@ public class AssetProcessorManager : IAssetProcessorManager
         {
             if (_processors.Remove(processor))
             {
-                Log.Debug("Unregistered asset processor for extensions: {Extensions}",
-                    string.Join(", ", processor.SupportedExtensions));
+                var extensions = string.Join(", ", processor.SupportedExtensions);
+                Log.Debug($"Unregistered asset processor for extensions: {extensions}");
             }
         }
     }
@@ -93,8 +93,7 @@ public class AssetProcessorManager : IAssetProcessorManager
 
         try
         {
-            Log.Debug("Processing asset {Asset} with {ProcessorType}",
-                context.InputPath, processor.GetType().Name);
+            Log.Debug($"Processing asset {context.InputPath} with {processor.GetType().Name}");
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var result = await processor.ProcessAsync(context);
@@ -108,15 +107,14 @@ public class AssetProcessorManager : IAssetProcessorManager
             }
             else
             {
-                Log.Error("Failed to process asset {Asset}: {Error}",
-                    context.InputPath, result.ErrorMessage ?? "Unknown Error");
+                Log.Error($"Failed to process asset {context.InputPath}: {result.ErrorMessage ?? "Unknown Error"}");
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Exception occurred while processing asset {context.InputPath}");
+            Log.Exception(ex, $"Exception occurred while processing asset {context.InputPath}");
 
             return new AssetProcessingResult
             {

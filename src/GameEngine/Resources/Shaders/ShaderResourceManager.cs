@@ -45,7 +45,7 @@ public class ShaderResourceManager(IGraphicsContext context)
                 $"Failed to create shader modules for '{definition.Name}'");
         }
 
-        Log.Debug("Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
+        Log.Debug($"Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
 
         return new ShaderResource(vertShaderModule, fragShaderModule, definition);
     }
@@ -97,7 +97,7 @@ public class ShaderResourceManager(IGraphicsContext context)
         if (resource.FragmentShader.Handle != 0)
         {
             context.VulkanApi.DestroyShaderModule(context.Device, resource.FragmentShader, null);
-            Log.Debug("Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
+            Log.Debug($"Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
         }
     }
 }

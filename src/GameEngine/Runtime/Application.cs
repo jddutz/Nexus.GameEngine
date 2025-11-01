@@ -47,7 +47,7 @@ public class Application(IServiceProvider services) : IApplication
             var mainViewport = viewportManager.CreateViewport(new StaticCamera());
             
             // Load content through ContentManager, then assign to Renderer's viewport
-            Log.Debug("Loading startup template: {TemplateName}", startupTemplate.Name ?? "null");
+            Log.Debug($"Loading startup template: {startupTemplate.Name ?? "null"}");
 
             mainViewport.Content = contentManager.Load(startupTemplate);
 

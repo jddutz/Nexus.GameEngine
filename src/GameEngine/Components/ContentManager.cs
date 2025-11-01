@@ -2,11 +2,11 @@
 
 /// <summary>
 /// Manages reusable content trees that can be assigned to viewports.
-/// Provides efficient creation, caching, and disposal of component hierarchies.
-/// Also provides component creation logic previously in ComponentFactory.
+/// Provides efficient caching, lifecycle management, and disposal of component hierarchies.
+/// Delegates component creation to IComponentFactory.
 /// </summary>
 public class ContentManager(
-    IServiceProvider serviceProvider) 
+    IComponentFactory componentFactory) 
     : IContentManager
 {
     private readonly Dictionary<string, IComponent> content = [];
@@ -36,7 +36,7 @@ public class ContentManager(
         // Try to get existing content first
         if (content.TryGetValue(template.Name, out var existingComponent))
         {
-            Log.Debug("Returning existing content '{ContentName}'", template.Name);
+            Log.Debug($"Returning existing content '{template.Name}'");
             return existingComponent;
         }
 
@@ -54,18 +54,18 @@ public class ContentManager(
                     ActivateComponentTree(created);
                 }
 
-                Log.Info("Loaded content '{ContentName}'", template.Name);
+                Log.Info($"Loaded content '{template.Name}'");
                 return created;
             }
             else
             {
-                Log.Error("Failed to create content from template '{TemplateName}' - CreateInstance returned null", template.Name);
+                Log.Error($"Failed to create content from template '{template.Name}' - CreateInstance returned null");
                 return null;
             }
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Exception while creating content from template '{TemplateName}'", template.Name);
+            Log.Exception(ex, $"Exception while creating content from template '{template.Name}'");
             return null;
         }
     }
@@ -78,23 +78,23 @@ public class ContentManager(
 
     /// <summary>
     /// Creates a component instance via dependency injection.
+    /// Delegates to ComponentFactory for actual creation, then sets ContentManager reference
+    /// and optionally registers in the content dictionary.
     /// 
     /// This method:
-    /// 1. Creates the component via DI
-    /// 2. Sets ContentManager and Logger
+    /// 1. Delegates creation to ComponentFactory
+    /// 2. Sets ContentManager reference so children can be created
     /// 3. Registers component in content dictionary if it has a Name
     /// 
-    /// The component is NOT configured or activated. Use this when you need
-    /// to create a component and manually control its configuration/activation.
+    /// The component is NOT configured or activated.
     /// </summary>
     /// <inheritdoc/>
     public IComponent? Create(Type componentType)
     {
         if (componentType == null) return null;
 
-        var obj = serviceProvider.GetService(componentType);
-        if (obj is not IComponent component)
-            return null;
+        var component = componentFactory.Create(componentType);
+        if (component == null) return null;
 
         component.ContentManager = this;
 
@@ -123,27 +123,30 @@ public class ContentManager(
     /// Creates a component from a template.
     /// 
     /// This method:
-    /// 1. Creates the component via DI
-    /// 2. Configures the component with the template (sets IsLoaded = true)
-    /// 3. Creates and configures all subcomponents recursively
+    /// 1. Creates the component instance (without configuration)
+    /// 2. Sets ContentManager reference
+    /// 3. Configures the component with template properties
+    /// 4. Creates subcomponents from template
     /// 
-    /// The component is NOT activated. Use this when you want to create
-    /// configured components but control activation timing yourself.
-    /// For content that should be ready to render immediately, use Load() instead.
+    /// The component is configured but NOT activated.
     /// </summary>
     /// <inheritdoc/>
     public IComponent? Create(Type componentType, Configurable.Template template)
     {
-        var component = Create(componentType);
+        // Create component instance without configuration
+        var component = componentFactory.Create(componentType);
         if (component == null) return null;
 
-        // Configure the component if it supports configuration
+        // Set ContentManager so subcomponents can be created
+        component.ContentManager = this;
+
+        // Configure the component with template properties
         if (component is IConfigurable configurable)
         {
             configurable.Load(template);
         }
 
-        // Create children from Subcomponents
+        // Create subcomponents after configuration is complete
         if (component is Component componentWithChildren && template is Component.Template componentTemplate)
         {
             foreach (var subTemplate in componentTemplate.Subcomponents)
@@ -159,60 +162,24 @@ public class ContentManager(
     public IComponent? Create<T>(Configurable.Template template) where T : IComponent
         => Create(typeof(T), template);
 
+    /// <summary>
+    /// Creates a component instance from a template.
+    /// Infers type, creates component, sets ContentManager, configures, and creates subcomponents.
+    /// </summary>
     /// <inheritdoc/>
     public IComponent? CreateInstance(Configurable.Template template)
     {
-        if (template == null)
-        {
-            Log.Debug("CreateInstance called with null template");
-            return null;
-        }
+        if (template == null) return null;
 
-        // Try to get the component type from the template's containing class
+        // Infer component type from the template's declaring type
         var componentType = template.GetType().DeclaringType;
-
-        Log.Debug("Inferred component type: {TypeName}", componentType?.Name ?? "null");
-
-        // Type-safety: Ensure the type implements IComponent
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            Log.Debug("Component type is null or doesn't implement IComponent");
             return null;
         }
 
-        // Check if the type can be instantiated
-        if (componentType.IsAbstract)
-        {
-            Log.Warning("Cannot create instance of abstract type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
-            return null;
-        }
-
-        if (componentType.IsInterface)
-        {
-            Log.Warning("Cannot create instance of interface type: {TypeName}. Use a concrete implementation instead.", componentType.Name);
-            return null;
-        }
-
-        if (componentType.IsGenericTypeDefinition)
-        {
-            Log.Warning("Cannot create instance of generic type definition: {TypeName}. Specify concrete type arguments.", componentType.Name);
-            return null;
-        }
-
-        if (componentType.IsSealed && componentType.IsAbstract) // static class
-        {
-            Log.Warning("Cannot create instance of static class: {TypeName}", componentType.Name);
-            return null;
-        }
-
-        Log.Debug("Creating {Name} component ({TypeName})", template.Name ?? "unnamed", componentType.Name);
-
-        // Create and configure the component
-        var result = Create(componentType, template);
-
-        Log.Debug("Component creation result: {Result}", result != null ? "SUCCESS" : "FAILED");
-
-        return result;
+        // Use the full Create method which handles configuration and subcomponents
+        return Create(componentType, template);
     }
 
     /// <inheritdoc/>
@@ -234,7 +201,7 @@ public class ContentManager(
             if (component is IRuntimeComponent runtimeComponent)
             {
                 runtimeComponent.Activate();
-                Log.Debug("Activated component {Name} ({Type})", component.Name ?? "unnamed", component.GetType().Name);
+                Log.Debug($"Activated component {component.Name ?? "unnamed"} ({component.GetType().Name})");
                 // RuntimeComponent.Activate() recursively activates IRuntimeComponent children
                 // So we don't need to traverse them manually - continue to next component
                 continue;
@@ -333,7 +300,7 @@ public class ContentManager(
             // Clean up unloaded components
             foreach (var key in unloadedKeys)
             {
-                Log.Debug("Removing unloaded component {Name} from content manager", key);
+                Log.Debug($"Removing unloaded component {key} from content manager");
                 content.Remove(key);
             }
         }

@@ -30,8 +30,7 @@ public class BuildIntegrationService(
 
         try
         {
-            Log.Info("Starting asset processing for platform: {Platform}, configuration: {Configuration}",
-                request.TargetPlatform, request.Configuration);
+            Log.Info($"Starting asset processing for platform: {request.TargetPlatform}, configuration: {request.Configuration}");
 
             // Discover assets to process
             var assetFiles = DiscoverAssets(request);
@@ -123,8 +122,7 @@ public class BuildIntegrationService(
 
         try
         {
-            Log.Info("Cleaning assets for platform: {Platform}, configuration: {Configuration}",
-                request.TargetPlatform, request.Configuration);
+            Log.Info($"Cleaning assets for platform: {request.TargetPlatform}, configuration: {request.Configuration}");
 
             var outputDir = GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration);
 
@@ -139,7 +137,7 @@ public class BuildIntegrationService(
                     foreach (var file in files)
                     {
                         File.Delete(file);
-                        Log.Debug("Deleted: {File}", file);
+                        Log.Debug($"Deleted: {file}");
                     }
                 });
 
@@ -150,7 +148,7 @@ public class BuildIntegrationService(
             }
             else
             {
-                Log.Info("Output directory does not exist: {Directory}", outputDir);
+                Log.Info($"Output directory does not exist: {outputDir}");
             }
 
             result.Success = true;
@@ -175,7 +173,7 @@ public class BuildIntegrationService(
         {
             if (!Directory.Exists(inputDir))
             {
-                Log.Warning("Input directory does not exist: {Directory}", inputDir);
+                Log.Warning($"Input directory does not exist: {inputDir}");
                 continue;
             }
 
@@ -210,7 +208,7 @@ public class BuildIntegrationService(
             var processors = _processorManager.GetProcessorsForAsset(assetFile, request.TargetPlatform);
             if (!processors.Any())
             {
-                Log.Debug("No processor found for asset: {Asset}", assetFile);
+                Log.Debug($"No processor found for asset: {assetFile}");
                 continue;
             }
 
@@ -286,7 +284,7 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Error checking if asset needs processing: {Asset}", context.InputPath);
+            Log.Exception(ex, $"Error checking if asset needs processing: {context.InputPath}");
             return true; // Process on error to be safe
         }
     }
@@ -309,12 +307,12 @@ public class BuildIntegrationService(
             if (!Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
-                Log.Debug("Removed empty directory: {Directory}", directory);
+                Log.Debug($"Removed empty directory: {directory}");
             }
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Failed to remove empty directory: {Directory}", directory);
+            Log.Exception(ex, $"Failed to remove empty directory: {directory}");
         }
     }
 
@@ -345,7 +343,7 @@ public class BuildIntegrationService(
             await File.WriteAllTextAsync(manifestPath, json);
             result.ManifestFile = manifestPath;
 
-            Log.Info("Generated build manifest: {Manifest}", manifestPath);
+            Log.Info($"Generated build manifest: {manifestPath}");
         }
         catch (Exception ex)
         {

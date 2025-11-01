@@ -89,7 +89,6 @@ See `src/GameEngine/Graphics/` and `src/GameEngine/Resources/` for implementatio
 ```csharp
 // Create services manually (no AddGameEngineServices helper exists)
 var services = new ServiceCollection()
-    .AddSingleton<ILoggerFactory>(loggerFactory)
     .Configure<ApplicationSettings>(configuration.GetSection("Application"))
     .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
     .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))
@@ -109,8 +108,8 @@ var services = new ServiceCollection()
     .AddSingleton<IGeometryResourceManager, GeometryResourceManager>()
     .AddSingleton<IShaderResourceManager, ShaderResourceManager>()
     .AddSingleton<IResourceManager, ResourceManager>()
-    .AddSingleton<IContentManager, ContentManager>()
     .AddSingleton<IComponentFactory, ComponentFactory>()
+    .AddSingleton<IContentManager, ContentManager>()
     .AddSingleton<IActionFactory, ActionFactory>()
     .AddPixelSampling()  // Testing only
     .AddDiscoveredServices<IRuntimeComponent>()
@@ -205,16 +204,22 @@ See `src/GameEngine/Resources/` for implementations.
 
 **Pixel Sampling**: VulkanPixelSampler service (currently a stub) will allow reading rendered pixel colors for validation. Enable with `.AddPixelSampling()` in test configuration. See `src/GameEngine/Testing/README.md` for details.
 
-### Logging
+### Component Creation and Management
 
-For RuntimeComponents, ComponentFactory sets the Logger - do not inject:
+**Separation of Concerns**:
+- **IComponentFactory**: Responsible for component instantiation via DI, configuration from templates
+- **IContentManager**: Responsible for content lifecycle (caching, activation, updates, disposal)
 
-```csharp
-Logger?.LogDebug("Message {ComponentType}", GetType().Name);
-```
-
-For services, inject ILoggerFactory:
+**Component Creation Pattern**: Components use `ContentManager` to create children. ContentManager internally delegates to ComponentFactory for instantiation, then manages the created component's lifecycle:
 
 ```csharp
-private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(Service));
+// Components always use ContentManager (never ComponentFactory directly)
+public virtual IComponent? CreateChild(Template template)
+{
+    var component = ContentManager?.CreateInstance(template);
+    if (component != null) AddChild(component);
+    return component;
+}
 ```
+
+**Why Components Use ContentManager**: Child components need lifecycle management (caching, updates, disposal), not just creation. ContentManager provides this while internally delegating creation to ComponentFactory.
