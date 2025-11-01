@@ -5,9 +5,8 @@
 /// Reuses ImageTextureShader with tint color for text rendering.
 /// </summary>
 public partial class TextElement(
-    IPipelineManager pipelineManager,
     IDescriptorManager descriptorManager)
-    : Element(pipelineManager)
+    : Element
 {
     // Default text style used when no style is specified
     private static readonly TextStyle DefaultTextStyle = new()

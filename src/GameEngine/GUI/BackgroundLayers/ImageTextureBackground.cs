@@ -7,8 +7,6 @@
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
 public partial class ImageTextureBackground(
-    IPipelineManager pipelineManager,
-    IResourceManager resources,
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
@@ -62,7 +60,7 @@ public partial class ImageTextureBackground(
         }
         
         // Build pipeline for image texture rendering
-        _pipeline = pipelineManager.GetBuilder()
+        _pipeline = PipelineManager.GetBuilder()
             .WithShader(ShaderDefinitions.ImageTexture)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
@@ -73,7 +71,7 @@ public partial class ImageTextureBackground(
 
 
         // Load texture with specified definition
-        _texture = resources.Textures.GetOrCreate(_textureDefinition);
+        _texture = ResourceManager.Textures.GetOrCreate(_textureDefinition);
         
         // Create descriptor set for texture
         var shader = ShaderDefinitions.ImageTexture;
@@ -95,7 +93,7 @@ public partial class ImageTextureBackground(
             binding: 0);
         
         // Create textured quad geometry
-        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
     }
 
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
@@ -149,7 +147,7 @@ public partial class ImageTextureBackground(
         // Clean up texture resources
         if (_texture != null && _textureDefinition != null)
         {
-            resources.Textures.Release(_textureDefinition);
+            ResourceManager.Textures.Release(_textureDefinition);
             _texture = null;
             
         }
@@ -161,7 +159,7 @@ public partial class ImageTextureBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(GeometryDefinitions.TexturedQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

@@ -20,6 +20,7 @@ public abstract partial class Drawable : Transformable, IDrawable
     }
     
     public required IResourceManager ResourceManager { get; set; }
+    public required IPipelineManager PipelineManager { get; set; }
     public required PipelineHandle Pipeline { get; set; }
     
     /// <summary>

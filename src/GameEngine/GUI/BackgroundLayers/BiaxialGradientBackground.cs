@@ -7,8 +7,6 @@
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
 public partial class BiaxialGradientBackground(
-    IPipelineManager pipelineManager,
-    IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
@@ -84,7 +82,7 @@ public partial class BiaxialGradientBackground(
         base.OnActivate();
 
         // Build pipeline for biaxial gradient rendering
-        _pipeline = pipelineManager.GetBuilder()
+        _pipeline = PipelineManager.GetBuilder()
             .WithShader(ShaderDefinitions.BiaxialGradient)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
@@ -95,7 +93,7 @@ public partial class BiaxialGradientBackground(
 
 
         // Create position-only full-screen quad geometry
-        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for corner colors
         CreateCornerColorsUBO();
@@ -212,7 +210,7 @@ public partial class BiaxialGradientBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(GeometryDefinitions.UniformColorQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.UniformColorQuad);
             _geometry = null;
         }
         

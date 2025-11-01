@@ -7,8 +7,6 @@
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
 public partial class LinearGradientBackground(
-    IPipelineManager pipelineManager,
-    IResourceManager resources,
     IBufferManager bufferManager,
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
@@ -75,7 +73,7 @@ public partial class LinearGradientBackground(
         _gradientDefinition.Validate();
         
         // Build pipeline for linear gradient rendering
-        _pipeline = pipelineManager.GetBuilder()
+        _pipeline = PipelineManager.GetBuilder()
             .WithShader(ShaderDefinitions.LinearGradient)
             .WithRenderPasses(RenderPasses.Main)
             .WithTopology(PrimitiveTopology.TriangleStrip)
@@ -86,7 +84,7 @@ public partial class LinearGradientBackground(
 
 
         // Create position-only full-screen quad geometry
-        _geometry = resources.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
 
         // Create UBO and descriptor set for gradient
         CreateGradientUBO(_gradientDefinition);
@@ -178,7 +176,7 @@ public partial class LinearGradientBackground(
         
         if (_geometry != null)
         {
-            resources.Geometry.Release(GeometryDefinitions.UniformColorQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.UniformColorQuad);
             _geometry = null;
         }
         

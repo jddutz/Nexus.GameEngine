@@ -5,9 +5,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract partial class Layout(
-    IPipelineManager pipelineManager)
-    : Element(pipelineManager)
+public abstract partial class Layout
+    : Element
 {
     /// <summary>
     /// Template for configuring Layout components.

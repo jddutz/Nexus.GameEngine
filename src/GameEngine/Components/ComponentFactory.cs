@@ -5,13 +5,17 @@ namespace Nexus.GameEngine.Components;
 /// Handles component instantiation, logger setup, and configuration application,
 /// but does NOT manage caching or lifecycle (which belongs to ContentManager).
 /// </summary>
-public class ComponentFactory(IServiceProvider serviceProvider) : IComponentFactory
+public class ComponentFactory(
+    IServiceProvider serviceProvider,
+    IResourceManager resourceManager,
+    IPipelineManager pipelineManager) : IComponentFactory
 {
     /// <summary>
     /// Creates a component instance via dependency injection.
     /// 
     /// This method:
     /// 1. Creates the component via DI
+    /// 2. Sets ResourceManager and PipelineManager properties if component is IDrawable
     /// 
     /// The component is NOT configured or activated.
     /// ContentManager is responsible for setting the ContentManager reference.
@@ -24,6 +28,26 @@ public class ComponentFactory(IServiceProvider serviceProvider) : IComponentFact
         var obj = serviceProvider.GetService(componentType);
         if (obj is not IComponent component)
             return null;
+
+        // Set ResourceManager and PipelineManager for drawable components
+        if (component is IDrawable drawable)
+        {
+            var drawableType = drawable.GetType();
+            
+            // Set ResourceManager property if it exists
+            var resourceManagerProp = drawableType.GetProperty("ResourceManager");
+            if (resourceManagerProp != null && resourceManagerProp.CanWrite)
+            {
+                resourceManagerProp.SetValue(drawable, resourceManager);
+            }
+            
+            // Set PipelineManager property if it exists
+            var pipelineManagerProp = drawableType.GetProperty("PipelineManager");
+            if (pipelineManagerProp != null && pipelineManagerProp.CanWrite)
+            {
+                pipelineManagerProp.SetValue(drawable, pipelineManager);
+            }
+        }
 
         return component;
     }

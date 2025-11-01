@@ -6,9 +6,7 @@ namespace Nexus.GameEngine.GUI;
 /// Provides layout system integration through SetBounds/GetBounds.
 /// All coordinates are in NDC space (Normalized Device Coordinates: -1 to 1).
 /// </summary>
-public partial class Element(
-    IPipelineManager pipelineManager)
-    : Drawable(), IUserInterfaceElement
+public partial class Element : Drawable, IUserInterfaceElement
 {
     /// <summary>
     /// Template for configuring user interface Element components.
@@ -112,7 +110,7 @@ public partial class Element(
         base.OnLoad(componentTemplate);
 
         // Get or create shared pipeline for all Element instances
-        Pipeline = pipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
+        Pipeline = PipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
 
         if (componentTemplate is Template template)
         {
