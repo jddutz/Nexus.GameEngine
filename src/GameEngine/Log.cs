@@ -104,7 +104,7 @@ public static class Log
     {
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
         var className = GetClassNameFromFilePath(filePath);
-        var output = $"{lineNumber:D4}|{timestamp}|{level}|{className}|{memberName}|{message}";
+        var output = $"{timestamp}|{level}|{lineNumber:D4}|{className}: {message}";
         
         // Write to debug channel only (visible in debugger output and console when attached)
         System.Diagnostics.Debug.WriteLine(output);

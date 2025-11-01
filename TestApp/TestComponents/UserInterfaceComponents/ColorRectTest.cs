@@ -14,15 +14,15 @@ namespace TestApp.TestComponents.UserInterfaceComponents;
 /// Test: Red rectangle near top-left with margin (20% margin, 20% size in pixels)
 /// This leaves space at the top and left edges to sample the background.
 /// </summary>
-public partial class ColorRectSimpleTest(
+public partial class ColoredRectTest(
     IPixelSampler pixelSampler,
     IWindowService windowService
     ) : RenderableTest(pixelSampler)
 {
     public new record Template : RenderableTest.Template { }
 
-    [Test("Simple colored rectangle test")]
-    public readonly static Template ColorRectTest = new()
+    [Test("ColorRect test")]
+    public readonly static Template TestTemplate = new()
     {
         Subcomponents = [
             new Element.Template()

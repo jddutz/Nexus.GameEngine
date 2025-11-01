@@ -130,6 +130,8 @@ public partial class TestRunner : RuntimeComponent
         var passed = new List<TestResult>();
         var failed = new List<TestResult>();
 
+        var failedTestsSummary = "\n==== Failed Tests ====";
+
         foreach (var test in tests)
         {
             if (test.TestComponent is null) continue;
@@ -149,20 +151,24 @@ public partial class TestRunner : RuntimeComponent
                 else
                 {
                     failed.Add(result);
+                    failedTestsSummary += $"\n{test.TestName} {test.Description}: Expected {result.ExpectedResult}, Actual {result.ActualResult}";
                 }
             }
         }
 
         var resultsSummary = $"Test run complete!\n"
-            + $"====== SUMMARY ======\n"
+            + $"\n====== SUMMARY ======\n"
             + $"Test Components Discovered: {tests.Count}\n"
             + $"Number of Test Results: {passed.Count + failed.Count}\n"
             + $"Passed: {passed.Count}\n"
             + $"Failed: {failed.Count}\n"
             + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
             + $"Frames Rendered: {framesRendered}\n"
-            + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds}\n"
-            + $"Overall Result: {(passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]")}";
+            + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds:F0}\n"
+            + $"Overall Result: {(passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]")}\n";
+
+        if (failed.Count > 0)
+            resultsSummary += failedTestsSummary + "\n";
 
         Nexus.GameEngine.Log.Debug(resultsSummary);
 
