@@ -46,8 +46,11 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     private void InitializeMatrices()
     {
+        Log.Debug($"StaticCamera.InitializeMatrices() called - viewport size: {_viewportWidth}x{_viewportHeight}");
+        
         // Identity view matrix (UI coordinates are in screen space)
         ViewMatrix = Matrix4X4<float>.Identity;
+        Log.Debug($"  ViewMatrix set to: {ViewMatrix}");
 
         // Create pixel-to-NDC orthographic projection
         // CreateOrthographicOffCenter maps:
@@ -60,6 +63,7 @@ public partial class StaticCamera : RuntimeComponent, ICamera
             0f,              // top (flipped for Vulkan)
             NearPlane,
             FarPlane);
+        Log.Debug($"  ProjectionMatrix set to: {ProjectionMatrix}");
 
         // Mark cached matrix as dirty
         _viewProjectionDirty = true;

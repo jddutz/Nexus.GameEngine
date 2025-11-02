@@ -6,8 +6,9 @@ public partial class TestComponent : RuntimeComponent, ITestComponent
 {
     public virtual Template[] Templates => [new()];
 
+    [ComponentProperty]
+    public int _frameCount = 1;
     public int Updates { get; private set; } = 0;
-    public int FrameCount { get; protected set; } = 1;
 
     protected override void OnUpdate(double deltaTime)
     {

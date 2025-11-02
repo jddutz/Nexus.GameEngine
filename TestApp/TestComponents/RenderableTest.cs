@@ -45,7 +45,8 @@ public partial class RenderableTest(
     [ComponentProperty]
     private uint _renderPriority = 0;
     
-    public bool IsVisible() => true;
+    // Only visible while test is active
+    public bool IsVisible() => IsActive();
 
     public int FramesRendered { get; private set; } = 0;
 
@@ -73,6 +74,8 @@ public partial class RenderableTest(
     protected override void OnDeactivate()
     {
         pixelSampler.Deactivate();
+        
+        base.OnDeactivate();
     }
 
     public override IEnumerable<TestResult> GetTestResults()
