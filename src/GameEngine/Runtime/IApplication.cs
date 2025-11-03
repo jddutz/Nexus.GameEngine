@@ -1,4 +1,4 @@
-using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.Components;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -14,5 +14,6 @@ public interface IApplication
     /// This method blocks until the application is terminated or the window is closed.
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
-    void Run(WindowOptions windowOptions, ElementTemplate startupTemplate);
+    /// <param name="startupTemplate">The template for the root component to load on startup.</param>
+    void Run(WindowOptions windowOptions, Template startupTemplate);
 }

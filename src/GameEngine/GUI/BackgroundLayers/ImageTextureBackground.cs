@@ -87,10 +87,10 @@ public partial class ImageTextureBackground(
         if (_texture == null)
             return default;
         
-        // Get viewport dimensions
-        var vulkanViewport = context.Viewport.VulkanViewport;
-        var viewportWidth = vulkanViewport.Width;
-        var viewportHeight = vulkanViewport.Height;
+        // Get viewport dimensions from extent
+        var extent = context.Viewport.Extent;
+        var viewportWidth = (float)extent.Width;
+        var viewportHeight = (float)extent.Height;
         
         // Calculate UV bounds based on placement mode
         var (uvMin, uvMax) = BackgroundImagePlacement.CalculateUVBounds(

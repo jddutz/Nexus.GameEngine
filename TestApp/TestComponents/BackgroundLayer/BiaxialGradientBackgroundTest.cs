@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
@@ -18,8 +19,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// - Bottom-right: Yellow
 /// </summary>
 public partial class BiaxialGradientBackgroundTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Biaxial gradient test")]
     public readonly static BiaxialGradientBackgroundTestTemplate BackgroundLayerTest = new()

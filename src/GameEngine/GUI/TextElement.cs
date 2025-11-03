@@ -112,7 +112,8 @@ public partial class TextElement(
         }
 
         // Generate vertices from text
-        var vertices = GenerateTextVertices(_text, _fontResource, Bounds, _style.Alignment);
+        var bounds = GetBounds();
+        var vertices = GenerateTextVertices(_text, _fontResource, bounds, _style.Alignment);
 
         // Release old geometry if it exists
         if (_currentGeometryDefinition != null)

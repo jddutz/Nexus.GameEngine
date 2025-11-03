@@ -72,8 +72,9 @@ public partial class GridLayout
         else
         {
             // Calculate available space and divide by grid dimensions
-            int availableWidth = Math.Max(0, Bounds.Size.X - Padding.Left - Padding.Right - (Columns - 1) * ColumnSpacing);
-            int availableHeight = Math.Max(0, Bounds.Size.Y - Padding.Top - Padding.Bottom - (actualRows - 1) * RowSpacing);
+            var layoutBounds = GetBounds();
+            int availableWidth = Math.Max(0, layoutBounds.Size.X - Padding.Left - Padding.Right - (Columns - 1) * ColumnSpacing);
+            int availableHeight = Math.Max(0, layoutBounds.Size.Y - Padding.Top - Padding.Bottom - (actualRows - 1) * RowSpacing);
             cellSize = new Vector2D<int>(availableWidth / Columns, availableHeight / actualRows);
         }
 
@@ -81,7 +82,7 @@ public partial class GridLayout
         for (int i = 0; i < children.Length; i++)
         {
             var child = children[i];
-            var childBounds = child.Bounds;
+            var childBounds = child.GetBounds();
 
             // Calculate grid position
             int row = i / Columns;
@@ -111,16 +112,16 @@ public partial class GridLayout
             };
 
             var w = HorizontalAlignment == HorizontalAlignment.Stretch
-                ? child.Bounds.Size.X
+                ? childBounds.Size.X
                 : cellSize.X;
             
             var h = VerticalAlignment == VerticalAlignment.Stretch
-                ? child.Bounds.Size.Y
+                ? childBounds.Size.Y
                 : cellSize.Y;
 
-            // Set child bounds
-            var newBounds = new Rectangle<int>(x, y, w, h);
-            child.SetBounds(newBounds);
+            // Set child constraints
+            var newConstraints = new Rectangle<int>(x, y, w, h);
+            child.SetSizeConstraints(newConstraints);
         }
     }
 }

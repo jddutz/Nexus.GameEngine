@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Resources;
@@ -16,8 +17,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Single frame test: White (center) → Black (edges) from center point (0.5, 0.5)
 /// </summary>
 public partial class BackgroundLayerRadialGradientTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Radial gradient test")]
     public readonly static BackgroundLayerRadialGradientTestTemplate BackgroundLayerTest = new()

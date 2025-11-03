@@ -109,8 +109,8 @@ public partial class RadialGradientBackground(
             yield break;
 
         // Calculate aspect-corrected scale for circular gradients
-        var viewport = context.Viewport.VulkanViewport;
-        float aspectRatio = viewport.Width / viewport.Height;
+        var extent = context.Viewport.Extent;
+        float aspectRatio = (float)extent.Width / extent.Height;
         
         // Apply aspect ratio correction to user-provided scale
         // If user wants circular (1,1), this becomes (aspectRatio, 1) for non-square viewports

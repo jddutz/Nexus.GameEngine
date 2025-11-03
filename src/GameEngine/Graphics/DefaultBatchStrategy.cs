@@ -33,21 +33,41 @@ public class DefaultBatchStrategy : IBatchStrategy
         if (priorityCompare != 0) return priorityCompare;
         
         // Within the same priority, optimize for batching to minimize state changes
+        // Order by cost: pipeline (most expensive) → descriptor set → vertex buffer → index buffer → push constants (least expensive)
         
-        // Sort by pipeline (most expensive to change)
+        // 1. Sort by pipeline (most expensive to change)
         var pipelineCompare = x.Pipeline.Pipeline.Handle.CompareTo(y.Pipeline.Pipeline.Handle);
         if (pipelineCompare != 0) return pipelineCompare;
         
-        // Then by descriptor set (textures/uniforms)
+        // 2. Then by descriptor set (textures/uniforms)
         var descriptorCompare = x.DescriptorSet.Handle.CompareTo(y.DescriptorSet.Handle);
         if (descriptorCompare != 0) return descriptorCompare;
         
-        // Then by vertex buffer
+        // 3. Then by vertex buffer
         var vertexCompare = x.VertexBuffer.Handle.CompareTo(y.VertexBuffer.Handle);
         if (vertexCompare != 0) return vertexCompare;
         
-        // Finally by index buffer
-        return x.IndexBuffer.Handle.CompareTo(y.IndexBuffer.Handle);
+        // 4. Then by index buffer
+        var indexCompare = x.IndexBuffer.Handle.CompareTo(y.IndexBuffer.Handle);
+        if (indexCompare != 0) return indexCompare;
+        
+        // 5. Finally by push constants (least expensive, already part of draw call)
+        // This prevents SortedSet from treating commands with different push constants as duplicates
+        // Using GetHashCode() works for both value types and reference types
+        if (x.PushConstants != null && y.PushConstants != null)
+        {
+            return x.PushConstants.GetHashCode().CompareTo(y.PushConstants.GetHashCode());
+        }
+        else if (x.PushConstants != null)
+        {
+            return 1;  // x has push constants, y doesn't -> x comes after
+        }
+        else if (y.PushConstants != null)
+        {
+            return -1;  // y has push constants, x doesn't -> y comes after
+        }
+        
+        return 0;  // Truly identical commands
     }
 
     /// <summary>

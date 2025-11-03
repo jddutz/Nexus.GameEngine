@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
@@ -15,8 +16,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: When wide/short image, shows left and clips right; when narrow/tall, centers vertically
 /// </summary>
 public partial class ImagePlacementFillLeftTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement middle left")]
     public readonly static ImagePlacementFillLeftTestTemplate BackgroundLayerTest = new()

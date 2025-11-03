@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
@@ -15,8 +16,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: Shows top-right portion, crops bottom and left when both dimensions need cropping
 /// </summary>
 public partial class ImagePlacementFillTopRightTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement top right")]
     public readonly static ImagePlacementFillTopRightTestTemplate BackgroundLayerTest = new()

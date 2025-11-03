@@ -39,12 +39,14 @@ public partial class VerticalLayout
         // Arrange children
         foreach (var child in children)
         {
+            var childBounds = child.GetBounds();
+            
             // TODO: Calculate X based on alignment and LayoutMode
             var x = Alignment switch
             {
                 HorizontalAlignment.Left => Padding.Left,
-                HorizontalAlignment.Center => Padding.Left + (maxWidth - child.Bounds.Size.X) / 2,
-                HorizontalAlignment.Right => Padding.Left + maxWidth - child.Bounds.Size.X,
+                HorizontalAlignment.Center => Padding.Left + (maxWidth - childBounds.Size.X) / 2,
+                HorizontalAlignment.Right => Padding.Left + maxWidth - childBounds.Size.X,
                 HorizontalAlignment.Stretch => Padding.Left,
                 _ => Padding.Left
             };
@@ -53,17 +55,17 @@ public partial class VerticalLayout
             var y = pY;
 
             // TODO: Calculate W based on LayoutMode
-            var w = child.Bounds.Size.X;
+            var w = childBounds.Size.X;
 
             // TODO: Calculate H based on LayoutMode
-            var h = child.Bounds.Size.Y;
+            var h = childBounds.Size.Y;
 
-            // Set child bounds
-            var newBounds = new Rectangle<int>(x, y, w, h);
-            child.SetBounds(newBounds);
+            // Set child constraints
+            var newConstraints = new Rectangle<int>(x, y, w, h);
+            child.SetSizeConstraints(newConstraints);
 
             // Move to next position
-            pY += child.Bounds.Size.Y + Spacing;
+            pY += childBounds.Size.Y + Spacing;
         }
     }
 }

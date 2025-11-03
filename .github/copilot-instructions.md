@@ -43,6 +43,16 @@ dotnet test Tests/Tests.csproj  # Unit tests
 dotnet run --project TestApp/TestApp.csproj # Integration tests (frame-based testing)
 ```
 
+**Running Tests with Output**: Use PowerShell terminal to capture test output:
+```powershell
+# Run all integration tests
+dotnet run --project TestApp/TestApp.csproj --configuration Debug
+
+# Run filtered integration tests (case-insensitive substring match)
+dotnet run --project TestApp/TestApp.csproj --configuration Debug -- --filter=ColoredRect
+dotnet run --project TestApp/TestApp.csproj --configuration Debug -- --filter=Lifecycle
+```
+
 ## Shader Compilation
 
 Shaders must be compiled to SPIR-V before building:
@@ -69,7 +79,8 @@ The build-testapp task has a dependency on compile-shaders task.
 - **ISyncManager**: Synchronization primitives (semaphores, fences)
 - **IDescriptorManager**: Descriptor pool, layout, and set management for binding resources (UBOs, textures) to shaders
 - **IRenderer**: High-level rendering orchestration
-- **IViewport**: Screen region and content management
+- **ICamera**: Camera interface with viewport properties and UBO management
+- **Viewport**: Immutable record containing Vulkan rendering state (extent, clear color, render pass mask)
 
 **Resource Management**: 
 
@@ -81,6 +92,12 @@ The build-testapp task has a dependency on compile-shaders task.
 See `src/GameEngine/Graphics/` and `src/GameEngine/Resources/` for implementations.
 
 **Testing Infrastructure**: Frame-based integration testing using TestApp. See `src/GameEngine/Testing/README.md` and `TestApp/` for details.
+
+**Test Filtering**: TestApp supports filtering tests by name using the `--filter` argument:
+- Tests are discovered by scanning for `[Test]` attributes on static Template fields
+- Filter performs case-insensitive substring match on test names
+- Useful for focusing on specific failing tests during debugging
+- Example: `--filter=ColoredRect` runs only tests with "ColoredRect" in the name
 
 ### Key Architectural Principles
 
@@ -190,6 +207,37 @@ See `src/GameEngine/Resources/` for implementations.
 - Proper image acquisition and presentation coordination
 
 **Batch Rendering**: Renderer uses `IBatchStrategy` to group compatible render commands and minimize state changes.
+
+### Camera and Viewport System
+
+**Camera Architecture**:
+- `ICamera`: Interface for all cameras (StaticCamera, OrthoCamera, PerspectiveCamera)
+- Cameras manage their own ViewProjection UBO (Uniform Buffer Object) lifecycle
+- Each camera creates descriptor sets containing the ViewProjection matrix (64 bytes)
+- UBO bound at descriptor set=0, binding=0 in shaders
+
+**Camera Lifecycle**:
+- **OnActivate()**: Initialize UBO buffer, descriptor set, and descriptor layout
+- **SetViewportSize()**: Update projection matrix when viewport dimensions change
+- **UpdateViewProjectionUBO()**: Write matrix data to UBO when it changes
+- **OnDeactivate()**: Cleanup UBO resources (buffer, descriptor set, layout)
+- **GetViewProjectionDescriptorSet()**: Return descriptor set for renderer binding
+
+**ContentManager Camera Tracking**:
+- `ContentManager.Initialize()` creates default StaticCamera (full screen, RenderPriority=100)
+- `ActiveCameras` property provides sorted list of active cameras (by RenderPriority)
+- Cameras discovered automatically during content Load/Unload
+- Default camera always available if no other cameras exist
+
+**Viewport Management**:
+- `Viewport` is immutable record (Extent, ClearColor, RenderPassMask)
+- Cameras create Viewport instances via `GetViewport()` method
+- Renderer iterates cameras, gets viewports, renders in priority order
+
+**Push Constants Optimization**:
+- Old approach: 80 bytes per draw (64-byte matrix + 16-byte color)
+- New approach: 16 bytes per draw (color only), matrix in UBO
+- **99% bandwidth reduction** for matrix transmission (bound once per viewport vs per draw)
 
 ### Testing Infrastructure
 

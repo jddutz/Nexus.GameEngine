@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
@@ -15,8 +16,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: Entire texture visible (UV 0,0 to 1,1), potentially distorted to fill viewport
 /// </summary>
 public partial class ImagePlacementStretchTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement stretch")]
     public readonly static ImagePlacementStretchTestTemplate BackgroundLayerTest = new()

@@ -17,7 +17,8 @@ public class Application(IServiceProvider services) : IApplication
     /// This method blocks until the window is closed.
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
-    public void Run(WindowOptions windowOptions, ElementTemplate startupTemplate)
+    /// <param name="startupTemplate">The template for the root component to load on startup.</param>
+    public void Run(WindowOptions windowOptions, Template startupTemplate)
     {
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
@@ -39,21 +40,21 @@ public class Application(IServiceProvider services) : IApplication
         window.Load += () =>
         {
             var contentManager = services.GetRequiredService<IContentManager>();
-            var viewportManager = services.GetRequiredService<IViewportManager>();
             var renderer = services.GetRequiredService<IRenderer>();
+
+            // Initialize ContentManager (creates default camera for zero-configuration rendering)
+            contentManager.Initialize();
 
             if (startupTemplate == null) return;
 
-            var mainViewport = viewportManager.CreateViewport(new StaticCamera());
-            
-            // Load content through ContentManager, then assign to Renderer's viewport
+            // Load content through ContentManager
+            // ContentManager automatically registers cameras found in the content tree
             Log.Debug($"Loading startup template: {startupTemplate.Name ?? "null"}");
+            var startupContent = contentManager.Load(startupTemplate);
 
-            mainViewport.Content = contentManager.Load(startupTemplate);
-
-            // Push window size constraints to main viewport's root element
-            // ElementTemplate parameter ensures this cast should always succeed
-            if (mainViewport.Content is IUserInterfaceElement rootElement)
+            // Push window size constraints to root element if it's a UI element
+            // This is optional - not all startup content needs to be IUserInterfaceElement
+            if (startupContent is IUserInterfaceElement rootElement)
             {
                 var constraints = new Rectangle<int>(0, 0, window.Size.X, window.Size.Y);
                 rootElement.SetSizeConstraints(constraints);
@@ -63,20 +64,6 @@ public class Application(IServiceProvider services) : IApplication
                 {
                     rootElement.SetSizeConstraints(new Rectangle<int>(0, 0, newSize.X, newSize.Y));
                 };
-            }
-            else
-            {
-                var typeName = mainViewport.Content?.GetType().Name ?? "null";
-                throw new InvalidOperationException(
-                    $"Invalid startup content template, '{typeName}'."
-                    + " Startup content must be IUserInterfaceElement."
-                    + " Ensure the template was properly registered with the service provider.");
-            }
-
-            if (!mainViewport.Activate())
-            {
-                Log.Error("Viewport activation failed.");
-                window.Close();
             }
 
             window.Update += contentManager.OnUpdate;

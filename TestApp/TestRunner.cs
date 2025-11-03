@@ -1,5 +1,6 @@
 using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Runtime;
 using Silk.NET.Windowing;
 using System.Diagnostics;
@@ -16,29 +17,49 @@ namespace TestApp;
 /// TestRunner is a RuntimeComponent that discovers and executes integration tests.
 /// It manages test lifecycle, result output, and application exit based on test outcomes.
 /// </summary>
-public partial class TestRunner : RuntimeComponent
+public partial class TestRunner(IWindowService windowService, IRenderer renderer) : RuntimeComponent
 {
-    private readonly IWindow window;
+    private readonly IWindow window = windowService.GetWindow();
 
     private readonly List<ComponentTest> tests = [];
     private readonly Stopwatch stopwatch = new();
+    private int frameCount = 0;
     private int framesRendered = 0;
     private int currentTestIndex = 0;
 
-    public TestRunner(IWindowService windowService)
-    {
-        window = windowService.GetWindow();
-
-    tests.AddRange(DiscoverTests());
-    }
+    /// <summary>
+    /// Optional filter pattern for test names. If provided, only tests with names containing this string (case-insensitive) will be executed.
+    /// </summary>
+    [ComponentProperty]
+    private string? _testFilter;
 
     protected override void OnActivate()
     {
         base.OnActivate();
+
+        renderer.AfterRendering += OnRenderComplete;
+
+        // Discover tests after template configuration is applied
+        tests.AddRange(DiscoverTests());
+        
+        if (!string.IsNullOrEmpty(_testFilter))
+        {
+            Log.Info($"Test filter applied: '{_testFilter}' - {tests.Count} tests discovered");
+        }
+        else
+        {
+            Log.Info($"No test filter - {tests.Count} tests discovered");
+        }
+        
         stopwatch.Start();
     }
 
-    private static IEnumerable<ComponentTest> DiscoverTests()
+    private void OnRenderComplete(object? sender, RenderEventArgs e)
+    {
+        framesRendered++;
+    }
+
+    private IEnumerable<ComponentTest> DiscoverTests()
     {
         // Find all public static fields of type Template with a [Test] attribute
         var fields = typeof(TestComponent)
@@ -63,6 +84,13 @@ public partial class TestRunner : RuntimeComponent
             var name = !string.IsNullOrEmpty(template.Name) ? template.Name : field.DeclaringType?.Name ?? field.Name;
             var desc = testAttr.Description;
 
+            // Apply filter if specified
+            if (!string.IsNullOrEmpty(_testFilter) && 
+                !name.Contains(_testFilter, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             yield return new ComponentTest(template)
             {
                 TestName = name,
@@ -78,7 +106,7 @@ public partial class TestRunner : RuntimeComponent
     /// <param name="deltaTime">Elapsed time since last update.</param>
     protected override void OnUpdate(double deltaTime)
     {
-        framesRendered++;
+        frameCount++;
 
         if (Children.OfType<ITestComponent>().Where(c => c.IsActive()).Any()) return;
 
@@ -161,6 +189,7 @@ public partial class TestRunner : RuntimeComponent
             + $"Passed: {passed.Count}\n"
             + $"Failed: {failed.Count}\n"
             + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
+            + $"Updates: {frameCount}\n"            
             + $"Frames Rendered: {framesRendered}\n"
             + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds:F0}\n"
             + $"Overall Result: {(passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]")}\n";

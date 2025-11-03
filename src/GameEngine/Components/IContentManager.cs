@@ -86,4 +86,37 @@ public interface IContentManager : IDisposable
     /// </summary>
     /// <param name="deltaTime">The elapsed time since the last update, in seconds.</param>
     void OnUpdate(double deltaTime);
+
+    /// <summary>
+    /// Gets all active cameras in the content tree, sorted by RenderPriority (ascending).
+    /// Cameras are automatically discovered by walking the content tree.
+    /// If no cameras are found, returns a single default StaticCamera.
+    /// </summary>
+    IEnumerable<ICamera> ActiveCameras { get; }
+
+    /// <summary>
+    /// Gets all loaded root content components.
+    /// Used by the Renderer to collect draw commands from all content trees.
+    /// </summary>
+    IEnumerable<IComponent> LoadedContent { get; }
+
+    /// <summary>
+    /// Gets all visible drawable components discovered during the last Update cycle.
+    /// This cached list is built during OnUpdate to move tree traversal out of the render hot path.
+    /// </summary>
+    IEnumerable<IDrawable> VisibleDrawables { get; }
+
+    /// <summary>
+    /// Initializes the ContentManager and creates the default camera.
+    /// Should be called during application startup before any content is loaded.
+    /// </summary>
+    void Initialize();
+
+    /// <summary>
+    /// Refreshes the camera list by walking the content tree and finding all active ICamera instances.
+    /// Cameras are automatically sorted by RenderPriority (ascending).
+    /// Called automatically during Load() and can be called manually after adding/removing cameras.
+    /// </summary>
+    void RefreshCameras();
 }
+

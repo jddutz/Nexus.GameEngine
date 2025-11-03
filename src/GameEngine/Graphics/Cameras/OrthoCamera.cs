@@ -5,6 +5,27 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// </summary>
 public partial class OrthoCamera : RuntimeComponent, ICamera
 {
+    private readonly IBufferManager _bufferManager;
+    private readonly IDescriptorManager _descriptorManager;
+    private readonly IGraphicsContext _graphicsContext;
+
+    // ViewProjection UBO resources
+    private Silk.NET.Vulkan.Buffer _viewProjectionBuffer;
+    private DeviceMemory _viewProjectionMemory;
+    private DescriptorSet _viewProjectionDescriptorSet;
+    private DescriptorSetLayout _viewProjectionDescriptorLayout;
+    private bool _uboInitialized;
+
+    public OrthoCamera(
+        IBufferManager bufferManager,
+        IDescriptorManager descriptorManager,
+        IGraphicsContext graphicsContext)
+    {
+        _bufferManager = bufferManager;
+        _descriptorManager = descriptorManager;
+        _graphicsContext = graphicsContext;
+    }
+
     // Template is auto-generated from [ComponentProperty] fields below
 
     // Animated properties for smooth camera movements
@@ -22,6 +43,19 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
 
     [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
+
+    // Viewport-related properties (ICamera interface)
+    [ComponentProperty]
+    private Rectangle<float> _screenRegion = new(0, 0, 1, 1);
+
+    [ComponentProperty]
+    private Vector4D<float> _clearColor = new(0, 0, 0, 1);
+
+    [ComponentProperty]
+    private int _renderPriority = 0;
+
+    [ComponentProperty]
+    private uint _renderPassMask = RenderPasses.All;
 
     private bool _matricesDirty = true;
 
@@ -71,6 +105,12 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
 
         _matricesDirty = false;
         _viewProjectionDirty = true; // Mark combined matrix as dirty
+        
+        // Update UBO with new matrices
+        if (_uboInitialized)
+        {
+            UpdateViewProjectionUBO();
+        }
     }
 
     public Matrix4X4<float> GetViewProjectionMatrix()
@@ -84,6 +124,21 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
             _viewProjectionDirty = false;
         }
         return _viewProjectionMatrix;
+    }
+
+    public Viewport GetViewport()
+    {
+        // For ortho camera, we need to get the actual screen dimensions from somewhere
+        // Using reasonable defaults based on the orthographic dimensions
+        var width = (uint)Math.Max(1920, _width);
+        var height = (uint)Math.Max(1080, _height);
+
+        return new Viewport
+        {
+            Extent = new Extent2D(width, height),
+            ClearColor = _clearColor,
+            RenderPassMask = _renderPassMask
+        };
     }
 
     /// <summary>
@@ -172,5 +227,98 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
     {
         SetWidth(width);
         SetHeight(height);
+    }
+
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        InitializeViewProjectionUBO();
+    }
+
+    protected override void OnDeactivate()
+    {
+        CleanupViewProjectionUBO();
+        base.OnDeactivate();
+    }
+
+    private unsafe void InitializeViewProjectionUBO()
+    {
+        if (_uboInitialized) return;
+
+        const ulong uboSize = 64; // Size of ViewProjectionUBO (single mat4)
+
+        // Create uniform buffer for ViewProjection matrix
+        (_viewProjectionBuffer, _viewProjectionMemory) = _bufferManager.CreateUniformBuffer(uboSize);
+
+        // Create descriptor set layout for the UBO
+        var layoutBinding = new DescriptorSetLayoutBinding
+        {
+            Binding = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            StageFlags = ShaderStageFlags.VertexBit
+        };
+        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout(new[] { layoutBinding });
+
+        // Allocate descriptor set
+        _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);
+
+        // Write descriptor set to bind UBO
+        var bufferInfo = new DescriptorBufferInfo
+        {
+            Buffer = _viewProjectionBuffer,
+            Offset = 0,
+            Range = uboSize
+        };
+
+        var writeDescriptorSet = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = _viewProjectionDescriptorSet,
+            DstBinding = 0,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = &bufferInfo
+        };
+
+        _graphicsContext.VulkanApi.UpdateDescriptorSets(_graphicsContext.Device, 1, &writeDescriptorSet, 0, null);
+
+        // Update UBO with initial matrix
+        UpdateViewProjectionUBO();
+
+        _uboInitialized = true;
+        Log.Info($"OrthoCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
+    }
+
+    private unsafe void UpdateViewProjectionUBO()
+    {
+        if (!_uboInitialized) return;
+
+        var viewProjMatrix = GetViewProjectionMatrix();
+        var ubo = ViewProjectionUBO.FromMatrix(viewProjMatrix);
+        
+        ReadOnlySpan<ViewProjectionUBO> uboSpan = [ubo];
+        _bufferManager.UpdateUniformBuffer(_viewProjectionMemory, System.Runtime.InteropServices.MemoryMarshal.AsBytes(uboSpan));
+    }
+
+    private void CleanupViewProjectionUBO()
+    {
+        if (!_uboInitialized) return;
+
+        _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
+        _uboInitialized = false;
+
+        Log.Info("OrthoCamera: Cleaned up ViewProjection UBO");
+    }
+
+    public DescriptorSet GetViewProjectionDescriptorSet()
+    {
+        if (!_uboInitialized)
+        {
+            Log.Warning("OrthoCamera: GetViewProjectionDescriptorSet called before UBO initialization");
+            return default;
+        }
+        return _viewProjectionDescriptorSet;
     }
 }

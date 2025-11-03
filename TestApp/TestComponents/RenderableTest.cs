@@ -1,3 +1,4 @@
+using System.Dynamic;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
@@ -10,8 +11,9 @@ namespace TestApp.TestComponents;
 /// Service responsible for discovering integration tests in assemblies.
 /// </summary>
 public partial class RenderableTest(
-    IPixelSampler pixelSampler
-    ) : TestComponent, IDrawable
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : TestComponent
 {
     [Test("GetDrawCommands() should be called at least once")]
     public readonly static RenderableTestTemplate RenderableBaseTest = new()
@@ -44,15 +46,17 @@ public partial class RenderableTest(
 
     [ComponentProperty]
     private uint _renderPriority = 0;
-    
+
+    public uint FramesRendered { get; private set; }
+
     // Only visible while test is active
     public bool IsVisible() => IsActive();
-
-    public int FramesRendered { get; private set; } = 0;
 
     protected override void OnActivate()
     {
         base.OnActivate();
+
+        renderer.AfterRendering += OnRenderComplete;
         
         pixelSampler.SampleCoordinates = SampleCoordinates;
         pixelSampler.Enabled = SampleCoordinates.Length > 0;
@@ -65,10 +69,16 @@ public partial class RenderableTest(
         }
     }
 
-    public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    protected override void OnUpdate(double deltaTime)
+    {
+        // Deactivate one frame after FrameCount, 
+        // to allow the last frame to be fully executed
+        if (FramesRendered > FrameCount) Deactivate();
+    }
+
+    private void OnRenderComplete(object? sender, RenderEventArgs e)
     {
         FramesRendered++;
-        yield break;
     }
 
     protected override void OnDeactivate()
@@ -80,13 +90,6 @@ public partial class RenderableTest(
 
     public override IEnumerable<TestResult> GetTestResults()
     {
-        yield return new()
-        {
-            ExpectedResult = $"FramesRendered >= {FrameCount}",
-            ActualResult = $"FramesRendered: {FramesRendered}",
-            Passed = FramesRendered >= FrameCount
-        };
-
         if (ExpectedResults.Count == 0)
         {
             yield return new TestResult
@@ -124,6 +127,14 @@ public partial class RenderableTest(
         }
 
         var samples = pixelSampler.GetResults();
+
+        yield return new()
+        {
+            ExpectedResult = $"FramesRendered >= {FrameCount}",
+            ActualResult = $"FramesRendered: {samples.Length}",
+            Passed = samples.Length >= FrameCount
+        };
+
 
         if (samples == null)
         {

@@ -35,11 +35,21 @@ class Program
     /// <summary>
     /// Main entry point for the application. Configures services and runs integration tests.
     /// </summary>
-    /// <param name="args">Command-line arguments.</param>
+    /// <param name="args">Command-line arguments. Supports --filter=<pattern> to filter tests by name.</param>
     private static void Main(string[] args)
     {
         try
         {
+            // Parse command-line arguments
+            string? testFilter = null;
+            foreach (var arg in args)
+            {
+                if (arg.StartsWith("--filter=", StringComparison.OrdinalIgnoreCase))
+                {
+                    testFilter = arg.Substring("--filter=".Length);
+                }
+            }
+
             // Create configuration with application settings
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
@@ -72,7 +82,6 @@ class Program
                 .AddSingleton<IDescriptorManager, DescriptorManager>()
                 .AddSingleton<IPipelineManager, PipelineManager>()
                 .AddSingleton<IBatchStrategy, DefaultBatchStrategy>()
-                .AddSingleton<IViewportManager, ViewportManager>()
                 .AddSingleton<IRenderer, Renderer>()
                 .AddSingleton<IEventBus, EventBus>()
                 .AddSingleton<IAssetService, AssetService>()
@@ -103,8 +112,12 @@ class Program
                 VSync = true
             };
 
-            // Run
-            application.Run(windowOptions, Templates.MainMenu);
+            // Run with test filter if provided
+            var mainMenuTemplate = testFilter != null 
+                ? Templates.CreateMainMenuWithFilter(testFilter)
+                : Templates.MainMenu;
+            
+            application.Run(windowOptions, mainMenuTemplate);
         }
         catch (Exception ex)
         {

@@ -1,26 +1,21 @@
 namespace Nexus.GameEngine.GUI;
 
 /// <summary>
-/// Interface for user interface components supporting 2D positioning, sizing, and bounds management in NDC space.
+/// Interface for user interface components supporting 2D positioning, sizing, and anchor-based layout.
+/// Uses Position/AnchorPoint/Size model where Position defines where the AnchorPoint is located in screen space.
 /// </summary>
 public interface IUserInterfaceElement : IDrawable
 {
     /// <summary>
-    /// Gets the origin (top-left corner) of the component in pixel space.
+    /// Gets the position of the anchor point in pixel space.
     /// </summary>
-    Vector2D<int> Origin { get; }
+    Vector3D<float> Position { get; }
 
     /// <summary>
-    /// Sets the origin (top-left corner) of the component in pixel space.
+    /// Gets the anchor point in normalized space (-1 to 1).
+    /// (-1,-1) = top-left, (0,0) = center, (1,1) = bottom-right.
     /// </summary>
-    /// <param name="origin">The new origin.</param>
-    void SetOrigin(Vector2D<int> origin);
-
-    /// <summary>
-    /// Called when the origin changes.
-    /// </summary>
-    /// <param name="oldValue">The previous origin value.</param>
-    void OnOriginChanged(Vector2D<int> oldValue);
+    Vector2D<float> AnchorPoint { get; }
 
     /// <summary>
     /// Gets the size of the component in pixels.
@@ -28,21 +23,34 @@ public interface IUserInterfaceElement : IDrawable
     Vector2D<int> Size { get; }
 
     /// <summary>
+    /// Sets the position (where the anchor point is located).
+    /// </summary>
+    /// <param name="position">The new position in pixel space.</param>
+    /// <param name="duration">Optional animation duration.</param>
+    /// <param name="interpolation">Optional interpolation mode.</param>
+    void SetPosition(Vector3D<float> position, float duration = 0f, InterpolationMode interpolation = InterpolationMode.Step);
+
+    /// <summary>
+    /// Sets the anchor point in normalized space (-1 to 1).
+    /// </summary>
+    /// <param name="anchorPoint">The new anchor point.</param>
+    /// <param name="duration">Optional animation duration.</param>
+    /// <param name="interpolation">Optional interpolation mode.</param>
+    void SetAnchorPoint(Vector2D<float> anchorPoint, float duration = 0f, InterpolationMode interpolation = InterpolationMode.Step);
+
+    /// <summary>
     /// Sets the size of the component in pixels.
     /// </summary>
     /// <param name="size">The new size.</param>
-    void SetSize(Vector2D<int> size);
+    /// <param name="duration">Optional animation duration.</param>
+    /// <param name="interpolation">Optional interpolation mode.</param>
+    void SetSize(Vector2D<int> size, float duration = 0f, InterpolationMode interpolation = InterpolationMode.Step);
 
     /// <summary>
-    /// Called when the size changes.
+    /// Computes the bounding rectangle from Position, AnchorPoint, and Size.
     /// </summary>
-    /// <param name="oldValue">The previous size value.</param>
-    void OnSizeChanged(Vector2D<int> oldValue);
-
-    /// <summary>
-    /// Updates the geometry of the component (e.g., after bounds change).
-    /// </summary>
-    void UpdateGeometry();
+    /// <returns>The bounding rectangle in pixel space.</returns>
+    Rectangle<int> GetBounds();
 
     /// <summary>
     /// Sets the size constraints for this element (the available space it can occupy).
