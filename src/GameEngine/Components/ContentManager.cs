@@ -1,16 +1,42 @@
+using Microsoft.Extensions.Options;
+
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Manages reusable content trees that can be assigned to viewports.
 /// Provides efficient caching, lifecycle management, and disposal of component hierarchies.
 /// Delegates component creation to IComponentFactory.
+/// Also tracks active cameras in the content tree for automatic viewport management.
 /// </summary>
 public class ContentManager(
-    IComponentFactory componentFactory) 
+    IComponentFactory componentFactory,
+    IOptions<GraphicsSettings> graphicsOptions) 
     : IContentManager
 {
+    private readonly GraphicsSettings _graphicsSettings = graphicsOptions.Value;
     private readonly Dictionary<string, IComponent> content = [];
+    private readonly SortedSet<ICamera> _cameras = new(new RenderPriorityComparer<ICamera>());
+    private readonly List<IDrawable> _visibleDrawables = [];
     private bool _disposed;
+
+    /// <summary>
+    /// Gets all active cameras in the content tree, sorted by RenderPriority (ascending).
+    /// Cameras are automatically discovered by walking the content tree.
+    /// Returns empty enumerable if no cameras are found in content.
+    /// </summary>
+    public IEnumerable<ICamera> ActiveCameras => _cameras;
+
+    /// <summary>
+    /// Gets all loaded root content components.
+    /// Used by the Renderer to collect draw commands from all content trees.
+    /// </summary>
+    public IEnumerable<IComponent> LoadedContent => content.Values;
+
+    /// <summary>
+    /// Gets all visible drawable components discovered during the last Update cycle.
+    /// This cached list is built during OnUpdate to move tree traversal out of the render hot path.
+    /// </summary>
+    public IEnumerable<IDrawable> VisibleDrawables => _visibleDrawables;
 
     /// <summary>
     /// Loads content from a template. This is the primary method for creating main content that will be rendered.
@@ -53,6 +79,8 @@ public class ContentManager(
                 {
                     ActivateComponentTree(created);
                 }
+
+                // Note: Camera list is refreshed automatically during OnUpdate()
 
                 Log.Info($"Loaded content '{template.Name}'");
                 return created;
@@ -262,9 +290,11 @@ public class ContentManager(
                 }
             }
             
-            // SECOND PASS: Update all active RuntimeComponents
+            // SECOND PASS: Update all active RuntimeComponents and rebuild visible drawables and cameras
             // Follow same pattern as Renderer: traverse tree, update IRuntimeComponents
             componentStack.Clear();
+            _visibleDrawables.Clear();  // Clear each frame - will be repopulated during traversal
+            _cameras.Clear();  // Also clear cameras - will be repopulated during traversal
             
             foreach (var kvp in content)
             {
@@ -275,28 +305,48 @@ public class ContentManager(
                 }
             }
             
-            // Traverse component tree and update IRuntimeComponents
+            // Traverse component tree, update components, collect visible drawables and active cameras
             while (componentStack.Count > 0)
             {
                 var component = componentStack.Pop();
                 
+                // Collect visible drawables as we traverse
+                if (component is IDrawable drawable && drawable.IsVisible())
+                {
+                    _visibleDrawables.Add(drawable);
+                    Log.Debug($"  Added visible drawable: {component.GetType().Name}");
+                }
+                
+                // Collect active cameras as we traverse
+                if (component is ICamera camera)
+                {
+                    if (camera is IRuntimeComponent cameraRuntime && cameraRuntime.IsActive())
+                    {
+                        _cameras.Add(camera);
+                    }
+                }
+                
+                // Push children onto stack first (so we collect drawables from entire tree)
+                foreach (var child in component.Children)
+                {
+                    componentStack.Push(child);
+                }
+                
                 // Update if it's a RuntimeComponent and active
+                // Note: We still traverse children above to collect drawables from entire tree
                 if (component is IRuntimeComponent runtimeComponent)
                 {
                     if (runtimeComponent.IsActive())
                     {
                         runtimeComponent.Update(deltaTime);
-                        // Don't traverse children - RuntimeComponent.Update() already does this recursively
-                        continue;
                     }
                 }
-                
-                // For non-RuntimeComponents (plain containers), traverse their children
-                foreach (var child in component.Children)
-                {
-                    componentStack.Push(child);
-                }
             }
+            
+            // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
+            
+            Log.Debug($"Total visible drawables after update: {_visibleDrawables.Count}");
+            Log.Debug($"Total active cameras after update: {_cameras.Count}");
             
             // Clean up unloaded components
             foreach (var key in unloadedKeys)
@@ -309,6 +359,62 @@ public class ContentManager(
         {
             Log.Exception(ex, "Exception occurred during Update loop");
         }
+    }
+
+    /// <summary>
+    /// Initializes the ContentManager and creates the default camera.
+    /// Should be called during application startup before any content is loaded.
+    /// </summary>
+    public void Initialize()
+    {
+        // ContentManager initialization - camera discovery happens during Update()
+        Log.Debug("ContentManager initialized");
+    }
+
+    /// <summary>
+    /// Refreshes the camera list by walking the content tree and finding all active ICamera instances.
+    /// Cameras are automatically sorted by RenderPriority (ascending).
+    /// Called automatically during Load() and can be called manually after adding/removing cameras.
+    /// </summary>
+    public void RefreshCameras()
+    {
+        _cameras.Clear();
+
+        // Walk all content trees looking for active cameras
+        var componentStack = new Stack<IComponent>();
+        foreach (var kvp in content)
+        {
+            var component = kvp.Value;
+            if (component.IsLoaded && component.Parent == null)
+            {
+                componentStack.Push(component);
+            }
+        }
+
+        // Traverse trees and collect active cameras
+        while (componentStack.Count > 0)
+        {
+            var component = componentStack.Pop();
+
+            // Check if this component is an active camera
+            if (component is ICamera camera)
+            {
+                if (camera is IRuntimeComponent runtimeComponent && runtimeComponent.IsActive())
+                {
+                    _cameras.Add(camera);
+                }
+            }
+
+            // Traverse children
+            foreach (var child in component.Children)
+            {
+                componentStack.Push(child);
+            }
+        }
+
+        // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
+
+        Log.Debug($"Refreshed camera list: {_cameras.Count} active cameras found");
     }
 
     /// <inheritdoc/>

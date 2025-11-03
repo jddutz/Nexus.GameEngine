@@ -1,28 +1,55 @@
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Options;
 
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
 /// Vulkan renderer implementation that orchestrates frame rendering.
 /// Manages image acquisition, command recording, and presentation.
-/// Uses IViewportManager for viewport management capabilities.
+/// Uses ContentManager to get active cameras for rendering.
 /// </summary>
 public unsafe class Renderer(
     IGraphicsContext context,
     ISwapChain swapChain,
     ISyncManager syncManager,
     ICommandPoolManager commandPoolManager,
-    IViewportManager viewportManager,
-    IWindowService windowService)
+    IContentManager contentManager,
+    IWindowService windowService,
+    IComponentFactory componentFactory,
+    IOptions<GraphicsSettings> graphicsOptions)
     : IRenderer
 {
+    private readonly GraphicsSettings _graphicsSettings = graphicsOptions.Value;
+    private readonly ICamera _defaultCamera = CreateAndActivateDefaultCamera(componentFactory, graphicsOptions.Value);
     private int _currentFrameIndex = 0;
     private ICommandPool? _graphicsCommandPool;
 
     public event EventHandler<RenderEventArgs>? BeforeRendering;
     public event EventHandler<RenderEventArgs>? AfterRendering;
+
+    private static ICamera CreateAndActivateDefaultCamera(IComponentFactory factory, GraphicsSettings settings)
+    {
+        var clearColor = settings.BackgroundColor ?? new Vector4D<float>(0, 0, 0.545f, 1);
+        var template = new StaticCameraTemplate
+        {
+            Name = "DefaultCamera",
+            ClearColor = clearColor,
+            ScreenRegion = new Rectangle<float>(0, 0, 1, 1),
+            RenderPriority = 100,  // High priority - renders last (UI overlay)
+            RenderPassMask = RenderPasses.All
+        };
+        
+        var camera = factory.CreateInstance(template) as ICamera;
+        if (camera is IRuntimeComponent runtimeComponent)
+        {
+            runtimeComponent.Activate();
+            Log.Info($"Renderer created default screen-space camera with clear color {clearColor}");
+        }
+        
+        return camera ?? throw new InvalidOperationException("Failed to create default camera");
+    }
 
     public void OnRender(double deltaTime)
     {
@@ -39,20 +66,31 @@ public unsafe class Renderer(
 
             BeforeRendering?.Invoke(this, new RenderEventArgs { ImageIndex = imageIndex });
 
-            int viewportCount = 0;
+            int cameraCount = 0;
 
-            foreach (var viewport in viewportManager.Viewports.Where(vp => vp.IsActive()))
+            // Iterate over all cameras: content cameras + default screen-space camera
+            foreach (var camera in GetAllCameras())
             {
-                viewportCount++;
+                cameraCount++;
+
+                // Update camera viewport size to match swapchain (handles window resize)
+                if (camera is StaticCamera staticCamera)
+                {
+                    staticCamera.SetViewportSize(swapChain.SwapchainExtent.Width, swapChain.SwapchainExtent.Height);
+                }
+
+                // Create viewport from camera
+                var viewport = camera.GetViewport();
 
                 // Create render context for this frame
                 var renderContext = new RenderContext
                 {
-                    Camera = viewport.Camera,
+                    Camera = camera,
                     Viewport = viewport,
                     AvailableRenderPasses = RenderPasses.All,
                     RenderPassNames = RenderPasses.Configurations.Select(c => c.Name).ToArray(),
-                    DeltaTime = deltaTime
+                    DeltaTime = deltaTime,
+                    ViewProjectionDescriptorSet = camera.GetViewProjectionDescriptorSet()
                 };
 
                 // Collect and sort draw commands from component tree
@@ -71,7 +109,7 @@ public unsafe class Renderer(
                 SubmitFrame(commandBuffers[0], frameSync, imageSync);
             }
 
-            if (viewportCount > 0)
+            if (cameraCount > 0)
             {
                 // Present rendered image to screen
                 PresentFrame(imageIndex, imageSync);
@@ -91,6 +129,22 @@ public unsafe class Renderer(
             Log.Exception(ex, "Exception occurred during Render loop");
             windowService.GetWindow().Close();
         }
+    }
+
+    /// <summary>
+    /// Gets all cameras to render: content cameras from ContentManager + default screen-space camera.
+    /// Cameras are sorted by RenderPriority (default camera has priority 100, renders last for UI overlay).
+    /// </summary>
+    private IEnumerable<ICamera> GetAllCameras()
+    {
+        // Yield content cameras first (sorted by priority)
+        foreach (var camera in contentManager.ActiveCameras)
+        {
+            yield return camera;
+        }
+        
+        // Always include default screen-space camera for UI rendering
+        yield return _defaultCamera;
     }
 
     /// <summary>
@@ -141,49 +195,36 @@ public unsafe class Renderer(
             passCommandSets[i] = new SortedSet<DrawCommand>(RenderPasses.Configurations[i].BatchStrategy);
         }
         
-        // OPTIMIZATION: Collect and sort draw commands into per-pass buckets in single traversal
+        // OPTIMIZATION: Collect and sort draw commands into per-pass buckets
         // Main pass always executes to handle initial image layout transitions
         // UI pass always executes to transition image to PresentSrcKhr for presentation
         uint activePasses = RenderPasses.Main | RenderPasses.UI;
-        var componentStack = new Stack<IComponent>();
         
-        // Collect commands from the viewport's content tree
-        if (renderContext.Viewport?.Content != null)
-        {
-            componentStack.Push(renderContext.Viewport.Content);
-        }
+        // Use cached visible drawables list built during Update (no tree traversal needed!)
+        var visibleDrawables = contentManager.VisibleDrawables.ToList();
+        Log.Debug($"CollectDrawCommands: {visibleDrawables.Count} visible drawables");
         
-        while (componentStack.Count > 0)
+        int commandCount = 0;
+        foreach (var drawable in visibleDrawables)
         {
-            var component = componentStack.Pop();
-            
-            // Collect draw commands and distribute to pass-specific lists
-            // PERFORMANCE: Check IsVisible before calling GetDrawCommands() to skip hidden components
-            if (component is IDrawable renderable && renderable.IsVisible())
+            foreach (var drawCommand in drawable.GetDrawCommands(renderContext))
             {
-                foreach (var drawCommand in renderable.GetDrawCommands(renderContext))
+                commandCount++;
+                activePasses |= drawCommand.RenderMask;  // HOT PATH: Bitwise OR accumulation
+                
+                // Add command to all passes it participates in (auto-sorted on insertion)
+                for (int bitPos = 0; bitPos < PassCount; bitPos++)
                 {
-                    activePasses |= drawCommand.RenderMask;  // HOT PATH: Bitwise OR accumulation
-                    
-                    // Add command to all passes it participates in (auto-sorted on insertion)
-                    for (int bitPos = 0; bitPos < PassCount; bitPos++)
+                    uint passMask = 1u << bitPos;
+                    if ((drawCommand.RenderMask & passMask) != 0)
                     {
-                        uint passMask = 1u << bitPos;
-                        if ((drawCommand.RenderMask & passMask) != 0)
-                        {
-                            passCommandSets[bitPos].Add(drawCommand);  // O(log N) insertion, maintains sort
-                        }
+                        passCommandSets[bitPos].Add(drawCommand);  // O(log N) insertion, maintains sort
                     }
                 }
             }
-            
-            // Push children onto stack for traversal
-            foreach (var child in component.Children)
-            {
-                componentStack.Push(child);
-            }
         }
 
+        Log.Debug($"CollectDrawCommands: Collected {commandCount} draw commands");
         return (activePasses, passCommandSets);
     }
 
@@ -254,15 +295,23 @@ public unsafe class Renderer(
         RenderContext renderContext,
         SortedSet<DrawCommand> drawCommands)
     {
+        Log.Debug($"=== RecordRenderPass START (pass index={passIndex}) ===");
+        Log.Debug($"  DrawCommand count: {drawCommands.Count}");
+        
         // Build clear values dynamically based on pass configuration
         var config = RenderPasses.Configurations[passIndex];
+        Log.Debug($"  Pass name: {config.Name}");
         var clearValueCount = 0;
         
         // Add color clear value if this pass clears color
         if (config.ColorLoadOp == AttachmentLoadOp.Clear)
         {
-            // Use cached clear value from Viewport (converted in OnUpdate)
-            passClearValues[clearValueCount++] = renderContext.Viewport.ClearColorValue;
+            // Convert viewport's ClearColor to Vulkan clear value
+            var clearColor = renderContext.Viewport.ClearColor;
+            passClearValues[clearValueCount++] = new ClearValue
+            {
+                Color = new ClearColorValue(clearColor.X, clearColor.Y, clearColor.Z, clearColor.W)
+            };
         }
         else if (config.ColorFormat != Format.Undefined)
         {
@@ -308,21 +357,43 @@ public unsafe class Renderer(
 
         context.VulkanApi.CmdBeginRenderPass(cmd, &renderPassInfo, SubpassContents.Inline);
 
-        // Set dynamic viewport and scissor state from the current viewport
-        var viewport = renderContext.Viewport.VulkanViewport;
-        context.VulkanApi.CmdSetViewport(cmd, 0, 1, &viewport);
+        // Set dynamic viewport and scissor state from the viewport extent
+        var extent = renderContext.Viewport.Extent;
+        var vulkanViewport = new Silk.NET.Vulkan.Viewport
+        {
+            X = 0,
+            Y = 0,
+            Width = extent.Width,
+            Height = extent.Height,
+            MinDepth = 0.0f,
+            MaxDepth = 1.0f
+        };
+        context.VulkanApi.CmdSetViewport(cmd, 0, 1, &vulkanViewport);
 
-        var scissor = renderContext.Viewport.VulkanScissor;
+        var scissor = new Rect2D
+        {
+            Offset = new Offset2D(0, 0),
+            Extent = extent
+        };
         context.VulkanApi.CmdSetScissor(cmd, 0, 1, &scissor);
 
+        // Track state to avoid redundant Vulkan calls
+        ulong lastPipelineHandle = 0;
+        ulong lastDescriptorSetHandle = 0;
+
+        Log.Debug($"  Beginning draw loop for {drawCommands.Count} commands");
         // Draw sorted commands for this pass
+        int drawIndex = 0;
         foreach (var drawCommand in drawCommands)
         {
-            Draw(cmd, drawCommand);
+            Log.Debug($"  -> Drawing command #{++drawIndex}/{drawCommands.Count}");
+            Draw(cmd, drawCommand, ref lastPipelineHandle, ref lastDescriptorSetHandle);
         }
+        Log.Debug($"  Completed draw loop");
 
         // End render pass
         context.VulkanApi.CmdEndRenderPass(cmd);
+        Log.Debug($"=== RecordRenderPass END (pass index={passIndex}) ===");
     }
 
     /// <summary>
@@ -362,6 +433,10 @@ public unsafe class Renderer(
         try
         {
             swapChain.Present(imageIndex, imageSync.RenderFinished);
+#if DEBUG
+            //TODO: collect warning and error information
+            Log.Debug("Frame presented successfully!");
+#endif
         }
         catch (Exception ex) when (ex.Message.Contains("out of date") || ex.Message.Contains("suboptimal"))
         {
@@ -369,13 +444,34 @@ public unsafe class Renderer(
         }
     }
 
-    private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand)
+    private void Draw(CommandBuffer commandBuffer, DrawCommand drawCommand, ref ulong lastPipelineHandle, ref ulong lastDescriptorSetHandle)
     {
-        context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline.Pipeline);
+        Log.Debug($"=== Renderer.Draw() START ===");
+        Log.Debug($"  Pipeline.Handle: {drawCommand.Pipeline.Pipeline.Handle}");
+        Log.Debug($"  Pipeline.Layout.Handle: {drawCommand.Pipeline.Layout.Handle}");
+        Log.Debug($"  VertexBuffer.Handle: {drawCommand.VertexBuffer.Handle}");
+        Log.Debug($"  VertexCount: {drawCommand.VertexCount}");
+        Log.Debug($"  InstanceCount: {drawCommand.InstanceCount}");
+        Log.Debug($"  DescriptorSet.Handle: {drawCommand.DescriptorSet.Handle}");
+        Log.Debug($"  RenderMask: {drawCommand.RenderMask}");
+        Log.Debug($"  PushConstants: {drawCommand.PushConstants?.GetType().Name ?? "null"}");
         
-        // Bind descriptor sets if provided
-        if (drawCommand.DescriptorSet.Handle != 0)
+        // Only bind pipeline if it changed
+        if (lastPipelineHandle != drawCommand.Pipeline.Pipeline.Handle)
         {
+            Log.Debug($"  -> Binding pipeline (changed from {lastPipelineHandle})");
+            context.VulkanApi.CmdBindPipeline(commandBuffer, PipelineBindPoint.Graphics, drawCommand.Pipeline.Pipeline);
+            lastPipelineHandle = drawCommand.Pipeline.Pipeline.Handle;
+        }
+        else
+        {
+            Log.Debug($"  -> Pipeline already bound (handle {lastPipelineHandle})");
+        }
+        
+        // Only bind descriptor sets if they changed and are provided
+        if (drawCommand.DescriptorSet.Handle != 0 && drawCommand.DescriptorSet.Handle != lastDescriptorSetHandle)
+        {
+            Log.Debug($"  -> Binding descriptor set (changed from {lastDescriptorSetHandle})");
             var descriptorSets = stackalloc DescriptorSet[] { drawCommand.DescriptorSet };
             context.VulkanApi.CmdBindDescriptorSets(
                 commandBuffer,
@@ -386,19 +482,41 @@ public unsafe class Renderer(
                 descriptorSets,
                 0, // dynamic offset count
                 null); // dynamic offsets
+            lastDescriptorSetHandle = drawCommand.DescriptorSet.Handle;
+        }
+        else if (drawCommand.DescriptorSet.Handle == 0)
+        {
+            Log.Warning($"  -> WARNING: DescriptorSet.Handle is 0 (no descriptor set provided)");
+        }
+        else
+        {
+            Log.Debug($"  -> Descriptor set already bound (handle {lastDescriptorSetHandle})");
         }
         
-        // Push constants if provided
+        // Push constants if provided (these typically change per draw, so always push)
         if (drawCommand.PushConstants != null && drawCommand.Pipeline.Layout.Handle != 0)
         {
+            Log.Debug($"  -> Pushing constants: {drawCommand.PushConstants.GetType().Name}");
+            if (drawCommand.PushConstants is UniformColorPushConstants ucp)
+            {
+                Log.Debug($"     Model: {ucp.Model}");
+                Log.Debug($"     Color: R={ucp.Color.X:F3}, G={ucp.Color.Y:F3}, B={ucp.Color.Z:F3}, A={ucp.Color.W:F3}");
+            }
             PushConstantsToShader(commandBuffer, drawCommand.Pipeline.Layout, drawCommand.PushConstants);
         }
+        else if (drawCommand.PushConstants == null)
+        {
+            Log.Warning($"  -> WARNING: No push constants provided");
+        }
         
+        Log.Debug($"  -> Binding vertex buffer (handle {drawCommand.VertexBuffer.Handle})");
         var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
         var offsets = stackalloc ulong[] { 0 };
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
+        Log.Debug($"  -> Issuing draw call: vertices={drawCommand.VertexCount}, instances={drawCommand.InstanceCount}, firstVertex={drawCommand.FirstVertex}");
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
+        Log.Debug($"=== Renderer.Draw() END ===");
     }
 
     private unsafe void PushConstantsToShader(CommandBuffer commandBuffer, PipelineLayout pipelineLayout, object pushConstants)

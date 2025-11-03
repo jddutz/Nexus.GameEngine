@@ -9,5 +9,6 @@ namespace TestApp.TestComponents;
 /// </summary>
 public interface ITestComponent : IRuntimeComponent
 {
+    int FrameCount { get; }
     IEnumerable<TestResult> GetTestResults();
 }

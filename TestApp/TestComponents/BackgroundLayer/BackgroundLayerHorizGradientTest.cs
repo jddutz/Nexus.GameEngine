@@ -18,8 +18,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Single frame test: Red (left) → Green (right) at angle 0°
 /// </summary>
 public partial class BackgroundLayerHorizGradientTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Horizontal gradient test")]
     public readonly static BackgroundLayerHorizGradientTestTemplate BackgroundLayerTest = new()
@@ -53,32 +54,4 @@ public partial class BackgroundLayerHorizGradientTest(
             ]
         }
     };
-
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
-    {
-        Log.Debug($"BackgroundLayerHorizGradientTest.GetDrawCommands() called - Children: {Children.Count()}");
-        
-        foreach (var child in Children)
-        {
-            if (child is IDrawable drawable)
-            {
-                Log.Debug($"  Child {child.GetType().Name} IsVisible: {drawable.IsVisible()}");
-                if (drawable.IsVisible())
-                {
-                    var childCommands = drawable.GetDrawCommands(context).ToList();
-                    Log.Debug($"    Child returned {childCommands.Count} draw commands");
-                    foreach (var cmd in childCommands)
-                    {
-                        yield return cmd;
-                    }
-                }
-            }
-        }
-        
-        // Call base to increment FramesRendered counter
-        foreach (var cmd in base.GetDrawCommands(context))
-        {
-            yield return cmd;
-        }
-    }
 }

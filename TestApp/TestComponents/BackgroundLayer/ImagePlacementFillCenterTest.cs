@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
@@ -15,8 +16,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Expected: Aspect ratio maintained, excess cropped equally from both sides, center visible
 /// </summary>
 public partial class ImagePlacementFillCenterTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement middle center")]
     public readonly static ImagePlacementFillCenterTestTemplate BackgroundLayerTest = new()

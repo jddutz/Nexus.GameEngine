@@ -39,22 +39,41 @@ public partial class Transformable : RuntimeComponent, ITransformable
     private Vector3D<float> _angularVelocity = Vector3D<float>.Zero;
     
     // ==========================================
-    // TRANSFORM MATRICES
+    // TRANSFORM MATRICES (CACHED)
     // ==========================================
     
-    public Matrix4X4<float> LocalMatrix
+    /// <summary>
+    /// Cached local transformation matrix. Recalculated when position, rotation, or scale changes.
+    /// Protected to allow derived classes to set it in their UpdateLocalMatrix override.
+    /// </summary>
+    protected Matrix4X4<float> _localMatrix = Matrix4X4<float>.Identity;
+    
+    /// <summary>
+    /// Gets the cached local transformation matrix (SRT: Scale-Rotation-Translation).
+    /// Virtual to allow derived classes to override with custom behavior.
+    /// </summary>
+    public virtual Matrix4X4<float> LocalMatrix => _localMatrix;
+    
+    /// <summary>
+    /// Recalculates the local transformation matrix from current position, rotation, and scale.
+    /// Called automatically when any transform property changes.
+    /// </summary>
+    protected virtual void UpdateLocalMatrix()
     {
-        get
-        {
-            // Standard SRT (Scale-Rotation-Translation) matrix composition
-            // Silk.NET uses column-major matrices with column vectors
-            // This scales first, then rotates, then translates
-            // For hierarchical transforms: WorldMatrix = ParentWorld * ChildLocal
-            return Matrix4X4.CreateScale(_scale) *
-                   Matrix4X4.CreateFromQuaternion(_rotation) *
-                   Matrix4X4.CreateTranslation(_position);
-        }
+        // Standard SRT (Scale-Rotation-Translation) matrix composition
+        // Silk.NET uses column-major matrices with column vectors
+        // This scales first, then rotates, then translates
+        _localMatrix = Matrix4X4.CreateScale(_scale) *
+                       Matrix4X4.CreateFromQuaternion(_rotation) *
+                       Matrix4X4.CreateTranslation(_position);
     }
+    
+    /// <summary>
+    /// Property change callbacks - regenerate matrix when transform properties change.
+    /// </summary>
+    partial void OnPositionChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
+    partial void OnRotationChanged(Quaternion<float> oldValue) => UpdateLocalMatrix();
+    partial void OnScaleChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
     
     public Matrix4X4<float> WorldMatrix
     {
@@ -261,6 +280,12 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // ==========================================
     
     // OnLoad method is auto-generated from template
+    
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        UpdateLocalMatrix(); // Initialize cached matrix
+    }
     
     // ==========================================
     // UPDATE (Apply velocities)

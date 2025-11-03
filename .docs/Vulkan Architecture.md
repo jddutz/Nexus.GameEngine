@@ -52,6 +52,14 @@ The following systems are implemented and tested:
    - Automatic descriptor set binding
    - Push constant support
 
+9. **Camera and Viewport System** ✅
+   - **Viewport**: Immutable record containing Vulkan rendering state (extent, clear color, render pass mask)
+   - **Camera**: IRuntimeComponent that creates and manages viewports via `GetViewport()` method
+   - **ContentManager Tracking**: Cameras automatically registered/unregistered during Load/Unload
+   - **Default Camera**: StaticCamera auto-created for zero-configuration UI rendering
+   - **Multi-Viewport**: Multiple cameras with different screen regions and render pass filters
+   - **Performance**: ViewProjectionMatrix bound once per viewport (not per draw command)
+
 **Missing:** ❌ Validation layers not yet enabled
 
 ---

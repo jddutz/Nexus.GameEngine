@@ -423,3 +423,5 @@ FodyWeavers.xsd
 
 # Spec-Kit working directory
 .speckit/
+.specify/
+specs/

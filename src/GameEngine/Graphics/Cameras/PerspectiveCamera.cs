@@ -5,6 +5,27 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// </summary>
 public partial class PerspectiveCamera : RuntimeComponent, ICamera
 {
+    private readonly IBufferManager _bufferManager;
+    private readonly IDescriptorManager _descriptorManager;
+    private readonly IGraphicsContext _graphicsContext;
+
+    // ViewProjection UBO resources
+    private Silk.NET.Vulkan.Buffer _viewProjectionBuffer;
+    private DeviceMemory _viewProjectionMemory;
+    private DescriptorSet _viewProjectionDescriptorSet;
+    private DescriptorSetLayout _viewProjectionDescriptorLayout;
+    private bool _uboInitialized;
+
+    public PerspectiveCamera(
+        IBufferManager bufferManager,
+        IDescriptorManager descriptorManager,
+        IGraphicsContext graphicsContext)
+    {
+        _bufferManager = bufferManager;
+        _descriptorManager = descriptorManager;
+        _graphicsContext = graphicsContext;
+    }
+
     // Animated properties with slow easing for smooth camera movements
     [ComponentProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
@@ -27,6 +48,19 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
 
     [ComponentProperty]
     private float _aspectRatio = 16f / 9f;
+
+    // Viewport-related properties (ICamera interface)
+    [ComponentProperty]
+    private Rectangle<float> _screenRegion = new(0, 0, 1, 1);
+
+    [ComponentProperty]
+    private Vector4D<float> _clearColor = new(0, 0, 0, 1);
+
+    [ComponentProperty]
+    private int _renderPriority = 0;
+
+    [ComponentProperty]
+    private uint _renderPassMask = RenderPasses.All;
 
     // Non-component properties
     private Vector3D<float> _right = Vector3D<float>.UnitX;
@@ -57,7 +91,12 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
     private Matrix4X4<float> _viewProjectionMatrix;
     private bool _viewProjectionDirty = true;
 
-    public PerspectiveCamera()
+    public PerspectiveCamera() : this(null!, null!, null!)
+    {
+        // Default constructor for template generation - services will be injected by ComponentFactory
+    }
+
+    private void OnConstructed()
     {
         UpdateDirectionVectors();
         UpdateMatrices();
@@ -80,6 +119,12 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
 
         _matricesDirty = false;
         _viewProjectionDirty = true; // Mark combined matrix as dirty
+
+        // Update UBO with new matrices
+        if (_uboInitialized)
+        {
+            UpdateViewProjectionUBO();
+        }
     }
 
     public Matrix4X4<float> GetViewProjectionMatrix()
@@ -93,6 +138,21 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
             _viewProjectionDirty = false;
         }
         return _viewProjectionMatrix;
+    }
+
+    public Viewport GetViewport()
+    {
+        // Calculate viewport dimensions from aspect ratio
+        // Default to 1920x1080 and adjust based on aspect ratio
+        uint width = 1920;
+        uint height = (uint)(width / _aspectRatio);
+
+        return new Viewport
+        {
+            Extent = new Extent2D(width, height),
+            ClearColor = _clearColor,
+            RenderPassMask = _renderPassMask
+        };
     }
 
     public bool IsVisible(Box3D<float> bounds)
@@ -182,5 +242,98 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
         _up = Vector3D.Normalize(_up);
         UpdateDirectionVectors();
         _matricesDirty = true;
+    }
+
+    protected override void OnActivate()
+    {
+        base.OnActivate();
+        InitializeViewProjectionUBO();
+    }
+
+    protected override void OnDeactivate()
+    {
+        CleanupViewProjectionUBO();
+        base.OnDeactivate();
+    }
+
+    private unsafe void InitializeViewProjectionUBO()
+    {
+        if (_uboInitialized) return;
+
+        const ulong uboSize = 64; // Size of ViewProjectionUBO (single mat4)
+
+        // Create uniform buffer for ViewProjection matrix
+        (_viewProjectionBuffer, _viewProjectionMemory) = _bufferManager.CreateUniformBuffer(uboSize);
+
+        // Create descriptor set layout for the UBO
+        var layoutBinding = new DescriptorSetLayoutBinding
+        {
+            Binding = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            StageFlags = ShaderStageFlags.VertexBit
+        };
+        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout(new[] { layoutBinding });
+
+        // Allocate descriptor set
+        _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);
+
+        // Write descriptor set to bind UBO
+        var bufferInfo = new DescriptorBufferInfo
+        {
+            Buffer = _viewProjectionBuffer,
+            Offset = 0,
+            Range = uboSize
+        };
+
+        var writeDescriptorSet = new WriteDescriptorSet
+        {
+            SType = StructureType.WriteDescriptorSet,
+            DstSet = _viewProjectionDescriptorSet,
+            DstBinding = 0,
+            DstArrayElement = 0,
+            DescriptorType = DescriptorType.UniformBuffer,
+            DescriptorCount = 1,
+            PBufferInfo = &bufferInfo
+        };
+
+        _graphicsContext.VulkanApi.UpdateDescriptorSets(_graphicsContext.Device, 1, &writeDescriptorSet, 0, null);
+
+        // Update UBO with initial matrix
+        UpdateViewProjectionUBO();
+
+        _uboInitialized = true;
+        Log.Info($"PerspectiveCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
+    }
+
+    private unsafe void UpdateViewProjectionUBO()
+    {
+        if (!_uboInitialized) return;
+
+        var viewProjMatrix = GetViewProjectionMatrix();
+        var ubo = ViewProjectionUBO.FromMatrix(viewProjMatrix);
+        
+        ReadOnlySpan<ViewProjectionUBO> uboSpan = [ubo];
+        _bufferManager.UpdateUniformBuffer(_viewProjectionMemory, System.Runtime.InteropServices.MemoryMarshal.AsBytes(uboSpan));
+    }
+
+    private void CleanupViewProjectionUBO()
+    {
+        if (!_uboInitialized) return;
+
+        _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
+        _uboInitialized = false;
+
+        Log.Info("PerspectiveCamera: Cleaned up ViewProjection UBO");
+    }
+
+    public DescriptorSet GetViewProjectionDescriptorSet()
+    {
+        if (!_uboInitialized)
+        {
+            Log.Warning("PerspectiveCamera: GetViewProjectionDescriptorSet called before UBO initialization");
+            return default;
+        }
+        return _viewProjectionDescriptorSet;
     }
 }

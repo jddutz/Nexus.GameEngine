@@ -15,8 +15,9 @@ namespace TestApp.TestComponents.UserInterfaceComponents;
 /// SIMPLIFIED: Just draw a red quad in the center to verify rendering works.
 /// </summary>
 public partial class ColoredRectTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("ColorRect test")]
     public readonly static ColoredRectTestTemplate TestTemplate = new()
@@ -26,18 +27,58 @@ public partial class ColoredRectTest(
             new ElementTemplate()
             {
                 TintColor = Colors.Red,
-                Position = new Vector3D<float>(0, 0, 0),  // Will be overridden in GetDrawCommands
-                Scale = new Vector3D<float>(0.5f, 0.5f, 1.0f),  // Will be overridden in GetDrawCommands
+                // Set proper pixel-space transform: 200x100 rectangle from (100,100) to (300,200)
+                // Position is where the AnchorPoint is located
+                // AnchorPoint=(-1,-1) means top-left, so Position=(100,100) puts top-left at (100,100)
+                Position = new Vector3D<float>(100, 100, 0),
+                Size = new Vector2D<int>(200, 100),
+                AnchorPoint = new Vector2D<float>(-1, -1),  // Top-left (default)
                 Visible = true
             }
         ],
         SampleCoordinates = [
-            new(960, 540),   // Center - should be red
+            new(50, 50),   // Outside rect (top-left) - should be blue
+            new(50, 150),   // Outside rect (left edge) - should be blue
+            new(50, 250),   // Outside rect (bottom-left) - should be blue
+            new(102, 102),   // Inside rect (near top-left) - should be red
+            new(102, 150),   // Inside rect (left edge) - should be red
+            new(102, 198),   // Inside rect (near bottom-left) - should be red
+            new(102, 250),   // Outside rect (below) - should be blue
+            new(200, 50),   // Outside rect (above) - should be blue
+            new(200, 102),   // Inside rect (top edge) - should be red
+            new(200, 150),   // Inside rect (center) - should be red
+            new(200, 198),   // Inside rect (bottom edge) - should be red
+            new(200, 250),   // Outside rect (below) - should be blue
+            new(298, 102),   // Inside rect (near top-right) - should be red
+            new(298, 150),   // Inside rect (right edge) - should be red
+            new(298, 198),   // Inside rect (near bottom-right) - should be red
+            new(350, 50),   // Outside rect (top-right) - should be blue
+            new(350, 150),   // Outside rect (right edge) - should be blue
+            new(350, 250),   // Outside rect (bottom-right) - should be blue
+            new(960, 540),   // Outside rect (screen center) - should be blue
         ],
         ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
         {
             [0] = [
-                Colors.Red,  // Center
+                Colors.DarkBlue,  // (50, 50)
+                Colors.DarkBlue,  // (50, 150)
+                Colors.DarkBlue,  // (50, 250)
+                Colors.Red,   // (102, 102)
+                Colors.Red,   // (102, 150)
+                Colors.Red,   // (102, 198)
+                Colors.DarkBlue,  // (102, 250)
+                Colors.DarkBlue,  // (200, 50)
+                Colors.Red,   // (200, 102)
+                Colors.Red,   // (200, 150)
+                Colors.Red,   // (200, 198)
+                Colors.DarkBlue,  // (200, 250)
+                Colors.Red,   // (298, 102)
+                Colors.Red,   // (298, 150)
+                Colors.Red,   // (298, 198)
+                Colors.DarkBlue,  // (350, 50)
+                Colors.DarkBlue,  // (350, 150)
+                Colors.DarkBlue,  // (350, 250)
+                Colors.DarkBlue,  // (960, 540)
             ]
         }
     };
@@ -54,87 +95,11 @@ public partial class ColoredRectTest(
             {
                 Log.Debug($"    IsDrawable: true, IsVisible={drawable.IsVisible()}");
             }
-        }
-    }
-
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
-    {
-        Log.Debug("=== ColoredRectTest.GetDrawCommands() CALLED ===");
-        Log.Debug($"  Children count: {Children.Count()}");
-        Log.Debug($"  Context.Camera: {context.Camera?.GetType().Name}");
-        
-        // Debug camera matrices
-        if (context.Camera is Nexus.GameEngine.Graphics.Cameras.StaticCamera staticCam)
-        {
-            Log.Debug($"  StaticCamera.ViewMatrix: {staticCam.ViewMatrix}");
-            Log.Debug($"  StaticCamera.ProjectionMatrix: {staticCam.ProjectionMatrix}");
-            Log.Debug($"  StaticCamera.GetViewProjectionMatrix(): {staticCam.GetViewProjectionMatrix()}");
-        }
-        
-        int commandCount = 0;
-        
-        foreach (var child in Children)
-        {
-            Log.Debug($"  Processing child: {child.GetType().Name}");
-            
-            if (child is Element element && element.IsVisible())
+            if (child is Element element)
             {
-                Log.Debug($"    Element IsVisible: true");
-                
-                // Get the geometry resource from the child element
-                var elementCommands = element.GetDrawCommands(context).ToList();
-                Log.Debug($"    Element returned {elementCommands.Count} draw commands");
-                
-                foreach (var cmd in elementCommands)
-                {
-                    commandCount++;
-                    
-                    Log.Debug($"    === DrawCommand #{commandCount} ===");
-                    Log.Debug($"      RenderMask: {cmd.RenderMask}");
-                    Log.Debug($"      Pipeline.Handle: {cmd.Pipeline.Pipeline.Handle}");
-                    Log.Debug($"      VertexBuffer.Handle: {cmd.VertexBuffer.Handle}");
-                    Log.Debug($"      VertexCount: {cmd.VertexCount}");
-                    Log.Debug($"      InstanceCount: {cmd.InstanceCount}");
-                    Log.Debug($"      RenderPriority: {cmd.RenderPriority}");
-                    
-                    if (cmd.PushConstants is TransformedColorPushConstants tpc)
-                    {
-                        Log.Debug($"      Original ViewProjectionMatrix: {tpc.ViewProjectionMatrix}");
-                        Log.Debug($"      Original Color: R={tpc.Color.X:F3}, G={tpc.Color.Y:F3}, B={tpc.Color.Z:F3}, A={tpc.Color.W:F3}");
-                    }
-                    
-                    var identity = Matrix4X4<float>.Identity;
-                    var redColor = Colors.Red;
-                    
-                    Log.Debug($"      NEW Identity Matrix: {identity}");
-                    Log.Debug($"      NEW Red Color: R={redColor.X:F3}, G={redColor.Y:F3}, B={redColor.Z:F3}, A={redColor.W:F3}");
-                    
-                    var newPushConstants = TransformedColorPushConstants.FromMatrixAndColor(identity, redColor);
-                    Log.Debug($"      NEW PushConstants created - Matrix: {newPushConstants.ViewProjectionMatrix}");
-                    Log.Debug($"      NEW PushConstants created - Color: R={newPushConstants.Color.X:F3}, G={newPushConstants.Color.Y:F3}, B={newPushConstants.Color.Z:F3}, A={newPushConstants.Color.W:F3}");
-                    
-                    yield return cmd with
-                    {
-                        PushConstants = newPushConstants
-                    };
-                }
-                
-                break; // Only process first element
-            }
-            else
-            {
-                Log.Debug($"    Child is not visible Element");
+                Log.Debug($"    Element Position: {element.Position}, Size: {element.Size}, AnchorPoint: {element.AnchorPoint}");
+                Log.Debug($"    Element WorldMatrix: {element.WorldMatrix}");
             }
         }
-        
-        Log.Debug($"  ColoredRectTest yielded {commandCount} draw commands");
-        
-        // Call base to increment FramesRendered counter
-        foreach (var cmd in base.GetDrawCommands(context))
-        {
-            yield return cmd;
-        }
-        
-        Log.Debug("=== ColoredRectTest.GetDrawCommands() COMPLETE ===");
     }
 }

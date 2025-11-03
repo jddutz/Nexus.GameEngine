@@ -1,7 +1,34 @@
 namespace Nexus.GameEngine.Graphics.Cameras;
 
-public interface ICamera : IRuntimeComponent
+public interface ICamera : IRuntimeComponent, IRenderPriority
 {
+    /// <summary>
+    /// Gets the screen region this camera renders to, in normalized coordinates (0-1).
+    /// Default is (0, 0, 1, 1) representing the full screen.
+    /// </summary>
+    Rectangle<float> ScreenRegion { get; }
+
+    /// <summary>
+    /// Gets the clear color for this camera's viewport.
+    /// Default is black (0, 0, 0, 1).
+    /// </summary>
+    Vector4D<float> ClearColor { get; }
+
+    // RenderPriority inherited from IRenderPriority
+
+    /// <summary>
+    /// Gets the render pass mask determining which render passes this camera participates in.
+    /// Default is RenderPasses.All.
+    /// </summary>
+    uint RenderPassMask { get; }
+
+    /// <summary>
+    /// Creates and returns a Viewport record for this camera based on current settings.
+    /// The Viewport contains only essential Vulkan rendering state.
+    /// </summary>
+    /// <returns>A new Viewport record configured for this camera.</returns>
+    Viewport GetViewport();
+
     /// <summary>
     /// Gets the view matrix representing the camera's transformation in world space.
     /// Used by the renderer for transforming objects from world to camera space.
@@ -30,6 +57,13 @@ public interface ICamera : IRuntimeComponent
     /// Gets the forward direction vector of the camera in world space.
     /// </summary>
     Vector3D<float> Forward { get; }
+
+    /// <summary>
+    /// Gets the descriptor set containing the camera's ViewProjection UBO.
+    /// This descriptor set should be bound at set=0, binding=0 for shaders that need the transformation matrix.
+    /// </summary>
+    /// <returns>The descriptor set containing the ViewProjection uniform buffer.</returns>
+    DescriptorSet GetViewProjectionDescriptorSet();
 
     /// <summary>
     /// Gets the up direction vector of the camera in world space.

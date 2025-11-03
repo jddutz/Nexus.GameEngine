@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Runtime;
@@ -17,8 +18,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// </summary>
 public partial class ImagePlacementFillTopTest(
     IPixelSampler pixelSampler,
-    IWindowService windowService
-    ) : RenderableTest(pixelSampler)
+    IWindowService windowService,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement top center")]
     public readonly static ImagePlacementFillTopTestTemplate BackgroundLayerTest = new()

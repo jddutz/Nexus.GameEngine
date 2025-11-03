@@ -1,4 +1,5 @@
 using Nexus.GameEngine.Components;
+using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
 using Nexus.GameEngine.Resources;
@@ -16,8 +17,9 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Single frame test: Blue (top) → Yellow (bottom) at angle 90°
 /// </summary>
 public partial class BackgroundLayerVertGradientTest(
-    IPixelSampler pixelSampler
-    ) : RenderableTest(pixelSampler)
+    IPixelSampler pixelSampler,
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Vertical gradient test")]
     public readonly static BackgroundLayerVertGradientTestTemplate BackgroundLayerTest = new()

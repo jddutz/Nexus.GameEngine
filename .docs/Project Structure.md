@@ -61,6 +61,19 @@ The engine uses a unified 3D transform system for all spatial objects:
 - **Animated Properties**: All transform properties support interpolation via ComponentProperty attribute
 - **2D and 3D**: 2D games use orthographic cameras; all transforms are fundamentally 3D
 
+### Content Management and Camera Tracking
+
+The **IContentManager** service manages component lifecycle and tracks active cameras in the component tree:
+
+- **Camera Registration**: All ICamera components are automatically registered when loaded
+- **Default Camera**: A default UI camera is auto-created on initialization for zero-configuration rendering
+- **Active Cameras**: The `ActiveCameras` property provides access to all active, registered cameras
+- **Tree Walking**: Camera registration happens via tree traversal during component Load/Unload
+- **Lifecycle Integration**: Cameras are registered/unregistered automatically with content lifecycle
+- **Batteries Included**: Applications work immediately without explicit camera or viewport setup
+
+This "batteries included" approach enables simple applications to render UI and content without any camera configuration, while still supporting advanced multi-camera scenarios for split-screen, minimaps, and effects rendering.
+
 ### Resource Management System
 
 A new attribute-based resource management system provides centralized, type-safe resource handling:

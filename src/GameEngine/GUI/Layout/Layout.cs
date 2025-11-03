@@ -50,12 +50,6 @@ public abstract partial class Layout
         if (_isLayoutInvalid) UpdateLayout();
     }
 
-    public override void UpdateGeometry()
-    {
-        base.UpdateGeometry();
-        Invalidate();
-    }
-
     private void OnChildCollectionChanged(object? sender, ChildCollectionChangedEventArgs e)
     {
         Invalidate();

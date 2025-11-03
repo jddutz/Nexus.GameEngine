@@ -163,9 +163,10 @@ public static class ShaderDefinitions
     };
     
     /// <summary>
-    /// Shader for uniform color rendering using push constants.
+    /// Shader for uniform color rendering using ViewProjection UBO and push constants.
     /// Vertex format: Position (vec2) = 8 bytes per vertex.
-    /// Single color for all vertices provided via push constants.
+    /// ViewProjection matrix from UBO at set=0, binding=0.
+    /// Single color for all vertices provided via push constants (vec4 = 16 bytes).
     /// </summary>
     public static readonly ShaderDefinition UniformColorQuad = new()
     {
@@ -179,12 +180,22 @@ public static class ShaderDefinitions
         [
             new PushConstantRange
             {
-                // Vertex shader uses a mat4 (64 bytes) + vec4 (16 bytes) = 80 bytes
+                // Push constants contain model matrix + color (mat4 + vec4 = 80 bytes)
                 StageFlags = ShaderStageFlags.VertexBit,
                 Offset = 0,
-                Size = (uint)Unsafe.SizeOf<TransformedColorPushConstants>() // 80 bytes
+                Size = (uint)Unsafe.SizeOf<UniformColorPushConstants>() // 80 bytes
             }
         ],
-        DescriptorSetLayoutBindings = null
+        DescriptorSetLayoutBindings =
+        [
+            new DescriptorSetLayoutBinding
+            {
+                // ViewProjection UBO at set=0, binding=0
+                Binding = 0,
+                DescriptorType = DescriptorType.UniformBuffer,
+                DescriptorCount = 1,
+                StageFlags = ShaderStageFlags.VertexBit
+            }
+        ]
     };
 }

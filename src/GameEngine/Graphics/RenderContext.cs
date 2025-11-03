@@ -39,6 +39,13 @@ public readonly struct RenderContext
     public required double DeltaTime { get; init; }
 
     /// <summary>
+    /// The descriptor set containing the camera's ViewProjection UBO.
+    /// Components should include this in their DrawCommands to enable UBO-based matrix transformation.
+    /// Bound at set=0, binding=0 in shaders.
+    /// </summary>
+    public required DescriptorSet ViewProjectionDescriptorSet { get; init; }
+
+    /// <summary>
     /// Gets the combined view-projection matrix from the camera.
     /// Cached by the camera to avoid recomputing every frame.
     /// UI components can use this to transform pixel-space vertices to NDC in shaders.

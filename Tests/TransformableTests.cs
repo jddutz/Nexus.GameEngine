@@ -54,13 +54,14 @@ public class TransformableTests
     public void SetPosition_UpdatesPosition()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var newPosition = new Vector3D<float>(1f, 2f, 3f);
 
         // Act
         transform.SetPosition(newPosition);
+        transform.ApplyUpdates(0.016); // Apply deferred property changes
 
-        // Assert - ComponentProperty applies immediately when component is not active
+        // Assert
         Assert.Equal(newPosition, transform.Position);
     }
 
@@ -68,11 +69,12 @@ public class TransformableTests
     public void SetRotation_UpdatesRotation()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, MathF.PI / 2);
 
         // Act
         transform.SetRotation(rotation);
+        transform.ApplyUpdates(0.016); // Apply deferred property changes
 
         // Assert
         Assert.True(ApproximatelyEqual(rotation, transform.Rotation));
@@ -82,11 +84,12 @@ public class TransformableTests
     public void SetScale_UpdatesScale()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var newScale = new Vector3D<float>(2f, 3f, 4f);
 
         // Act
         transform.SetScale(newScale);
+        transform.ApplyUpdates(0.016); // Apply deferred property changes
 
         // Assert
         Assert.Equal(newScale, transform.Scale);
@@ -96,12 +99,14 @@ public class TransformableTests
     public void Translate_MovesInWorldSpace()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetPosition(new Vector3D<float>(1f, 0f, 0f));
+        transform.ApplyUpdates(0.016); // Apply initial position
         var delta = new Vector3D<float>(0f, 1f, 0f);
 
         // Act
         transform.Translate(delta);
+        transform.ApplyUpdates(0.016); // Apply deferred property changes
 
         // Assert
         Assert.Equal(new Vector3D<float>(1f, 1f, 0f), transform.Position);
@@ -111,13 +116,15 @@ public class TransformableTests
     public void TranslateLocal_MovesInLocalSpace()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         // Rotate 90 degrees around Y (CCW when viewed from above, turns to face -X)
         transform.RotateY(MathF.PI / 2);
+        transform.ApplyUpdates(0.016); // Apply rotation
         
         // Act
         // Move forward in local space (forward is now -X in world space)
         transform.TranslateLocal(new Vector3D<float>(0f, 0f, -1f));
+        transform.ApplyUpdates(0.016); // Apply deferred property changes
 
         // Assert - should have moved in -X direction
         Assert.True(ApproximatelyEqual(new Vector3D<float>(-1f, 0f, 0f), transform.Position));
@@ -127,11 +134,12 @@ public class TransformableTests
     public void RotateX_RotatesAroundXAxis()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var angle = MathF.PI / 4; // 45 degrees
 
         // Act
         transform.RotateX(angle);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         var expected = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitX, angle);
@@ -142,11 +150,12 @@ public class TransformableTests
     public void RotateY_RotatesAroundYAxis()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var angle = MathF.PI / 2; // 90 degrees
 
         // Act
         transform.RotateY(angle);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         var expected = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, angle);
@@ -157,11 +166,12 @@ public class TransformableTests
     public void RotateZ_RotatesAroundZAxis()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var angle = MathF.PI / 3; // 60 degrees
 
         // Act
         transform.RotateZ(angle);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         var expected = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitZ, angle);
@@ -172,12 +182,13 @@ public class TransformableTests
     public void RotateAxis_RotatesAroundArbitraryAxis()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         var axis = Vector3D.Normalize(new Vector3D<float>(1f, 1f, 0f));
         var angle = MathF.PI / 6; // 30 degrees
 
         // Act
         transform.RotateAxis(axis, angle);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         var expected = Quaternion<float>.CreateFromAxisAngle(axis, angle);
@@ -188,12 +199,14 @@ public class TransformableTests
     public void ScaleBy_MultipliesScale()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetScale(new Vector3D<float>(2f, 3f, 4f));
+        transform.ApplyUpdates(0.016);
         var scaleFactor = new Vector3D<float>(0.5f, 2f, 1.5f);
 
         // Act
         transform.ScaleBy(scaleFactor);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         Assert.Equal(new Vector3D<float>(1f, 6f, 6f), transform.Scale);
@@ -203,11 +216,13 @@ public class TransformableTests
     public void ScaleUniform_ScalesAllAxesEqually()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetScale(new Vector3D<float>(2f, 3f, 4f));
+        transform.ApplyUpdates(0.016);
 
         // Act
         transform.ScaleUniform(2f);
+        transform.ApplyUpdates(0.016);
 
         // Assert
         Assert.Equal(new Vector3D<float>(4f, 6f, 8f), transform.Scale);
@@ -256,10 +271,11 @@ public class TransformableTests
     public void Forward_UpdatesWithRotation()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         
         // Act - Rotate 90 degrees around Y (CCW from above, turns to face -X)
         transform.RotateY(MathF.PI / 2);
+        transform.ApplyUpdates(0.016);
         var forward = transform.Forward;
 
         // Assert - Should now point in -X direction
@@ -270,10 +286,11 @@ public class TransformableTests
     public void LocalMatrix_ReflectsTransform()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetPosition(new Vector3D<float>(1f, 2f, 3f));
         transform.SetRotation(Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, MathF.PI / 4));
         transform.SetScale(new Vector3D<float>(2f, 2f, 2f));
+        transform.ApplyUpdates(0.016);
 
         // Act
         var localMatrix = transform.LocalMatrix;
@@ -328,12 +345,14 @@ public class TransformableTests
     public void WorldMatrix_CombinesParentTransform()
     {
         // Arrange
-        var parent = new Transformable();
+        var parent = CreateActivatedTransformable();
         parent.SetPosition(new Vector3D<float>(10f, 0f, 0f));
         parent.SetRotation(Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, MathF.PI / 2));
+        parent.ApplyUpdates(0.016);
 
-        var child = new Transformable();
+        var child = CreateActivatedTransformable();
         child.SetPosition(new Vector3D<float>(0f, 0f, -5f)); // 5 units forward in parent's local space
+        child.ApplyUpdates(0.016);
 
         // Act
         parent.AddChild(child);
@@ -346,11 +365,13 @@ public class TransformableTests
     public void WorldPosition_AccountsForParentTransform()
     {
         // Arrange
-        var parent = new Transformable();
+        var parent = CreateActivatedTransformable();
         parent.SetPosition(new Vector3D<float>(5f, 0f, 0f));
+        parent.ApplyUpdates(0.016);
 
-        var child = new Transformable();
+        var child = CreateActivatedTransformable();
         child.SetPosition(new Vector3D<float>(0f, 3f, 0f));
+        child.ApplyUpdates(0.016);
         parent.AddChild(child);
 
         // Act
@@ -364,10 +385,11 @@ public class TransformableTests
     public void WorldForward_AccountsForParentRotation()
     {
         // Arrange
-        var parent = new Transformable();
+        var parent = CreateActivatedTransformable();
         parent.RotateY(MathF.PI / 2); // Turn parent 90 degrees CCW (faces -X)
+        parent.ApplyUpdates(0.016);
 
-        var child = new Transformable();
+        var child = CreateActivatedTransformable();
         // Child has no rotation, should inherit parent's rotation
         parent.AddChild(child);
 
@@ -382,12 +404,14 @@ public class TransformableTests
     public void LookAt_OrientsFacingTarget()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetPosition(Vector3D<float>.Zero);
+        transform.ApplyUpdates(0.016);
         var target = new Vector3D<float>(10f, 0f, 0f);
 
         // Act
         transform.LookAt(target);
+        transform.ApplyUpdates(0.016);
 
         // Assert - Forward should point toward target (+X)
         var forward = transform.Forward;
@@ -398,13 +422,15 @@ public class TransformableTests
     public void LookAt_WithWorldUp_OrientsFacingTargetWithCorrectUp()
     {
         // Arrange
-        var transform = new Transformable();
+        var transform = CreateActivatedTransformable();
         transform.SetPosition(Vector3D<float>.Zero);
+        transform.ApplyUpdates(0.016);
         var target = new Vector3D<float>(0f, 10f, 0f);
         var worldUp = Vector3D<float>.UnitZ;
 
         // Act
         transform.LookAt(target, worldUp);
+        transform.ApplyUpdates(0.016);
 
         // Assert - Forward should point toward target (+Y)
         var forward = transform.Forward;
@@ -415,15 +441,18 @@ public class TransformableTests
     public void ParentChildHierarchy_ThreeLevelsDeep()
     {
         // Arrange - Create grandparent → parent → child hierarchy
-        var grandparent = new Transformable();
+        var grandparent = CreateActivatedTransformable();
         grandparent.SetPosition(new Vector3D<float>(100f, 0f, 0f));
+        grandparent.ApplyUpdates(0.016);
 
-        var parent = new Transformable();
+        var parent = CreateActivatedTransformable();
         parent.SetPosition(new Vector3D<float>(10f, 0f, 0f));
+        parent.ApplyUpdates(0.016);
         grandparent.AddChild(parent);
 
-        var child = new Transformable();
+        var child = CreateActivatedTransformable();
         child.SetPosition(new Vector3D<float>(1f, 0f, 0f));
+        child.ApplyUpdates(0.016);
         parent.AddChild(child);
 
         // Act
@@ -437,7 +466,7 @@ public class TransformableTests
     public void Template_ConfiguresInitialTransform()
     {
         // Arrange
-        var template = new Transformable.Template
+        var template = new TransformableTemplate
         {
             Position = new Vector3D<float>(5f, 10f, 15f),
             Rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, MathF.PI / 4),
