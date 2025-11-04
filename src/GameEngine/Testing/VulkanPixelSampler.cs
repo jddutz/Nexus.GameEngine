@@ -37,7 +37,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
         _vk = context.VulkanApi;
         _enabled = false;
         
-        Log.Warning("VulkanPixelSampler created - this service impacts performance and should only be used for testing");
+        // Log.Warning("VulkanPixelSampler created - this service impacts performance and should only be used for testing");
     }
 
     /// <inheritdoc />
@@ -136,7 +136,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
                 // Validate coordinates
                 if (x < 0 || x >= extent.Width || y < 0 || y >= extent.Height)
                 {
-                    Log.Warning($"Pixel coordinates out of bounds: ({x}, {y})");
+                    // Log.Warning($"Pixel coordinates out of bounds: ({x}, {y})");
                     results[i] = null;
                     continue;
                 }
@@ -346,7 +346,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
             var result = _vk.CreateBuffer(_context.Device, &bufferInfo, null, pBuffer);
             if (result != Result.Success)
             {
-                Log.Error($"Failed to create staging buffer: {result}");
+                // Log.Error($"Failed to create staging buffer: {result}");
                 throw new Exception($"Failed to create staging buffer: {result}");
             }
         }
@@ -369,7 +369,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
             if (result != Result.Success)
             {
                 _vk.DestroyBuffer(_context.Device, _stagingBuffer, null);
-                Log.Error($"Failed to allocate staging buffer memory: {result}");
+                // Log.Error($"Failed to allocate staging buffer memory: {result}");
                 throw new Exception($"Failed to allocate staging buffer memory: {result}");
             }
         }

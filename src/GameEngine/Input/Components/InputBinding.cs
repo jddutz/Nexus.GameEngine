@@ -42,6 +42,7 @@ public abstract partial class InputBinding(
     /// Gets the action that will be executed when input is triggered.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected ActionId _actionId = ActionId.None;
 
     /// <summary>
@@ -76,12 +77,12 @@ public abstract partial class InputBinding(
     {
         if (InputContext == null)
         {
-            Log.Debug($"Input context not available, cannot activate {GetType().Name}");
+            // Log.Debug($"Input context not available, cannot activate {GetType().Name}");
             return;
         }
 
         SubscribeToInputEvents();
-        Log.Debug($"{GetType().Name} activated and listening for input");
+        // Log.Debug($"{GetType().Name} activated and listening for input");
     }
 
     /// <summary>
@@ -96,27 +97,27 @@ public abstract partial class InputBinding(
 
         if (ActionId == ActionId.None)
         {
-            Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
+            // Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
             return;
         }
 
         if (_actionFactory == null)
         {
-            Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
+            // Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
             return;
         }
 
-        Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
+        // Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
 
         var result = await _actionFactory.ExecuteAsync(ActionId, this);
 
         if (result.Success)
         {
-            Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
+            // Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
         }
         else
         {
-            Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
+            // Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
         }
     }
 
@@ -126,7 +127,7 @@ public abstract partial class InputBinding(
     protected override void OnDeactivate()
     {
         UnsubscribeFromInputEvents();
-        Log.Debug($"{GetType().Name} deactivated");
+        // Log.Debug($"{GetType().Name} deactivated");
     }
 
     /// <summary>

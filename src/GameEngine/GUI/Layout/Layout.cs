@@ -5,13 +5,14 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// Provides common functionality for collecting and positioning child components.
 /// </summary>
 /// <typeparam name="TTemplate">The template type for this layout component</typeparam>
-public abstract partial class Layout
-    : Element
+public abstract partial class Layout(IDescriptorManager descriptorManager)
+    : Element(descriptorManager)
 {
     /// <summary>
     /// Padding around the layout container.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected Padding _padding = new(0);
 
     private bool _isLayoutInvalid = true;

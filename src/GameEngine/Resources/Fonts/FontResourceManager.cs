@@ -27,9 +27,9 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
     /// Creates a new font resource from a definition.
     /// Loads font file, generates atlas with StbTrueType, and creates GPU texture.
     /// </summary>
-    protected override FontResource CreateResource(FontDefinition definition)
+    public override FontResource CreateResource(FontDefinition definition)
     {
-        Log.Info($"Loading font: {definition.Name} @ {definition.FontSize}px, Range: {definition.CharacterRange}");
+        // Log.Info($"Loading font: {definition.Name} @ {definition.FontSize}px, Range: {definition.CharacterRange}");
 
         // Load font file using source
         var sourceData = definition.Source.Load();
@@ -44,7 +44,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
         // Create and return resource
         var resource = new FontResource(atlasTexture, glyphs, lineHeight, ascender, descender, definition.FontSize);
 
-        Log.Info($"Font loaded successfully: {glyphs.Count} glyphs, {lineHeight}px line height");
+        // Log.Info($"Font loaded successfully: {glyphs.Count} glyphs, {lineHeight}px line height");
 
         return resource;
     }
@@ -165,8 +165,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
                 // Check if we're out of vertical space
                 if (currentY + glyphHeight + Padding > AtlasHeight)
                 {
-                    Log.Warning($"Font atlas ran out of space at character '{c}' (U+{(int)c:X4}). " +
-                        "Remaining characters will be skipped.");
+                    // Log.Warning($"Font atlas ran out of space at character '{c}' (U+{(int)c:X4}). Remaining characters will be skipped.");
                     break;
                 }
 
@@ -202,7 +201,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
                 rowHeight = Math.Max(rowHeight, glyphHeight);
             }
 
-            Log.Debug($"Generated font atlas: {AtlasWidth}x{AtlasHeight}, {glyphs.Count} glyphs");
+            // Log.Debug($"Generated font atlas: {AtlasWidth}x{AtlasHeight}, {glyphs.Count} glyphs");
 
             return (atlasData, glyphs, lineHeight, ascender, descender);
         }

@@ -104,8 +104,13 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             // Check if field is declared on this class (not inherited)
             if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, classSymbol)) continue;
 
-            // Generate property name from field name (remove _ prefix and capitalize)
+            // Get property name from ComponentProperty.Name if specified, otherwise derive from field name
             var propertyName = GetPropertyNameFromField(field.Name);
+            var nameArg = animationAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+            if (nameArg.Value.Value is string customName && !string.IsNullOrEmpty(customName))
+            {
+                propertyName = customName;
+            }
 
             // Check if type is a collection (array or implements IEnumerable<T>)
             var isCollection = IsCollectionType(field.Type);

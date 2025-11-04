@@ -17,6 +17,99 @@ namespace Nexus.GameEngine.Graphics;
 /// </summary>
 public class DefaultBatchStrategy : IBatchStrategy
 {
+    // Diagnostic counters for batching effectiveness
+    private int _pipelineChanges = 0;
+    private int _descriptorSetChanges = 0;
+    private int _vertexBufferChanges = 0;
+    private int _indexBufferChanges = 0;
+    private int _totalDrawCommands = 0;
+    
+    /// <summary>
+    /// Analyzes a sorted list of draw commands and returns batching statistics.
+    /// Call this after sorting to get diagnostic information about batching effectiveness.
+    /// </summary>
+    public BatchingStatistics AnalyzeBatching(IEnumerable<DrawCommand> sortedCommands)
+    {
+        var stats = new BatchingStatistics();
+        DrawCommand? previous = null;
+        
+        foreach (var cmd in sortedCommands)
+        {
+            stats.TotalDrawCommands++;
+            
+            if (previous == null)
+            {
+                // First command - count all as changes
+                stats.PipelineChanges++;
+                stats.DescriptorSetChanges++;
+                stats.VertexBufferChanges++;
+                stats.IndexBufferChanges++;
+            }
+            else
+            {
+                // Compare with previous to detect state changes
+                if (cmd.Pipeline.Pipeline.Handle != previous.Value.Pipeline.Pipeline.Handle)
+                {
+                    stats.PipelineChanges++;
+                }
+                
+                if (cmd.DescriptorSet.Handle != previous.Value.DescriptorSet.Handle)
+                {
+                    stats.DescriptorSetChanges++;
+                }
+                
+                if (cmd.VertexBuffer.Handle != previous.Value.VertexBuffer.Handle)
+                {
+                    stats.VertexBufferChanges++;
+                }
+                
+                if (cmd.IndexBuffer.Handle != previous.Value.IndexBuffer.Handle)
+                {
+                    stats.IndexBufferChanges++;
+                }
+            }
+            
+            previous = cmd;
+        }
+        
+        return stats;
+    }
+    
+    /// <summary>
+    /// Statistics about batching effectiveness.
+    /// </summary>
+    public struct BatchingStatistics
+    {
+        public int TotalDrawCommands { get; set; }
+        public int PipelineChanges { get; set; }
+        public int DescriptorSetChanges { get; set; }
+        public int VertexBufferChanges { get; set; }
+        public int IndexBufferChanges { get; set; }
+        
+        /// <summary>
+        /// Gets the batching efficiency (lower is better).
+        /// Perfect batching = 1 (all commands use same state).
+        /// </summary>
+        public float GetBatchingRatio() => TotalDrawCommands > 0 
+            ? (float)PipelineChanges / TotalDrawCommands 
+            : 0f;
+            
+        public override string ToString()
+        {
+            if (TotalDrawCommands == 0) return "No draw commands";
+            
+            var ratio = GetBatchingRatio();
+            var efficiency = (1f - ratio) * 100f;
+            
+            return $"Draw Commands: {TotalDrawCommands}, " +
+                   $"Pipeline Changes: {PipelineChanges}, " +
+                   $"Descriptor Changes: {DescriptorSetChanges}, " +
+                   $"Vertex Buffer Changes: {VertexBufferChanges}, " +
+                   $"Index Buffer Changes: {IndexBufferChanges}, " +
+                   $"Batching Efficiency: {efficiency:F1}%";
+        }
+    }
+
     /// <summary>
     /// Compares two draw commands for batch priority ordering.
     /// Sorts by render priority first (correctness), then by state changes (performance).

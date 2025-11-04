@@ -26,11 +26,11 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
             if (_cache.TryGetValue(definition, out var cached))
             {
                 _cache[definition] = (cached.Resource, cached.RefCount + 1);
-                Log.Debug($"Resource cache hit: {GetResourceKey(definition)}");
+                // Log.Debug($"Resource cache hit: {GetResourceKey(definition)}");
                 return cached.Resource;
             }
             
-            Log.Debug($"Creating new resource: {GetResourceKey(definition)}");
+            // Log.Debug($"Creating new resource: {GetResourceKey(definition)}");
             
             // Create new resource (template method - implemented by subclass)
             var resource = CreateResource(definition);
@@ -53,7 +53,7 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
         {
             if (!_cache.TryGetValue(definition, out var cached))
             {
-                Log.Warning($"Attempted to release non-cached resource: {GetResourceKey(definition)}");
+                // Log.Warning($"Attempted to release non-cached resource: {GetResourceKey(definition)}");
                 return;
             }
             
@@ -62,11 +62,11 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
             if (newRefCount > 0)
             {
                 _cache[definition] = (cached.Resource, newRefCount);
-                Log.Debug($"Resource ref count decremented: {GetResourceKey(definition)}, RefCount={newRefCount}");
+                // Log.Debug($"Resource ref count decremented: {GetResourceKey(definition)}, RefCount={newRefCount}");
             }
             else
             {
-                Log.Debug($"Destroying resource (ref count reached zero): {GetResourceKey(definition)}");
+                // Log.Debug($"Destroying resource (ref count reached zero): {GetResourceKey(definition)}");
                 
                 // Destroy resource (template method - implemented by subclass)
                 DestroyResource(cached.Resource);
@@ -82,7 +82,7 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
     /// </summary>
     /// <param name="definition">Resource definition containing all information needed to create the resource</param>
     /// <returns>Created GPU resource</returns>
-    protected abstract TResource CreateResource(TDefinition definition);
+    public abstract TResource CreateResource(TDefinition definition);
     
     /// <summary>
     /// Destroys a GPU resource, freeing all Vulkan handles.
@@ -110,14 +110,14 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
     {
         lock (_lock)
         {
-            Log.Info($"Disposing {GetType().Name}: {_cache.Count} resources");
+            // Log.Info($"Disposing {GetType().Name}: {_cache.Count} resources");
             
             // Destroy all cached resources
             foreach (var (definition, (resource, refCount)) in _cache)
             {
                 if (refCount > 1)
                 {
-                    Log.Warning($"Resource still has {refCount} references during dispose: {GetResourceKey(definition)}");
+                    // Log.Warning($"Resource still has {refCount} references during dispose: {GetResourceKey(definition)}");
                 }
                 
                 DestroyResource(resource);

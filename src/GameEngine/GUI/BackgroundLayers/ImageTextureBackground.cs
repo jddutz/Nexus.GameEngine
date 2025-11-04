@@ -1,4 +1,6 @@
-﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
+﻿using Nexus.GameEngine.Resources.Geometry.Definitions;
+
+namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with an image texture.
@@ -17,6 +19,7 @@ public partial class ImageTextureBackground(
     private DescriptorSet? _textureDescriptorSet;
     
     [ComponentProperty]
+    [TemplateProperty]
     protected TextureDefinition _textureDefinition = new()
     {
         Name = "DefaultTexture",
@@ -24,6 +27,7 @@ public partial class ImageTextureBackground(
     };
     
     [ComponentProperty]
+    [TemplateProperty]
     protected int _placement = BackgroundImagePlacement.FillCenter;
 
     public override PipelineHandle Pipeline =>
@@ -36,15 +40,15 @@ public partial class ImageTextureBackground(
         // Load texture with specified definition
         _texture = ResourceManager.Textures.GetOrCreate(_textureDefinition);
         
-        // Create descriptor set for texture
+        // Get or create descriptor set layout
         var shader = ShaderDefinitions.ImageTexture;
-        if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
+        if (shader.DescriptorSetLayouts == null || !shader.DescriptorSetLayouts.ContainsKey(0))
         {
             throw new InvalidOperationException(
-                $"Shader {shader.Name} does not define descriptor set layout bindings");
+                $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
         
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
+        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
         _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
         
         // Update descriptor set with texture

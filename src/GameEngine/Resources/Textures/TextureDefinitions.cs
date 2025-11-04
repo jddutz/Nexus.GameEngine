@@ -20,6 +20,18 @@ public static class TextureDefinitions
     };
     
     /// <summary>
+    /// 1x1 white dummy texture loaded from embedded PNG - used as default texture for solid color UI elements.
+    /// This allows all UI elements to use the same uber-shader pipeline, eliminating pipeline switches.
+    /// </summary>
+    public static readonly TextureDefinition WhiteDummy = new()
+    {
+        Name = "__white_dummy_1x1",
+        Source = new EmbeddedPngTextureSource(
+            "EmbeddedResources/Textures/dummy_white.png",
+            typeof(TextureDefinitions).Assembly)
+    };
+    
+    /// <summary>
     /// 1x1 black texture (0, 0, 0, 1) - useful for solid black rendering.
     /// </summary>
     public static readonly TextureDefinition Black = new()

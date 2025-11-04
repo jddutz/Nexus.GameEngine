@@ -148,17 +148,57 @@ application.Run(windowOptions, Templates.MainMenu);
 
 ### RuntimeComponent System
 
-**Animated Property System**: Components use source-generated animated properties. All properties marked with `[ComponentProperty]` automatically support:
-- Deferred updates (changes apply during `UpdateAnimations()` call)
-- Optional interpolation over time (specify Duration and InterpolationMode)
-- PropertyChanged notifications
-- Animation lifecycle events (AnimationStarted, AnimationEnded)
+**Property Attribute System**: Components use two separate attributes for different concerns:
 
-**Source Generator Architecture**: The `AnimatedPropertyGenerator` (in `src/GameEngine.SourceGenerators/`) generates optimized code at compile-time:
-- **Zero runtime overhead**: Type-specific interpolation code (no boxing, no reflection, no dynamic dispatch)
-- **Array animation support**: Animated arrays interpolate each element individually with inline loops
-- **Built-in type support**: float, double, int, Silk.NET vectors/matrices automatically supported
-- **Extensibility**: Custom types can implement `IInterpolatable<T>` for specialized interpolation
+- **`[TemplateProperty]`**: Marks fields for template generation only
+  - Generates properties in auto-generated `{ClassName}Template` records
+  - Assigned in `OnLoad()` method when component created from template
+  - Optional `Name` parameter to customize template property name
+  - Does NOT generate runtime public properties
+  
+- **`[ComponentProperty]`**: Marks fields for runtime behavior only
+  - Generates public properties with deferred updates
+  - Supports interpolation over time (specify Duration and InterpolationMode at call site)
+  - PropertyChanged notifications and animation lifecycle events
+  - Optional `Name` parameter to customize property name
+  - Does NOT appear in templates unless also marked with `[TemplateProperty]`
+
+- **Both attributes together**: Use when field needs both template configuration AND runtime behavior
+  ```csharp
+  [TemplateProperty]
+  [ComponentProperty]
+  private Vector2D<float> _anchorPoint = new(-1, -1);
+  // Generates:
+  //   - ElementTemplate.AnchorPoint property (settable from template)
+  //   - Element.AnchorPoint runtime property (deferred updates, animations)
+  //   - OnLoad assigns template value to _anchorPoint backing field
+  ```
+
+**Definition vs Resource Pattern**: Separate template-time definitions from runtime resources:
+```csharp
+// Template-only definition (configuration blueprint)
+[TemplateProperty(Name = "Texture")]
+private TextureDefinition? _textureDefinition = null;
+
+// Runtime-only resource (GPU instance)
+[ComponentProperty]
+private TextureResource? _texture;
+
+// OnActivate converts definition → resource
+public override void OnActivate() {
+    if (_textureDefinition != null)
+        _texture = ResourceManager.Textures.GetOrCreate(_textureDefinition);
+}
+```
+
+**Source Generator Architecture**: Three generators work together:
+- **`TemplateGenerator`**: Processes `[TemplateProperty]` → generates template records and `OnLoad()` methods
+- **`ComponentPropertyGenerator`**: Processes `[ComponentProperty]` → generates runtime properties with deferred updates
+- **`AnimatedPropertyGenerator`**: Generates type-specific interpolation code at compile-time
+  - **Zero runtime overhead**: No boxing, reflection, or dynamic dispatch
+  - **Array animation support**: Element-by-element interpolation with inline loops
+  - **Built-in type support**: float, double, int, Silk.NET vectors/matrices
+  - **Extensibility**: Custom types implement `IInterpolatable<T>`
 
 Example:
 ```csharp

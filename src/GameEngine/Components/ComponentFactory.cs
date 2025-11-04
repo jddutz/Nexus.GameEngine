@@ -77,53 +77,53 @@ public class ComponentFactory(
     {
         if (template == null)
         {
-            Log.Debug("CreateInstance called with null template");
+            // Log.Debug("CreateInstance called with null template");
             return null;
         }
 
         // Get the component type from the template's ComponentType property
         var componentType = template.ComponentType;
 
-        Log.Debug($"Template component type: {componentType?.Name ?? "null"}");
+        // Log.Debug($"Template component type: {componentType?.Name ?? "null"}");
 
         // Type-safety: Ensure the type implements IComponent
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            Log.Debug($"Component type is null or doesn't implement IComponent (template: {template.GetType().Name})");
+            // Log.Debug($"Component type is null or doesn't implement IComponent (template: {template.GetType().Name})");
             return null;
         }
 
         // Check if the type can be instantiated
         if (componentType.IsAbstract)
         {
-            Log.Warning($"Cannot create instance of abstract type: {componentType.Name}. Use a concrete implementation instead.");
+            // Log.Warning($"Cannot create instance of abstract type: {componentType.Name}. Use a concrete implementation instead.");
             return null;
         }
 
         if (componentType.IsInterface)
         {
-            Log.Warning($"Cannot create instance of interface type: {componentType.Name}. Use a concrete implementation instead.");
+            // Log.Warning($"Cannot create instance of interface type: {componentType.Name}. Use a concrete implementation instead.");
             return null;
         }
 
         if (componentType.IsGenericTypeDefinition)
         {
-            Log.Warning($"Cannot create instance of generic type definition: {componentType.Name}. Specify concrete type arguments.");
+            // Log.Warning($"Cannot create instance of generic type definition: {componentType.Name}. Specify concrete type arguments.");
             return null;
         }
 
         if (componentType.IsSealed && componentType.IsAbstract) // static class
         {
-            Log.Warning($"Cannot create instance of static class: {componentType.Name}");
+            // Log.Warning($"Cannot create instance of static class: {componentType.Name}");
             return null;
         }
 
-        Log.Debug($"Creating {template.Name ?? "unnamed"} component ({componentType.Name})");
+        // Log.Debug($"Creating {template.Name ?? "unnamed"} component ({componentType.Name})");
 
         // Create and configure the component
         var result = Create(componentType, template);
 
-        Log.Debug($"Component creation result: {(result != null ? "SUCCESS" : "FAILED")}");
+        // Log.Debug($"Component creation result: {(result != null ? "SUCCESS" : "FAILED")}");
 
         return result;
     }

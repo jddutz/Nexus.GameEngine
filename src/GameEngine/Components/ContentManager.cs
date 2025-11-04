@@ -55,14 +55,14 @@ public class ContentManager(
     {
         if (string.IsNullOrEmpty(template.Name))
         {
-            Log.Warning("Cannot load content with empty template name");
+            // Log.Warning("Cannot load content with empty template name");
             return null;
         }
 
         // Try to get existing content first
         if (content.TryGetValue(template.Name, out var existingComponent))
         {
-            Log.Debug($"Returning existing content '{template.Name}'");
+            // Log.Debug($"Returning existing content '{template.Name}'");
             return existingComponent;
         }
 
@@ -82,18 +82,18 @@ public class ContentManager(
 
                 // Note: Camera list is refreshed automatically during OnUpdate()
 
-                Log.Info($"Loaded content '{template.Name}'");
+                // Log.Info($"Loaded content '{template.Name}'");
                 return created;
             }
             else
             {
-                Log.Error($"Failed to create content from template '{template.Name}' - CreateInstance returned null");
+                // Log.Error($"Failed to create content from template '{template.Name}' - CreateInstance returned null");
                 return null;
             }
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, $"Exception while creating content from template '{template.Name}'");
+            // Log.Exception(ex, $"Exception while creating content from template '{template.Name}'");
             return null;
         }
     }
@@ -203,7 +203,7 @@ public class ContentManager(
         var componentType = template.ComponentType;
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            Log.Warning($"Template {template.GetType().Name} has invalid ComponentType: {componentType?.Name ?? "null"}");
+            // Log.Warning($"Template {template.GetType().Name} has invalid ComponentType: {componentType?.Name ?? "null"}");
             return null;
         }
 
@@ -230,7 +230,7 @@ public class ContentManager(
             if (component is IRuntimeComponent runtimeComponent)
             {
                 runtimeComponent.Activate();
-                Log.Debug($"Activated component {component.Name ?? "unnamed"} ({component.GetType().Name})");
+                // Log.Debug($"Activated component {component.Name ?? "unnamed"} ({component.GetType().Name})");
                 // RuntimeComponent.Activate() recursively activates IRuntimeComponent children
                 // So we don't need to traverse them manually - continue to next component
                 continue;
@@ -314,7 +314,7 @@ public class ContentManager(
                 if (component is IDrawable drawable && drawable.IsVisible())
                 {
                     _visibleDrawables.Add(drawable);
-                    Log.Debug($"  Added visible drawable: {component.GetType().Name}");
+                    // Log.Debug($"  Added visible drawable: {component.GetType().Name}");
                 }
                 
                 // Collect active cameras as we traverse
@@ -345,19 +345,19 @@ public class ContentManager(
             
             // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
             
-            Log.Debug($"Total visible drawables after update: {_visibleDrawables.Count}");
-            Log.Debug($"Total active cameras after update: {_cameras.Count}");
+            // Log.Debug($"Total visible drawables after update: {_visibleDrawables.Count}");
+            // Log.Debug($"Total active cameras after update: {_cameras.Count}");
             
             // Clean up unloaded components
             foreach (var key in unloadedKeys)
             {
-                Log.Debug($"Removing unloaded component {key} from content manager");
+                // Log.Debug($"Removing unloaded component {key} from content manager");
                 content.Remove(key);
             }
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Exception occurred during Update loop");
+            // Log.Exception(ex, "Exception occurred during Update loop");
         }
     }
 
@@ -368,7 +368,7 @@ public class ContentManager(
     public void Initialize()
     {
         // ContentManager initialization - camera discovery happens during Update()
-        Log.Debug("ContentManager initialized");
+        // Log.Debug("ContentManager initialized");
     }
 
     /// <summary>
@@ -414,7 +414,7 @@ public class ContentManager(
 
         // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
 
-        Log.Debug($"Refreshed camera list: {_cameras.Count} active cameras found");
+        // Log.Debug($"Refreshed camera list: {_cameras.Count} active cameras found");
     }
 
     /// <inheritdoc/>

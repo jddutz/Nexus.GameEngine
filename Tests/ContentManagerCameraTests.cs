@@ -69,7 +69,7 @@ public class ContentManagerCameraTests
     }
 
     [Fact]
-    public void ContentManager_Initialize_CreatesDefaultCamera()
+    public void ContentManager_Initialize_DoesNotCreateDefaultCamera()
     {
         // Arrange
         var mockFactory = CreateMockFactoryForInitialize();
@@ -78,13 +78,10 @@ public class ContentManagerCameraTests
         // Act
         contentManager.Initialize();
 
-        // Assert
+        // Assert - Initialize() does not create a camera, that's done by Renderer
         var cameras = contentManager.ActiveCameras;
         Assert.NotNull(cameras);
-        Assert.Single(cameras);
-        var defaultCamera = cameras.First();
-        Assert.NotNull(defaultCamera);
-        Assert.IsAssignableFrom<ICamera>(defaultCamera);
+        Assert.Empty(cameras);
     }
 
     [Fact]
@@ -138,19 +135,29 @@ public class ContentManagerCameraTests
     // These unit tests focus on the public API: Initialize() and ActiveCameras property.
 
     [Fact]
-    public void ContentManager_ActiveCameras_IncludesDefaultCamera()
+    public void ContentManager_ActiveCameras_IncludesLoadedCameras()
     {
         // Arrange
         var mockFactory = CreateMockFactoryForInitialize();
         var contentManager = new ContentManager(mockFactory.Object, CreateMockGraphicsOptions());
 
+        // Load a camera component
+        var cameraTemplate = new StaticCameraTemplate
+        {
+            Name = "TestCamera",
+            ClearColor = new Vector4D<float>(0, 0, 0, 1),
+            ScreenRegion = new Rectangle<float>(0, 0, 1, 1),
+            RenderPriority = 100
+        };
+        var camera = contentManager.Load(cameraTemplate);
+        contentManager.OnUpdate(0.016); // Trigger camera discovery
+
         // Act
-        contentManager.Initialize();
         var cameras = contentManager.ActiveCameras;
 
         // Assert
         Assert.Single(cameras);
-        var defaultCamera = cameras.First();
-        Assert.True(defaultCamera.IsActive());
+        var loadedCamera = cameras.First();
+        Assert.True(loadedCamera.IsActive());
     }
 }

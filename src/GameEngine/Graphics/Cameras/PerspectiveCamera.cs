@@ -28,38 +28,49 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
 
     // Animated properties with slow easing for smooth camera movements
     [ComponentProperty]
+    [TemplateProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector3D<float> _forward = -Vector3D<float>.UnitZ;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector3D<float> _up = Vector3D<float>.UnitY;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _fieldOfView = MathF.PI / 4; // 45 degrees
 
     // Instant properties (no animation needed for clipping planes and aspect ratio)
     [ComponentProperty]
+    [TemplateProperty]
     private float _nearPlane = 0.1f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _farPlane = 1000f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _aspectRatio = 16f / 9f;
 
     // Viewport-related properties (ICamera interface)
     [ComponentProperty]
+    [TemplateProperty]
     private Rectangle<float> _screenRegion = new(0, 0, 1, 1);
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _clearColor = new(0, 0, 0, 1);
 
     [ComponentProperty]
+    [TemplateProperty]
     private int _renderPriority = 0;
 
     [ComponentProperty]
+    [TemplateProperty]
     private uint _renderPassMask = RenderPasses.All;
 
     // Non-component properties
@@ -303,7 +314,7 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
         UpdateViewProjectionUBO();
 
         _uboInitialized = true;
-        Log.Info($"PerspectiveCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
+        // Log.Info($"PerspectiveCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
     }
 
     private unsafe void UpdateViewProjectionUBO()
@@ -324,14 +335,14 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
         _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
         _uboInitialized = false;
 
-        Log.Info("PerspectiveCamera: Cleaned up ViewProjection UBO");
+        // Log.Info("PerspectiveCamera: Cleaned up ViewProjection UBO");
     }
 
     public DescriptorSet GetViewProjectionDescriptorSet()
     {
         if (!_uboInitialized)
         {
-            Log.Warning("PerspectiveCamera: GetViewProjectionDescriptorSet called before UBO initialization");
+            // Log.Warning("PerspectiveCamera: GetViewProjectionDescriptorSet called before UBO initialization");
             return default;
         }
         return _viewProjectionDescriptorSet;

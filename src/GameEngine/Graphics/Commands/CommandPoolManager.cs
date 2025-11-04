@@ -95,7 +95,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    Log.Exception(ex, $"Error resetting command pool for queue family {pool.QueueFamilyIndex}");
+                    // Log.Exception(ex, $"Error resetting command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
         }
@@ -118,7 +118,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    Log.Exception(ex, $"Error trimming command pool for queue family {pool.QueueFamilyIndex}");
+                    // Log.Exception(ex, $"Error trimming command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
         }
@@ -242,7 +242,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
                 }
                 catch (Exception ex)
                 {
-                    Log.Exception(ex, $"Error disposing command pool for queue family {pool.QueueFamilyIndex}");
+                    // Log.Exception(ex, $"Error disposing command pool for queue family {pool.QueueFamilyIndex}");
                 }
             }
 

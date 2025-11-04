@@ -31,13 +31,17 @@ public record ShaderDefinition : IResourceDefinition
     public PushConstantRange[]? PushConstantRanges { get; init; }
     
     /// <summary>
-    /// Descriptor set layout bindings used by this shader.
-    /// Null or empty if shader doesn't use descriptor sets (UBOs, textures, etc.).
+    /// Descriptor set layout bindings grouped by descriptor set index.
+    /// Key = descriptor set index (0, 1, 2, etc.), Value = bindings for that set.
+    /// Use this for shaders that bind resources to multiple descriptor sets.
     /// </summary>
     /// <remarks>
-    /// For shaders that use uniform buffers or other resources, this defines
-    /// the descriptor set layout bindings. The descriptor manager will create
-    /// descriptor set layouts from these bindings.
+    /// Example: ViewProjection UBO at set=0, Textures at set=1:
+    /// DescriptorSetLayouts = new Dictionary&lt;uint, DescriptorSetLayoutBinding[]&gt;
+    /// {
+    ///     [0] = [new DescriptorSetLayoutBinding { Binding = 0, DescriptorType = UniformBuffer, ... }],
+    ///     [1] = [new DescriptorSetLayoutBinding { Binding = 0, DescriptorType = CombinedImageSampler, ... }]
+    /// }
     /// </remarks>
-    public DescriptorSetLayoutBinding[]? DescriptorSetLayoutBindings { get; init; }
+    public IReadOnlyDictionary<uint, DescriptorSetLayoutBinding[]>? DescriptorSetLayouts { get; init; }
 }

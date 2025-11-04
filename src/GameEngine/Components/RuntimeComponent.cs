@@ -14,6 +14,7 @@ public partial class RuntimeComponent
     /// Use IsActive() to check if component is both Enabled and Active.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected bool _active = false;
 
     /// <summary>
@@ -32,7 +33,7 @@ public partial class RuntimeComponent
         // Enforce constraint: A component can only be activated if its parent is active (or it has no parent)
         if (Parent is IRuntimeComponent runtimeParent && !runtimeParent.IsActive())
         {
-            Log.Warning($"Cannot activate {GetType().Name} '{Name}' because parent {runtimeParent.GetType().Name} is not active");
+            // Log.Warning($"Cannot activate {GetType().Name} '{Name}' because parent {runtimeParent.GetType().Name} is not active");
             return;
         }
 

@@ -6,7 +6,8 @@ namespace Nexus.GameEngine.Graphics.Pipelines;
 /// </summary>
 /// <param name="Pipeline">The Vulkan graphics pipeline handle</param>
 /// <param name="Layout">The Vulkan pipeline layout handle (needed for push constants and descriptor sets)</param>
-public readonly record struct PipelineHandle(Pipeline Pipeline, PipelineLayout Layout)
+/// <param name="Name">Human-readable name for debugging and identification</param>
+public readonly record struct PipelineHandle(Pipeline Pipeline, PipelineLayout Layout, string Name)
 {
     /// <summary>
     /// Returns true if this handle contains valid (non-zero) pipeline and layout handles.
@@ -16,5 +17,5 @@ public readonly record struct PipelineHandle(Pipeline Pipeline, PipelineLayout L
     /// <summary>
     /// Returns an invalid/empty pipeline handle.
     /// </summary>
-    public static PipelineHandle Invalid => new(default, default);
+    public static PipelineHandle Invalid => new(default, default, "Invalid");
 }

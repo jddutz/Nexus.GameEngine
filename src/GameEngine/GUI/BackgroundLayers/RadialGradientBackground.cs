@@ -1,4 +1,6 @@
-﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
+﻿using Nexus.GameEngine.Resources.Geometry.Definitions;
+
+namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with a radial gradient.
@@ -19,6 +21,7 @@ public partial class RadialGradientBackground(
     private DescriptorSet? _gradientDescriptorSet;
     
     [ComponentProperty]
+    [TemplateProperty]
     protected GradientDefinition _gradient = GradientDefinition.TwoColor(
         new Vector4D<float>(0, 0, 0, 1),
         new Vector4D<float>(1, 1, 1, 1));
@@ -27,18 +30,21 @@ public partial class RadialGradientBackground(
     /// Center point of the radial gradient in normalized [0,1] coordinates. Can be animated.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector2D<float> _center = new(0.5f, 0.5f);
 
     /// <summary>
     /// Radius of the radial gradient. Can be animated.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected float _radius = 0.5f;
 
     /// <summary>
     /// Scale factors for elliptical gradients. Can be animated.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector2D<float> _gradientScale = new(1f, 1f);
 
     public override PipelineHandle Pipeline =>
@@ -52,7 +58,7 @@ public partial class RadialGradientBackground(
         _gradient.Validate();
 
         // Create position-only full-screen quad geometry
-        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
 
         // Create UBO and descriptor set for gradient
         CreateGradientUBO(_gradient);
@@ -84,13 +90,13 @@ public partial class RadialGradientBackground(
         
         // Get or create descriptor set layout
         var shader = ShaderDefinitions.RadialGradient;
-        if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
+        if (shader.DescriptorSetLayouts == null || !shader.DescriptorSetLayouts.ContainsKey(0))
         {
             throw new InvalidOperationException(
-                $"Shader {shader.Name} does not define descriptor set layout bindings");
+                $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
         
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
+        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
         
         // Allocate descriptor set
         _gradientDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
@@ -155,7 +161,7 @@ public partial class RadialGradientBackground(
         
         if (_geometry != null)
         {
-            ResourceManager.Geometry.Release(GeometryDefinitions.UniformColorQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

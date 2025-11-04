@@ -24,7 +24,7 @@ public class Application(IServiceProvider services) : IApplication
         var window = windowService.GetOrCreateWindow(windowOptions);
 
         // Log window events to understand initialization timing
-        Log.Debug("Window created");
+        // Log.Debug("Window created");
         
         window.FramebufferResize += size =>
         {
@@ -49,7 +49,7 @@ public class Application(IServiceProvider services) : IApplication
 
             // Load content through ContentManager
             // ContentManager automatically registers cameras found in the content tree
-            Log.Debug($"Loading startup template: {startupTemplate.Name ?? "null"}");
+            // Log.Debug($"Loading startup template: {startupTemplate.Name ?? "null"}");
             var startupContent = contentManager.Load(startupTemplate);
 
             // Push window size constraints to root element if it's a UI element

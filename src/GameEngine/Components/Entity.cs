@@ -2,7 +2,7 @@ namespace Nexus.GameEngine.Components;
 
 /// <summary>
 /// Represents a uniquely identifiable object.
-/// Classes deriving from Entity with [ComponentProperty] fields will have
+/// Classes deriving from Entity with [ComponentProperty] and [TemplateProperty] fields will have
 /// animated properties generated via source generation.
 /// </summary>
 public abstract partial class Entity

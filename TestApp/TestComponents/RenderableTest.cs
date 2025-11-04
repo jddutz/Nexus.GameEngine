@@ -39,12 +39,15 @@ public partial class RenderableTest(
     };
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector2D<int>[] _sampleCoordinates = [];
 
     [ComponentProperty]
+    [TemplateProperty]
     private Dictionary<int, Vector4D<float>[]> _expectedResults = [];
 
     [ComponentProperty]
+    [TemplateProperty]
     private uint _renderPriority = 0;
 
     public uint FramesRendered { get; private set; }

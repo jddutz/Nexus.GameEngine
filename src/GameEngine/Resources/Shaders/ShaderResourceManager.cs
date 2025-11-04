@@ -17,7 +17,7 @@ public class ShaderResourceManager(IGraphicsContext context)
     /// <summary>
     /// Creates a new shader resource from a definition by loading SPIR-V and creating shader modules.
     /// </summary>
-    protected override ShaderResource CreateResource(ShaderDefinition definition)
+    public override ShaderResource CreateResource(ShaderDefinition definition)
     {
         // Load SPIR-V from source
         var sourceData = definition.Source.Load();
@@ -45,7 +45,7 @@ public class ShaderResourceManager(IGraphicsContext context)
                 $"Failed to create shader modules for '{definition.Name}'");
         }
 
-        Log.Debug($"Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
+        // Log.Debug($"Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
 
         return new ShaderResource(vertShaderModule, fragShaderModule, definition);
     }
@@ -57,7 +57,7 @@ public class ShaderResourceManager(IGraphicsContext context)
     {
         if (spirvCode == null || spirvCode.Length == 0)
         {
-            Log.Error("Cannot create shader module from null or empty SPIR-V data");
+            // Log.Error("Cannot create shader module from null or empty SPIR-V data");
             return default;
         }
 
@@ -75,7 +75,7 @@ public class ShaderResourceManager(IGraphicsContext context)
 
             if (result != Result.Success)
             {
-                Log.Error($"Failed to create shader module: {result}");
+                // Log.Error($"Failed to create shader module: {result}");
                 return default;
             }
 
@@ -91,13 +91,13 @@ public class ShaderResourceManager(IGraphicsContext context)
         if (resource.VertexShader.Handle != 0)
         {
             context.VulkanApi.DestroyShaderModule(context.Device, resource.VertexShader, null);
-            Log.Debug($"Destroyed vertex shader module: {resource.Name} (Handle: {resource.VertexShader.Handle})");
+            // Log.Debug($"Destroyed vertex shader module: {resource.Name} (Handle: {resource.VertexShader.Handle})");
         }
 
         if (resource.FragmentShader.Handle != 0)
         {
             context.VulkanApi.DestroyShaderModule(context.Device, resource.FragmentShader, null);
-            Log.Debug($"Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
+            // Log.Debug($"Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
         }
     }
 }
