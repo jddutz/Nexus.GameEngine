@@ -6,6 +6,16 @@ using Microsoft.Extensions.Options;
 namespace Nexus.GameEngine.Graphics;
 
 /// <summary>
+/// Event args for batching statistics.
+/// </summary>
+public class BatchingStatisticsEventArgs : EventArgs
+{
+    public uint PassIndex { get; init; }
+    public string PassName { get; init; } = string.Empty;
+    public DefaultBatchStrategy.BatchingStatistics Statistics { get; init; }
+}
+
+/// <summary>
 /// Vulkan renderer implementation that orchestrates frame rendering.
 /// Manages image acquisition, command recording, and presentation.
 /// Uses ContentManager to get active cameras for rendering.
@@ -28,6 +38,13 @@ public unsafe class Renderer(
 
     public event EventHandler<RenderEventArgs>? BeforeRendering;
     public event EventHandler<RenderEventArgs>? AfterRendering;
+    public event EventHandler<BatchingStatisticsEventArgs>? BatchingStatisticsAvailable;
+    
+    /// <summary>
+    /// Gets or sets whether to collect and report batching statistics.
+    /// Disabled by default for performance. Enable for validation and debugging.
+    /// </summary>
+    public bool CollectBatchingStatistics { get; set; } = false;
 
     private static ICamera CreateAndActivateDefaultCamera(IComponentFactory factory, GraphicsSettings settings)
     {
@@ -269,6 +286,24 @@ public unsafe class Renderer(
 
                 // Record this render pass
                 RecordRenderPass(cmd, imageIndex, p, passClearValues, renderContext, passCommandSets[p]);
+                
+                // Analyze batching effectiveness if enabled
+                if (CollectBatchingStatistics && passCommandSets[p].Count > 0)
+                {
+                    var passConfig = RenderPasses.Configurations[p];
+                    var batchStrategy = passConfig.BatchStrategy as DefaultBatchStrategy;
+                    if (batchStrategy != null)
+                    {
+                        var stats = batchStrategy.AnalyzeBatching(passCommandSets[p]);
+                        
+                        BatchingStatisticsAvailable?.Invoke(this, new BatchingStatisticsEventArgs
+                        {
+                            PassIndex = p,
+                            PassName = passConfig.Name,
+                            Statistics = stats
+                        });
+                    }
+                }
             }
 
             // End command buffer

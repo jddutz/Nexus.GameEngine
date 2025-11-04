@@ -42,6 +42,9 @@ public partial class TexturedStressTest(
     private const int ElementSize = 50;
     private const int ElementSpacing = 60;
     
+    private DefaultBatchStrategy.BatchingStatistics? _latestStatistics;
+    private int _statisticsFrameCount = 0;
+    
     [Test("Stress test: 100 textured elements (batching validation)")]
     public readonly static TexturedStressTestTemplate StressTestInstance = new()
     {
@@ -140,6 +143,29 @@ public partial class TexturedStressTest(
         _totalDrawCommandsCollected = drawCommandCount;
         
         base.OnUpdate(deltaTime);
+    }
+    
+    protected override void OnDeactivate()
+    {
+        // Unsubscribe from events
+        renderer.BatchingStatisticsAvailable -= OnBatchingStatisticsAvailable;
+        renderer.CollectBatchingStatistics = false;
+        
+        base.OnDeactivate();
+    }
+    
+    /// <summary>
+    /// Event handler for batching statistics.
+    /// Captures the latest statistics for validation.
+    /// </summary>
+    private void OnBatchingStatisticsAvailable(object? sender, BatchingStatisticsEventArgs e)
+    {
+        // Only track UI pass statistics (where our elements render)
+        if (e.PassName == "UI")
+        {
+            _latestStatistics = e.Statistics;
+            _statisticsFrameCount++;
+        }
     }
     
     /// <summary>
