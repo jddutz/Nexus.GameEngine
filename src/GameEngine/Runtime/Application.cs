@@ -22,9 +22,6 @@ public class Application(IServiceProvider services) : IApplication
     {
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
-
-        // Log window events to understand initialization timing
-        Log.Debug("Window created");
         
         window.FramebufferResize += size =>
         {
@@ -42,14 +39,10 @@ public class Application(IServiceProvider services) : IApplication
             var contentManager = services.GetRequiredService<IContentManager>();
             var renderer = services.GetRequiredService<IRenderer>();
 
-            // Initialize ContentManager (creates default camera for zero-configuration rendering)
-            contentManager.Initialize();
-
             if (startupTemplate == null) return;
 
             // Load content through ContentManager
             // ContentManager automatically registers cameras found in the content tree
-            Log.Debug($"Loading startup template: {startupTemplate.Name ?? "null"}");
             var startupContent = contentManager.Load(startupTemplate);
 
             // Push window size constraints to root element if it's a UI element

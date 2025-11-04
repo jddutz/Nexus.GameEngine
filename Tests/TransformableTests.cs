@@ -14,7 +14,7 @@ public class TransformableTests
     private static Transformable CreateActivatedTransformable()
     {
         var transform = new Transformable();
-        transform.Activate(); // This makes property changes apply after UpdateAnimations
+        transform.Activate(); // This makes property changes apply after ApplyUpdates
         return transform;
     }
 

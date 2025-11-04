@@ -420,8 +420,3 @@ FodyWeavers.xsd
 *.msp
 
 .temp/*
-
-# Spec-Kit working directory
-.speckit/
-.specify/
-specs/

@@ -22,18 +22,21 @@ public partial class MouseBinding(
     /// The mouse button that triggers this binding.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private MouseButton _button = MouseButton.Left;
     
     /// <summary>
     /// The type of mouse event to listen for.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private MouseEventType _eventType = MouseEventType.ButtonDown;
     
     /// <summary>
     /// Optional modifier keys required for this binding.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private Key[] _modifierKeys = [];
 
     /// <summary>

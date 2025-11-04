@@ -1,4 +1,6 @@
-﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
+﻿using Nexus.GameEngine.Resources.Geometry.Definitions;
+
+namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with a linear gradient.
@@ -19,6 +21,7 @@ public partial class LinearGradientBackground(
     private DescriptorSet? _gradientDescriptorSet;
     
     [ComponentProperty]
+    [TemplateProperty]
     protected GradientDefinition _gradient = GradientDefinition.TwoColor(
         new Vector4D<float>(0, 0, 0, 1),
         new Vector4D<float>(1, 1, 1, 1));
@@ -27,6 +30,7 @@ public partial class LinearGradientBackground(
     /// Gradient rotation angle in radians. Can be animated.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected float _angle = 0f;
 
     public override PipelineHandle Pipeline =>
@@ -34,14 +38,13 @@ public partial class LinearGradientBackground(
 
     protected override void OnActivate()
     {
-        Log.Debug($"LinearGradientBackground.OnActivate() - IsValid:{IsValid}, IsLoaded:{IsLoaded}, Visible:{Visible}");
         base.OnActivate();
 
         // Validate gradient
         _gradient.Validate();
 
         // Create position-only full-screen quad geometry
-        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
 
         // Create UBO and descriptor set for gradient
         CreateGradientUBO(_gradient);
@@ -52,8 +55,6 @@ public partial class LinearGradientBackground(
     /// </summary>
     private void CreateGradientUBO(GradientDefinition gradient)
     {
-        
-        // Log gradient stops for debugging
         for (int i = 0; i < gradient.Stops.Length; i++)
         {
             var stop = gradient.Stops[i];
@@ -73,13 +74,13 @@ public partial class LinearGradientBackground(
         
         // Get or create descriptor set layout
         var shader = ShaderDefinitions.LinearGradient;
-        if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
+        if (shader.DescriptorSetLayouts == null || !shader.DescriptorSetLayouts.ContainsKey(0))
         {
             throw new InvalidOperationException(
-                $"Shader {shader.Name} does not define descriptor set layout bindings");
+                $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
         
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
+        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
         
         // Allocate descriptor set
         _gradientDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
@@ -131,7 +132,7 @@ public partial class LinearGradientBackground(
         
         if (_geometry != null)
         {
-            ResourceManager.Geometry.Release(GeometryDefinitions.UniformColorQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

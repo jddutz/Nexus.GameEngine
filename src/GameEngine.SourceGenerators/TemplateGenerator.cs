@@ -9,12 +9,15 @@ namespace GameEngine.SourceGenerators;
 
 /// <summary>
 /// Incremental source generator that creates Template records and OnLoad methods
-/// from ComponentProperty attributes on component classes.
+/// from ComponentProperty and TemplateProperty attributes on component classes.
 /// 
-/// For each component class with [ComponentProperty] fields, generates:
+/// For each component class with [ComponentProperty] or [TemplateProperty] fields, generates:
 /// 1. {ComponentName}Template record with properties matching the fields
 /// 2. OnLoad method override that assigns template properties to fields
 /// 3. Optional partial OnLoad hook for custom initialization logic
+/// 
+/// ComponentProperty: Full public property with deferred updates and animation support
+/// TemplateProperty: Template-only property, assigned once in OnLoad (no public API)
 /// </summary>
 [Generator]
 public class TemplateGenerator : IIncrementalGenerator
@@ -79,7 +82,7 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Gets ComponentProperty fields declared directly on this class (not inherited).
+    /// Gets ComponentProperty and TemplateProperty fields declared directly on this class (not inherited).
     /// </summary>
     private static List<PropertyInfo> GetComponentProperties(INamedTypeSymbol classSymbol)
     {
@@ -92,18 +95,30 @@ public class TemplateGenerator : IIncrementalGenerator
             if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, classSymbol)) 
                 continue;
 
-            var attr = field.GetAttributes()
-                .FirstOrDefault(a => a.AttributeClass?.Name == "ComponentPropertyAttribute");
+            // Only process fields with TemplateProperty attribute
+            var templateAttr = field.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "TemplatePropertyAttribute");
 
-            if (attr == null) continue;
+            if (templateAttr == null) continue;
 
             // Get the syntax node to access the initializer
             var syntax = field.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
 
+            // Get property name from TemplateProperty.Name if specified, otherwise derive from field name
+            string propertyName = GetPropertyNameFromField(field.Name);
+            if (templateAttr != null)
+            {
+                var nameArg = templateAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+                if (nameArg.Value.Value is string customName && !string.IsNullOrEmpty(customName))
+                {
+                    propertyName = customName;
+                }
+            }
+
             properties.Add(new PropertyInfo
             {
                 FieldName = field.Name,
-                PropertyName = GetPropertyNameFromField(field.Name),
+                PropertyName = propertyName,
                 Type = field.Type.ToDisplayString(),
                 DefaultValue = GetDefaultValueExpression(field, syntax)
             });
@@ -259,7 +274,7 @@ public class TemplateGenerator : IIncrementalGenerator
         // Generate template record as a separate top-level class
         sb.AppendLine($"/// <summary>");
         sb.AppendLine($"/// Auto-generated template for {info.ClassName} component.");
-        sb.AppendLine($"/// Properties correspond to [ComponentProperty] fields declared on this class.");
+        sb.AppendLine($"/// Properties correspond to [ComponentProperty] and [TemplateProperty] fields declared on this class.");
         sb.AppendLine($"/// Inherits from base class template to preserve property inheritance hierarchy.");
         sb.AppendLine($"/// </summary>");
         sb.AppendLine($"public record {info.ClassName}Template : {info.BaseTemplateType}");
@@ -360,7 +375,7 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Information about a ComponentProperty field.
+    /// Information about a ComponentProperty or TemplateProperty field.
     /// </summary>
     private class PropertyInfo
     {

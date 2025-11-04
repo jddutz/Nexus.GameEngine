@@ -1,3 +1,7 @@
+using Nexus.GameEngine.Resources.Geometry.Definitions;
+using Nexus.GameEngine.Resources.Textures;
+using Nexus.GameEngine.Resources.Textures.Definitions;
+
 namespace Nexus.GameEngine.GUI;
 
 /// <summary>
@@ -20,8 +24,35 @@ namespace Nexus.GameEngine.GUI;
 /// - Transforms from local geometry space to screen space
 /// - Combined with camera view-projection matrix in shader
 /// </summary>
-public partial class Element : Drawable, IUserInterfaceElement
+public partial class Element(IDescriptorManager descriptorManager) : Drawable, IUserInterfaceElement
 {
+    protected IDescriptorManager DescriptorManager { get; } = descriptorManager;
+
+    /// <summary>
+    /// Overrides UpdateLocalMatrix to account for Size and AnchorPoint.
+    /// Computes the position of the quad's center based on where the anchor point should be.
+    /// </summary>
+    protected override void UpdateLocalMatrix()
+    {
+        // Compute quad center position from anchor point
+        // Position is where the AnchorPoint is located in screen space
+        // We offset backwards to find the center of the quad
+        var centerX = Position.X - (AnchorPoint.X * Size.X * 0.5f * Scale.X);
+        var centerY = Position.Y - (AnchorPoint.Y * Size.Y * 0.5f * Scale.Y);
+        var centerZ = Position.Z;
+
+        // Scale: Geometry is 2x2 (±1), so scale by Size/2 to get pixel dimensions
+        // Then multiply by Scale for effects
+        var scaleX = Size.X * 0.5f * Scale.X;
+        var scaleY = Size.Y * 0.5f * Scale.Y;
+        var scaleZ = Scale.Z;
+
+        // Build transform: Scale then Translate (no rotation for basic UI)
+        // Store directly in the _localMatrix field from base class
+        _localMatrix = Matrix4X4.CreateScale(scaleX, scaleY, scaleZ)
+                     * Matrix4X4.CreateTranslation(centerX, centerY, centerZ);
+    }
+
     /// <summary>
     /// Anchor point in normalized element space (-1 to 1).
     /// Defines which point of the element aligns with Position in screen space.
@@ -29,13 +60,21 @@ public partial class Element : Drawable, IUserInterfaceElement
     /// Default: (-1, -1) for top-left alignment (standard UI behavior).
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector2D<float> _anchorPoint = new(-1, -1);
+
+    partial void OnAnchorPointChanged(Vector2D<float> oldValue)
+    {
+        // When AnchorPoint changes, regenerate the cached local matrix
+        UpdateLocalMatrix();
+    }
 
     /// <summary>
     /// Pixel dimensions of the element (width, height).
     /// Combined with Scale (inherited from Transformable) to determine final rendered size.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector2D<int> _size = new(0, 0);
 
     partial void OnSizeChanged(Vector2D<int> oldValue)
@@ -44,11 +83,20 @@ public partial class Element : Drawable, IUserInterfaceElement
         UpdateLocalMatrix();
     }
 
-    partial void OnAnchorPointChanged(Vector2D<float> oldValue)
-    {
-        // When AnchorPoint changes, regenerate the cached local matrix
-        UpdateLocalMatrix();
-    }
+    /// <summary>
+    /// UV rectangle for texture atlas/sprite sheet support.
+    /// MinUV = top-left corner of sprite in texture (default 0,0)
+    /// MaxUV = bottom-right corner of sprite in texture (default 1,1)
+    /// For full texture: MinUV=(0,0), MaxUV=(1,1)
+    /// For sprite in atlas: set to sub-rectangle coordinates
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private Vector2D<float> _minUV = new(0f, 0f);
+
+    [ComponentProperty]
+    [TemplateProperty]
+    private Vector2D<float> _maxUV = new(1f, 1f);
 
     /// <summary>
     /// Size constraints available to this element (set by parent or viewport).
@@ -120,85 +168,126 @@ public partial class Element : Drawable, IUserInterfaceElement
     }
 
     [ComponentProperty]
+    [TemplateProperty]
     protected int _zIndex = 0;
 
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector4D<float> _tintColor = Colors.White;
 
     /// <summary>
-    /// Overrides UpdateLocalMatrix to account for Size and AnchorPoint.
-    /// Computes the position of the quad's center based on where the anchor point should be.
+    /// Texture definition from template (private, not exposed).
+    /// Used to create TextureResource in OnActivate.
+    /// Cached for re-creation if SetTexture(TextureDefinition) is called.
+    /// Cleared when SetTexture(TextureResource) is called directly.
     /// </summary>
-    protected override void UpdateLocalMatrix()
-    {
-        // Compute quad center position from anchor point
-        // Position is where the AnchorPoint is located in screen space
-        // We offset backwards to find the center of the quad
-        var centerX = Position.X - (AnchorPoint.X * Size.X * 0.5f * Scale.X);
-        var centerY = Position.Y - (AnchorPoint.Y * Size.Y * 0.5f * Scale.Y);
-        var centerZ = Position.Z;
+    [TemplateProperty(Name = "Texture")]
+    private TextureDefinition? _textureDefinition = null;
 
-        // Scale: Geometry is 2x2 (±1), so scale by Size/2 to get pixel dimensions
-        // Then multiply by Scale for effects
-        var scaleX = Size.X * 0.5f * Scale.X;
-        var scaleY = Size.Y * 0.5f * Scale.Y;
-        var scaleZ = Scale.Z;
-
-        // Build transform: Scale then Translate (no rotation for basic UI)
-        // Store directly in the _localMatrix field from base class
-        _localMatrix = Matrix4X4.CreateScale(scaleX, scaleY, scaleZ)
-                     * Matrix4X4.CreateTranslation(centerX, centerY, centerZ);
-    }
-
-    protected virtual GeometryDefinition GetGeometryDefinition() => GeometryDefinitions.UniformColorQuad;
+    /// <summary>
+    /// Texture resource created from TextureDefinition.
+    /// Has ComponentProperty for runtime behavior but NOT TemplateProperty (texture set via _textureDefinition in template).
+    /// </summary>
+    [ComponentProperty]
+    private TextureResource? _texture;
 
     public override PipelineHandle Pipeline =>
         PipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
         
     protected GeometryResource? Geometry { get; set; }
+    protected DescriptorSet? TextureDescriptorSet { get; set; }
+
+    /// <summary>
+    /// Sets texture from a definition.
+    /// Caches the definition and creates the TextureResource via ResourceManager.
+    /// </summary>
+    public void SetTexture(TextureDefinition? definition)
+    {
+        if (definition == null)
+        {
+            _textureDefinition = null;
+            SetTexture((TextureResource?)null);
+            return;
+        }
+
+        if (ResourceManager == null) return;
+        
+        _textureDefinition = definition;  // Cache the definition
+        var resource = ResourceManager.Textures.GetOrCreate(definition);
+        SetTexture(resource);
+    }
+
+    /// <summary>
+    /// Sets texture resource directly.
+    /// Clears the cached definition since it's no longer relevant.
+    /// </summary>
+    public void SetTexture(TextureResource? resource)
+    {
+        _textureDefinition = null;  // Clear definition cache
+        _texture = resource;
+        
+        // Update descriptor set if already activated
+        if (IsActive() && TextureDescriptorSet.HasValue && _texture != null)
+        {
+            DescriptorManager.UpdateDescriptorSet(
+                TextureDescriptorSet.Value,
+                _texture.ImageView,
+                _texture.Sampler,
+                ImageLayout.ShaderReadOnlyOptimal,
+                binding: 0);
+        }
+    }
 
     protected override void OnActivate()
     {
         base.OnActivate();
 
-        Log.Debug($"=== Element.OnActivate() START ===");
-        Log.Debug($"  Position: {Position}");
-        Log.Debug($"  Size: {Size}");
-        Log.Debug($"  AnchorPoint: {AnchorPoint}");
-        Log.Debug($"  TintColor: R={TintColor.X:F3}, G={TintColor.Y:F3}, B={TintColor.Z:F3}, A={TintColor.W:F3}");
-        Log.Debug($"  WorldMatrix: {WorldMatrix}");
+        // Use shared TexturedQuad geometry (UVs provided via push constants)
+        Geometry = ResourceManager?.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
 
-        // Create geometry resource
-        Geometry = ResourceManager?.Geometry.GetOrCreate(GetGeometryDefinition());
-        Log.Debug($"  Geometry created: Handle={Geometry?.Buffer.Handle ?? 0}, VertexCount={Geometry?.VertexCount ?? 0}");
-
-        var bounds = GetBounds();
-        Log.Debug($"  Computed Bounds: ({bounds.Origin.X}, {bounds.Origin.Y}, {bounds.Size.X}, {bounds.Size.Y})");
-        
-        var pipeline = Pipeline;
-        Log.Debug($"  Pipeline: Handle={pipeline.Pipeline.Handle}, Layout={pipeline.Layout.Handle}");
-        Log.Debug($"=== Element.OnActivate() END ===");
-    }    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
-    {
-        Log.Debug($"=== Element.GetDrawCommands() START ===");
-        Log.Debug($"  Geometry: {(Geometry == null ? "NULL" : $"Handle={Geometry.Buffer.Handle}, VertexCount={Geometry.VertexCount}")}");
-        
-        if (Geometry == null)
+        // Convert texture definition to resource if provided, or use default uniform color texture
+        if (_textureDefinition != null && _texture == null)
         {
-            Log.Warning($"  Element.GetDrawCommands(): Geometry is null, yielding no commands");
-            yield break;
+            SetTexture(_textureDefinition);
+        }
+        else if (_texture == null)
+        {
+            // Default to UniformColor texture (1x1 white pixel) for elements without explicit textures
+            // This ensures all elements can use the same uber-shader pipeline
+            SetTexture(TextureDefinitions.UniformColor);
+        }
+
+        // Create descriptor set for texture (set=1)
+        var shader = ShaderDefinitions.UIElement;
+        if (shader.DescriptorSetLayouts != null && shader.DescriptorSetLayouts.TryGetValue(1, out var textureBindings))
+        {
+            // Create layout for set=1 (texture sampler)
+            var layout = DescriptorManager.CreateDescriptorSetLayout(textureBindings);
+            TextureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
+            if (TextureDescriptorSet.HasValue && _texture != null)
+            {
+                DescriptorManager.UpdateDescriptorSet(
+                    TextureDescriptorSet.Value,
+                    _texture.ImageView,
+                    _texture.Sampler,
+                    ImageLayout.ShaderReadOnlyOptimal,
+                    binding: 0);
+            }
         }
 
         var bounds = GetBounds();
-        Log.Debug($"  Position: {Position}, Size: {Size}, AnchorPoint: {AnchorPoint}");
-        Log.Debug($"  Expected pixel rect - TopLeft: ({bounds.Origin.X}, {bounds.Origin.Y}), BottomRight: ({bounds.Origin.X + bounds.Size.X}, {bounds.Origin.Y + bounds.Size.Y})");
-        Log.Debug($"  WorldMatrix: {WorldMatrix}");
-        Log.Debug($"  TintColor: R={TintColor.X:F3}, G={TintColor.Y:F3}, B={TintColor.Z:F3}, A={TintColor.W:F3}");
-        Log.Debug($"  ViewProjectionDescriptorSet.Handle: {context.ViewProjectionDescriptorSet.Handle}");
 
-        var pushConstants = UniformColorPushConstants.FromModelAndColor(WorldMatrix, TintColor);
-        Log.Debug($"  PushConstants created - Model: {pushConstants.Model}, Color: R={pushConstants.Color.X:F3}, G={pushConstants.Color.Y:F3}, B={pushConstants.Color.Z:F3}, A={pushConstants.Color.W:F3}");
+        var pipeline = Pipeline;
+    }
+    
+    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    {
+        if (Geometry == null) yield break;
 
+        var bounds = GetBounds();
+
+        var pushConstants = UIElementPushConstants.FromModelColorAndUV(WorldMatrix, TintColor, MinUV, MaxUV);
+        
         var drawCommand = new DrawCommand
         {
             RenderMask = RenderPasses.UI,
@@ -207,14 +296,12 @@ public partial class Element : Drawable, IUserInterfaceElement
             VertexCount = Geometry.VertexCount,
             InstanceCount = 1,
             RenderPriority = ZIndex,
-            // ViewProjection matrix bound via UBO from camera's descriptor set
-            DescriptorSet = context.ViewProjectionDescriptorSet,
-            // Push model matrix + color (80 bytes: 64 for matrix + 16 for color)
+            // For UIElement shader: bind texture descriptor set at set=1
+            // ViewProjection UBO is already bound at set=0 by camera system
+            DescriptorSet = TextureDescriptorSet ?? default,
+            // Push model matrix + color + UV rect (96 bytes: 64 for matrix + 16 for color + 16 for UV)
             PushConstants = pushConstants
         };
-        
-        Log.Debug($"  DrawCommand created: Pipeline={drawCommand.Pipeline.Pipeline.Handle}, VertexBuffer={drawCommand.VertexBuffer.Handle}, DescriptorSet={drawCommand.DescriptorSet.Handle}");
-        Log.Debug($"=== Element.GetDrawCommands() END (yielding 1 command) ===");
         
         yield return drawCommand;
     }
@@ -226,6 +313,9 @@ public partial class Element : Drawable, IUserInterfaceElement
             ResourceManager?.Geometry.Release(GeometryDefinitions.TexturedQuad);
             Geometry = null;
         }
+        
+        // Texture is managed by ResourceManager, no manual release needed
+        // Descriptor sets are freed automatically when the pool is reset
         
         base.OnDeactivate();
     }

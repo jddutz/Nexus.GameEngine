@@ -1,4 +1,6 @@
-﻿namespace Nexus.GameEngine.GUI.BackgroundLayers;
+﻿using Nexus.GameEngine.Resources.Geometry.Definitions;
+
+namespace Nexus.GameEngine.GUI.BackgroundLayers;
 
 /// <summary>
 /// Full-screen background with biaxial (4-corner) gradient.
@@ -22,15 +24,19 @@ public partial class BiaxialGradientBackground(
     /// Corner colors. Can be animated using ComponentProperty.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _topLeft = Colors.Black;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _topRight = Colors.Black;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _bottomLeft = Colors.Black;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _bottomRight = Colors.Black;
 
     public override PipelineHandle Pipeline =>
@@ -41,7 +47,7 @@ public partial class BiaxialGradientBackground(
         base.OnActivate();
 
         // Create position-only full-screen quad geometry
-        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.UniformColorQuad);
+        _geometry = ResourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
 
         // Create UBO and descriptor set for corner colors
         CreateCornerColorsUBO();
@@ -67,13 +73,13 @@ public partial class BiaxialGradientBackground(
         
         // Get or create descriptor set layout
         var shader = ShaderDefinitions.BiaxialGradient;
-        if (shader.DescriptorSetLayoutBindings == null || shader.DescriptorSetLayoutBindings.Length == 0)
+        if (shader.DescriptorSetLayouts == null || !shader.DescriptorSetLayouts.ContainsKey(0))
         {
             throw new InvalidOperationException(
-                $"Shader {shader.Name} does not define descriptor set layout bindings");
+                $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
         
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayoutBindings);
+        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
         
         // Allocate descriptor set
         _colorDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
@@ -158,7 +164,7 @@ public partial class BiaxialGradientBackground(
         
         if (_geometry != null)
         {
-            ResourceManager.Geometry.Release(GeometryDefinitions.UniformColorQuad);
+            ResourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

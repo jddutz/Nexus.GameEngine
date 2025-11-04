@@ -65,7 +65,7 @@ public unsafe class PipelineManager : IPipelineManager
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout);
+            return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name);
         }
         else
         {
@@ -84,7 +84,7 @@ public unsafe class PipelineManager : IPipelineManager
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout);
+            return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name);
         }
 
         // Build using definition's configuration
@@ -112,7 +112,7 @@ public unsafe class PipelineManager : IPipelineManager
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout);
+            return new PipelineHandle(cached.Handle, cached.Layout, descriptor.Name);
         }
 
         // Cache miss - create new pipeline
@@ -151,7 +151,7 @@ public unsafe class PipelineManager : IPipelineManager
         if (descriptor.GeometryShaderPath != null)
             TrackShaderDependency(descriptor.GeometryShaderPath, descriptor.Name);
 
-        return new PipelineHandle(pipeline, pipelineLayout);
+        return new PipelineHandle(pipeline, pipelineLayout, descriptor.Name);
     }
 
     /// <inheritdoc/>
@@ -597,21 +597,13 @@ public unsafe class PipelineManager : IPipelineManager
             
             var assembly = typeof(PipelineManager).Assembly;
             using var stream = assembly.GetManifestResourceStream(resourceName);
-            
-            if (stream == null)
-            {
-                Log.Error($"Could not find embedded resource: {resourceName} for shader: {shaderPath}");
-                return default;
-            }
+
+            if (stream == null) return default;
 
             var code = new byte[stream.Length];
             var bytesRead = stream.Read(code, 0, code.Length);
-            
-            if (bytesRead != code.Length)
-            {
-                Log.Warning($"Shader read incomplete: Read {bytesRead} of {code.Length} bytes");
-                return default;
-            }
+
+            if (bytesRead != code.Length) return default;
             
             fixed (byte* codePtr = code)
             {
@@ -624,12 +616,8 @@ public unsafe class PipelineManager : IPipelineManager
 
                 ShaderModule shaderModule;
                 var result = _vk.CreateShaderModule(_context.Device, &createInfo, null, &shaderModule);
-                
-                if (result != Result.Success)
-                {
-                    Log.Error($"Failed to create shader module for {shaderPath}: {result}");
-                    return default;
-                }
+
+                if (result != Result.Success) return default;
 
                 return shaderModule;
             }

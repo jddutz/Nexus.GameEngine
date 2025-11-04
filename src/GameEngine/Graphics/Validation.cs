@@ -343,18 +343,9 @@ public unsafe class Validation : IValidation
                     if (availableLayerNames.Contains(pattern))
                     {
                         selectedLayers.Add(pattern);
-                        Log.Debug($"Exact match found: {pattern}");
-                    }
-                    else
-                    {
-                        Log.Warning($"Requested layer '{pattern}' not available on this system");
                     }
                     continue;
                 }
-
-                // Apply regex pattern
-                try
-                {
                     var regex = new Regex(regexPattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
                     var matches = availableLayerNames.Where(name => regex.IsMatch(name)).ToList();
 
@@ -367,18 +358,7 @@ public unsafe class Validation : IValidation
                     {
                         Log.Warning($"Pattern '{pattern}' did not match any available layers");
                     }
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    Log.Error($"Regex pattern '{pattern}' timed out during matching");
-                }
-                catch (ArgumentException ex)
-                {
-                    Log.Exception(ex, $"Invalid regex pattern '{pattern}': {ex.Message}");
-                }
-            }
-
-            // Remove duplicates while preserving order
+        }            // Remove duplicates while preserving order
             var distinctLayers = selectedLayers.Distinct().ToArray();
 
             if (distinctLayers.Length > 0)

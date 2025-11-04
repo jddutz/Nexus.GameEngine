@@ -164,7 +164,7 @@ partial class TextElement
 
             _targetFontSize = value;
             // Note: Does NOT update _fontSize immediately
-            // Update happens in UpdateAnimations() during next frame
+            // Update happens in ApplyUpdates() during next frame
         }
     }
 
@@ -183,7 +183,7 @@ partial class TextElement
     }
 
     // Animation update called during component update
-    partial void UpdateAnimations(double deltaTime)
+    partial void ApplyUpdates(double deltaTime)
     {
         // FontSize: Instant update (Duration = 0)
         if (_targetFontSize != _fontSize)
@@ -305,7 +305,7 @@ Frame N: Property Set
 
 Frame N+1: Next Update
 ├── component.OnUpdate(deltaTime) called
-├── UpdateAnimations(deltaTime) called
+├── ApplyUpdates(deltaTime) called
 ├── Check: _targetWidth != _width → true
 ├── OnPropertyAnimationStarted("Width") fired
 ├── _width = _targetWidth (apply instantly)
@@ -326,14 +326,14 @@ Frame 0 (t=0.0s): Property Set
 
 Frame 1 (t=0.016s, deltaTime=0.016s):
 ├── component.OnUpdate(0.016) called
-├── UpdateAnimations(0.016) called
+├── ApplyUpdates(0.016) called
 ├── _fontSizeAnimation.Update(0.016) → interpolates to ~12.5f
 ├── _fontSize = 12.5f
 ├── NotifyPropertyChanged("FontSize")
 └── FontSize getter now returns 12.5f
 
 Frame 2 (t=0.032s, deltaTime=0.016s):
-├── UpdateAnimations(0.016)
+├── ApplyUpdates(0.016)
 ├── _fontSizeAnimation.Update(0.016) → interpolates to ~13.2f
 └── FontSize getter returns 13.2f
 
@@ -348,8 +348,8 @@ Frame 31 (t=0.5s, animation complete):
 
 **Key Behavior:**
 
-- **All property updates are deferred** - Changes only apply during `UpdateAnimations()`
-- **Duration = 0** means instant update (not immediate) - happens at next `UpdateAnimations()` call
+- **All property updates are deferred** - Changes only apply during `ApplyUpdates()`
+- **Duration = 0** means instant update (not immediate) - happens at next `ApplyUpdates()` call
 - **Duration > 0** means interpolated update over time
 - **PropertyChanged events** fire when value actually changes, not when setter is called
 - **Animation events** fire at start and completion of property changes
@@ -430,7 +430,7 @@ public class PropertyAnimation<T> where T : struct
 **Notes:**
 
 - Easing is built into the InterpolationMode (e.g., `LinearEaseIn`, `CubicEaseOut`)
-- Duration = 0: Property doesn't use `PropertyAnimation<T>`, updated directly in `UpdateAnimations()`
+- Duration = 0: Property doesn't use `PropertyAnimation<T>`, updated directly in `ApplyUpdates()`
 - Duration > 0: Property uses `PropertyAnimation<T>` for interpolation over time
 - Interpolation strategy is chosen based on property type and InterpolationMode
 
@@ -438,7 +438,7 @@ public class PropertyAnimation<T> where T : struct
 
 ```csharp
 // Property WITHOUT [Animation] attribute - no PropertyAnimation instance
-partial void UpdateAnimations(double deltaTime)
+partial void ApplyUpdates(double deltaTime)
 {
     if (_targetWidth != _width)
     {
@@ -450,7 +450,7 @@ partial void UpdateAnimations(double deltaTime)
 }
 
 // Property WITH [Animation(Duration > 0)] - uses PropertyAnimation
-partial void UpdateAnimations(double deltaTime)
+partial void ApplyUpdates(double deltaTime)
 {
     if (_colorAnimation.IsAnimating)
     {
@@ -714,7 +714,7 @@ public int CurrentLevel { get; set; }
 component.CurrentLevel = 5;
 Console.WriteLine(component.CurrentLevel);  // Still returns old value!
 
-// Value updates during next UpdateAnimations() call
+// Value updates during next ApplyUpdates() call
 await NextFrame();
 Console.WriteLine(component.CurrentLevel);  // Now returns 5
 ```
@@ -732,12 +732,12 @@ protected override void OnConfigure(IComponentTemplate template)
         FontSize = t.FontSize;
         Color = t.Color;
 
-        // Values applied when Configure() calls UpdateAnimations(0) after OnConfigure()
+        // Values applied when Configure() calls ApplyUpdates(0) after OnConfigure()
     }
 }
 ```
 
-After `OnConfigure()` returns, `Configure()` calls `UpdateAnimations(0)` to apply all initial property values before the component is activated.
+After `OnConfigure()` returns, `Configure()` calls `ApplyUpdates(0)` to apply all initial property values before the component is activated.
 
 ### **Inheritance Hierarchies**
 
@@ -773,7 +773,7 @@ textElement.FontSize = 36f;
 
 ### **Component Update Integration**
 
-The generated `UpdateAnimations()` method is called during the component lifecycle:
+The generated `ApplyUpdates()` method is called during the component lifecycle:
 
 ```csharp
 public abstract class RuntimeComponent : ComponentBase, IRuntimeComponent
@@ -784,7 +784,7 @@ public abstract class RuntimeComponent : ComponentBase, IRuntimeComponent
         OnConfigure(template);
 
         // Apply any pending property changes after configuration
-        UpdateAnimations(0);
+        ApplyUpdates(0);
     }
 
     // Override this in derived classes for custom configuration
@@ -797,7 +797,7 @@ public abstract class RuntimeComponent : ComponentBase, IRuntimeComponent
     protected sealed override void OnUpdate(double deltaTime)
     {
         // Apply property animations/updates before update logic
-        UpdateAnimations(deltaTime);
+        ApplyUpdates(deltaTime);
 
         // Allow derived classes to handle updates
         OnComponentUpdate(deltaTime);
@@ -813,7 +813,7 @@ public abstract class RuntimeComponent : ComponentBase, IRuntimeComponent
     }
 
     // Generated by source generator in derived classes
-    partial void UpdateAnimations(double deltaTime);
+    partial void ApplyUpdates(double deltaTime);
 
     // Animation lifecycle events
     public event EventHandler<PropertyAnimationEventArgs>? AnimationStarted;
@@ -843,8 +843,8 @@ public class PropertyAnimationEventArgs : EventArgs
 
 **Key Points:**
 
-- `Configure()` is sealed and calls `UpdateAnimations(0)` after `OnConfigure()` to apply initial property values
-- `OnUpdate()` is sealed and calls `UpdateAnimations(deltaTime)` before `OnComponentUpdate()`
+- `Configure()` is sealed and calls `ApplyUpdates(0)` after `OnConfigure()` to apply initial property values
+- `OnUpdate()` is sealed and calls `ApplyUpdates(deltaTime)` before `OnComponentUpdate()`
 - Derived classes override `OnConfigure()` and `OnComponentUpdate()` instead
 - Animation events are raised at start and end of property animations
 - Virtual method `OnPropertyAnimationStarted/Ended()` can be overridden for complex scenarios
@@ -1106,7 +1106,7 @@ partial class TextElement
     }
 
     // Animation update method
-    partial void UpdateAnimations(double deltaTime)
+    partial void ApplyUpdates(double deltaTime)
     {
         if (_colorAnimation.IsAnimating)
         {

@@ -12,6 +12,7 @@ public partial class InputMap : RuntimeComponent
     /// Description of when this input mapping should be active.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private string _description = string.Empty;
 
     /// <summary>
@@ -19,12 +20,14 @@ public partial class InputMap : RuntimeComponent
     /// Higher values have higher priority.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private int _priority = 0;
 
     /// <summary>
     /// Whether this input mapping should be enabled by default.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private bool _enabledByDefault = true;
 
     /// <summary>
@@ -33,8 +36,6 @@ public partial class InputMap : RuntimeComponent
     /// </summary>
     protected override void OnActivate()
     {
-        Log.Debug($"InputMap '{Name}' activated with {Children.Count()} child bindings");
-
         // Child components are automatically activated by the base class
         // Each input binding will handle its own event subscription
     }
@@ -45,8 +46,6 @@ public partial class InputMap : RuntimeComponent
     /// </summary>
     protected override void OnDeactivate()
     {
-        Log.Debug("InputMap '{InputMapName}' deactivated", Name);
-
         // Child components are automatically deactivated by the base class
         // Each input binding will handle its own event unsubscription
     }

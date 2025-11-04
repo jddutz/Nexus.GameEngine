@@ -21,30 +21,35 @@ public partial class GamepadBinding(
     /// The gamepad button that triggers this binding.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private ButtonName _button = ButtonName.A;
 
     /// <summary>
     /// The type of gamepad event to listen for.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private GamepadEventType _eventType = GamepadEventType.ButtonDown;
 
     /// <summary>
     /// For analog inputs, the threshold value to trigger the action.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private float _threshold = 0.5f;
 
     /// <summary>
     /// For thumbstick inputs, the specific thumbstick to monitor.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private ThumbstickType _thumbstickType = ThumbstickType.Left;
 
     /// <summary>
     /// For trigger inputs, the specific trigger to monitor.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private TriggerType _triggerType = TriggerType.Left;
 
     // Property change callback for Threshold to apply clamping

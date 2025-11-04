@@ -4,8 +4,8 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// A layout component that arranges its children vertically.
 /// Child components are positioned one above the other with configurable spacing and alignment.
 /// </summary>
-public partial class VerticalLayout
-    : Layout
+public partial class VerticalLayout(IDescriptorManager descriptorManager)
+    : Layout(descriptorManager)
 {
     /// <summary>
     /// Horizontal alignment of child components within the layout.
