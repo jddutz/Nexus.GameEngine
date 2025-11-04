@@ -53,16 +53,11 @@ public class ContentManager(
     /// <inheritdoc/>
     public IComponent? Load(Template template, bool activate = true)
     {
-        if (string.IsNullOrEmpty(template.Name))
-        {
-            Log.Warning("Cannot load content with empty template name");
-            return null;
-        }
+        if (string.IsNullOrEmpty(template.Name)) return null;
 
         // Try to get existing content first
         if (content.TryGetValue(template.Name, out var existingComponent))
         {
-            Log.Debug($"Returning existing content '{template.Name}'");
             return existingComponent;
         }
 
@@ -81,19 +76,15 @@ public class ContentManager(
                 }
 
                 // Note: Camera list is refreshed automatically during OnUpdate()
-
-                Log.Info($"Loaded content '{template.Name}'");
                 return created;
             }
             else
             {
-                Log.Error($"Failed to create content from template '{template.Name}' - CreateInstance returned null");
                 return null;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log.Exception(ex, $"Exception while creating content from template '{template.Name}'");
             return null;
         }
     }
@@ -203,7 +194,6 @@ public class ContentManager(
         var componentType = template.ComponentType;
         if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
         {
-            Log.Warning($"Template {template.GetType().Name} has invalid ComponentType: {componentType?.Name ?? "null"}");
             return null;
         }
 
@@ -230,7 +220,7 @@ public class ContentManager(
             if (component is IRuntimeComponent runtimeComponent)
             {
                 runtimeComponent.Activate();
-                Log.Debug($"Activated component {component.Name ?? "unnamed"} ({component.GetType().Name})");
+
                 // RuntimeComponent.Activate() recursively activates IRuntimeComponent children
                 // So we don't need to traverse them manually - continue to next component
                 continue;
@@ -247,128 +237,106 @@ public class ContentManager(
 
     public void OnUpdate(double deltaTime)
     {
-        try
+        var unloadedKeys = new List<string>();
+        var componentStack = new Stack<IComponent>();
+        
+        // FIRST PASS: Apply deferred updates to ALL components in tree at frame boundary
+        // This ensures temporal consistency - all state changes happen before any Update() logic runs
+        foreach (var kvp in content)
         {
-            var unloadedKeys = new List<string>();
-            var componentStack = new Stack<IComponent>();
+            var component = kvp.Value;
             
-            // FIRST PASS: Apply deferred updates to ALL components in tree at frame boundary
-            // This ensures temporal consistency - all state changes happen before any Update() logic runs
-            foreach (var kvp in content)
+            // Remove unloaded components from the dictionary
+            if (!component.IsLoaded)
             {
-                var component = kvp.Value;
-                
-                // Remove unloaded components from the dictionary
-                if (!component.IsLoaded)
-                {
-                    unloadedKeys.Add(kvp.Key);
-                    continue;
-                }
-                
-                // Only traverse from roots
-                if (component.Parent == null)
-                {
-                    componentStack.Push(component);
-                }
+                unloadedKeys.Add(kvp.Key);
+                continue;
             }
             
-            // Traverse entire tree applying updates
-            while (componentStack.Count > 0)
+            // Only traverse from roots
+            if (component.Parent == null)
             {
-                var component = componentStack.Pop();
-                
-                // Apply updates to all Entity-based components
-                if (component is Entity entity)
-                {
-                    entity.ApplyUpdates(deltaTime);
-                }
-                
-                // Traverse all children
-                foreach (var child in component.Children)
-                {
-                    componentStack.Push(child);
-                }
-            }
-            
-            // SECOND PASS: Update all active RuntimeComponents and rebuild visible drawables and cameras
-            // Follow same pattern as Renderer: traverse tree, update IRuntimeComponents
-            componentStack.Clear();
-            _visibleDrawables.Clear();  // Clear each frame - will be repopulated during traversal
-            _cameras.Clear();  // Also clear cameras - will be repopulated during traversal
-            
-            foreach (var kvp in content)
-            {
-                var component = kvp.Value;
-                if (component.IsLoaded && component.Parent == null)
-                {
-                    componentStack.Push(component);
-                }
-            }
-            
-            // Traverse component tree, update components, collect visible drawables and active cameras
-            while (componentStack.Count > 0)
-            {
-                var component = componentStack.Pop();
-                
-                // Collect visible drawables as we traverse
-                if (component is IDrawable drawable && drawable.IsVisible())
-                {
-                    _visibleDrawables.Add(drawable);
-                    Log.Debug($"  Added visible drawable: {component.GetType().Name}");
-                }
-                
-                // Collect active cameras as we traverse
-                if (component is ICamera camera)
-                {
-                    if (camera is IRuntimeComponent cameraRuntime && cameraRuntime.IsActive())
-                    {
-                        _cameras.Add(camera);
-                    }
-                }
-                
-                // Push children onto stack first (so we collect drawables from entire tree)
-                foreach (var child in component.Children)
-                {
-                    componentStack.Push(child);
-                }
-                
-                // Update if it's a RuntimeComponent and active
-                // Note: We still traverse children above to collect drawables from entire tree
-                if (component is IRuntimeComponent runtimeComponent)
-                {
-                    if (runtimeComponent.IsActive())
-                    {
-                        runtimeComponent.Update(deltaTime);
-                    }
-                }
-            }
-            
-            // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
-            
-            Log.Debug($"Total visible drawables after update: {_visibleDrawables.Count}");
-            Log.Debug($"Total active cameras after update: {_cameras.Count}");
-            
-            // Clean up unloaded components
-            foreach (var key in unloadedKeys)
-            {
-                Log.Debug($"Removing unloaded component {key} from content manager");
-                content.Remove(key);
+                componentStack.Push(component);
             }
         }
-        catch (Exception ex)
+        
+        // Traverse entire tree applying updates
+        while (componentStack.Count > 0)
         {
-            Log.Exception(ex, "Exception occurred during Update loop");
+            var component = componentStack.Pop();
+            
+            // Apply updates to all Entity-based components
+            if (component is Entity entity)
+            {
+                entity.ApplyUpdates(deltaTime);
+            }
+            
+            // Traverse all children
+            foreach (var child in component.Children)
+            {
+                componentStack.Push(child);
+            }
         }
-    }
-
-    /// <summary>
-    /// Initializes the ContentManager and creates the default camera.
-    /// Should be called during application startup before any content is loaded.
-    /// </summary>
-    public void Initialize()
-    {
-        // ContentManager initialization - camera discovery happens during Update()
-        Log.Debug("ContentManager initialized");
+        
+        // SECOND PASS: Update all active RuntimeComponents and rebuild visible drawables and cameras
+        // Follow same pattern as Renderer: traverse tree, update IRuntimeComponents
+        componentStack.Clear();
+        _visibleDrawables.Clear();  // Clear each frame - will be repopulated during traversal
+        _cameras.Clear();  // Also clear cameras - will be repopulated during traversal
+        
+        foreach (var kvp in content)
+        {
+            var component = kvp.Value;
+            if (component.IsLoaded && component.Parent == null)
+            {
+                componentStack.Push(component);
+            }
+        }
+        
+        // Traverse component tree, update components, collect visible drawables and active cameras
+        while (componentStack.Count > 0)
+        {
+            var component = componentStack.Pop();
+            
+            // Collect visible drawables as we traverse
+            if (component is IDrawable drawable && drawable.IsVisible())
+            {
+                _visibleDrawables.Add(drawable);
+            }
+            
+            // Collect active cameras as we traverse
+            if (component is ICamera camera)
+            {
+                if (camera is IRuntimeComponent cameraRuntime && cameraRuntime.IsActive())
+                {
+                    _cameras.Add(camera);
+                }
+            }
+            
+            // Push children onto stack first (so we collect drawables from entire tree)
+            foreach (var child in component.Children)
+            {
+                componentStack.Push(child);
+            }
+            
+            // Update if it's a RuntimeComponent and active
+            // Note: We still traverse children above to collect drawables from entire tree
+            if (component is IRuntimeComponent runtimeComponent)
+            {
+                if (runtimeComponent.IsActive())
+                {
+                    runtimeComponent.Update(deltaTime);
+                }
+            }
+        }
+        
+        // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
+        
+        // Clean up unloaded components
+        foreach (var key in unloadedKeys)
+        {
+            content.Remove(key);
+        }
     }
 
     /// <summary>
@@ -413,8 +381,6 @@ public class ContentManager(
         }
 
         // Note: _cameras is a SortedSet, so cameras are automatically sorted by RenderPriority
-
-        Log.Debug($"Refreshed camera list: {_cameras.Count} active cameras found");
     }
 
     /// <inheritdoc/>

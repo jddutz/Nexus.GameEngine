@@ -107,12 +107,6 @@ public interface IContentManager : IDisposable
     IEnumerable<IDrawable> VisibleDrawables { get; }
 
     /// <summary>
-    /// Initializes the ContentManager and creates the default camera.
-    /// Should be called during application startup before any content is loaded.
-    /// </summary>
-    void Initialize();
-
-    /// <summary>
     /// Refreshes the camera list by walking the content tree and finding all active ICamera instances.
     /// Cameras are automatically sorted by RenderPriority (ascending).
     /// Called automatically during Load() and can be called manually after adding/removing cameras.

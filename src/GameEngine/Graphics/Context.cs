@@ -265,7 +265,6 @@ public unsafe class Context : IGraphicsContext
         var devices = stackalloc PhysicalDevice[(int)deviceCount];
         result = VulkanApi.EnumeratePhysicalDevices(Instance, &deviceCount, devices);
 
-        // Log all available devices
         for (uint i = 0; i < deviceCount; i++)
         {
             PhysicalDeviceProperties props;

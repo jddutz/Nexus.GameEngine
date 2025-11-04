@@ -16,5 +16,12 @@ namespace Nexus.GameEngine.Components;
 /// //   component.SetFontSize(24f);
 /// </example>
 [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
-public sealed class ComponentPropertyAttribute : Attribute { }
+public sealed class ComponentPropertyAttribute : Attribute
+{
+    /// <summary>
+    /// Optional custom name for the generated property.
+    /// If not specified, the property name is derived from the field name (e.g., _fontSize → FontSize).
+    /// </summary>
+    public string? Name { get; set; }
+}
 

@@ -28,12 +28,8 @@ public abstract partial class Drawable : Transformable, IDrawable
     /// Source generator will create: public bool Visible { get; } and SetVisible() method.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     protected bool _visible = true;
-
-    partial void OnVisibleChanged(bool oldValue)
-    {
-        Log.Debug("IsVisible changed");
-    }
 
     /// <summary>
     /// Returns whether this component should be rendered (combines Enabled and Visible states).

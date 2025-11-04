@@ -31,6 +31,7 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
     /// Optional filter pattern for test names. If provided, only tests with names containing this string (case-insensitive) will be executed.
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private string? _testFilter;
 
     protected override void OnActivate()

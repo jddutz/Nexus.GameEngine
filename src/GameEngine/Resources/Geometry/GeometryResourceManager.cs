@@ -14,10 +14,8 @@ public class GeometryResourceManager(IBufferManager bufferManager)
     }
     
     /// <inheritdoc />
-    protected override GeometryResource CreateResource(GeometryDefinition definition)
+    public override GeometryResource CreateResource(GeometryDefinition definition)
     {
-        Log.Debug($"Loading geometry data from source: {definition.Name}");
-        
         // Load vertex data from source
         var sourceData = definition.Source.Load();
         
@@ -31,14 +29,13 @@ public class GeometryResourceManager(IBufferManager bufferManager)
         {
             throw new InvalidOperationException($"Geometry source returned zero vertex count for '{definition.Name}'");
         }
-        
+
         if (sourceData.Stride == 0)
         {
             throw new InvalidOperationException($"Geometry source returned zero stride for '{definition.Name}'");
         }
         
         // Create Vulkan vertex buffer
-        Log.Debug($"Creating vertex buffer: {definition.Name}, VertexCount={sourceData.VertexCount}, Stride={sourceData.Stride}, Size={sourceData.VertexData.Length} bytes");
         
         var (buffer, memory) = bufferManager.CreateVertexBuffer(sourceData.VertexData);
         
@@ -53,7 +50,6 @@ public class GeometryResourceManager(IBufferManager bufferManager)
     /// <inheritdoc />
     protected override void DestroyResource(GeometryResource resource)
     {
-        Log.Debug($"Destroying geometry resource: {resource.Name}");
         bufferManager.DestroyBuffer(resource.Buffer, resource.Memory);
     }
 }

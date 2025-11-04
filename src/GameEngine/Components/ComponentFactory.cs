@@ -75,55 +75,25 @@ public class ComponentFactory(
     /// <inheritdoc/>
     public IComponent? CreateInstance(Template template)
     {
-        if (template == null)
-        {
-            Log.Debug("CreateInstance called with null template");
-            return null;
-        }
+        if (template == null) return null;
 
         // Get the component type from the template's ComponentType property
         var componentType = template.ComponentType;
 
-        Log.Debug($"Template component type: {componentType?.Name ?? "null"}");
-
         // Type-safety: Ensure the type implements IComponent
-        if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
-        {
-            Log.Debug($"Component type is null or doesn't implement IComponent (template: {template.GetType().Name})");
-            return null;
-        }
+        if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType)) return null;
 
         // Check if the type can be instantiated
-        if (componentType.IsAbstract)
-        {
-            Log.Warning($"Cannot create instance of abstract type: {componentType.Name}. Use a concrete implementation instead.");
-            return null;
-        }
+        if (componentType.IsAbstract) return null;
 
-        if (componentType.IsInterface)
-        {
-            Log.Warning($"Cannot create instance of interface type: {componentType.Name}. Use a concrete implementation instead.");
-            return null;
-        }
+        if (componentType.IsInterface) return null;
 
-        if (componentType.IsGenericTypeDefinition)
-        {
-            Log.Warning($"Cannot create instance of generic type definition: {componentType.Name}. Specify concrete type arguments.");
-            return null;
-        }
+        if (componentType.IsGenericTypeDefinition) return null;
 
-        if (componentType.IsSealed && componentType.IsAbstract) // static class
-        {
-            Log.Warning($"Cannot create instance of static class: {componentType.Name}");
-            return null;
-        }
-
-        Log.Debug($"Creating {template.Name ?? "unnamed"} component ({componentType.Name})");
+        if (componentType.IsSealed && componentType.IsAbstract) return null;
 
         // Create and configure the component
         var result = Create(componentType, template);
-
-        Log.Debug($"Component creation result: {(result != null ? "SUCCESS" : "FAILED")}");
 
         return result;
     }

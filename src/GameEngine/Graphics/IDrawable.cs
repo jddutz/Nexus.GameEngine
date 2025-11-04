@@ -8,7 +8,7 @@ public interface IDrawable : IRuntimeComponent
     /// <summary>
     /// Gets whether this drawable component should be rendered.
     /// The renderer will skip calling GetDrawCommands() if this is false.
-    /// Should be implemented as a [ComponentProperty] for deferred updates and animation support.
+    /// Should be implemented as a [TemplateProperty] for deferred updates and animation support.
     /// </summary>
     bool IsVisible();
 

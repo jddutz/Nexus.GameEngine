@@ -29,6 +29,18 @@ public interface IRenderer
     /// Includes the swapchain image index that was rendered.
     /// </summary>
     event EventHandler<RenderEventArgs>? AfterRendering;
+    
+    /// <summary>
+    /// Event fired when batching statistics are collected (only if CollectBatchingStatistics is enabled).
+    /// Provides information about batching effectiveness for validation and debugging.
+    /// </summary>
+    event EventHandler<BatchingStatisticsEventArgs>? BatchingStatisticsAvailable;
+    
+    /// <summary>
+    /// Gets or sets whether to collect and report batching statistics.
+    /// Disabled by default for performance. Enable for validation and debugging.
+    /// </summary>
+    bool CollectBatchingStatistics { get; set; }
 
     /// <summary>
     /// Handles window render events. Walks the component tree.

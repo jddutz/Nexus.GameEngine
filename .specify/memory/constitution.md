@@ -60,7 +60,7 @@ Properties that require animation or deferred updates MUST use the `[ComponentPr
 
 - Mark properties with `[ComponentProperty]` for automatic source generation
 - Generated properties support:
-  - Deferred updates (changes apply during `UpdateAnimations()` call)
+  - Deferred updates (changes apply during `ApplyUpdates()` call)
   - Optional interpolation over time (Duration and InterpolationMode parameters)
   - PropertyChanged notifications
   - Animation lifecycle events (AnimationStarted, AnimationEnded)

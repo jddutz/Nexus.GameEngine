@@ -26,35 +26,44 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
         _graphicsContext = graphicsContext;
     }
 
-    // Template is auto-generated from [ComponentProperty] fields below
+    // Template is auto-generated from [TemplateProperty] fields below
 
     // Animated properties for smooth camera movements
     [ComponentProperty]
+    [TemplateProperty]
     private float _width = 10f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _height = 10f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _nearPlane = -1000f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private float _farPlane = 1000f;
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector3D<float> _position = Vector3D<float>.Zero;
 
     // Viewport-related properties (ICamera interface)
     [ComponentProperty]
+    [TemplateProperty]
     private Rectangle<float> _screenRegion = new(0, 0, 1, 1);
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector4D<float> _clearColor = new(0, 0, 0, 1);
 
     [ComponentProperty]
+    [TemplateProperty]
     private int _renderPriority = 0;
 
     [ComponentProperty]
+    [TemplateProperty]
     private uint _renderPassMask = RenderPasses.All;
 
     private bool _matricesDirty = true;
@@ -288,7 +297,6 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
         UpdateViewProjectionUBO();
 
         _uboInitialized = true;
-        Log.Info($"OrthoCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
     }
 
     private unsafe void UpdateViewProjectionUBO()
@@ -308,17 +316,10 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
 
         _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
         _uboInitialized = false;
-
-        Log.Info("OrthoCamera: Cleaned up ViewProjection UBO");
     }
 
     public DescriptorSet GetViewProjectionDescriptorSet()
     {
-        if (!_uboInitialized)
-        {
-            Log.Warning("OrthoCamera: GetViewProjectionDescriptorSet called before UBO initialization");
-            return default;
-        }
-        return _viewProjectionDescriptorSet;
+        return _uboInitialized ? _viewProjectionDescriptorSet : default;
     }
 }

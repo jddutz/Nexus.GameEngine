@@ -7,6 +7,7 @@ public partial class TestComponent : RuntimeComponent, ITestComponent
     public virtual Template[] Templates => [new()];
 
     [ComponentProperty]
+    [TemplateProperty]
     public int _frameCount = 1;
     public int Updates { get; private set; } = 0;
 

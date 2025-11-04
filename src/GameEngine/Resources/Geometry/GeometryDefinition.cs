@@ -10,7 +10,7 @@ public record GeometryDefinition
     /// Unique name identifying this geometry definition.
     /// Used for cache key generation and logging.
     /// </summary>
-    public required string Name { get; init; }
+    public string Name { get; init; } = string.Empty;
     
     /// <summary>
     /// The source that knows how to generate or load this geometry's vertex data.

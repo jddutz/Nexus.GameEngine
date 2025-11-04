@@ -30,17 +30,13 @@ public class BuildIntegrationService(
 
         try
         {
-            Log.Info($"Starting asset processing for platform: {request.TargetPlatform}, configuration: {request.Configuration}");
-
             // Discover assets to process
             var assetFiles = DiscoverAssets(request);
-            Log.Info("Found {assetFiles.Count} assets to process");
 
             if (assetFiles.Count == 0)
             {
                 result.Success = true;
                 result.EndTime = DateTime.UtcNow;
-                Log.Info("No assets to process");
                 return result;
             }
 
@@ -50,13 +46,12 @@ public class BuildIntegrationService(
             // Check which assets need processing
             var contextsToProcess = FilterAssetsNeedingProcessing(contexts, request);
             var skipped = contexts.Count - contextsToProcess.Count;
-            Log.Info("Processing {contextsToProcess.Count} assets (skipping {skipped} up-to-date assets)");
 
             if (contextsToProcess.Count == 0)
             {
                 result.Success = true;
                 result.EndTime = DateTime.UtcNow;
-                Log.Info("All assets are up-to-date");
+                
                 return result;
             }
 
@@ -86,8 +81,6 @@ public class BuildIntegrationService(
             result.Success = result.FailedAssets == 0;
             result.EndTime = DateTime.UtcNow;
 
-            Log.Info($"Asset processing completed. Success: {result.SuccessfulAssets}/{result.ProcessedAssets}, Errors: {result.FailedAssets}");
-
             // Generate build manifest
             if (result.Success && request.GenerateManifest)
             {
@@ -96,7 +89,6 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Asset processing failed");
             result.Success = false;
             result.Errors.Add($"Build failed: {ex.Message}");
             result.EndTime = DateTime.UtcNow;
@@ -122,8 +114,6 @@ public class BuildIntegrationService(
 
         try
         {
-            Log.Info($"Cleaning assets for platform: {request.TargetPlatform}, configuration: {request.Configuration}");
-
             var outputDir = GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration);
 
             if (Directory.Exists(outputDir))
@@ -137,18 +127,11 @@ public class BuildIntegrationService(
                     foreach (var file in files)
                     {
                         File.Delete(file);
-                        Log.Debug($"Deleted: {file}");
                     }
                 });
 
                 // Remove empty directories
                 RemoveEmptyDirectories(outputDir);
-
-                Log.Info($"Cleaned {result.DeletedFiles} files from {outputDir}");
-            }
-            else
-            {
-                Log.Info($"Output directory does not exist: {outputDir}");
             }
 
             result.Success = true;
@@ -156,7 +139,6 @@ public class BuildIntegrationService(
         }
         catch (Exception ex)
         {
-            Log.Exception(ex, "Asset cleaning failed");
             result.Success = false;
             result.ErrorMessage = ex.Message;
             result.EndTime = DateTime.UtcNow;
@@ -171,11 +153,7 @@ public class BuildIntegrationService(
 
         foreach (var inputDir in request.InputDirectories)
         {
-            if (!Directory.Exists(inputDir))
-            {
-                Log.Warning($"Input directory does not exist: {inputDir}");
-                continue;
-            }
+            if (!Directory.Exists(inputDir)) continue;
 
             // Use include patterns or default to all files
             var patterns = request.IncludePatterns.Any() ? request.IncludePatterns.ToArray() : ["*.*"];
@@ -206,11 +184,7 @@ public class BuildIntegrationService(
         foreach (var assetFile in assetFiles)
         {
             var processors = _processorManager.GetProcessorsForAsset(assetFile, request.TargetPlatform);
-            if (!processors.Any())
-            {
-                Log.Debug($"No processor found for asset: {assetFile}");
-                continue;
-            }
+            if (!processors.Any()) continue;
 
             var outputDir = GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration);
             var relativePath = Path.GetRelativePath(request.InputDirectories.First(), assetFile);
@@ -282,9 +256,8 @@ public class BuildIntegrationService(
 
             return false;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log.Exception(ex, $"Error checking if asset needs processing: {context.InputPath}");
             return true; // Process on error to be safe
         }
     }
@@ -296,59 +269,42 @@ public class BuildIntegrationService(
 
     private void RemoveEmptyDirectories(string directory)
     {
-        try
+        var subdirectories = Directory.GetDirectories(directory);
+        foreach (var subdirectory in subdirectories)
         {
-            var subdirectories = Directory.GetDirectories(directory);
-            foreach (var subdirectory in subdirectories)
-            {
-                RemoveEmptyDirectories(subdirectory);
-            }
-
-            if (!Directory.EnumerateFileSystemEntries(directory).Any())
-            {
-                Directory.Delete(directory);
-                Log.Debug($"Removed empty directory: {directory}");
-            }
+            RemoveEmptyDirectories(subdirectory);
         }
-        catch (Exception ex)
+
+        if (!Directory.EnumerateFileSystemEntries(directory).Any())
         {
-            Log.Exception(ex, $"Failed to remove empty directory: {directory}");
+            Directory.Delete(directory);
         }
     }
 
     private async Task GenerateBuildManifestAsync(BuildResult result, BuildRequest request)
     {
-        try
+        var manifestPath = Path.Combine(
+            GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration),
+            "build-manifest.json");
+
+        var manifest = new
         {
-            var manifestPath = Path.Combine(
-                GetOutputDirectory(request.OutputDirectory, request.TargetPlatform, request.Configuration),
-                "build-manifest.json");
+            Platform = request.TargetPlatform,
+            Configuration = request.Configuration,
+            BuildTime = result.StartTime,
+            ProcessedAssets = result.ProcessedAssets,
+            OutputFiles = result.OutputFiles,
+            Success = result.Success,
+            Duration = result.EndTime - result.StartTime
+        };
 
-            var manifest = new
-            {
-                Platform = request.TargetPlatform,
-                Configuration = request.Configuration,
-                BuildTime = result.StartTime,
-                ProcessedAssets = result.ProcessedAssets,
-                OutputFiles = result.OutputFiles,
-                Success = result.Success,
-                Duration = result.EndTime - result.StartTime
-            };
-
-            var json = System.Text.Json.JsonSerializer.Serialize(manifest, new System.Text.Json.JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-
-            await File.WriteAllTextAsync(manifestPath, json);
-            result.ManifestFile = manifestPath;
-
-            Log.Info($"Generated build manifest: {manifestPath}");
-        }
-        catch (Exception ex)
+        var json = System.Text.Json.JsonSerializer.Serialize(manifest, new System.Text.Json.JsonSerializerOptions
         {
-            Log.Exception(ex, "Failed to generate build manifest");
-        }
+            WriteIndented = true
+        });
+
+        await File.WriteAllTextAsync(manifestPath, json);
+        result.ManifestFile = manifestPath;
     }
 
     /// <summary>

@@ -21,12 +21,14 @@ public partial class KeyBinding(
     /// The key that triggers this binding
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private Key _key;
 
     /// <summary>
     /// Optional modifier keys required for this binding
     /// </summary>
     [ComponentProperty]
+    [TemplateProperty]
     private Key[] _modifierKeys = [];
 
     /// <summary>
@@ -34,11 +36,7 @@ public partial class KeyBinding(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (InputContext == null)
-        {
-            Log.Warning("InputContext is null, cannot subscribe to keyboard events");
-            return;
-        }
+        if (InputContext == null) return;
 
         foreach (var keyboard in InputContext.Keyboards)
         {

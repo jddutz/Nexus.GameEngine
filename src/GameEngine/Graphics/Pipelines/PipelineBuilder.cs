@@ -43,11 +43,17 @@ public class PipelineBuilder(
         
         // Create descriptor set layouts if shader uses descriptor sets
         DescriptorSetLayout[]? descriptorSetLayouts = null;
-        if (Shader.Definition.DescriptorSetLayoutBindings != null && 
-            Shader.Definition.DescriptorSetLayoutBindings.Length > 0)
+        
+        if (Shader.Definition.DescriptorSetLayouts != null && Shader.Definition.DescriptorSetLayouts.Count > 0)
         {
-            var layout = DescriptorManager.CreateDescriptorSetLayout(Shader.Definition.DescriptorSetLayoutBindings);
-            descriptorSetLayouts = [layout];
+            // Create one descriptor set layout per set index
+            var maxSetIndex = Shader.Definition.DescriptorSetLayouts.Keys.Max();
+            descriptorSetLayouts = new DescriptorSetLayout[maxSetIndex + 1];
+            
+            foreach (var (setIndex, bindings) in Shader.Definition.DescriptorSetLayouts)
+            {
+                descriptorSetLayouts[setIndex] = DescriptorManager.CreateDescriptorSetLayout(bindings);
+            }
         }
         
         // Create descriptor from builder configuration

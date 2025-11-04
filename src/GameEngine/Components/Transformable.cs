@@ -7,19 +7,20 @@ namespace Nexus.GameEngine.Components;
 /// </summary>
 public partial class Transformable : RuntimeComponent, ITransformable
 {
-    // Template record is auto-generated from [ComponentProperty] fields below
-    
     // ==========================================
     // ANIMATED PROPERTIES (with ComponentProperty attribute)
     // ==========================================
-    
+
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector3D<float> _position = Vector3D<float>.Zero;
     
     [ComponentProperty]
+    [TemplateProperty]
     protected Quaternion<float> _rotation = Quaternion<float>.Identity;
     
     [ComponentProperty]
+    [TemplateProperty]
     protected Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
     
     // ==========================================

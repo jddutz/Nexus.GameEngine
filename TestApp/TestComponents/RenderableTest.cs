@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
@@ -10,11 +9,10 @@ namespace TestApp.TestComponents;
 /// <summary>
 /// Service responsible for discovering integration tests in assemblies.
 /// </summary>
-public partial class RenderableTest(
-    IPixelSampler pixelSampler,
-    IRenderer renderer
-    ) : TestComponent
+public partial class RenderableTest(IPixelSampler pixelSampler, IRenderer renderer) : TestComponent
 {
+    protected IRenderer Renderer => renderer;
+
     [Test("GetDrawCommands() should be called at least once")]
     public readonly static RenderableTestTemplate RenderableBaseTest = new()
     {
@@ -39,12 +37,15 @@ public partial class RenderableTest(
     };
 
     [ComponentProperty]
+    [TemplateProperty]
     private Vector2D<int>[] _sampleCoordinates = [];
 
     [ComponentProperty]
+    [TemplateProperty]
     private Dictionary<int, Vector4D<float>[]> _expectedResults = [];
 
     [ComponentProperty]
+    [TemplateProperty]
     private uint _renderPriority = 0;
 
     public uint FramesRendered { get; private set; }
@@ -56,7 +57,7 @@ public partial class RenderableTest(
     {
         base.OnActivate();
 
-        renderer.AfterRendering += OnRenderComplete;
+        Renderer.AfterRendering += OnRenderComplete;
         
         pixelSampler.SampleCoordinates = SampleCoordinates;
         pixelSampler.Enabled = SampleCoordinates.Length > 0;
@@ -169,7 +170,7 @@ public partial class RenderableTest(
             {
                 yield return new()
                 {
-                    ExpectedResult = $"({SampleCoordinates[x].X}, {SampleCoordinates[x].Y}) {PixelAssertions.DescribeColor(expected[x])}",
+                    ExpectedResult = $"Frame {i} ({SampleCoordinates[x].X}, {SampleCoordinates[x].Y}) {PixelAssertions.DescribeColor(expected[x])}",
                     ActualResult = PixelAssertions.DescribeColor(samples[i][x]),
                     Passed = PixelAssertions.ColorsMatch(samples[i][x], expected[x], tolerance: 0.05f)
                 };

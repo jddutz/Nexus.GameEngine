@@ -29,6 +29,18 @@ public interface IRuntimeComponent : IComponent
     void Activate();
 
     /// <summary>
+    /// Activates all child components.
+    /// </summary>
+    void ActivateChildren();
+
+    /// <summary>
+    /// Activates all child components of the specified type.
+    /// </summary>
+    /// <typeparam name="TChild">The type of children to be activated.</typeparam>
+    void ActivateChildren<TChild>()
+        where TChild : IRuntimeComponent;
+
+    /// <summary>
     /// Update this component and all its subcomponents.
     /// </summary>
     /// <param name="deltaTime">Time elapsed in seconds since the previous update.</param>

@@ -108,8 +108,17 @@ Component-based user interface system:
 - **Visual Components**: Text, borders, background layers, interactive elements
 - **Event-Driven**: Reactive property updates and rendering
 - **Declarative Syntax**: Template-based UI composition
+- **Texture Support**: Elements can render with textures or solid colors using uber-shader pipeline
 
-#### New GUI Components
+#### GUI Components
+
+- **Element**: Base UI component with texture support
+  - Texture property with WhiteDummy default for solid color rendering
+  - ComponentProperty attributes for deferred updates
+  - UIElementPushConstants for model matrix and tint color
+  - TexturedQuad geometry for UV-mapped rendering
+  - Descriptor set binding for texture sampler (set=1, binding=0)
+  - Uber-shader pipeline supporting both textured and solid color rendering
 
 - **BackgroundLayer**: Full-screen background rendering with multiple material types
   - Solid color backgrounds with effects (tint, saturation, fade)

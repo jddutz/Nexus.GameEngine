@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Nexus.GameEngine.Analyzers;
 
 /// <summary>
-/// Analyzer NX1002: Validates that [ComponentProperty] attribute is only applied to animatable types.
+/// Analyzer NX1002: Validates that [ComponentProperty] and [TemplateProperty] attributes are only applied to animatable types.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class AnimationAttributeTypeAnalyzer : DiagnosticAnalyzer

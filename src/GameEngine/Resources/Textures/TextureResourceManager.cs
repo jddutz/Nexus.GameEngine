@@ -24,7 +24,7 @@ public unsafe class TextureResourceManager(
     /// Creates a new texture resource from a definition.
     /// Loads texture data from source and creates Vulkan image resources.
     /// </summary>
-    protected override TextureResource CreateResource(TextureDefinition definition)
+    public override TextureResource CreateResource(TextureDefinition definition)
     {
         // 1. Load texture data from source
         var sourceData = definition.Source.Load();

@@ -1,10 +1,7 @@
 using Nexus.GameEngine;
-using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
@@ -12,7 +9,6 @@ namespace TestApp.TestComponents.UserInterfaceComponents;
 
 /// <summary>
 /// Tests ColorRect component with basic rendering using NDC coordinates and identity matrix.
-/// SIMPLIFIED: Just draw a red quad in the center to verify rendering works.
 /// </summary>
 public partial class ColoredRectTest(
     IPixelSampler pixelSampler,
@@ -82,24 +78,4 @@ public partial class ColoredRectTest(
             ]
         }
     };
-
-    protected override void OnActivate()
-    {
-        base.OnActivate();
-        Log.Debug("=== ColoredRectTest.OnActivate() ===");
-        Log.Debug($"  Children count: {Children.Count()}");
-        foreach (var child in Children)
-        {
-            Log.Debug($"  Child: {child.GetType().Name}, IsLoaded={child.IsLoaded}, IsValid={child.IsValid}");
-            if (child is IDrawable drawable)
-            {
-                Log.Debug($"    IsDrawable: true, IsVisible={drawable.IsVisible()}");
-            }
-            if (child is Element element)
-            {
-                Log.Debug($"    Element Position: {element.Position}, Size: {element.Size}, AnchorPoint: {element.AnchorPoint}");
-                Log.Debug($"    Element WorldMatrix: {element.WorldMatrix}");
-            }
-        }
-    }
 }

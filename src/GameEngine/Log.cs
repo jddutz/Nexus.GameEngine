@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using DebugConsole = System.Diagnostics.Debug;
 
 namespace Nexus.GameEngine;
 

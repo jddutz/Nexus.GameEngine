@@ -3,7 +3,7 @@ namespace Nexus.GameEngine.Components;
 /// <summary>
 /// Base template for all auto-generated component templates.
 /// Provides common properties: ComponentType, Name, and Subcomponents.
-/// Derived templates are auto-generated from [ComponentProperty] attributes.
+/// Derived templates are auto-generated from [ComponentProperty] and [TemplateProperty] attributes.
 /// </summary>
 public record Template
 {
