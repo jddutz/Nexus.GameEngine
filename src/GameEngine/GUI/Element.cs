@@ -1,5 +1,4 @@
 using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Textures;
 using Nexus.GameEngine.Resources.Textures.Definitions;
 
 namespace Nexus.GameEngine.GUI;
@@ -203,18 +202,22 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
     /// </summary>
     public void SetTexture(TextureDefinition? definition)
     {
+        if (ResourceManager == null) return;
+
         if (definition == null)
         {
-            _textureDefinition = null;
-            SetTexture((TextureResource?)null);
-            return;
-        }
+            SetTintColor(Colors.Magenta);
 
-        if (ResourceManager == null) return;
+            var resource = ResourceManager.Textures.GetOrCreate(TextureDefinitions.UniformColor);
+            SetTexture(resource);
+        }
+        else
+        {
+            var resource = ResourceManager.Textures.GetOrCreate(definition);
+            SetTexture(resource);
+        }
         
         _textureDefinition = definition;  // Cache the definition
-        var resource = ResourceManager.Textures.GetOrCreate(definition);
-        SetTexture(resource);
     }
 
     /// <summary>

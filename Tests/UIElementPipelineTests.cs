@@ -1,5 +1,4 @@
 using Nexus.GameEngine.Graphics.Pipelines;
-using Xunit;
 
 namespace Tests;
 

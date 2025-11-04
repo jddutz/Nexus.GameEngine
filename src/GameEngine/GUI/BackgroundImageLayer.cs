@@ -8,14 +8,14 @@ namespace Nexus.GameEngine.GUI.BackgroundLayers;
 /// Uses texture resources and descriptor sets.
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
-public partial class ImageTextureBackground(
+public partial class BackgroundImageLayer(
     IDescriptorManager descriptorManager)
     : Drawable, IDrawable
 {
     private GeometryResource? _geometry;
     
     // Texture resources
-    private Resources.Textures.TextureResource? _texture;
+    private TextureResource? _texture;
     private DescriptorSet? _textureDescriptorSet;
     
     [ComponentProperty]

@@ -1,4 +1,3 @@
-using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
@@ -11,11 +10,11 @@ using Silk.NET.Maths;
 namespace TestApp.TestComponents.UITexture;
 
 /// <summary>
-/// Tests Element with a real texture (test_texture.png - solid red).
-/// Validates that Element can load and display external textures.
-/// Single frame test: Red textured rectangle at (100,100) size 256x256
+/// Tests Element with solid color (red tint, uniform color texture).
+/// Validates that Element can render solid colors using UniformColor texture + TintColor.
+/// Single frame test: Red rectangle at (100,100) size 200x100
 /// </summary>
-public partial class BasicTextureTest(
+public partial class ColoredElementTest(
     IPixelSampler pixelSampler,
     IRenderer renderer,
     IDescriptorManager descriptorManager,
@@ -23,13 +22,14 @@ public partial class BasicTextureTest(
     IPipelineManager pipelineManager
     ) : RenderableTest(pixelSampler, renderer)
 {
-    [Test("Basic texture test (Element with test_texture.png)")]
-    public readonly static BasicTextureTestTemplate BasicTextureTestInstance = new()
+    [Test("Colored element test (red tint with dummy texture)")]
+    public readonly static ColoredElementTestTemplate ColoredElementTestInstance = new()
     {
         SampleCoordinates = [
-            new(228, 228),    // Center of textured rectangle
+            new(200, 150),    // Center of red rectangle
             new(100, 100),    // Top-left corner
-            new(355, 355),    // Bottom-right corner (inside)
+            new(299, 199),    // Bottom-right corner (inside)
+            new(50, 50),      // Outside (should be background)
         ],
 
         ExpectedResults = new Dictionary<int, Vector4D<float>[]>()
@@ -38,6 +38,7 @@ public partial class BasicTextureTest(
                 new(1, 0, 0, 1),    // Red center
                 new(1, 0, 0, 1),    // Red top-left
                 new(1, 0, 0, 1),    // Red bottom-right
+                Colors.DarkBlue,    // Dark blue background (default test background)
             ]
         }
     };
@@ -46,19 +47,20 @@ public partial class BasicTextureTest(
     {
         base.OnActivate();
 
-        // Create Element with test texture
+        // Create Element directly (no template yet - that's T080)
         var element = new Element(descriptorManager)
         {
-            Name = "TexturedElement",
+            Name = "RedElement",
             ResourceManager = resourceManager,
             PipelineManager = pipelineManager
         };
 
-        element.Load(new Template { Name = "TexturedElement" });
+        element.Load(new Template { Name = "RedElement" });
         element.SetPosition(new Vector3D<float>(100, 100, 0));
-        element.SetSize(new Vector2D<int>(256, 256));
-        element.SetTexture(TestResources.TestTexture); // Solid red texture
-        element.ApplyUpdates(0);
+        element.SetSize(new Vector2D<int>(200, 100));
+        element.SetTintColor(new Vector4D<float>(1, 0, 0, 1)); // Red
+        // Texture defaults to UniformColor (1x1 white pixel)
+        element.ApplyUpdates(0); // Apply property changes
 
         AddChild(element);
         element.Activate();

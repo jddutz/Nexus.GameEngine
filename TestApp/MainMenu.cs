@@ -1,6 +1,5 @@
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Input.Components;
 using Silk.NET.Input;
 

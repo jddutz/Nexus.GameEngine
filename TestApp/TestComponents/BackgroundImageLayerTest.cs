@@ -1,8 +1,6 @@
-using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.BackgroundLayers;
-using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
@@ -15,16 +13,16 @@ namespace TestApp.TestComponents.BackgroundLayer;
 /// Uses image_test.png (256x256): R channel = X coordinate (0-255), G channel = Y coordinate (0-255)
 /// Expected: Entire texture visible (UV 0,0 to 1,1), potentially distorted to fill viewport
 /// </summary>
-public partial class ImagePlacementStretchTest(
+public partial class BackgroundImageLayerTest(
     IPixelSampler pixelSampler,
     IRenderer renderer
     ) : RenderableTest(pixelSampler, renderer)
 {
     [Test("Image placement stretch")]
-    public readonly static ImagePlacementStretchTestTemplate BackgroundLayerTest = new()
+    public readonly static BackgroundImageLayerTestTemplate BackgroundLayerTest = new()
     {
         Subcomponents = [
-            new ImageTextureBackgroundTemplate()
+            new BackgroundImageLayerTemplate()
             {
                 TextureDefinition = TestResources.ImageTestTexture,
                 Placement = BackgroundImagePlacement.Stretch

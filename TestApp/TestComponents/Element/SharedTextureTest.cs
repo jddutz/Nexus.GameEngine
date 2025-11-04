@@ -1,4 +1,3 @@
-using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
