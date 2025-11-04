@@ -43,6 +43,9 @@ public partial class TexturedStressTest(
     private const int ElementSize = 50;
     private const int ElementSpacing = 60;
     
+    private DefaultBatchStrategy.BatchingStatistics? _latestStatistics;
+    private int _statisticsFrameCount = 0;
+    
     [Test("Stress test: 100 textured elements (batching validation)")]
     public readonly static TexturedStressTestTemplate StressTestInstance = new()
     {
@@ -54,6 +57,12 @@ public partial class TexturedStressTest(
     protected override void OnActivate()
     {
         base.OnActivate();
+        
+        // Enable batching statistics collection for validation
+        renderer.CollectBatchingStatistics = true;
+        
+        // Subscribe to batching statistics events
+        renderer.BatchingStatisticsAvailable += OnBatchingStatisticsAvailable;
 
         // Create 10×10 grid of elements with rainbow colors
         for (int row = 0; row < GridRows; row++)
@@ -84,6 +93,29 @@ public partial class TexturedStressTest(
                 AddChild(element);
                 // Note: Base class (RenderableTest) will activate all children after OnActivate() completes
             }
+        }
+    }
+    
+    protected override void OnDeactivate()
+    {
+        // Unsubscribe from events
+        renderer.BatchingStatisticsAvailable -= OnBatchingStatisticsAvailable;
+        renderer.CollectBatchingStatistics = false;
+        
+        base.OnDeactivate();
+    }
+    
+    /// <summary>
+    /// Event handler for batching statistics.
+    /// Captures the latest statistics for validation.
+    /// </summary>
+    private void OnBatchingStatisticsAvailable(object? sender, BatchingStatisticsEventArgs e)
+    {
+        // Only track UI pass statistics (where our elements render)
+        if (e.PassName == "UI")
+        {
+            _latestStatistics = e.Statistics;
+            _statisticsFrameCount++;
         }
     }
     
@@ -130,11 +162,59 @@ public partial class TexturedStressTest(
             Passed = FramesRendered >= FrameCount
         };
         
-        // Note: Batching statistics would ideally be logged by the Renderer during actual rendering
-        // For now, we verify that the test completes without crashes, which validates:
-        // - Descriptor pool capacity (no exhaustion)
-        // - Memory management (no leaks causing OOM)
-        // - Vulkan resource lifecycle (no invalid handle errors)
+        // Validate batching statistics
+        if (_latestStatistics.HasValue)
+        {
+            var stats = _latestStatistics.Value;
+            
+            yield return new TestResult
+            {
+                ExpectedResult = $"Collected batching statistics from at least {FrameCount} frames",
+                ActualResult = $"Collected statistics from {_statisticsFrameCount} frames",
+                Passed = _statisticsFrameCount >= FrameCount
+            };
+            
+            yield return new TestResult
+            {
+                ExpectedResult = $"{ElementCount} draw commands rendered",
+                ActualResult = $"{stats.TotalDrawCommands} draw commands",
+                Passed = stats.TotalDrawCommands >= ElementCount  // May be more if background elements exist
+            };
+            
+            // All elements use same pipeline (UIElement) so only 1 pipeline change expected
+            yield return new TestResult
+            {
+                ExpectedResult = "1 pipeline change (all elements use UIElement pipeline)",
+                ActualResult = $"{stats.PipelineChanges} pipeline changes",
+                Passed = stats.PipelineChanges <= 2  // Allow for potential background elements
+            };
+            
+            // Descriptor set changes should be minimal - all elements share WhiteDummy texture
+            // However, each element gets its own descriptor set instance from the pool
+            var efficiency = (1f - stats.GetBatchingRatio()) * 100f;
+            yield return new TestResult
+            {
+                ExpectedResult = $"Batching efficiency > 50% (fewer state changes than draw calls)",
+                ActualResult = $"Batching efficiency: {efficiency:F1}% ({stats.DescriptorSetChanges} descriptor changes for {stats.TotalDrawCommands} draws)",
+                Passed = efficiency > 50f
+            };
+            
+            yield return new TestResult
+            {
+                ExpectedResult = "Statistics summary logged",
+                ActualResult = stats.ToString(),
+                Passed = true
+            };
+        }
+        else
+        {
+            yield return new TestResult
+            {
+                ExpectedResult = "Batching statistics collected",
+                ActualResult = "No statistics available",
+                Passed = false
+            };
+        }
         
         yield return new TestResult
         {
