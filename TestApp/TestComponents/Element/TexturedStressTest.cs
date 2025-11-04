@@ -1,10 +1,6 @@
-using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Descriptors;
-using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.GUI;
-using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
@@ -103,6 +99,10 @@ public partial class TexturedStressTest(
 
     protected override void OnDeactivate()
     {
+        // Unsubscribe from events
+        renderer.BatchingStatisticsAvailable -= OnBatchingStatisticsAvailable;
+        renderer.CollectBatchingStatistics = false;
+        
         // Unhook renderer events
         renderer.BeforeRendering -= OnBeforeRendering;
         renderer.AfterRendering -= OnAfterRendering;
@@ -143,15 +143,6 @@ public partial class TexturedStressTest(
         _totalDrawCommandsCollected = drawCommandCount;
         
         base.OnUpdate(deltaTime);
-    }
-    
-    protected override void OnDeactivate()
-    {
-        // Unsubscribe from events
-        renderer.BatchingStatisticsAvailable -= OnBatchingStatisticsAvailable;
-        renderer.CollectBatchingStatistics = false;
-        
-        base.OnDeactivate();
     }
     
     /// <summary>

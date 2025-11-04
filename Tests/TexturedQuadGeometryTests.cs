@@ -1,6 +1,4 @@
-using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Xunit;
 
 namespace Tests;
 

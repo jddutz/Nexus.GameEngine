@@ -1,7 +1,6 @@
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Silk.NET.Vulkan;
-using Xunit;
 
 namespace Tests;
 

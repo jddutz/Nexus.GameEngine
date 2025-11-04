@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
@@ -171,7 +170,7 @@ public partial class RenderableTest(IPixelSampler pixelSampler, IRenderer render
             {
                 yield return new()
                 {
-                    ExpectedResult = $"({SampleCoordinates[x].X}, {SampleCoordinates[x].Y}) {PixelAssertions.DescribeColor(expected[x])}",
+                    ExpectedResult = $"Frame {i} ({SampleCoordinates[x].X}, {SampleCoordinates[x].Y}) {PixelAssertions.DescribeColor(expected[x])}",
                     ActualResult = PixelAssertions.DescribeColor(samples[i][x]),
                     Passed = PixelAssertions.ColorsMatch(samples[i][x], expected[x], tolerance: 0.05f)
                 };

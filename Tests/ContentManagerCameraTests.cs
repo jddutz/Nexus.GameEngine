@@ -4,8 +4,6 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Cameras;
 using Silk.NET.Maths;
-using Xunit;
-using GameViewport = Nexus.GameEngine.Graphics.Viewport;
 using Silk.NET.Vulkan;
 
 namespace Tests;

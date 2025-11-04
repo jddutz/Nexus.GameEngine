@@ -54,6 +54,23 @@ public partial class RuntimeComponent
         Activated?.Invoke(this, EventArgs.Empty);
     }
 
+    public void ActivateChildren()
+    {
+        foreach(var child in GetChildren<IRuntimeComponent>())
+        {
+            child.Activate();
+        }
+    }
+    
+    public void ActivateChildren<TChild>()
+        where TChild : IRuntimeComponent
+    {
+        foreach(var child in GetChildren<TChild>())
+        {
+            child.Activate();
+        }
+    }
+
     /// <summary>
     /// Flag indicating whether or not the component is updating
     /// Used to suppress unwanted event notifications and tree propagation

@@ -1,12 +1,8 @@
-using System;
-using System.Numerics;
 using Moq;
-using Nexus.GameEngine;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
-using Xunit;
 
 namespace Tests;
 

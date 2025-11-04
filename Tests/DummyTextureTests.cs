@@ -1,5 +1,4 @@
 using Nexus.GameEngine.Resources.Textures.Definitions;
-using Xunit;
 
 namespace Tests;
 

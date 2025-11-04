@@ -39,6 +39,7 @@ public static class Colors
     public static Vector4D<float> BlanchedAlmond => FromArgb(0xFFFFEBCD);
     public static Vector4D<float> Blue => FromArgb(0xFF0000FF);
     public static Vector4D<float> BlueViolet => FromArgb(0xFF8A2BE2);
+    public static Vector4D<float> BrightGreen => FromArgb(0xFF00FF00);
     public static Vector4D<float> Brown => FromArgb(0xFFA52A2A);
     public static Vector4D<float> BurlyWood => FromArgb(0xFFDEB887);
     public static Vector4D<float> CadetBlue => FromArgb(0xFF5F9EA0);
