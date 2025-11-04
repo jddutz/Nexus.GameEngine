@@ -12,7 +12,7 @@ using Silk.NET.Maths;
 namespace TestApp.TestComponents.UITexture;
 
 /// <summary>
-/// Tests mixed Elements: some with solid colors (WhiteDummy + tint), some with textures.
+/// Tests mixed Elements: some with solid colors (UniformColor + tint), some with textures.
 /// Validates that uber-shader handles both cases without pipeline switches.
 /// Single frame test: 5 elements total (3 solid colors, 2 textured)
 /// </summary>
@@ -51,7 +51,7 @@ public partial class MixedUITest(
     {
         base.OnActivate();
 
-        // Row 1: Solid colors (WhiteDummy + tint)
+        // Row 1: Solid colors (UniformColor + tint)
         CreateSolidElement("Red", 100, 100, 1, 0, 0);
         CreateSolidElement("Green", 300, 100, 0, 1, 0);
         CreateSolidElement("Blue", 500, 100, 0, 0, 1);
@@ -74,7 +74,7 @@ public partial class MixedUITest(
         element.SetPosition(new Vector3D<float>(x, y, 0));
         element.SetSize(new Vector2D<int>(100, 100));
         element.SetTintColor(new Vector4D<float>(r, g, b, 1));
-        // Texture defaults to WhiteDummy
+        // Texture defaults to UniformColor (1x1 white pixel)
         element.ApplyUpdates(0);
         
         AddChild(element);

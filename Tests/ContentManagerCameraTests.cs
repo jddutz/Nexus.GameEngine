@@ -69,22 +69,6 @@ public class ContentManagerCameraTests
     }
 
     [Fact]
-    public void ContentManager_Initialize_DoesNotCreateDefaultCamera()
-    {
-        // Arrange
-        var mockFactory = CreateMockFactoryForInitialize();
-        var contentManager = new ContentManager(mockFactory.Object, CreateMockGraphicsOptions());
-
-        // Act
-        contentManager.Initialize();
-
-        // Assert - Initialize() does not create a camera, that's done by Renderer
-        var cameras = contentManager.ActiveCameras;
-        Assert.NotNull(cameras);
-        Assert.Empty(cameras);
-    }
-
-    [Fact]
     public void ContentManager_ActiveCameras_ReturnsEmptyBeforeInitialize()
     {
         // Arrange

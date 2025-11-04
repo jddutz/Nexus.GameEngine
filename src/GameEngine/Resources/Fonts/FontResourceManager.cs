@@ -29,8 +29,6 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
     /// </summary>
     public override FontResource CreateResource(FontDefinition definition)
     {
-        // Log.Info($"Loading font: {definition.Name} @ {definition.FontSize}px, Range: {definition.CharacterRange}");
-
         // Load font file using source
         var sourceData = definition.Source.Load();
         var fontData = sourceData.FontFileData;
@@ -43,8 +41,6 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
 
         // Create and return resource
         var resource = new FontResource(atlasTexture, glyphs, lineHeight, ascender, descender, definition.FontSize);
-
-        // Log.Info($"Font loaded successfully: {glyphs.Count} glyphs, {lineHeight}px line height");
 
         return resource;
     }
@@ -163,11 +159,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
                 }
 
                 // Check if we're out of vertical space
-                if (currentY + glyphHeight + Padding > AtlasHeight)
-                {
-                    // Log.Warning($"Font atlas ran out of space at character '{c}' (U+{(int)c:X4}). Remaining characters will be skipped.");
-                    break;
-                }
+                if (currentY + glyphHeight + Padding > AtlasHeight) break;
 
                 // Rasterize glyph
                 fixed (byte* atlasPtr = atlasData)
@@ -200,8 +192,6 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
                 currentX += glyphWidth + Padding;
                 rowHeight = Math.Max(rowHeight, glyphHeight);
             }
-
-            // Log.Debug($"Generated font atlas: {AtlasWidth}x{AtlasHeight}, {glyphs.Count} glyphs");
 
             return (atlasData, glyphs, lineHeight, ascender, descender);
         }

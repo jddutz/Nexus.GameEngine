@@ -31,17 +31,10 @@ public partial class RuntimeComponent
     public void Activate()
     {
         // Enforce constraint: A component can only be activated if its parent is active (or it has no parent)
-        if (Parent is IRuntimeComponent runtimeParent && !runtimeParent.IsActive())
-        {
-            // Log.Warning($"Cannot activate {GetType().Name} '{Name}' because parent {runtimeParent.GetType().Name} is not active");
-            return;
-        }
+        if (Parent is IRuntimeComponent runtimeParent && !runtimeParent.IsActive()) return;
 
         // Validate before activation (uses cached results if available)
-        if (!Validate())
-        {
-            return;
-        }
+        if (!Validate()) return;
 
         Activating?.Invoke(this, EventArgs.Empty);
 

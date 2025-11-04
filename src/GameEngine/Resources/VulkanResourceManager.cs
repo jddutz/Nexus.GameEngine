@@ -25,12 +25,9 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
             // Check cache (uses definition's equality - for records this is value-based)
             if (_cache.TryGetValue(definition, out var cached))
             {
-                _cache[definition] = (cached.Resource, cached.RefCount + 1);
-                // Log.Debug($"Resource cache hit: {GetResourceKey(definition)}");
+                _cache[definition] = (cached.Resource, cached.RefCount + 1);                
                 return cached.Resource;
             }
-            
-            // Log.Debug($"Creating new resource: {GetResourceKey(definition)}");
             
             // Create new resource (template method - implemented by subclass)
             var resource = CreateResource(definition);
@@ -51,23 +48,16 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
     {
         lock (_lock)
         {
-            if (!_cache.TryGetValue(definition, out var cached))
-            {
-                // Log.Warning($"Attempted to release non-cached resource: {GetResourceKey(definition)}");
-                return;
-            }
+            if (!_cache.TryGetValue(definition, out var cached)) return;
             
             var newRefCount = cached.RefCount - 1;
             
             if (newRefCount > 0)
             {
                 _cache[definition] = (cached.Resource, newRefCount);
-                // Log.Debug($"Resource ref count decremented: {GetResourceKey(definition)}, RefCount={newRefCount}");
             }
             else
             {
-                // Log.Debug($"Destroying resource (ref count reached zero): {GetResourceKey(definition)}");
-                
                 // Destroy resource (template method - implemented by subclass)
                 DestroyResource(cached.Resource);
                 
@@ -110,16 +100,9 @@ public abstract class VulkanResourceManager<TDefinition, TResource> : IDisposabl
     {
         lock (_lock)
         {
-            // Log.Info($"Disposing {GetType().Name}: {_cache.Count} resources");
-            
             // Destroy all cached resources
             foreach (var (definition, (resource, refCount)) in _cache)
             {
-                if (refCount > 1)
-                {
-                    // Log.Warning($"Resource still has {refCount} references during dispose: {GetResourceKey(definition)}");
-                }
-                
                 DestroyResource(resource);
             }
             

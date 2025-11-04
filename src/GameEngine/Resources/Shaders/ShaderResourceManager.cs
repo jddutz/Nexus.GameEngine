@@ -45,8 +45,6 @@ public class ShaderResourceManager(IGraphicsContext context)
                 $"Failed to create shader modules for '{definition.Name}'");
         }
 
-        // Log.Debug($"Created shader resource: {definition.Name} (Vertex: {vertShaderModule.Handle}, Fragment: {fragShaderModule.Handle})");
-
         return new ShaderResource(vertShaderModule, fragShaderModule, definition);
     }
 
@@ -55,11 +53,7 @@ public class ShaderResourceManager(IGraphicsContext context)
     /// </summary>
     private unsafe ShaderModule CreateShaderModule(byte[] spirvCode)
     {
-        if (spirvCode == null || spirvCode.Length == 0)
-        {
-            // Log.Error("Cannot create shader module from null or empty SPIR-V data");
-            return default;
-        }
+        if (spirvCode == null || spirvCode.Length == 0) return default;
 
         fixed (byte* codePtr = spirvCode)
         {
@@ -73,11 +67,7 @@ public class ShaderResourceManager(IGraphicsContext context)
             ShaderModule shaderModule;
             var result = context.VulkanApi.CreateShaderModule(context.Device, &createInfo, null, &shaderModule);
 
-            if (result != Result.Success)
-            {
-                // Log.Error($"Failed to create shader module: {result}");
-                return default;
-            }
+            if (result != Result.Success) return default;
 
             return shaderModule;
         }
@@ -91,13 +81,11 @@ public class ShaderResourceManager(IGraphicsContext context)
         if (resource.VertexShader.Handle != 0)
         {
             context.VulkanApi.DestroyShaderModule(context.Device, resource.VertexShader, null);
-            // Log.Debug($"Destroyed vertex shader module: {resource.Name} (Handle: {resource.VertexShader.Handle})");
         }
 
         if (resource.FragmentShader.Handle != 0)
         {
             context.VulkanApi.DestroyShaderModule(context.Device, resource.FragmentShader, null);
-            // Log.Debug($"Destroyed fragment shader module: {resource.Name} (Handle: {resource.FragmentShader.Handle})");
         }
     }
 }

@@ -93,11 +93,8 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     private void InitializeMatrices()
     {
-        // Log.Debug($"StaticCamera.InitializeMatrices() called - viewport size: {_viewportWidth}x{_viewportHeight}");
-        
         // Identity view matrix (UI coordinates are in screen space)
         ViewMatrix = Matrix4X4<float>.Identity;
-        // Log.Debug($"  ViewMatrix set to: {ViewMatrix}");
 
         // Create pixel-to-NDC orthographic projection
         // Our coordinate system: +Y goes DOWN (screen space)
@@ -112,7 +109,6 @@ public partial class StaticCamera : RuntimeComponent, ICamera
             _viewportHeight, // top (bottom < top means Y increases downward in NDC)
             _nearPlane,
             _farPlane);
-        // Log.Debug($"  ProjectionMatrix set to: {ProjectionMatrix}");
 
         // Mark cached matrix as dirty
         _viewProjectionDirty = true;
@@ -171,19 +167,14 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     protected override void OnActivate()
     {
-        // Log.Info($"StaticCamera.OnActivate() START - IsActive={IsActive}");
         base.OnActivate();
 
         // Initialize matrices with default viewport size
         // Renderer will call SetViewportSize() with actual dimensions before first render
-        // Log.Debug($"  Calling InitializeMatrices()...");
         InitializeMatrices();
         
         // Initialize UBO for ViewProjection matrix
-        // Log.Debug($"  Calling InitializeViewProjectionUBO()...");
         InitializeViewProjectionUBO();
-        
-        // Log.Info($"StaticCamera.OnActivate() COMPLETE - _uboInitialized={_uboInitialized}");
     }
 
     protected override void OnDeactivate()
@@ -241,7 +232,6 @@ public partial class StaticCamera : RuntimeComponent, ICamera
         UpdateViewProjectionUBO();
 
         _uboInitialized = true;
-        // Log.Info($"StaticCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
     }
 
     private unsafe void UpdateViewProjectionUBO()
@@ -261,16 +251,10 @@ public partial class StaticCamera : RuntimeComponent, ICamera
         // Descriptor set is freed automatically when pool is reset
         
         _uboInitialized = false;
-        // Log.Info("StaticCamera: Cleaned up ViewProjection UBO");
     }
 
     public DescriptorSet GetViewProjectionDescriptorSet()
     {
-        if (!_uboInitialized)
-        {
-            // Log.Warning("StaticCamera: GetViewProjectionDescriptorSet called before UBO initialization");
-            return default;
-        }
-        return _viewProjectionDescriptorSet;
+        return _uboInitialized ? _viewProjectionDescriptorSet : default;
     }
 }

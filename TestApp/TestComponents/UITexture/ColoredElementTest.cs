@@ -11,8 +11,8 @@ using Silk.NET.Maths;
 namespace TestApp.TestComponents.UITexture;
 
 /// <summary>
-/// Tests Element with solid color (red tint, dummy texture).
-/// Validates that Element can render solid colors using WhiteDummy texture + TintColor.
+/// Tests Element with solid color (red tint, uniform color texture).
+/// Validates that Element can render solid colors using UniformColor texture + TintColor.
 /// Single frame test: Red rectangle at (100,100) size 200x100
 /// </summary>
 public partial class ColoredElementTest(
@@ -60,7 +60,7 @@ public partial class ColoredElementTest(
         element.SetPosition(new Vector3D<float>(100, 100, 0));
         element.SetSize(new Vector2D<int>(200, 100));
         element.SetTintColor(new Vector4D<float>(1, 0, 0, 1)); // Red
-        // Texture defaults to WhiteDummy
+        // Texture defaults to UniformColor (1x1 white pixel)
         element.ApplyUpdates(0); // Apply property changes
 
         AddChild(element);

@@ -31,11 +31,6 @@ public abstract partial class Drawable : Transformable, IDrawable
     [TemplateProperty]
     protected bool _visible = true;
 
-    partial void OnVisibleChanged(bool oldValue)
-    {
-        // Log.Debug("IsVisible changed");
-    }
-
     /// <summary>
     /// Returns whether this component should be rendered (combines Enabled and Visible states).
     /// This is the combined state that determines if the component participates in rendering.

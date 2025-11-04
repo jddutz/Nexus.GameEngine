@@ -297,7 +297,6 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
         UpdateViewProjectionUBO();
 
         _uboInitialized = true;
-        // Log.Info($"OrthoCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
     }
 
     private unsafe void UpdateViewProjectionUBO()
@@ -317,17 +316,10 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
 
         _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
         _uboInitialized = false;
-
-        // Log.Info("OrthoCamera: Cleaned up ViewProjection UBO");
     }
 
     public DescriptorSet GetViewProjectionDescriptorSet()
     {
-        if (!_uboInitialized)
-        {
-            // Log.Warning("OrthoCamera: GetViewProjectionDescriptorSet called before UBO initialization");
-            return default;
-        }
-        return _viewProjectionDescriptorSet;
+        return _uboInitialized ? _viewProjectionDescriptorSet : default;
     }
 }

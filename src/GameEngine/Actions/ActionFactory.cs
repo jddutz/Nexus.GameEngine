@@ -19,35 +19,28 @@ public class ActionFactory(IServiceProvider serviceProvider) : IActionFactory
         // Handle None/empty ActionId
         if (actionId == ActionId.None || actionId.ActionType == null)
         {
-            // Log.Debug("Cannot execute action: ActionId is None or invalid");
             return ActionResult.Failed("ActionId is None or invalid");
         }
 
         try
         {
-            // Log.Debug("Executing action: {ActionType} ({ActionId})", actionId.ActionType.Name, actionId.Identifier);
-
             // Resolve action instance from DI container
             var action = _serviceProvider.GetService(actionId.ActionType) as IAction;
 
             if (action == null)
             {
                 var errorMessage = $"Action type '{actionId.ActionType.Name}' is not registered in the service container";
-                // Log.Error(errorMessage);
                 return ActionResult.Failed(errorMessage);
             }
 
             // Execute the action with the provided context
             var result = await action.ExecuteAsync(context);
 
-            // Log.Debug($"Action execution completed: {actionId.ActionType.Name} - Success: {result.Success}");
-
             return result;
         }
         catch (Exception ex)
         {
             var errorMessage = $"Error executing action '{actionId.ActionType.Name}': {ex.Message}";
-            // Log.Exception(ex, errorMessage);
             return ActionResult.Failed(ex);
         }
     }

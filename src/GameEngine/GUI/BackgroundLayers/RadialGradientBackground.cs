@@ -69,8 +69,6 @@ public partial class RadialGradientBackground(
     /// </summary>
     private void CreateGradientUBO(GradientDefinition gradient)
     {
-        
-        // Log gradient stops for debugging
         for (int i = 0; i < gradient.Stops.Length; i++)
         {
             var stop = gradient.Stops[i];

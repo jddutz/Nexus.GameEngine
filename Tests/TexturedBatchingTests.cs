@@ -1,6 +1,6 @@
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Pipelines;
-using Nexus.GameEngine.Resources.Textures;
+using Nexus.GameEngine.Resources.Textures.Definitions;
 using Silk.NET.Maths;
 using Xunit;
 
@@ -20,7 +20,7 @@ public class TexturedBatchingTests
     public void Batching_SameTexture_MinimizesDrawCalls()
     {
         // Arrange
-        var texture = TextureDefinitions.WhiteDummy;
+        var texture = TextureDefinitions.UniformColor;
         var pipeline = PipelineDefinitions.UIElement;
         
         // Elements with same texture should have compatible batch keys
@@ -50,8 +50,8 @@ public class TexturedBatchingTests
     public void Batching_DifferentTextures_GroupsByTexture()
     {
         // Arrange
-        var texture1 = TextureDefinitions.WhiteDummy;
-        // Note: We only have WhiteDummy in core, but test validates the concept
+        var texture1 = TextureDefinitions.UniformColor;
+        // Note: We only have UniformColor in core, but test validates the concept
         
         // Different textures should have different descriptor sets
         // In practice, this is validated by integration tests that use multiple textures
@@ -70,7 +70,7 @@ public class TexturedBatchingTests
     public void Batching_RespectZIndex_MaintainsRenderOrder()
     {
         // Arrange
-        var texture = TextureDefinitions.WhiteDummy;
+        var texture = TextureDefinitions.UniformColor;
         
         // Create push constants with different Z positions
         var pushConstants1 = new UIElementPushConstants

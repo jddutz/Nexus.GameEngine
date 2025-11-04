@@ -25,7 +25,6 @@ public class AssetProcessorManager : IAssetProcessorManager
                 var extensions = string.Join(", ", processor.SupportedExtensions);
                 _processors.Add(processor);
                 _processors.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-                // Log.Debug($"Registered asset processor with priority {processor.Priority} for extensions: {extensions}");
             }
         }
     }
@@ -44,7 +43,6 @@ public class AssetProcessorManager : IAssetProcessorManager
             if (_processors.Remove(processor))
             {
                 var extensions = string.Join(", ", processor.SupportedExtensions);
-                // Log.Debug($"Unregistered asset processor for extensions: {extensions}");
             }
         }
     }
@@ -82,8 +80,6 @@ public class AssetProcessorManager : IAssetProcessorManager
 
         if (processor == null)
         {
-            // Log.Warning($"No processor found for asset: {context.InputPath} (platform: {context.TargetPlatform})");
-
             return new AssetProcessingResult
             {
                 Success = false,
@@ -93,29 +89,16 @@ public class AssetProcessorManager : IAssetProcessorManager
 
         try
         {
-            // Log.Debug($"Processing asset {context.InputPath} with {processor.GetType().Name}");
-
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             var result = await processor.ProcessAsync(context);
             stopwatch.Stop();
 
             result.ProcessingTime = stopwatch.Elapsed;
 
-            if (result.Success)
-            {
-                // Log.Debug($"Successfully processed asset {context.InputPath} in {result.ProcessingTime.TotalMilliseconds}ms");
-            }
-            else
-            {
-                // Log.Error($"Failed to process asset {context.InputPath}: {result.ErrorMessage ?? "Unknown Error"}");
-            }
-
             return result;
         }
         catch (Exception ex)
         {
-            // Log.Exception(ex, $"Exception occurred while processing asset {context.InputPath}");
-
             return new AssetProcessingResult
             {
                 Success = false,
@@ -187,7 +170,6 @@ public class AssetProcessorManager : IAssetProcessorManager
         {
             var count = _processors.Count;
             _processors.Clear();
-            // Log.Debug($"Cleared {count} registered processors");
         }
     }
 

@@ -38,7 +38,6 @@ public partial class LinearGradientBackground(
 
     protected override void OnActivate()
     {
-        // Log.Debug($"LinearGradientBackground.OnActivate() - IsValid:{IsValid}, IsLoaded:{IsLoaded}, Visible:{Visible}");
         base.OnActivate();
 
         // Validate gradient
@@ -56,8 +55,6 @@ public partial class LinearGradientBackground(
     /// </summary>
     private void CreateGradientUBO(GradientDefinition gradient)
     {
-        
-        // Log gradient stops for debugging
         for (int i = 0; i < gradient.Stops.Length; i++)
         {
             var stop = gradient.Stops[i];

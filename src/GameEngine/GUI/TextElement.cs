@@ -4,9 +4,7 @@
 /// A UI component that displays text using font atlases.
 /// Reuses ImageTextureShader with tint color for text rendering.
 /// </summary>
-public partial class TextElement(
-    IDescriptorManager descriptorManager)
-    : Element(descriptorManager)
+public partial class TextElement(IDescriptorManager descriptorManager) : Element(descriptorManager)
 {
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]
@@ -87,11 +85,11 @@ public partial class TextElement(
                 $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
 
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
-        _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
+        var layout = DescriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
+        _textureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
 
         // Update descriptor set with font atlas texture
-        descriptorManager.UpdateDescriptorSet(
+        DescriptorManager.UpdateDescriptorSet(
             _textureDescriptorSet.Value,
             _fontResource.AtlasTexture.ImageView,
             _fontResource.AtlasTexture.Sampler,

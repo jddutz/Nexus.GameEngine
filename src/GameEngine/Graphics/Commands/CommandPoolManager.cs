@@ -89,14 +89,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
         {
             foreach (var pool in _allPools)
             {
-                try
-                {
-                    pool.Reset(flags);
-                }
-                catch (Exception ex)
-                {
-                    // Log.Exception(ex, $"Error resetting command pool for queue family {pool.QueueFamilyIndex}");
-                }
+                pool.Reset(flags);
             }
         }
 
@@ -112,14 +105,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
         {
             foreach (var pool in _allPools)
             {
-                try
-                {
-                    pool.Trim();
-                }
-                catch (Exception ex)
-                {
-                    // Log.Exception(ex, $"Error trimming command pool for queue family {pool.QueueFamilyIndex}");
-                }
+                pool.Trim();
             }
         }
 
@@ -236,14 +222,7 @@ public class CommandPoolManager(IGraphicsContext context) : ICommandPoolManager
         {
             foreach (var pool in _allPools)
             {
-                try
-                {
-                    pool.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    // Log.Exception(ex, $"Error disposing command pool for queue family {pool.QueueFamilyIndex}");
-                }
+                pool.Dispose();
             }
 
             _allPools.Clear();

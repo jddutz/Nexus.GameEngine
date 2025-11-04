@@ -314,7 +314,6 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
         UpdateViewProjectionUBO();
 
         _uboInitialized = true;
-        // Log.Info($"PerspectiveCamera: Initialized ViewProjection UBO (size: {uboSize} bytes)");
     }
 
     private unsafe void UpdateViewProjectionUBO()
@@ -334,15 +333,12 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
 
         _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
         _uboInitialized = false;
-
-        // Log.Info("PerspectiveCamera: Cleaned up ViewProjection UBO");
     }
 
     public DescriptorSet GetViewProjectionDescriptorSet()
     {
         if (!_uboInitialized)
         {
-            // Log.Warning("PerspectiveCamera: GetViewProjectionDescriptorSet called before UBO initialization");
             return default;
         }
         return _viewProjectionDescriptorSet;

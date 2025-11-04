@@ -36,11 +36,7 @@ public partial class KeyBinding(
     /// </summary>
     protected override void SubscribeToInputEvents()
     {
-        if (InputContext == null)
-        {
-            // Log.Warning("InputContext is null, cannot subscribe to keyboard events");
-            return;
-        }
+        if (InputContext == null) return;
 
         foreach (var keyboard in InputContext.Keyboards)
         {

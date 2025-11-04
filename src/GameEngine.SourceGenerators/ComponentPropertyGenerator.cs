@@ -115,11 +115,18 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             // Check if type is a collection (array or implements IEnumerable<T>)
             var isCollection = IsCollectionType(field.Type);
 
+            // Create display format that includes nullable annotations
+            var displayFormat = new SymbolDisplayFormat(
+                globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
+                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+                genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+                miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
             properties.Add(new PropertyInfo
             {
                 Name = propertyName,
                 FieldName = field.Name,
-                Type = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                Type = field.Type.ToDisplayString(displayFormat),
                 TypeSymbol = field.Type,
                 IsCollection = isCollection,
                 // Duration and Interpolation are now runtime parameters, not attribute properties
@@ -308,8 +315,12 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         {
             sb.AppendLine($"    // Optional callback for {prop.Name} changes");
             
-            // For reference types (including arrays), mark oldValue as nullable since it can be null during initialization
-            var paramType = prop.TypeSymbol?.IsValueType == false ? $"{prop.Type}?" : prop.Type;
+            // For reference types (including arrays), mark oldValue as nullable if not already nullable
+            var paramType = prop.Type;
+            if (prop.TypeSymbol?.IsValueType == false && !prop.Type.Contains("?"))
+            {
+                paramType = $"{prop.Type}?";
+            }
             sb.AppendLine($"    partial void On{prop.Name}Changed({paramType} oldValue);");
             sb.AppendLine();
         }

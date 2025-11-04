@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures;
+using Nexus.GameEngine.Resources.Textures.Definitions;
 
 namespace Nexus.GameEngine.GUI;
 
@@ -25,7 +26,7 @@ namespace Nexus.GameEngine.GUI;
 /// </summary>
 public partial class Element(IDescriptorManager descriptorManager) : Drawable, IUserInterfaceElement
 {
-    private readonly IDescriptorManager _descriptorManager = descriptorManager;
+    protected IDescriptorManager DescriptorManager { get; } = descriptorManager;
 
     /// <summary>
     /// Overrides UpdateLocalMatrix to account for Size and AnchorPoint.
@@ -209,11 +210,7 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
             return;
         }
 
-        if (ResourceManager == null)
-        {
-            // Log.Warning("Element.SetTexture(TextureDefinition): ResourceManager is null, cannot create resource");
-            return;
-        }
+        if (ResourceManager == null) return;
         
         _textureDefinition = definition;  // Cache the definition
         var resource = ResourceManager.Textures.GetOrCreate(definition);
@@ -232,7 +229,7 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
         // Update descriptor set if already activated
         if (IsActive() && TextureDescriptorSet.HasValue && _texture != null)
         {
-            _descriptorManager.UpdateDescriptorSet(
+            DescriptorManager.UpdateDescriptorSet(
                 TextureDescriptorSet.Value,
                 _texture.ImageView,
                 _texture.Sampler,
@@ -245,75 +242,52 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
     {
         base.OnActivate();
 
-        // Log.Debug($"=== Element.OnActivate() START ===");
-        // Log.Debug($"  Position: {Position}");
-        // Log.Debug($"  Size: {Size}");
-        // Log.Debug($"  AnchorPoint: {AnchorPoint}");
-        // Log.Debug($"  TintColor: R={TintColor.X:F3}, G={TintColor.Y:F3}, B={TintColor.Z:F3}, A={TintColor.W:F3}");
-        // Log.Debug($"  WorldMatrix: {WorldMatrix}");
-
         // Use shared TexturedQuad geometry (UVs provided via push constants)
         Geometry = ResourceManager?.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
-        // Log.Debug($"  Geometry created: Handle={Geometry?.Buffer.Handle ?? 0}, VertexCount={Geometry?.VertexCount ?? 0}");
 
-        // Convert texture definition to resource if provided
+        // Convert texture definition to resource if provided, or use default uniform color texture
         if (_textureDefinition != null && _texture == null)
         {
-            // Log.Debug($"  Converting texture definition to resource: {_textureDefinition.Name}");
             SetTexture(_textureDefinition);
         }
-
-        // Log.Debug($"  Texture: Name={_texture?.Name ?? "null"}");
+        else if (_texture == null)
+        {
+            // Default to UniformColor texture (1x1 white pixel) for elements without explicit textures
+            // This ensures all elements can use the same uber-shader pipeline
+            SetTexture(TextureDefinitions.UniformColor);
+        }
 
         // Create descriptor set for texture (set=1)
         var shader = ShaderDefinitions.UIElement;
         if (shader.DescriptorSetLayouts != null && shader.DescriptorSetLayouts.TryGetValue(1, out var textureBindings))
         {
             // Create layout for set=1 (texture sampler)
-            var layout = _descriptorManager.CreateDescriptorSetLayout(textureBindings);
-            TextureDescriptorSet = _descriptorManager.AllocateDescriptorSet(layout);
+            var layout = DescriptorManager.CreateDescriptorSetLayout(textureBindings);
+            TextureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
             if (TextureDescriptorSet.HasValue && _texture != null)
             {
-                _descriptorManager.UpdateDescriptorSet(
+                DescriptorManager.UpdateDescriptorSet(
                     TextureDescriptorSet.Value,
                     _texture.ImageView,
                     _texture.Sampler,
                     ImageLayout.ShaderReadOnlyOptimal,
                     binding: 0);
-                // Log.Debug($"  Texture descriptor set created: Handle={TextureDescriptorSet.Value.Handle}");
             }
         }
 
         var bounds = GetBounds();
-        // Log.Debug($"  Computed Bounds: ({bounds.Origin.X}, {bounds.Origin.Y}, {bounds.Size.X}, {bounds.Size.Y})");
 
         var pipeline = Pipeline;
-        // Log.Debug($"  Pipeline: Handle={pipeline.Pipeline.Handle}, Layout={pipeline.Layout.Handle}");
-        // Log.Debug($"=== Element.OnActivate() END ===");
     }
     
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
-        // Log.Debug($"=== Element.GetDrawCommands() START ===");
-        // Log.Debug($"  Geometry: {(Geometry == null ? "NULL" : $"Handle={Geometry.Buffer.Handle}, VertexCount={Geometry.VertexCount}")}");
-        
-        if (Geometry == null)
-        {
-            // Log.Warning($"  Element.GetDrawCommands(): Geometry is null, yielding no commands");
-            yield break;
-        }
+        if (Geometry == null) yield break;
 
         var bounds = GetBounds();
-        // Log.Debug($"  Position: {Position}, Size: {Size}, AnchorPoint: {AnchorPoint}");
-        // Log.Debug($"  Expected pixel rect - TopLeft: ({bounds.Origin.X}, {bounds.Origin.Y}), BottomRight: ({bounds.Origin.X + bounds.Size.X}, {bounds.Origin.Y + bounds.Size.Y})");
-        // Log.Debug($"  WorldMatrix: {WorldMatrix}");
-        // Log.Debug($"  TintColor: R={TintColor.X:F3}, G={TintColor.Y:F3}, B={TintColor.Z:F3}, A={TintColor.W:F3}");
-        // Log.Debug($"  MinUV: ({MinUV.X:F3}, {MinUV.Y:F3}), MaxUV: ({MaxUV.X:F3}, {MaxUV.Y:F3})");
-        // Log.Debug($"  ViewProjectionDescriptorSet.Handle: {context.ViewProjectionDescriptorSet.Handle}");
 
         var pushConstants = UIElementPushConstants.FromModelColorAndUV(WorldMatrix, TintColor, MinUV, MaxUV);
-        // Log.Debug($"  PushConstants created - Model: {pushConstants.Model}, TintColor: R={pushConstants.TintColor.X:F3}, G={pushConstants.TintColor.Y:F3}, B={pushConstants.TintColor.Z:F3}, A={pushConstants.TintColor.W:F3}, UvRect: ({pushConstants.UvRect.X:F3}, {pushConstants.UvRect.Y:F3}, {pushConstants.UvRect.Z:F3}, {pushConstants.UvRect.W:F3})");
-
+        
         var drawCommand = new DrawCommand
         {
             RenderMask = RenderPasses.UI,
@@ -328,9 +302,6 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
             // Push model matrix + color + UV rect (96 bytes: 64 for matrix + 16 for color + 16 for UV)
             PushConstants = pushConstants
         };
-        
-        // Log.Debug($"  DrawCommand created: Pipeline={drawCommand.Pipeline.Pipeline.Handle}, VertexBuffer={drawCommand.VertexBuffer.Handle}, DescriptorSet={drawCommand.DescriptorSet.Handle}");
-        // Log.Debug($"=== Element.GetDrawCommands() END (yielding 1 command) ===");
         
         yield return drawCommand;
     }

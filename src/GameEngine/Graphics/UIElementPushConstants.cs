@@ -17,7 +17,7 @@ public struct UIElementPushConstants
 
     /// <summary>
     /// Tint color applied to the texture.
-    /// For solid colors: use desired color with WhiteDummy texture.
+    /// For solid colors: use desired color with UniformColor texture (1x1 white pixel).
     /// For textured elements: typically white (no tint) or desired tint color.
     /// </summary>
     public Vector4D<float> TintColor;

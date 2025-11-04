@@ -17,13 +17,6 @@ namespace Nexus.GameEngine.Graphics;
 /// </summary>
 public class DefaultBatchStrategy : IBatchStrategy
 {
-    // Diagnostic counters for batching effectiveness
-    private int _pipelineChanges = 0;
-    private int _descriptorSetChanges = 0;
-    private int _vertexBufferChanges = 0;
-    private int _indexBufferChanges = 0;
-    private int _totalDrawCommands = 0;
-    
     /// <summary>
     /// Analyzes a sorted list of draw commands and returns batching statistics.
     /// Call this after sorting to get diagnostic information about batching effectiveness.

@@ -75,14 +75,9 @@ public abstract partial class InputBinding(
     /// </summary>
     protected override void OnActivate()
     {
-        if (InputContext == null)
-        {
-            // Log.Debug($"Input context not available, cannot activate {GetType().Name}");
-            return;
-        }
+        if (InputContext == null) return;
 
         SubscribeToInputEvents();
-        // Log.Debug($"{GetType().Name} activated and listening for input");
     }
 
     /// <summary>
@@ -97,28 +92,12 @@ public abstract partial class InputBinding(
 
         if (ActionId == ActionId.None)
         {
-            // Log.Debug($"No action configured for {inputDescription} on {GetType().Name}");
             return;
         }
 
-        if (_actionFactory == null)
-        {
-            // Log.Debug($"ActionFactory not available for {inputDescription} on {GetType().Name}");
-            return;
-        }
-
-        // Log.Debug($"Executing action for {inputDescription} - ActionId: {ActionId.Identifier}");
+        if (_actionFactory == null) return;
 
         var result = await _actionFactory.ExecuteAsync(ActionId, this);
-
-        if (result.Success)
-        {
-            // Log.Debug($"Action executed successfully for {inputDescription}: {result.Message ?? string.Empty}");
-        }
-        else
-        {
-            // Log.Debug($"Action execution failed for {inputDescription}: {result.Message ?? string.Empty}");
-        }
     }
 
     /// <summary>
@@ -127,7 +106,6 @@ public abstract partial class InputBinding(
     protected override void OnDeactivate()
     {
         UnsubscribeFromInputEvents();
-        // Log.Debug($"{GetType().Name} deactivated");
     }
 
     /// <summary>
