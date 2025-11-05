@@ -8,7 +8,10 @@ namespace Nexus.GameEngine.Resources.Fonts;
 /// Manages font resource lifecycle including loading, atlas generation, and caching.
 /// Generates font atlases using StbTrueType and creates GPU textures directly with Vulkan.
 /// </summary>
-public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolManager commandPoolManager)
+public unsafe class FontResourceManager(
+    IGraphicsContext context, 
+    ICommandPoolManager commandPoolManager,
+    IGeometryResourceManager geometryManager)
     : VulkanResourceManager<FontDefinition, FontResource>, IFontResourceManager
 {
     private const int AtlasWidth = 1024;
@@ -39,8 +42,11 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
         // Create GPU texture directly with Vulkan
         var atlasTexture = CreateAtlasTexture(atlasData, definition.Name);
 
+        // Generate shared geometry buffer for all glyphs
+        var sharedGeometry = GenerateSharedGeometry(glyphs, definition.Name);
+
         // Create and return resource
-        var resource = new FontResource(atlasTexture, glyphs, lineHeight, ascender, descender, definition.FontSize);
+        var resource = new FontResource(atlasTexture, sharedGeometry, glyphs, lineHeight, ascender, descender, definition.FontSize);
 
         return resource;
     }
@@ -129,6 +135,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
             int currentX = Padding;
             int currentY = Padding;
             int rowHeight = 0;
+            int charIndex = 0; // Track character index for shared geometry
 
             foreach (char c in characters)
             {
@@ -179,6 +186,7 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
                 glyphs[c] = new GlyphInfo
                 {
                     Character = c,
+                    CharIndex = charIndex++, // Assign sequential index for shared geometry
                     TexCoordMin = new Vector2D<float>(uvMinX, uvMinY),
                     TexCoordMax = new Vector2D<float>(uvMaxX, uvMaxY),
                     Width = glyphWidth,
@@ -195,6 +203,68 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
 
             return (atlasData, glyphs, lineHeight, ascender, descender);
         }
+    }
+
+    /// <summary>
+    /// Generates shared geometry buffer containing pre-positioned quads for all glyphs.
+    /// Each glyph has 4 vertices in normalized space (-1 to 1) with pre-baked UV coordinates.
+    /// This single buffer is shared by all TextElements using this font.
+    /// </summary>
+    private GeometryResource GenerateSharedGeometry(Dictionary<char, GlyphInfo> glyphs, string fontName)
+    {
+        var vertices = new List<Vertex<Vector2D<float>, Vector2D<float>>>();
+
+        // Sort glyphs by CharIndex to ensure consistent ordering
+        foreach (var kvp in glyphs.OrderBy(g => g.Value.CharIndex))
+        {
+            var glyph = kvp.Value;
+
+            // Create normalized quad (-1 to 1) for this glyph
+            // The actual position will be calculated per-instance via model matrix in push constants
+            float left = -1.0f;
+            float right = 1.0f;
+            float top = -1.0f;
+            float bottom = 1.0f;
+
+            // Pre-bake UV coordinates from atlas
+            float u0 = glyph.TexCoordMin.X;
+            float v0 = glyph.TexCoordMin.Y;
+            float u1 = glyph.TexCoordMax.X;
+            float v1 = glyph.TexCoordMax.Y;
+
+            // Add 4 vertices per quad (TriangleStrip topology)
+            // Order: Top-Left, Bottom-Left, Top-Right, Bottom-Right
+            vertices.Add(new Vertex<Vector2D<float>, Vector2D<float>>
+            {
+                Position = new Vector2D<float>(left, top),
+                Attribute1 = new Vector2D<float>(u0, v0)
+            });
+            vertices.Add(new Vertex<Vector2D<float>, Vector2D<float>>
+            {
+                Position = new Vector2D<float>(left, bottom),
+                Attribute1 = new Vector2D<float>(u0, v1)
+            });
+            vertices.Add(new Vertex<Vector2D<float>, Vector2D<float>>
+            {
+                Position = new Vector2D<float>(right, top),
+                Attribute1 = new Vector2D<float>(u1, v0)
+            });
+            vertices.Add(new Vertex<Vector2D<float>, Vector2D<float>>
+            {
+                Position = new Vector2D<float>(right, bottom),
+                Attribute1 = new Vector2D<float>(u1, v1)
+            });
+        }
+
+        // Create geometry definition
+        var geometryDef = new GeometryDefinition
+        {
+            Name = $"FontAtlas_{fontName}_SharedGeometry",
+            Source = new VertexArrayGeometrySource<Vertex<Vector2D<float>, Vector2D<float>>>(vertices.ToArray())
+        };
+
+        // Get or create geometry resource (cached by GeometryResourceManager)
+        return geometryManager.GetOrCreate(geometryDef);
     }
 
     /// <summary>
@@ -482,12 +552,29 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
     
     private ImageView CreateImageView(Image image, Format format)
     {
+        // For R8 font atlases, swizzle R channel to Alpha so shader samples as (1,1,1,r)
+        // This allows proper alpha blending without shader branching
+        var isR8Format = format == Format.R8Unorm || format == Format.R8Srgb;
+        
         var viewInfo = new ImageViewCreateInfo
         {
             SType = StructureType.ImageViewCreateInfo,
             Image = image,
             ViewType = ImageViewType.Type2D,
             Format = format,
+            Components = isR8Format ? new ComponentMapping
+            {
+                R = ComponentSwizzle.One,  // Map R to constant 1.0 (white)
+                G = ComponentSwizzle.One,  // Map G to constant 1.0 (white)
+                B = ComponentSwizzle.One,  // Map B to constant 1.0 (white)
+                A = ComponentSwizzle.R     // Map A to original R channel (glyph coverage)
+            } : new ComponentMapping
+            {
+                R = ComponentSwizzle.Identity,
+                G = ComponentSwizzle.Identity,
+                B = ComponentSwizzle.Identity,
+                A = ComponentSwizzle.Identity
+            },
             SubresourceRange = new ImageSubresourceRange
             {
                 AspectMask = ImageAspectFlags.ColorBit,
@@ -565,6 +652,11 @@ public unsafe class FontResourceManager(IGraphicsContext context, ICommandPoolMa
     /// </summary>
     protected override void DestroyResource(FontResource resource)
     {
+        // Release shared geometry (GeometryResourceManager handles actual cleanup)
+        // Note: We don't have the original GeometryDefinition here, but the GeometryResourceManager
+        // will handle cleanup when reference count reaches zero
+        
+        // Destroy atlas texture resources
         if (resource.AtlasTexture.Sampler.Handle != 0)
         {
             context.VulkanApi.DestroySampler(context.Device, resource.AtlasTexture.Sampler, null);

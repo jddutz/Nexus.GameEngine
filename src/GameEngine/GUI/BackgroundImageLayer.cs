@@ -1,6 +1,6 @@
 ﻿using Nexus.GameEngine.Resources.Geometry.Definitions;
 
-namespace Nexus.GameEngine.GUI.BackgroundLayers;
+namespace Nexus.GameEngine.GUI;
 
 /// <summary>
 /// Full-screen background with an image texture.
@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.GUI.BackgroundLayers;
 /// </summary>
 public partial class BackgroundImageLayer(
     IDescriptorManager descriptorManager)
-    : Drawable, IDrawable
+    : Drawable
 {
     private GeometryResource? _geometry;
     

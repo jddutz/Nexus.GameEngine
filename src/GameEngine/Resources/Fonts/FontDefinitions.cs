@@ -7,15 +7,16 @@ namespace Nexus.GameEngine.Resources.Fonts;
 public static class FontDefinitions
 {
     /// <summary>
-    /// Roboto Regular 24pt - suitable for titles and headings.
+    /// Roboto Bold 32pt - suitable for titles and headings with heavier weight.
+    /// Uses a bolder font face for better pixel coverage in tests.
     /// </summary>
     public static readonly FontDefinition RobotoTitle = new()
     {
-        Name = "Roboto-Regular-24pt",
+        Name = "Roboto-Bold-32pt",
         Source = new EmbeddedTrueTypeFontSource(
-            "EmbeddedResources/Fonts/Roboto-Regular.ttf",
+            "EmbeddedResources/Fonts/Roboto-Bold.ttf",
             typeof(FontDefinitions).Assembly),
-        FontSize = 24,
+        FontSize = 32,
         CharacterRange = CharacterRange.AsciiPrintable,
         UseSignedDistanceField = false
     };

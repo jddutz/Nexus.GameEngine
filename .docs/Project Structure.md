@@ -90,6 +90,27 @@ A new attribute-based resource management system provides centralized, type-safe
 - **Shader Resources**: Compiled shader programs for different rendering techniques
 - **Asset Resources**: Loaded textures, models, and other game assets
 - **Material Resources**: Configured material properties and effect parameters
+- **Font Resources**: Font atlases with embedded glyph geometry (see Font Rendering System)
+
+### Font Rendering System
+
+The font rendering system provides efficient text display using font atlases and shared geometry:
+
+- **Font Atlas Generation**: TrueType fonts rasterized into GPU textures (R8_UNORM format)
+- **Shared Geometry**: Single vertex buffer per font shared by all TextElements (~6KB for ASCII)
+- **Resource Caching**: IFontResourceManager caches font atlases with reference counting
+- **Per-Glyph Rendering**: Each character emits a DrawCommand referencing shared geometry
+- **Batch Optimization**: N text DrawCommands batch into 1 GPU draw call
+- **StbTrueTypeSharp**: Pure C# TrueType parsing and glyph rasterization
+
+#### Font Resource Components
+
+- **IFontResourceManager**: Manages font atlas lifecycle and caching
+- **FontResource**: GPU-resident font data (atlas texture, shared geometry, glyph metrics)
+- **FontDefinition**: Immutable font configuration (source, size, character range)
+- **GlyphInfo**: Per-character metrics and UV coordinates
+- **IFontSource**: Abstraction for loading font data (embedded, file, URI)
+- **TextElement**: UI component for rendering text using font atlases
 
 ### Graphics System
 
@@ -119,6 +140,14 @@ Component-based user interface system:
   - TexturedQuad geometry for UV-mapped rendering
   - Descriptor set binding for texture sampler (set=1, binding=0)
   - Uber-shader pipeline supporting both textured and solid color rendering
+
+- **TextElement**: Text rendering component using font atlases
+  - Text property with TemplateProperty and ComponentProperty attributes
+  - Font atlas texture binding via descriptor sets
+  - Per-glyph DrawCommand emission with shared geometry
+  - Automatic text measurement and Size calculation
+  - Position, AnchorPoint, Scale inherited from Element
+  - Reuses UIElement shader for rendering (no new shaders required)
 
 - **BackgroundLayer**: Full-screen background rendering with multiple material types
   - Solid color backgrounds with effects (tint, saturation, fade)

@@ -1,0 +1,277 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Font Atlas Structure",
+  "description": "Defines the data structure for font atlas texture and shared geometry buffer used in text rendering",
+  "type": "object",
+  "properties": {
+    "atlasTexture": {
+      "type": "object",
+      "description": "GPU texture containing rasterized glyphs",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "description": "Atlas texture width in pixels (power of 2)",
+          "enum": [256, 512, 1024, 2048, 4096]
+        },
+        "height": {
+          "type": "integer",
+          "description": "Atlas texture height in pixels (power of 2)",
+          "enum": [256, 512, 1024, 2048, 4096]
+        },
+        "format": {
+          "type": "string",
+          "description": "Vulkan texture format",
+          "enum": ["R8_UNORM"]
+        },
+        "data": {
+          "type": "array",
+          "description": "Raw pixel data (width × height × 1 byte for R8_UNORM)",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        }
+      },
+      "required": ["width", "height", "format", "data"]
+    },
+    "sharedGeometry": {
+      "type": "object",
+      "description": "Shared vertex buffer containing pre-positioned quads for all characters",
+      "properties": {
+        "vertexCount": {
+          "type": "integer",
+          "description": "Total vertex count (characterCount × 4 vertices per quad)",
+          "minimum": 4
+        },
+        "vertexFormat": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "string",
+              "description": "Position format (2D normalized coordinates)",
+              "enum": ["Vector2<float>"]
+            },
+            "texCoord": {
+              "type": "string",
+              "description": "Texture coordinate format (UV coordinates in atlas)",
+              "enum": ["Vector2<float>"]
+            }
+          },
+          "required": ["position", "texCoord"]
+        },
+        "vertices": {
+          "type": "array",
+          "description": "Array of vertices (4 per character in sequential order)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "position": {
+                "type": "array",
+                "description": "Normalized position [-1, 1] range",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "texCoord": {
+                "type": "array",
+                "description": "UV coordinates [0, 1] range (pre-baked atlas coordinates)",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": ["position", "texCoord"]
+          }
+        },
+        "topology": {
+          "type": "string",
+          "description": "Primitive topology for rendering quads",
+          "enum": ["TriangleStrip"]
+        }
+      },
+      "required": ["vertexCount", "vertexFormat", "vertices", "topology"]
+    },
+    "glyphInfo": {
+      "type": "array",
+      "description": "Per-character glyph metrics and atlas coordinates",
+      "items": {
+        "type": "object",
+        "properties": {
+          "character": {
+            "type": "string",
+            "description": "The character this glyph represents",
+            "minLength": 1,
+            "maxLength": 1
+          },
+          "charIndex": {
+            "type": "integer",
+            "description": "Sequential index in atlas (0-based), used to calculate FirstVertex = charIndex × 4",
+            "minimum": 0
+          },
+          "uv0": {
+            "type": "object",
+            "description": "Top-left UV coordinate in atlas",
+            "properties": {
+              "x": {"type": "number", "minimum": 0, "maximum": 1},
+              "y": {"type": "number", "minimum": 0, "maximum": 1}
+            },
+            "required": ["x", "y"]
+          },
+          "uv1": {
+            "type": "object",
+            "description": "Bottom-right UV coordinate in atlas",
+            "properties": {
+              "x": {"type": "number", "minimum": 0, "maximum": 1},
+              "y": {"type": "number", "minimum": 0, "maximum": 1}
+            },
+            "required": ["x", "y"]
+          },
+          "width": {
+            "type": "integer",
+            "description": "Glyph width in pixels",
+            "minimum": 0
+          },
+          "height": {
+            "type": "integer",
+            "description": "Glyph height in pixels",
+            "minimum": 0
+          },
+          "bearingX": {
+            "type": "integer",
+            "description": "Horizontal offset from cursor to left edge of glyph (can be negative)"
+          },
+          "bearingY": {
+            "type": "integer",
+            "description": "Vertical offset from baseline to top edge of glyph (can be negative)"
+          },
+          "advance": {
+            "type": "integer",
+            "description": "Horizontal distance to advance cursor for next character",
+            "minimum": 0
+          }
+        },
+        "required": ["character", "charIndex", "uv0", "uv1", "width", "height", "bearingX", "bearingY", "advance"]
+      }
+    },
+    "fontMetrics": {
+      "type": "object",
+      "description": "Font-level metrics for text layout",
+      "properties": {
+        "ascender": {
+          "type": "integer",
+          "description": "Distance from baseline to highest point (positive)"
+        },
+        "descender": {
+          "type": "integer",
+          "description": "Distance from baseline to lowest point (negative)"
+        },
+        "lineHeight": {
+          "type": "integer",
+          "description": "Recommended vertical spacing between lines",
+          "minimum": 1
+        },
+        "scale": {
+          "type": "number",
+          "description": "Scale factor applied during glyph rasterization",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": ["ascender", "descender", "lineHeight", "scale"]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Font atlas metadata",
+      "properties": {
+        "fontName": {
+          "type": "string",
+          "description": "Font name (e.g., 'Roboto-Regular')"
+        },
+        "fontSize": {
+          "type": "number",
+          "description": "Font size in points",
+          "exclusiveMinimum": 0
+        },
+        "characterRange": {
+          "type": "string",
+          "description": "Character range included in atlas",
+          "enum": ["AsciiPrintable", "ExtendedAscii", "Unicode"]
+        },
+        "characterCount": {
+          "type": "integer",
+          "description": "Number of characters in atlas",
+          "minimum": 1
+        }
+      },
+      "required": ["fontName", "fontSize", "characterRange", "characterCount"]
+    }
+  },
+  "required": ["atlasTexture", "sharedGeometry", "glyphInfo", "fontMetrics", "metadata"],
+  "examples": [
+    {
+      "atlasTexture": {
+        "width": 512,
+        "height": 512,
+        "format": "R8_UNORM",
+        "data": []
+      },
+      "sharedGeometry": {
+        "vertexCount": 380,
+        "vertexFormat": {
+          "position": "Vector2<float>",
+          "texCoord": "Vector2<float>"
+        },
+        "vertices": [
+          {
+            "position": [-1.0, -1.0],
+            "texCoord": [0.000, 0.000]
+          },
+          {
+            "position": [-1.0, 1.0],
+            "texCoord": [0.000, 0.063]
+          },
+          {
+            "position": [1.0, -1.0],
+            "texCoord": [0.047, 0.000]
+          },
+          {
+            "position": [1.0, 1.0],
+            "texCoord": [0.047, 0.063]
+          }
+        ],
+        "topology": "TriangleStrip"
+      },
+      "glyphInfo": [
+        {
+          "character": "A",
+          "charIndex": 0,
+          "uv0": {"x": 0.000, "y": 0.000},
+          "uv1": {"x": 0.047, "y": 0.063},
+          "width": 24,
+          "height": 32,
+          "bearingX": 0,
+          "bearingY": 26,
+          "advance": 26
+        }
+      ],
+      "fontMetrics": {
+        "ascender": 18,
+        "descender": -5,
+        "lineHeight": 24,
+        "scale": 0.0234375
+      },
+      "metadata": {
+        "fontName": "Roboto-Regular",
+        "fontSize": 16.0,
+        "characterRange": "AsciiPrintable",
+        "characterCount": 95
+      }
+    }
+  ]
+}

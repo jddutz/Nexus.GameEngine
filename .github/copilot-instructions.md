@@ -1,4 +1,4 @@
-DO NOT change any code without explicit instructions to do so. If not sure, ask first.
+﻿DO NOT change any code without explicit instructions to do so. If not sure, ask first.
 
 This project follows a documentation-first test-driven-development approach. See `src/GameEngine/Testing/README.md` for comprehensive testing guidelines.
 
