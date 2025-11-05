@@ -12,6 +12,13 @@ public class FontResource
     public TextureResource AtlasTexture { get; }
 
     /// <summary>
+    /// Shared geometry buffer containing pre-positioned quads for all glyphs.
+    /// Each glyph has 4 vertices with pre-baked UV coordinates.
+    /// All TextElements using this font share this single geometry buffer.
+    /// </summary>
+    public GeometryResource SharedGeometry { get; }
+
+    /// <summary>
     /// Dictionary mapping characters to their glyph information.
     /// </summary>
     public IReadOnlyDictionary<char, GlyphInfo> Glyphs { get; }
@@ -40,6 +47,7 @@ public class FontResource
     /// Creates a new font resource.
     /// </summary>
     /// <param name="atlasTexture">The GPU texture containing the font atlas.</param>
+    /// <param name="sharedGeometry">Shared geometry buffer with pre-positioned quads for all glyphs.</param>
     /// <param name="glyphs">Dictionary mapping characters to their glyph information.</param>
     /// <param name="lineHeight">Distance between baselines of consecutive lines.</param>
     /// <param name="ascender">Distance from baseline to highest point.</param>
@@ -47,6 +55,7 @@ public class FontResource
     /// <param name="fontSize">Font size in pixels.</param>
     public FontResource(
         TextureResource atlasTexture,
+        GeometryResource sharedGeometry,
         Dictionary<char, GlyphInfo> glyphs,
         int lineHeight,
         int ascender,
@@ -54,6 +63,7 @@ public class FontResource
         int fontSize)
     {
         AtlasTexture = atlasTexture;
+        SharedGeometry = sharedGeometry;
         Glyphs = glyphs;
         LineHeight = lineHeight;
         Ascender = ascender;

@@ -58,7 +58,6 @@ class Program
                     ["Application:General:ApplicationVersion"] = "1.0.0",
                     ["Application:General:EngineName"] = "Nexus Game Engine",
                     ["Application:General:EngineVersion"] = "1.0.0",
-                    ["Graphics:Fullscreen"] = "false",
 #if DEBUG
                     ["Graphics:Vulkan:EnableValidationLayers"] = "true",   // Enable in Debug for error detection
 #else
@@ -105,10 +104,10 @@ class Program
             // Create window options for the application
             var windowOptions = WindowOptions.DefaultVulkan with
             {
-                Size = new Vector2D<int>(1920, 1080),
+                Size = new Vector2D<int>(1280, 720),
                 Title = APPLICATION_NAME,
-                WindowBorder = WindowBorder.Hidden,
-                WindowState = WindowState.Fullscreen,
+                WindowBorder = WindowBorder.Resizable,
+                WindowState = WindowState.Normal,
                 VSync = true
             };
 

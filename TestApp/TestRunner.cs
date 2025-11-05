@@ -5,7 +5,7 @@ using Nexus.GameEngine.Runtime;
 using Silk.NET.Windowing;
 using System.Diagnostics;
 using System.Reflection;
-using TestApp.TestComponents;
+using TestApp.Tests;
 
 namespace TestApp;
 

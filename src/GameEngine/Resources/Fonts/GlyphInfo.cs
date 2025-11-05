@@ -11,6 +11,12 @@ public record GlyphInfo
     public required char Character { get; init; }
 
     /// <summary>
+    /// Character index in the atlas (0-based, sequential).
+    /// Used to calculate FirstVertex offset in shared geometry: FirstVertex = CharIndex × 4
+    /// </summary>
+    public required int CharIndex { get; init; }
+
+    /// <summary>
     /// Minimum texture coordinate (top-left corner) in the font atlas.
     /// </summary>
     public required Vector2D<float> TexCoordMin { get; init; }

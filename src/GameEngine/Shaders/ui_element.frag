@@ -8,6 +8,9 @@ layout(location = 0) out vec4 outColor;
 layout(set = 1, binding = 0) uniform sampler2D texSampler;
 
 void main() {
+    // For R8 font atlases: component swizzle maps R→(1,1,1,R), so texture() returns (1,1,1,coverage)
+    // For RGBA textures: identity swizzle, texture() returns (r,g,b,a) as normal
+    // In both cases, simple multiplication works correctly
     vec4 texColor = texture(texSampler, fragTexCoord);
     outColor = texColor * fragTintColor;
 }
