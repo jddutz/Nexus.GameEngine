@@ -187,12 +187,12 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
             + $"\n====== SUMMARY ======\n"
             + $"Test Components Discovered: {tests.Count}\n"
             + $"Number of Test Results: {passed.Count + failed.Count}\n"
-            + $"Passed: {passed.Count}\n"
-            + $"Failed: {failed.Count}\n"
             + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
             + $"Updates: {frameCount}\n"            
             + $"Frames Rendered: {framesRendered}\n"
             + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds:F0}\n"
+            + $"Passed: {passed.Count}\n"
+            + $"Failed: {failed.Count}\n"
             + $"Overall Result: {(passed.Count > 0 && failed.Count == 0 ? "[PASS]" : "[FAIL]")}\n";
 
         if (failed.Count > 0)
