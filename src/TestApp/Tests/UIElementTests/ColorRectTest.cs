@@ -21,7 +21,7 @@ public partial class ColorRectTest(
     {
         FrameCount = 1,
         Subcomponents = [
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
                 TintColor = Colors.Red,
                 // Set proper pixel-space transform: 200x100 rectangle from (100,100) to (300,200)

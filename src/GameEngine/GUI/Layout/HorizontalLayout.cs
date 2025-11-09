@@ -1,71 +1,58 @@
 namespace Nexus.GameEngine.GUI.Layout;
+using System.Linq;
 
 /// <summary>
 /// A layout component that arranges its children horizontally.
 /// Child components are positioned side by side with configurable spacing and alignment.
 /// </summary>
-public partial class HorizontalLayout(IDescriptorManager descriptorManager)
-    : Layout(descriptorManager)
+public partial class HorizontalLayout : Container
 {
+    public HorizontalLayout(IDescriptorManager descriptorManager) : base(descriptorManager) { }
     /// <summary>
     /// Vertical alignment of child components within the layout.
     /// </summary>
-    public VerticalAlignment Alignment { get; set; } = VerticalAlignment.Center;
-
-    /// <summary>
-    /// Spacing between child components in pixels.
-    /// </summary>
-    public int Spacing { get; set; } = 0;
+    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [TemplateProperty]
+    private VerticalAlignment _alignment = VerticalAlignment.Center;
 
     /// <summary>
     /// Arranges child components horizontally with spacing and alignment.
     /// </summary>
-    /// <param name="children">Collection of UI child components to arrange</param>
     protected override void UpdateLayout()
     {
-        var children = GetChildren<Element>().ToArray();
+    var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
+        if (children.Length == 0) return;
 
-        // Measure children
-        int maxHeight = 0;
-        int maxWidth = 0;
-        foreach (var child in children)
-        {
-            if (child.Size.X > maxWidth) maxWidth = child.Size.X;
-            if (child.Size.Y > maxHeight) maxHeight = child.Size.Y;
-        }
+        var contentArea = GetContentArea();
 
-        var pX = 0;
+        var pX = contentArea.Origin.X;
 
         // Arrange children
         foreach (var child in children)
         {
-            var childBounds = child.GetBounds();
-            
-            // TODO: Calculate X based on alignment and LayoutMode
+            var measured = child.Measure(contentArea.Size);
+
             var x = pX;
 
-            // TODO: Calculate Y based on alignment and LayoutMode
+            // Calculate Y based on alignment - use content area height for centering
             var y = Alignment switch
             {
-                VerticalAlignment.Top => Padding.Top,
-                VerticalAlignment.Center => Padding.Top + (maxHeight - childBounds.Size.Y) / 2,
-                VerticalAlignment.Bottom => Padding.Top + maxHeight - childBounds.Size.Y,
-                VerticalAlignment.Stretch => Padding.Top,
-                _ => Padding.Top
+                VerticalAlignment.Top => contentArea.Origin.Y,
+                VerticalAlignment.Center => contentArea.Origin.Y + (contentArea.Size.Y - measured.Y) / 2,
+                VerticalAlignment.Bottom => contentArea.Origin.Y + contentArea.Size.Y - measured.Y,
+                VerticalAlignment.Stretch => contentArea.Origin.Y,
+                _ => contentArea.Origin.Y
             };
 
-            // TODO: Calculate W based on LayoutMode
-            var w = childBounds.Size.X;
-
-            // TODO: Calculate H based on LayoutMode
-            var h = childBounds.Size.Y;
+            var w = measured.X;
+            var h = Alignment == VerticalAlignment.Stretch ? contentArea.Size.Y : measured.Y;
 
             // Set child constraints
             var newConstraints = new Rectangle<int>(x, y, w, h);
             child.SetSizeConstraints(newConstraints);
 
             // Move to next position
-            pX += childBounds.Size.X + Spacing;
+            pX += measured.X + (int)Spacing.X;
         }
     }
 }

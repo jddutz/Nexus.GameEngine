@@ -20,9 +20,9 @@ public partial class MultiTextureTest(
     [Test("Multi-texture test (3 Elements with different textures)")]
     public readonly static MultiTextureTestTemplate MultiTextureTestInstance = new()
     {
-        Subcomponents = [
+            Subcomponents = [
             // Element 1: Red texture
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
                 Name = "RedElement",
                 Position = new Vector3D<float>(100, 100, 0),
@@ -30,7 +30,7 @@ public partial class MultiTextureTest(
                 Texture = TestResources.TestTexture
             },
             // Element 2: White texture
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
                 Name = "WhiteElement",
                 Position = new Vector3D<float>(400, 100, 0),
@@ -38,7 +38,7 @@ public partial class MultiTextureTest(
                 Texture = TestResources.WhiteTexture
             },
             // Element 3: Icon texture
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
                 Name = "IconElement",
                 Position = new Vector3D<float>(700, 100, 0),

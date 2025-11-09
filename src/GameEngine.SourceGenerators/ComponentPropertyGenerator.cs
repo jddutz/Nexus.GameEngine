@@ -122,6 +122,9 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
                 miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
+            // Read optional BeforeChange named argument from attribute
+            var beforeChange = GetAttributeValue<string?>(animationAttr, "BeforeChange", null);
+
             properties.Add(new PropertyInfo
             {
                 Name = propertyName,
@@ -130,7 +133,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 TypeSymbol = field.Type,
                 IsCollection = isCollection,
                 // Duration and Interpolation are now runtime parameters, not attribute properties
-                DefaultValue = GetFieldDefaultValue(field)
+                DefaultValue = GetFieldDefaultValue(field),
+                BeforeChange = beforeChange
             });
         }
 
@@ -291,10 +295,28 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
         sb.AppendLine();
         
+        // Generate Target{PropertyName} property to access pending value
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Gets the target value for {prop.Name} that will be applied on the next ApplyUpdates call.");
+        sb.AppendLine($"    /// If no update is pending, returns the current value.");
+        sb.AppendLine($"    /// Use this in layout calculations to query the element's target size before deferred updates are applied.");
+        sb.AppendLine($"    /// </summary>");
+        sb.AppendLine($"    public {propertyType} Target{prop.Name}");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        get => {targetFieldName}__hasUpdate ? {targetFieldName} : {fieldName};");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        
         // Generate Set method with optional duration and interpolation parameters
         // Default is 0f duration (instant on next frame) and Step interpolation
         sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = 0f, global::Nexus.GameEngine.Components.InterpolationMode interpolation = global::Nexus.GameEngine.Components.InterpolationMode.Step)");
         sb.AppendLine("    {");
+        // If a BeforeChange hook was specified, call it so callers can modify value/duration/interpolation
+        if (!string.IsNullOrEmpty(prop.BeforeChange))
+        {
+            sb.AppendLine($"        {prop.BeforeChange}(ref value, ref duration, ref interpolation);");
+            sb.AppendLine();
+        }
         sb.AppendLine($"        if ({targetFieldName}__hasUpdate && {fieldName}__comparer.Equals({targetFieldName}, value))");
         sb.AppendLine("            return;");
         sb.AppendLine();
@@ -502,5 +524,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         public ITypeSymbol? TypeSymbol { get; set; }
         public bool IsCollection { get; set; }
         public string DefaultValue { get; set; } = string.Empty;
+        // Optional name of a generated hook to call before queuing the change
+        public string? BeforeChange { get; set; }
     }
 }

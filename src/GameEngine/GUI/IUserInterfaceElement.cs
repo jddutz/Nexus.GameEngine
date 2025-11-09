@@ -4,13 +4,8 @@ namespace Nexus.GameEngine.GUI;
 /// Interface for user interface components supporting 2D positioning, sizing, and anchor-based layout.
 /// Uses Position/AnchorPoint/Size model where Position defines where the AnchorPoint is located in screen space.
 /// </summary>
-public interface IUserInterfaceElement : IDrawable
+public interface IUserInterfaceElement : ITransformable, IComponent
 {
-    /// <summary>
-    /// Gets the position of the anchor point in pixel space.
-    /// </summary>
-    Vector3D<float> Position { get; }
-
     /// <summary>
     /// Gets the anchor point in normalized space (-1 to 1).
     /// (-1,-1) = top-left, (0,0) = center, (1,1) = bottom-right.
@@ -21,14 +16,6 @@ public interface IUserInterfaceElement : IDrawable
     /// Gets the size of the component in pixels.
     /// </summary>
     Vector2D<int> Size { get; }
-
-    /// <summary>
-    /// Sets the position (where the anchor point is located).
-    /// </summary>
-    /// <param name="position">The new position in pixel space.</param>
-    /// <param name="duration">Optional animation duration.</param>
-    /// <param name="interpolation">Optional interpolation mode.</param>
-    void SetPosition(Vector3D<float> position, float duration = 0f, InterpolationMode interpolation = InterpolationMode.Step);
 
     /// <summary>
     /// Sets the anchor point in normalized space (-1 to 1).
@@ -51,6 +38,15 @@ public interface IUserInterfaceElement : IDrawable
     /// </summary>
     /// <returns>The bounding rectangle in pixel space.</returns>
     Rectangle<int> GetBounds();
+
+    /// <summary>
+    /// Measures the desired size of the element given an available size.
+    /// Layouts call this to ask children how large they would like to be when
+    /// constrained by available space.
+    /// </summary>
+    /// <param name="availableSize">The available space in pixels (width, height).</param>
+    /// <returns>The desired size (width, height) in pixels.</returns>
+    Vector2D<int> Measure(Vector2D<int> availableSize);
 
     /// <summary>
     /// Sets the size constraints for this element (the available space it can occupy).

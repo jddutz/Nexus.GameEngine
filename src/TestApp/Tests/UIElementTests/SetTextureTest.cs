@@ -24,7 +24,7 @@ public partial class SetTextureTest(
         FrameCount = 3, // Frame 0: init red, Frame 1: verify red, Frame 2: change queued/still red, Frame 3: white
 
         Subcomponents = [
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
                 Position = new Vector3D<float>(100, 100, 0),
                 Size = new Vector2D<int>(200, 100),
@@ -55,8 +55,17 @@ public partial class SetTextureTest(
         // Change will be applied on the NEXT frame (frame 3) due to deferred updates
         if (FramesRendered > 0)
         {
-            var element = GetChildren<Element>().First();
-            element.SetTexture(TextureDefinitions.UniformColor);
+            var element = GetChildren<DrawableElement>().FirstOrDefault();
+            if (element != null)
+            {
+                element.SetTexture(TextureDefinitions.UniformColor);
+            }
+            else
+            {
+                // Safety: if the child hasn't been created for some reason, skip the texture change
+                // This prevents an exception during integration runs and allows the test harness
+                // to report a failing assertion instead of crashing the runner.
+            }
         }
 
         base.OnUpdate(deltaTime);

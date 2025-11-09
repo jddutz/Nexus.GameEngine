@@ -9,10 +9,12 @@ namespace Nexus.GameEngine.GUI;
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
 public partial class BackgroundImageLayer(
-    IDescriptorManager descriptorManager)
-    : Drawable
+    IDescriptorManager descriptorManager,
+    IResourceManager resourceManager,
+    IPipelineManager pipelineManager)
+    : DrawableElement(descriptorManager, resourceManager, pipelineManager)
 {
-    private GeometryResource? _geometry;
+    private IGeometryResource? _geometry;
     
     // Texture resources
     private TextureResource? _texture;
@@ -47,12 +49,12 @@ public partial class BackgroundImageLayer(
             throw new InvalidOperationException(
                 $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
-        
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
-        _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
-        
+
+        var layout = DescriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
+        _textureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
+
         // Update descriptor set with texture
-        descriptorManager.UpdateDescriptorSet(
+        DescriptorManager.UpdateDescriptorSet(
             _textureDescriptorSet.Value,
             _texture.ImageView,
             _texture.Sampler,

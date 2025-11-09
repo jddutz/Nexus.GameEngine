@@ -1,3 +1,4 @@
+using Nexus.GameEngine.GUI.Layout;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures.Definitions;
 
@@ -23,9 +24,12 @@ namespace Nexus.GameEngine.GUI;
 /// - Transforms from local geometry space to screen space
 /// - Combined with camera view-projection matrix in shader
 /// </summary>
-public partial class Element(IDescriptorManager descriptorManager) : Drawable, IUserInterfaceElement
+public partial class Element(IDescriptorManager descriptorManager) : Transformable, IUserInterfaceElement
 {
     protected IDescriptorManager DescriptorManager { get; } = descriptorManager;
+    
+    // Element is layout/transform only and must not depend on graphics services.
+    // Graphics-related dependencies belong to drawable components (Drawable / DrawableElement).
 
     /// <summary>
     /// Overrides UpdateLocalMatrix to account for Size and AnchorPoint.
@@ -80,6 +84,10 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
     {
         // When Size changes, regenerate the cached local matrix
         UpdateLocalMatrix();
+        
+        // Notify parent layout if it exists (for intrinsic sizing)
+        var parentLayout = FindParent<ILayout>();
+        parentLayout?.OnChildSizeChanged(this, oldValue);
     }
 
     /// <summary>
@@ -109,11 +117,52 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
     protected Rectangle<int> SizeConstraints => _sizeConstraints;
 
     /// <summary>
+    /// How this element determines its size.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private SizeMode _sizeMode = SizeMode.Fixed;
+
+    /// <summary>
+    /// Width as percentage of parent (0-100) when SizeMode is Percentage.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _widthPercentage = 100f;
+
+    /// <summary>
+    /// Height as percentage of parent (0-100) when SizeMode is Percentage.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _heightPercentage = 100f;
+
+    /// <summary>
+    /// Minimum size constraints (width, height).
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private Vector2D<int> _minSize = new(0, 0);
+
+    /// <summary>
+    /// Maximum size constraints (width, height).
+    /// Use 0 for no limit.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private Vector2D<int> _maxSize = new(0, 0);
+
+    /// <summary>
     /// Sets the size constraints for this element.
-    /// Called by parent layout for root elements.
+    /// Called by parent layout or root elements.
+    /// Only triggers recalculation if constraints actually changed.
     /// </summary>
     public virtual void SetSizeConstraints(Rectangle<int> constraints)
     {
+        // Only trigger recalculation if constraints changed
+        if (_sizeConstraints.Equals(constraints))
+            return;
+            
         _sizeConstraints = constraints;
         // When constraints change, element may need to recalculate its bounds
         OnSizeConstraintsChanged(constraints);
@@ -122,29 +171,135 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
     /// <summary>
     /// Called when size constraints change.
     /// Override to implement custom sizing behavior.
-    /// Default behavior: Fill constraints completely with top-left anchor.
+    /// Applies SizeMode logic and enforces MinSize/MaxSize constraints.
     /// </summary>
     protected virtual void OnSizeConstraintsChanged(Rectangle<int> constraints)
     {
         if (constraints.Size.X <= 0 || constraints.Size.Y <= 0)
             return;
         
-        // Default: fill constraints with top-left anchor
-        // Position = top-left corner of constraints
+        // Calculate preferred size based on SizeMode
+        var preferredSize = CalculatePreferredSize(constraints);
+        
+        // Apply size constraints (min/max)
+        var finalSize = ApplySizeConstraints(preferredSize);
+        
+        // Update position and size
         SetPosition(new Vector3D<float>(
             constraints.Origin.X,
             constraints.Origin.Y,
             Position.Z  // Keep current Z
         ));
         
-        // Size = full constraint size
-        SetSize(new Vector2D<int>(constraints.Size.X, constraints.Size.Y));
+        SetSize(finalSize);
         
-        // Ensure anchor is top-left for this default behavior
+        // Ensure anchor is top-left for layout behavior
         if (AnchorPoint.X != -1 || AnchorPoint.Y != -1)
         {
             SetAnchorPoint(new Vector2D<float>(-1, -1));
         }
+    }
+
+    /// <summary>
+    /// Calculates preferred size based on SizeMode and constraints.
+    /// </summary>
+    protected virtual Vector2D<int> CalculatePreferredSize(Rectangle<int> constraints)
+    {
+        return SizeMode switch
+        {
+            SizeMode.Fixed => Size,
+            SizeMode.Percentage => new Vector2D<int>(
+                (int)(constraints.Size.X * WidthPercentage / 100f),
+                (int)(constraints.Size.Y * HeightPercentage / 100f)
+            ),
+            SizeMode.Stretch => constraints.Size,
+            SizeMode.Intrinsic => CalculateIntrinsicSize(),
+            _ => Size
+        };
+    }
+
+    /// <summary>
+    /// Calculates intrinsic size based on content (children bounds).
+    /// Override in derived classes for content-specific sizing (e.g., TextElement).
+    /// </summary>
+    protected virtual Vector2D<int> CalculateIntrinsicSize()
+    {
+        // Base implementation: query children bounds
+        var childElements = GetChildren<Element>().ToList();
+        if (childElements.Count == 0)
+            return new Vector2D<int>(100, 100); // Default minimum size
+        
+        int maxX = 0, maxY = 0;
+        foreach (var elem in childElements)
+        {
+            var childBounds = elem.GetBounds();
+            maxX = Math.Max(maxX, childBounds.Origin.X + childBounds.Size.X);
+            maxY = Math.Max(maxY, childBounds.Origin.Y + childBounds.Size.Y);
+        }
+        return new Vector2D<int>(maxX, maxY);
+    }
+
+    /// <summary>
+    /// Measures the desired size of this element given the available size.
+    /// Default behavior depends on SizeMode:
+    /// - Fixed: return TargetSize
+    /// - Percentage: compute from availableSize and width/height percentages
+    /// - Stretch: return availableSize
+    /// - Intrinsic: return CalculateIntrinsicSize()
+    /// The result is clamped by MinSize/MaxSize.
+    /// </summary>
+    public Vector2D<int> Measure(Vector2D<int> availableSize)
+    {
+        Vector2D<int> desired;
+
+        switch (SizeMode)
+        {
+            case SizeMode.Fixed:
+                desired = TargetSize;
+                break;
+            case SizeMode.Percentage:
+                desired = new Vector2D<int>(
+                    (int)(availableSize.X * WidthPercentage / 100f),
+                    (int)(availableSize.Y * HeightPercentage / 100f)
+                );
+                break;
+            case SizeMode.Stretch:
+                desired = availableSize;
+                break;
+            case SizeMode.Intrinsic:
+                desired = CalculateIntrinsicSize();
+                break;
+            default:
+                desired = TargetSize;
+                break;
+        }
+
+        // Apply min/max constraints (0 means no limit for MaxSize)
+        if (MinSize.X > 0 && desired.X < MinSize.X) desired.X = MinSize.X;
+        if (MinSize.Y > 0 && desired.Y < MinSize.Y) desired.Y = MinSize.Y;
+        if (MaxSize.X > 0 && desired.X > MaxSize.X) desired.X = MaxSize.X;
+        if (MaxSize.Y > 0 && desired.Y > MaxSize.Y) desired.Y = MaxSize.Y;
+
+        return desired;
+    }
+
+    /// <summary>
+    /// Applies min/max size constraints.
+    /// </summary>
+    protected Vector2D<int> ApplySizeConstraints(Vector2D<int> size)
+    {
+        var width = size.X;
+        var height = size.Y;
+        
+        // Apply minimum size
+        if (MinSize.X > 0 && width < MinSize.X) width = MinSize.X;
+        if (MinSize.Y > 0 && height < MinSize.Y) height = MinSize.Y;
+        
+        // Apply maximum size (0 means no limit)
+        if (MaxSize.X > 0 && width > MaxSize.X) width = MaxSize.X;
+        if (MaxSize.Y > 0 && height > MaxSize.Y) height = MaxSize.Y;
+        
+        return new Vector2D<int>(width, height);
     }
 
     /// <summary>
@@ -164,162 +319,5 @@ public partial class Element(IDescriptorManager descriptorManager) : Drawable, I
         var originY = (int)(Position.Y - anchorOffsetY);
         
         return new Rectangle<int>(originX, originY, Size.X, Size.Y);
-    }
-
-    [ComponentProperty]
-    [TemplateProperty]
-    protected int _zIndex = 0;
-
-    [ComponentProperty]
-    [TemplateProperty]
-    protected Vector4D<float> _tintColor = Colors.White;
-
-    /// <summary>
-    /// Texture definition from template (private, not exposed).
-    /// Used to create TextureResource in OnActivate.
-    /// Cached for re-creation if SetTexture(TextureDefinition) is called.
-    /// Cleared when SetTexture(TextureResource) is called directly.
-    /// </summary>
-    [TemplateProperty(Name = "Texture")]
-    private TextureDefinition? _textureDefinition = null;
-
-    /// <summary>
-    /// Texture resource created from TextureDefinition.
-    /// Has ComponentProperty for runtime behavior but NOT TemplateProperty (texture set via _textureDefinition in template).
-    /// </summary>
-    [ComponentProperty]
-    private TextureResource? _texture;
-
-    public override PipelineHandle Pipeline =>
-        PipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
-        
-    protected GeometryResource? Geometry { get; set; }
-    protected DescriptorSet? TextureDescriptorSet { get; set; }
-
-    /// <summary>
-    /// Sets texture from a definition.
-    /// Caches the definition and creates the TextureResource via ResourceManager.
-    /// </summary>
-    public void SetTexture(TextureDefinition? definition)
-    {
-        if (ResourceManager == null) return;
-
-        if (definition == null)
-        {
-            SetTintColor(Colors.Magenta);
-
-            var resource = ResourceManager.Textures.GetOrCreate(TextureDefinitions.UniformColor);
-            SetTexture(resource);
-        }
-        else
-        {
-            var resource = ResourceManager.Textures.GetOrCreate(definition);
-            SetTexture(resource);
-        }
-        
-        _textureDefinition = definition;  // Cache the definition
-    }
-
-    /// <summary>
-    /// Sets texture resource directly.
-    /// Clears the cached definition since it's no longer relevant.
-    /// </summary>
-    public void SetTexture(TextureResource? resource)
-    {
-        _textureDefinition = null;  // Clear definition cache
-        _texture = resource;
-        
-        // Update descriptor set if already activated
-        if (IsActive() && TextureDescriptorSet.HasValue && _texture != null)
-        {
-            DescriptorManager.UpdateDescriptorSet(
-                TextureDescriptorSet.Value,
-                _texture.ImageView,
-                _texture.Sampler,
-                ImageLayout.ShaderReadOnlyOptimal,
-                binding: 0);
-        }
-    }
-
-    protected override void OnActivate()
-    {
-        base.OnActivate();
-
-        // Use shared TexturedQuad geometry (UVs provided via push constants)
-        Geometry = ResourceManager?.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
-
-        // Convert texture definition to resource if provided, or use default uniform color texture
-        if (_textureDefinition != null && _texture == null)
-        {
-            SetTexture(_textureDefinition);
-        }
-        else if (_texture == null)
-        {
-            // Default to UniformColor texture (1x1 white pixel) for elements without explicit textures
-            // This ensures all elements can use the same uber-shader pipeline
-            SetTexture(TextureDefinitions.UniformColor);
-        }
-
-        // Create descriptor set for texture (set=1)
-        var shader = ShaderDefinitions.UIElement;
-        if (shader.DescriptorSetLayouts != null && shader.DescriptorSetLayouts.TryGetValue(1, out var textureBindings))
-        {
-            // Create layout for set=1 (texture sampler)
-            var layout = DescriptorManager.CreateDescriptorSetLayout(textureBindings);
-            TextureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
-            if (TextureDescriptorSet.HasValue && _texture != null)
-            {
-                DescriptorManager.UpdateDescriptorSet(
-                    TextureDescriptorSet.Value,
-                    _texture.ImageView,
-                    _texture.Sampler,
-                    ImageLayout.ShaderReadOnlyOptimal,
-                    binding: 0);
-            }
-        }
-
-        var bounds = GetBounds();
-
-        var pipeline = Pipeline;
-    }
-    
-    public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
-    {
-        if (Geometry == null) yield break;
-
-        var bounds = GetBounds();
-
-        var pushConstants = UIElementPushConstants.FromModelColorAndUV(WorldMatrix, TintColor, MinUV, MaxUV);
-        
-        var drawCommand = new DrawCommand
-        {
-            RenderMask = RenderPasses.UI,
-            Pipeline = Pipeline,
-            VertexBuffer = Geometry.Buffer,
-            VertexCount = Geometry.VertexCount,
-            InstanceCount = 1,
-            RenderPriority = ZIndex,
-            // For UIElement shader: bind texture descriptor set at set=1
-            // ViewProjection UBO is already bound at set=0 by camera system
-            DescriptorSet = TextureDescriptorSet ?? default,
-            // Push model matrix + color + UV rect (96 bytes: 64 for matrix + 16 for color + 16 for UV)
-            PushConstants = pushConstants
-        };
-        
-        yield return drawCommand;
-    }
-
-    protected override void OnDeactivate()
-    {        
-        if (Geometry != null)
-        {
-            ResourceManager?.Geometry.Release(GeometryDefinitions.TexturedQuad);
-            Geometry = null;
-        }
-        
-        // Texture is managed by ResourceManager, no manual release needed
-        // Descriptor sets are freed automatically when the pool is reset
-        
-        base.OnDeactivate();
     }
 }

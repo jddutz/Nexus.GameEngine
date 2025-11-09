@@ -6,7 +6,10 @@
 /// </summary>
 public class GeometryResourceManager(IBufferManager bufferManager)
     : VulkanResourceManager<GeometryDefinition, GeometryResource>, IGeometryResourceManager
-{    
+{
+    IGeometryResource? IGeometryResourceManager.GetOrCreate(GeometryDefinition definition) => GetOrCreate(definition);
+    IGeometryResource? IGeometryResourceManager.CreateResource(GeometryDefinition definition) => CreateResource(definition);
+    
     /// <inheritdoc />
     protected override string GetResourceKey(GeometryDefinition definition)
     {
