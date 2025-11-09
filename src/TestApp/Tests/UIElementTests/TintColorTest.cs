@@ -22,8 +22,8 @@ public partial class TintColorTest(
     [Test("Tint color test (white texture * red tint = red)")]
     public readonly static TintColorTestTemplate TintColorTestInstance = new()
     {
-        Subcomponents = [
-            new ElementTemplate()
+            Subcomponents = [
+            new DrawableElementTemplate()
             {
                 Position = new Vector3D<float>(100, 100, 0),
                 Size = new Vector2D<int>(150, 100),

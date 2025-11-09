@@ -16,7 +16,7 @@ public class FontResource
     /// Each glyph has 4 vertices with pre-baked UV coordinates.
     /// All TextElements using this font share this single geometry buffer.
     /// </summary>
-    public GeometryResource SharedGeometry { get; }
+    public IGeometryResource? SharedGeometry { get; }
 
     /// <summary>
     /// Dictionary mapping characters to their glyph information.
@@ -55,7 +55,7 @@ public class FontResource
     /// <param name="fontSize">Font size in pixels.</param>
     public FontResource(
         TextureResource atlasTexture,
-        GeometryResource sharedGeometry,
+        IGeometryResource? sharedGeometry,
         Dictionary<char, GlyphInfo> glyphs,
         int lineHeight,
         int ascender,

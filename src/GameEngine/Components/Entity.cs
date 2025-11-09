@@ -49,4 +49,12 @@ public abstract partial class Entity
             _isDirty = false;
         }
     }
+
+    /// <summary>
+    /// Helper method for canceling animations on layout-affecting properties.
+    /// Use with [ComponentProperty(BeforeChange = nameof(CancelAnimation))] attribute.
+    /// Forces immediate updates by setting duration to 0 and interpolation mode to Step.
+    /// </summary>
+    // CancelAnimation helper moved to Component so it is available to components
+    // in the component inheritance chain (Component -> RuntimeComponent -> Transformable ...)
 }

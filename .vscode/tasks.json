@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "${workspaceFolder}/src/GameEngine/Shaders/compile.bat",
             "windows": {
-                "command": "${workspaceFolder}\\src\\GameEngine\\Shaders\\compile.bat"
+                "command": "${workspaceFolder}/src/GameEngine/Shaders/compile.bat"
             },
             "options": {
                 "cwd": "${workspaceFolder}/src/GameEngine/Shaders"
@@ -27,7 +27,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/TestApp/TestApp.csproj",
+                "${workspaceFolder}/src/TestApp/TestApp.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -74,7 +74,7 @@
             "args": [
                 "run",
                 "--project",
-                "${workspaceFolder}/TestApp/TestApp.csproj",
+                "${workspaceFolder}/src/TestApp/TestApp.csproj",
                 "--configuration",
                 "Debug"
             ],
@@ -94,7 +94,7 @@
             "type": "process",
             "args": [
                 "clean",
-                "${workspaceFolder}/TestApp/TestApp.csproj"
+                "${workspaceFolder}/src/TestApp/TestApp.csproj"
             ],
             "group": "build",
             "presentation": {

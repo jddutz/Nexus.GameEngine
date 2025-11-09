@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Resources.Geometry;
 /// Handle to GPU geometry resources (vertex buffer and memory).
 /// Managed by GeometrySubManager - components should not create or destroy these directly.
 /// </summary>
-public class GeometryResource
+public class GeometryResource : IGeometryResource
 {
     /// <summary>
     /// Vulkan vertex buffer handle.

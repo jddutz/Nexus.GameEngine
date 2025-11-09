@@ -23,8 +23,8 @@ public partial class UVCoordinateTest(
     [Test("UV coordinate test (atlas full texture)")]
     public readonly static UVCoordinateTestTemplate UVCoordinateTestInstance = new()
     {
-        Subcomponents = [
-            new ElementTemplate()
+            Subcomponents = [
+            new DrawableElementTemplate()
             {
                 Position = new Vector3D<float>(128, 128, 0),
                 Size = new Vector2D<int>(128, 128),

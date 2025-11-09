@@ -20,14 +20,14 @@ public partial class MixedUITest(
     [Test("Mixed UI test (solid colors + textures, no pipeline switches)")]
     public readonly static MixedUITestTemplate MixedUITestInstance = new()
     {
-        Subcomponents = [
+            Subcomponents = [
             // Row 1: Solid colors (UniformColor + tint)
-            new ElementTemplate() { Name = "Red", Position = new Vector3D<float>(100, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(1, 0, 0, 1) },
-            new ElementTemplate() { Name = "Green", Position = new Vector3D<float>(300, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 1, 0, 1) },
-            new ElementTemplate() { Name = "Blue", Position = new Vector3D<float>(500, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 0, 1, 1) },
+            new DrawableElementTemplate() { Name = "Red", Position = new Vector3D<float>(100, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(1, 0, 0, 1) },
+            new DrawableElementTemplate() { Name = "Green", Position = new Vector3D<float>(300, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 1, 0, 1) },
+            new DrawableElementTemplate() { Name = "Blue", Position = new Vector3D<float>(500, 100, 0), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 0, 1, 1) },
             // Row 2: Textured elements
-            new ElementTemplate() { Name = "RedTexture", Position = new Vector3D<float>(100, 300, 0), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new ElementTemplate() { Name = "WhiteTexture", Position = new Vector3D<float>(300, 300, 0), Size = new Vector2D<int>(100, 100), Texture = TestResources.WhiteTexture }
+            new DrawableElementTemplate() { Name = "RedTexture", Position = new Vector3D<float>(100, 300, 0), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "WhiteTexture", Position = new Vector3D<float>(300, 300, 0), Size = new Vector2D<int>(100, 100), Texture = TestResources.WhiteTexture }
         ]
     };
 

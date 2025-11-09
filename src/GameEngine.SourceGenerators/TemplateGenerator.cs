@@ -37,6 +37,7 @@ public class TemplateGenerator : IIncrementalGenerator
             
             GenerateTemplate(spc, componentInfo);
             GenerateOnLoadMethod(spc, componentInfo);
+            GenerateLoadOverload(spc, componentInfo);
         });
     }
 
@@ -60,23 +61,59 @@ public class TemplateGenerator : IIncrementalGenerator
 
         // Check if class derives from IComponent (directly or indirectly)
         if (!DerivesFromInterface(classSymbol, "IComponent")) return null;
+        // We generate template records for abstract classes as well so the
+        // inheritance chain of template properties is preserved. Abstract
+        // templates will be emitted with internal visibility and a null
+        // ComponentType so they can't be used to instantiate components.
 
         // Get ComponentProperty fields declared directly on this class (not inherited)
         var properties = GetComponentProperties(classSymbol);
+        
+        // Get all template properties from the entire hierarchy (for Load overload)
+        var allTemplateProperties = GetAllTemplateProperties(classSymbol);
 
-        // Find the base class that also has generated templates (for inheritance)
-        var baseTemplateType = GetBaseTemplateType(classSymbol);
+            // Get the base class template target (for inheritance)
+            var baseTemplateType = GetBaseTemplateType(classSymbol, out var baseTemplateSkipTypeName);
         
         // Generate template for all IComponent classes to support inheritance,
         // even if they don't have their own ComponentProperty fields
         // (they may inherit properties from base classes)
+
+        // Determine the default concrete component type to use in the generated Template.ComponentType
+        // If the class itself is non-abstract use it, otherwise walk up the base types to find the
+        // nearest non-abstract concrete type (e.g., DrawableElement -> Element).
+        string? componentTypeExpression = null;
+        var chosenType = classSymbol;
+        if (chosenType.IsAbstract)
+        {
+            var search = chosenType.BaseType;
+            while (search != null && search.SpecialType != SpecialType.System_Object)
+            {
+                if (!search.IsAbstract)
+                {
+                    chosenType = search;
+                    break;
+                }
+                search = search.BaseType;
+            }
+        }
+
+        if (!chosenType.IsAbstract)
+        {
+            // Use global-qualified type name to avoid namespace resolution issues in generated code
+            componentTypeExpression = $"global::{chosenType.ToDisplayString()}";
+        }
 
         return new ComponentClassInfo
         {
             ClassName = classSymbol.Name,
             Namespace = classSymbol.ContainingNamespace.ToDisplayString(),
             Properties = properties,
-            BaseTemplateType = baseTemplateType
+            AllTemplateProperties = allTemplateProperties,
+            BaseTemplateType = baseTemplateType,
+                BaseTemplateSkipTypeName = baseTemplateSkipTypeName,
+            ComponentTypeExpression = componentTypeExpression,
+            IsAbstract = classSymbol.IsAbstract
         };
     }
 
@@ -123,6 +160,68 @@ public class TemplateGenerator : IIncrementalGenerator
             });
         }
 
+        return properties;
+    }
+
+    /// <summary>
+    /// Gets all ComponentProperty and TemplateProperty fields from the entire inheritance hierarchy.
+    /// Used for generating the Load overload with all available template properties.
+    /// </summary>
+    private static List<PropertyInfo> GetAllTemplateProperties(INamedTypeSymbol classSymbol)
+    {
+        var properties = new List<PropertyInfo>();
+        var seenProperties = new HashSet<string>(); // Track property names to avoid duplicates
+
+        var currentType = classSymbol;
+        
+        // Walk up the inheritance chain
+        while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
+        {
+            // Get all fields with TemplateProperty attribute from this class
+            foreach (var field in currentType.GetMembers().OfType<IFieldSymbol>())
+            {
+                // Only process fields declared on this specific type
+                if (!SymbolEqualityComparer.Default.Equals(field.ContainingType, currentType))
+                    continue;
+
+                var templateAttr = field.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.Name == "TemplatePropertyAttribute");
+
+                if (templateAttr == null) continue;
+
+                // Get property name from TemplateProperty.Name if specified, otherwise derive from field name
+                string propertyName = GetPropertyNameFromField(field.Name);
+                if (templateAttr != null)
+                {
+                    var nameArg = templateAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+                    if (nameArg.Value.Value is string customName && !string.IsNullOrEmpty(customName))
+                    {
+                        propertyName = customName;
+                    }
+                }
+                
+                // Skip if we've already seen this property name (child classes override parent properties)
+                if (seenProperties.Contains(propertyName)) continue;
+                seenProperties.Add(propertyName);
+
+                var syntax = field.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VariableDeclaratorSyntax;
+
+                properties.Add(new PropertyInfo
+                {
+                    FieldName = field.Name,
+                    PropertyName = propertyName,
+                    Type = field.Type.ToDisplayString(),
+                    DefaultValue = GetDefaultValueExpression(field, syntax),
+                    DeclaringTypeName = field.ContainingType.ToDisplayString()
+                });
+            }
+
+            currentType = currentType.BaseType;
+        }
+
+        // Reverse to put base class properties first
+        properties.Reverse();
+        
         return properties;
     }
 
@@ -229,26 +328,30 @@ public class TemplateGenerator : IIncrementalGenerator
     private static string GetBaseTemplateType(INamedTypeSymbol classSymbol)
     {
         var baseType = classSymbol.BaseType;
-        
-        // Walk up the inheritance chain to find the first base class with ComponentProperty fields
-        while (baseType != null && baseType.SpecialType != SpecialType.System_Object)
+        if (baseType != null && baseType.SpecialType != SpecialType.System_Object && DerivesFromInterface(baseType, "IComponent"))
         {
-            // Check if this base class has any ComponentProperty fields
-            var hasComponentProperties = baseType.GetMembers()
-                .OfType<IFieldSymbol>()
-                .Any(f => SymbolEqualityComparer.Default.Equals(f.ContainingType, baseType) &&
-                         f.GetAttributes().Any(a => a.AttributeClass?.Name == "ComponentPropertyAttribute"));
-            
-            if (hasComponentProperties)
-            {
-                // Found a base class with ComponentProperty fields - it will have a generated template
-                return $"{baseType.ContainingNamespace.ToDisplayString()}.{baseType.Name}Template";
-            }
-            
-            baseType = baseType.BaseType;
+            return $"{baseType.ContainingNamespace.ToDisplayString()}.{baseType.Name}Template";
         }
-        
-        // No base class with ComponentProperty fields found - inherit from base Template
+
+        // Fallback to root Template
+        return "Nexus.GameEngine.Components.Template";
+    }
+
+    /// <summary>
+    /// Gets the base template type string and optionally the declaring type name to skip
+    /// when emitting properties for derived templates.
+    /// </summary>
+    private static string GetBaseTemplateType(INamedTypeSymbol classSymbol, out string? baseTemplateSkipTypeName)
+    {
+        var baseType = classSymbol.BaseType;
+        baseTemplateSkipTypeName = null;
+        baseTemplateSkipTypeName = null;
+        if (baseType != null && baseType.SpecialType != SpecialType.System_Object && DerivesFromInterface(baseType, "IComponent"))
+        {
+            baseTemplateSkipTypeName = baseType.ToDisplayString();
+            return $"{baseType.ContainingNamespace.ToDisplayString()}.{baseType.Name}Template";
+        }
+
         return "Nexus.GameEngine.Components.Template";
     }
 
@@ -276,14 +379,27 @@ public class TemplateGenerator : IIncrementalGenerator
         sb.AppendLine($"/// Properties correspond to [ComponentProperty] and [TemplateProperty] fields declared on this class.");
         sb.AppendLine($"/// Inherits from base class template to preserve property inheritance hierarchy.");
         sb.AppendLine($"/// </summary>");
-        sb.AppendLine($"public record {info.ClassName}Template : {info.BaseTemplateType}");
+    // Templates are public to preserve accessibility across inheritance chains.
+    sb.AppendLine($"public record {info.ClassName}Template : {info.BaseTemplateType}");
         sb.AppendLine("{");
         
         // Add ComponentType property override
         sb.AppendLine($"    /// <summary>");
         sb.AppendLine($"    /// Gets the component type for factory instantiation.");
+    sb.AppendLine($"    /// If the component is abstract, this will return null to avoid attempting to instantiate an abstract type at runtime.");
         sb.AppendLine($"    /// </summary>");
-        sb.AppendLine($"    public override Type? ComponentType => typeof({info.ClassName});");
+        if (info.IsAbstract)
+        {
+            sb.AppendLine($"    public override Type? ComponentType => null;");
+        }
+        else if (!string.IsNullOrEmpty(info.ComponentTypeExpression))
+        {
+            sb.AppendLine($"    public override Type? ComponentType => typeof({info.ComponentTypeExpression});");
+        }
+        else
+        {
+            sb.AppendLine($"    public override Type? ComponentType => null;");
+        }
         sb.AppendLine();
 
         // Add property for each ComponentProperty field
@@ -363,6 +479,92 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
+    /// Generates a convenient Load overload with optional parameters for all template properties.
+    /// This allows direct initialization without creating template objects, useful for testing.
+    /// Includes properties from the entire inheritance hierarchy.
+    /// </summary>
+    private static void GenerateLoadOverload(SourceProductionContext context, ComponentClassInfo info)
+    {
+        // Only generate a convenience Load overload when THIS class declares at least
+        // one TemplateProperty. If the class doesn't introduce any new template
+        // properties (it only inherits them), generating an overload will duplicate
+        // a base-generated overload and cause CS0108 hiding warnings in derived
+        // types (common in TestApp). Using info.Properties (declared on the class)
+        // avoids that duplication.
+        if (info.Properties == null || info.Properties.Count == 0)
+            return;
+
+        var sb = new StringBuilder();
+
+        // Add file header
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {info.Namespace};");
+        sb.AppendLine();
+        sb.AppendLine($"public partial class {info.ClassName}");
+        sb.AppendLine("{");
+        
+        // Generate Load overload with optional parameters
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// Convenience method to load component with individual property values.");
+        sb.AppendLine($"    /// Creates a template internally and calls Load(template).");
+        sb.AppendLine($"    /// Useful for testing and simple initialization scenarios.");
+        sb.AppendLine($"    /// Includes all properties from the inheritance hierarchy.");
+        sb.AppendLine($"    /// </summary>");
+        
+        // Build parameter list using ALL template properties (including inherited)
+    sb.Append($"    public void Load(");
+        
+        var parameters = new List<string>();
+        foreach (var prop in info.AllTemplateProperties)
+        {
+            // For nullable types, don't add another '?'
+            var paramType = prop.Type;
+            if (!paramType.EndsWith("?"))
+            {
+                paramType = paramType + "?";
+            }
+            parameters.Add($"{paramType} {ToCamelCase(prop.PropertyName)} = null");
+        }
+        parameters.Add("string? name = null");
+        
+        sb.Append(string.Join(", ", parameters));
+        sb.AppendLine(")");
+        
+        sb.AppendLine("    {");
+        sb.AppendLine($"        var template = new {info.ClassName}Template");
+        sb.AppendLine("        {");
+        
+        // Assign all properties, using provided values or defaults
+        foreach (var prop in info.AllTemplateProperties)
+        {
+            var paramName = ToCamelCase(prop.PropertyName);
+            sb.AppendLine($"            {prop.PropertyName} = {paramName} ?? {prop.DefaultValue},");
+        }
+        sb.AppendLine("            Name = name");
+        
+        sb.AppendLine("        };");
+        sb.AppendLine("        Load(template);");
+        sb.AppendLine("    }");
+
+        sb.AppendLine("}");
+
+        context.AddSource($"{info.ClassName}.LoadOverload.g.cs", sb.ToString());
+    }
+
+    /// <summary>
+    /// Converts PascalCase to camelCase.
+    /// </summary>
+    private static string ToCamelCase(string pascalCase)
+    {
+        if (string.IsNullOrEmpty(pascalCase) || pascalCase.Length == 0)
+            return pascalCase;
+        
+        return char.ToLower(pascalCase[0]) + pascalCase.Substring(1);
+    }
+
+    /// <summary>
     /// Information about a component class with ComponentProperty fields.
     /// </summary>
     private class ComponentClassInfo
@@ -370,7 +572,25 @@ public class TemplateGenerator : IIncrementalGenerator
         public string ClassName { get; set; } = string.Empty;
         public string Namespace { get; set; } = string.Empty;
         public List<PropertyInfo> Properties { get; set; } = new();
+        public List<PropertyInfo> AllTemplateProperties { get; set; } = new();
         public string BaseTemplateType { get; set; } = "Template";
+        /// <summary>
+        /// Optional C# expression to use for the generated Template.ComponentType value.
+        /// If null, the generated property will return null (used for abstract/base types).
+        /// Example: "global::Nexus.GameEngine.GUI.Element"
+        /// </summary>
+        public string? ComponentTypeExpression { get; set; } = null;
+    /// <summary>
+    /// Whether the component type is abstract. Used to emit internal templates
+    /// with null ComponentType so abstract templates cannot be instantiated.
+    /// </summary>
+    public bool IsAbstract { get; set; } = false;
+        /// <summary>
+        /// Full name of the base type whose template will be used as the base for this template.
+        /// Properties declared on this type should be excluded from the generated template to
+        /// avoid duplication.
+        /// </summary>
+        public string? BaseTemplateSkipTypeName { get; set; } = null;
     }
 
     /// <summary>
@@ -382,5 +602,8 @@ public class TemplateGenerator : IIncrementalGenerator
         public string PropertyName { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public string DefaultValue { get; set; } = string.Empty;
+        // Full name of the type that declares this field (used to exclude properties
+        // that are provided by the chosen base template when generating derived templates)
+        public string DeclaringTypeName { get; set; } = string.Empty;
     }
 }

@@ -20,8 +20,8 @@ public partial class BasicTextureTest(
     [Test("Basic texture test (Element with test_texture.png)")]
     public readonly static BasicTextureTestTemplate BasicTextureTestInstance = new()
     {
-        Subcomponents = [
-            new ElementTemplate()
+            Subcomponents = [
+            new DrawableElementTemplate()
             {
                 Name = "TexturedElement",
                 Position = new Vector3D<float>(100, 100, 0),

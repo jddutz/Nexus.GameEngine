@@ -11,7 +11,7 @@ namespace Nexus.GameEngine.GUI;
 /// Reuses UIElement shader with per-glyph model matrices for efficient text rendering.
 /// Each character references the shared font geometry buffer at different offsets.
 /// </summary>
-public partial class TextElement : Element
+public partial class TextElement : DrawableElement
 {
     // Template and runtime properties
     [TemplateProperty]
@@ -37,9 +37,10 @@ public partial class TextElement : Element
     private DescriptorSet? _fontAtlasDescriptorSet;
 
     /// <summary>
-    /// Creates a new TextElement with the specified descriptor manager.
+    /// Creates a new TextElement with the specified descriptor and graphics managers.
     /// </summary>
-    public TextElement(IDescriptorManager descriptorManager) : base(descriptorManager)
+    public TextElement(IDescriptorManager descriptorManager, IResourceManager resourceManager, IPipelineManager pipelineManager)
+        : base(descriptorManager, resourceManager, pipelineManager)
     {
         // Use default font if not specified
         _fontDefinition ??= FontDefinitions.RobotoNormal;
@@ -248,7 +249,7 @@ public partial class TextElement : Element
     /// </summary>
     public override IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
     {
-        if (_fontResource == null || !_fontAtlasDescriptorSet.HasValue)
+        if (_fontResource == null || !_fontAtlasDescriptorSet.HasValue || _fontResource.SharedGeometry == null)
             yield break;
 
         if (string.IsNullOrEmpty(_text))

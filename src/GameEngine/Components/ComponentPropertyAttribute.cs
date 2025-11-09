@@ -23,5 +23,11 @@ public sealed class ComponentPropertyAttribute : Attribute
     /// If not specified, the property name is derived from the field name (e.g., _fontSize → FontSize).
     /// </summary>
     public string? Name { get; set; }
+    /// <summary>
+    /// Optional hook method name to call before a property change is queued.
+    /// The method should have signature: void MethodName(ref T newValue, ref float duration, ref InterpolationMode mode)
+    /// Use this to modify the value/duration/interpolation (for example to cancel animations for layout properties).
+    /// </summary>
+    public string? BeforeChange { get; set; }
 }
 

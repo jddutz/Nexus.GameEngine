@@ -21,8 +21,8 @@ public partial class ColoredElementTest(
     [Test("Colored element test (red tint with dummy texture)")]
     public readonly static ColoredElementTestTemplate ColoredElementTestInstance = new()
     {
-        Subcomponents = [
-            new ElementTemplate()
+            Subcomponents = [
+            new DrawableElementTemplate()
             {
                 Name = "RedElement",
                 Position = new Vector3D<float>(100, 100, 0),

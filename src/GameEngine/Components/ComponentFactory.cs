@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
@@ -6,9 +8,7 @@ namespace Nexus.GameEngine.Components;
 /// but does NOT manage caching or lifecycle (which belongs to ContentManager).
 /// </summary>
 public class ComponentFactory(
-    IServiceProvider serviceProvider,
-    IResourceManager resourceManager,
-    IPipelineManager pipelineManager) : IComponentFactory
+    IServiceProvider serviceProvider) : IComponentFactory
 {
     /// <summary>
     /// Creates a component instance via dependency injection.
@@ -23,18 +23,16 @@ public class ComponentFactory(
     /// <inheritdoc/>
     public IComponent? Create(Type componentType)
     {
-        if (componentType == null) return null;
+        if (componentType == null) throw new ArgumentNullException(nameof(componentType));
 
-        var obj = serviceProvider.GetService(componentType);
+        if (componentType.IsAbstract || componentType.IsInterface)
+            throw new InvalidOperationException($"Cannot create component for abstract or interface type '{componentType.FullName}'. Provide a concrete component type.");
+
+        // Create instance via DI (constructor injection). ActivatorUtilities will resolve
+        // constructor services from the IServiceProvider and call the appropriate ctor.
+        var obj = ActivatorUtilities.CreateInstance(serviceProvider, componentType);
         if (obj is not IComponent component)
-            return null;
-
-        // Set ResourceManager and PipelineManager for drawable components
-        if (component is Drawable drawable)
-        {
-            drawable.ResourceManager = resourceManager;
-            drawable.PipelineManager = pipelineManager;
-        }
+            throw new InvalidOperationException($"Type '{componentType.FullName}' created by DI does not implement IComponent.");
 
         return component;
     }
@@ -75,22 +73,22 @@ public class ComponentFactory(
     /// <inheritdoc/>
     public IComponent? CreateInstance(Template template)
     {
-        if (template == null) return null;
+        ArgumentNullException.ThrowIfNull(template);
 
         // Get the component type from the template's ComponentType property
-        var componentType = template.ComponentType;
+        var componentType = template.ComponentType 
+            ?? throw new InvalidOperationException($"Template '{template.GetType().Name}' does not specify a ComponentType.");
 
         // Type-safety: Ensure the type implements IComponent
-        if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType)) return null;
+        if (!typeof(IComponent).IsAssignableFrom(componentType))
+            throw new InvalidOperationException($"ComponentType '{componentType.FullName}' does not implement IComponent.");
 
         // Check if the type can be instantiated
-        if (componentType.IsAbstract) return null;
+        if (componentType.IsAbstract || componentType.IsInterface)
+            throw new InvalidOperationException($"ComponentType '{componentType.FullName}' is abstract or an interface and cannot be instantiated.");
 
-        if (componentType.IsInterface) return null;
-
-        if (componentType.IsGenericTypeDefinition) return null;
-
-        if (componentType.IsSealed && componentType.IsAbstract) return null;
+        if (componentType.IsGenericTypeDefinition)
+            throw new InvalidOperationException($"ComponentType '{componentType.FullName}' is an open generic type and cannot be instantiated.");
 
         // Create and configure the component
         var result = Create(componentType, template);

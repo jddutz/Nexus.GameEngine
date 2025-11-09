@@ -210,7 +210,7 @@ public unsafe class FontResourceManager(
     /// Each glyph has 4 vertices in normalized space (-1 to 1) with pre-baked UV coordinates.
     /// This single buffer is shared by all TextElements using this font.
     /// </summary>
-    private GeometryResource GenerateSharedGeometry(Dictionary<char, GlyphInfo> glyphs, string fontName)
+    private IGeometryResource? GenerateSharedGeometry(Dictionary<char, GlyphInfo> glyphs, string fontName)
     {
         var vertices = new List<Vertex<Vector2D<float>, Vector2D<float>>>();
 
