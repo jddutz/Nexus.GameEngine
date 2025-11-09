@@ -2,12 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch TestApp",
+            "name": "Launch Nexus.IDE",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/TestApp/bin/Debug/net9.0/TestApp.dll",
+            "preLaunchTask": "build-solution",
+            "program": "${workspaceFolder}/src/IDE/bin/Debug/net9.0/Nexus.IDE.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/src/TestApp",
+            "cwd": "${workspaceFolder}/src/IDE",
             "console": "internalConsole",
             "stopAtEntry": false
         }
