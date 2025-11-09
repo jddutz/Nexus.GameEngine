@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Nexus.GameEngine.SourceGenerators;
+namespace Nexus.SourceGenerators;
 
 /// <summary>
 /// Incremental source generator that creates component property implementations

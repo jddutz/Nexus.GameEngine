@@ -589,9 +589,9 @@ public float BounceHeight { get; set; }
 
 ### **Phase 2: Generator Implementation**
 
-1. Create `GameEngine.SourceGenerators` project
+1. Create `SourceGenerators` project
 2. Implement `DeferredPropertyGenerator`
-3. Create `GameEngine.Analyzers` project with NX1001 and NX1002
+3. Create `Analyzers` project with NX1001 and NX1002
 4. Reference generator from `GameEngine.csproj`
 
 ### **Phase 3: Gradual Component Migration**
@@ -634,15 +634,15 @@ Nexus.GameEngine/
 │           ├── NoAnimationAttribute.cs
 │           └── AnimationCurveAttribute.cs
 │
-├── GameEngine.SourceGenerators/
-│   ├── GameEngine.SourceGenerators.csproj
+├── SourceGenerators/
+│   ├── SourceGenerators.csproj
 │   ├── AnimatedPropertyGenerator.cs (main generator)
 │   ├── PropertyAnalyzer.cs (finds properties to generate)
 │   ├── InterpolationStrategy.cs (determines interpolation per type)
 │   └── CodeBuilder.cs (builds generated code)
 │
-└── GameEngine.Analyzers/
-    ├── GameEngine.Analyzers.csproj
+└── Analyzers/
+    ├── Analyzers.csproj
     ├── ComponentPropertyAnalyzer.cs (NX1001)
     ├── AnimationAttributeAnalyzer.cs (NX1002, NX1003)
     └── CodeFixes/

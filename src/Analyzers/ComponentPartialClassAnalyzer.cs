@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Nexus.GameEngine.Analyzers;
+namespace Nexus.Analyzers;
 
 /// <summary>
 /// Analyzer NX1001: Ensures classes deriving from Entity are declared partial.

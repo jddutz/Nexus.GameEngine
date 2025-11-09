@@ -167,10 +167,8 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
 
             foreach (var result in results)
             {
-                Nexus.GameEngine.Log.Info(
-                    $"[{(result.Passed ? "Pass" : "Fail")}]{test.TestName} {test.Description}: Expected {result.ExpectedResult}, Actual {result.ActualResult}"
-                );
-
+                // Collect pass/fail counts. Avoid noisy per-result logging here so test harness
+                // output remains concise; we will emit a compact summary below.
                 if (result.Passed)
                 {
                     passed.Add(result);
@@ -198,7 +196,8 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
         if (failed.Count > 0)
             resultsSummary += failedTestsSummary + "\n";
 
-        Nexus.GameEngine.Log.Debug(resultsSummary);
+    // Emit concise summary information to the log (Test Explorer will capture this output).
+    Nexus.GameEngine.Log.Info(resultsSummary);
 
         // Set exit code
         Environment.ExitCode = failed.Count == 0 ? 0 : 1;

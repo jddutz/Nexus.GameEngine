@@ -22,31 +22,6 @@
             }
         },
         {
-            "label": "build-testapp",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "build",
-                "${workspaceFolder}/src/TestApp/TestApp.csproj",
-                "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
-            ],
-            "problemMatcher": "$msCompile",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "silent",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": false
-            },
-            "dependsOn": ["compile-shaders"]
-        },
-        {
             "label": "build-solution",
             "command": "dotnet",
             "type": "process",
@@ -61,45 +36,6 @@
             "presentation": {
                 "echo": true,
                 "reveal": "always",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": false
-            }
-        },
-        {
-            "label": "run-testapp",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/src/TestApp/TestApp.csproj",
-                "--configuration",
-                "Debug"
-            ],
-            "group": "test",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": true,
-                "panel": "shared",
-                "showReuseMessage": true,
-                "clear": false
-            }
-        },
-        {
-            "label": "clean-testapp",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "clean",
-                "${workspaceFolder}/src/TestApp/TestApp.csproj"
-            ],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "silent",
                 "focus": false,
                 "panel": "shared",
                 "showReuseMessage": true,

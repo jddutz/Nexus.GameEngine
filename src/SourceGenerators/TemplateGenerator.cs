@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace GameEngine.SourceGenerators;
+namespace SourceGenerators;
 
 /// <summary>
 /// Incremental source generator that creates Template records and OnLoad methods

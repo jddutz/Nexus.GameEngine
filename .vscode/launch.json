@@ -9,25 +9,7 @@
             "args": [],
             "cwd": "${workspaceFolder}/src/TestApp",
             "console": "internalConsole",
-            "stopAtEntry": false,
-            "preLaunchTask": "build-testapp"
-        },
-        {
-            "name": "Launch TestApp (External Console)",
-            "type": "coreclr",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/TestApp/bin/Debug/net9.0/TestApp.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/TestApp",
-            "console": "externalTerminal",
-            "stopAtEntry": false,
-            "preLaunchTask": "build-testapp"
-        },
-        {
-            "name": "Attach to TestApp",
-            "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
+            "stopAtEntry": false
         }
     ]
 }
