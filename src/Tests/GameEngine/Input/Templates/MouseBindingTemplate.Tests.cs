@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Input.Templates
+﻿namespace Tests.GameEngine.Input.Templates
 {
     public class MouseBindingTemplateTests
     {

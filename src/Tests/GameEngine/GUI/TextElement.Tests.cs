@@ -2,13 +2,11 @@ using Moq;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources;
-using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Textures;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Xunit;
 
 namespace Tests.GameEngine.GUI;
 

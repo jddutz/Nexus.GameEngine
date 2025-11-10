@@ -5,7 +5,6 @@ using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Descriptors;
-using Xunit;
 
 namespace Tests.GameEngine.Components;
 

@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics.Commands
+﻿namespace Tests.GameEngine.Graphics.Commands
 {
     public class CommandPoolTests
     {

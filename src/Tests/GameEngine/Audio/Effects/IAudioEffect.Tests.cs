@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Audio.Effects
+﻿namespace Tests.GameEngine.Audio.Effects
 {
     public class IAudioEffectTests
     {

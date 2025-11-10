@@ -410,7 +410,7 @@ var hud = new ElementTemplate
 ```csharp
 var inventory = new GridLayoutTemplate
 {
-    SizeMode = SizeMode.Percentage,
+    SizeMode = SizeMode.Percent,
     WidthPercentage = 80,
     HeightPercentage = 80,
     AnchorPoint = new(0, 0),

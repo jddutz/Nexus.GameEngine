@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Resources.Textures.Definitions
+﻿namespace Tests.GameEngine.Resources.Textures.Definitions
 {
     public class UniformColorTests
     {

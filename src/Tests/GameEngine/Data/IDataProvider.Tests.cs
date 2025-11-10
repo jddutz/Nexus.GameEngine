@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Data
+﻿namespace Tests.GameEngine.Data
 {
     public class IDataProviderTests
     {

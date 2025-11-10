@@ -1,5 +1,4 @@
 namespace Nexus.GameEngine.GUI.Layout;
-using System.Linq;
 
 /// <summary>
 /// A layout component that arranges its children vertically.
@@ -11,16 +10,30 @@ public partial class VerticalLayout : Container
     /// <summary>
     /// Horizontal alignment of child components within the layout.
     /// </summary>
-    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [ComponentProperty]
     [TemplateProperty]
-    private HorizontalAlignment _alignment = HorizontalAlignment.Center;
+    private float _alignment = HorizontalAlignment.Center;
+
+    // If true, children will be stretched horizontally to fill the content width.
+    // This replaces the previous use of an Alignment.Stretch enum value so layouts
+    // don't need to query child sizing policy directly.
+    [ComponentProperty]
+    [TemplateProperty]
+    private bool _stretchChildren = false;
+
+    /// <summary>
+    /// Set whether children should be stretched horizontally.
+    /// Provided as a convenience for tests and templates; updated values are applied
+    /// during the normal component update cycle.
+    /// </summary>
+    public void SetStretchChildren(bool value) => _stretchChildren = value;
 
     /// <summary>
     /// Arranges child components vertically with spacing and alignment.
     /// </summary>
     protected override void UpdateLayout()
     {
-    var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
+        var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
         var contentArea = GetContentArea();
@@ -32,18 +45,13 @@ public partial class VerticalLayout : Container
         {
             var measured = child.Measure(contentArea.Size);
 
-            // Calculate X based on alignment - use content area width for centering
-            var x = Alignment switch
-            {
-                HorizontalAlignment.Left => contentArea.Origin.X,
-                HorizontalAlignment.Center => contentArea.Origin.X + (contentArea.Size.X - measured.X) / 2,
-                HorizontalAlignment.Right => contentArea.Origin.X + contentArea.Size.X - measured.X,
-                HorizontalAlignment.Stretch => contentArea.Origin.X,
-                _ => contentArea.Origin.X
-            };
+            // Calculate X based on numeric alignment (-1..1)
+            var align = Alignment; // -1 left, 0 center, 1 right
+            var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
+            var x = contentArea.Origin.X + (int)((contentArea.Size.X - measured.X) * alignFrac);
 
             var y = pY;
-            var w = Alignment == HorizontalAlignment.Stretch ? contentArea.Size.X : measured.X;
+            var w = _stretchChildren ? contentArea.Size.X : measured.X;
             var h = measured.Y;
 
             // Set child constraints

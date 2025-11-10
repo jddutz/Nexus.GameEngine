@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Data.Binding
+﻿namespace Tests.GameEngine.Data.Binding
 {
     public class BindingModeEnumTests
     {

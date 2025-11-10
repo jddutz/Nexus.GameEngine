@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics.Rigidbody
+﻿namespace Tests.GameEngine.Physics.Rigidbody
 {
     public class RigidbodyEventArgsTests
     {

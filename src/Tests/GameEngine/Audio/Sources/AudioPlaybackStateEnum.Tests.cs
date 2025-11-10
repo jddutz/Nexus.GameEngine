@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Audio.Sources
+﻿namespace Tests.GameEngine.Audio.Sources
 {
     public class AudioPlaybackStateEnumTests
     {

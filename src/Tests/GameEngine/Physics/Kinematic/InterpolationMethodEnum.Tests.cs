@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics.Kinematic
+﻿namespace Tests.GameEngine.Physics.Kinematic
 {
     public class InterpolationMethodEnumTests
     {

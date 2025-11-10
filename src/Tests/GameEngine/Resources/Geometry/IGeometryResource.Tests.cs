@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Resources.Geometry
+﻿namespace Tests.GameEngine.Resources.Geometry
 {
     public class IGeometryResourceTests
     {

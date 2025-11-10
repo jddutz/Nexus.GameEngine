@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Components
+﻿namespace Tests.GameEngine.Components
 {
     public class ComponentCachingAttributeTests
     {

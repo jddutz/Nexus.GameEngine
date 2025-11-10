@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics.Triggers
+﻿namespace Tests.GameEngine.Physics.Triggers
 {
     public class TriggerContactTests
     {

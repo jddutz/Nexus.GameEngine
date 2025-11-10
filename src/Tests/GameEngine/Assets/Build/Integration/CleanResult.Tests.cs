@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Assets.Build.Integration
+﻿namespace Tests.GameEngine.Assets.Build.Integration
 {
     public class CleanResultTests
     {

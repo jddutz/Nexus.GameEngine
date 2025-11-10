@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics
+﻿namespace Tests.GameEngine.Graphics
 {
     public class CornerColorsUBOTests
     {

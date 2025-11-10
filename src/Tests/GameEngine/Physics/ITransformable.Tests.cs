@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics
+﻿namespace Tests.GameEngine.Physics
 {
     public class ITransformableTests
     {

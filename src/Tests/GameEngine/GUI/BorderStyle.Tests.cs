@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.GUI
+﻿namespace Tests.GameEngine.GUI
 {
     public class BorderStyleTests
     {

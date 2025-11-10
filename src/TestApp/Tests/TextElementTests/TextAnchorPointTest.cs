@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
@@ -6,7 +5,6 @@ using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Runtime;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
-using Silk.NET.Windowing;
 
 namespace TestApp.Tests.TextElementTests;
 

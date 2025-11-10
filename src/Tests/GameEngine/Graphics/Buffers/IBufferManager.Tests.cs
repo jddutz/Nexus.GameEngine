@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics.Buffers
+﻿namespace Tests.GameEngine.Graphics.Buffers
 {
     public class IBufferManagerTests
     {

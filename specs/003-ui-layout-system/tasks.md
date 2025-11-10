@@ -77,7 +77,7 @@ Independent test criteria: Elements respect MinSize/MaxSize; layouts handle insu
 ## Final Phase — Polish & Cross-Cutting Concerns
 
 - [X] T035 Update documentation: `src/GameEngine/GUI/README.md` (usage examples), `.docs/Project Structure.md` (reference), and `specs/003-ui-layout-system/tasks.md` (this file)
-- [X] T036 Add source-generation attribute annotations where appropriate: mark backing fields with `[TemplateProperty]` and `[ComponentProperty(BeforeChange = nameof(CancelAnimation))]` for layout-affecting fields in `Layout` and concrete layout classes (files: `src/GameEngine/GUI/Layout.cs`, `src/GameEngine/GUI/VerticalLayout.cs`, `src/GameEngine/GUI/HorizontalLayout.cs`, `src/GameEngine/GUI/GridLayout.cs`)
+- [X] T036 Add source-generation attribute annotations where appropriate: mark backing fields with `[TemplateProperty]` and `[ComponentProperty]` for layout-affecting fields in `Layout` and concrete layout classes (files: `src/GameEngine/GUI/Layout.cs`, `src/GameEngine/GUI/VerticalLayout.cs`, `src/GameEngine/GUI/HorizontalLayout.cs`, `src/GameEngine/GUI/GridLayout.cs`)
 - [X] T037 Run full project build and tests: `dotnet build Nexus.GameEngine.sln` and `dotnet test Tests/Tests.csproj` (validate green build and passing unit tests) - BUILD SUCCEEDED, 4 pre-existing font tests failing (unrelated to layout system)
 
 ## Dependencies (story completion order)

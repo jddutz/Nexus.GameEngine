@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics.Movement
+﻿namespace Tests.GameEngine.Physics.Movement
 {
     public class WrapModeEnumTests
     {

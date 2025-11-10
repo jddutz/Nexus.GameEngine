@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Testing
+﻿namespace Tests.GameEngine.Testing
 {
     public class IPixelSamplerTests
     {

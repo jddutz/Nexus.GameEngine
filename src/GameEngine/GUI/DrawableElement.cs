@@ -1,4 +1,3 @@
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures.Definitions;
 

@@ -52,9 +52,12 @@ public abstract partial class Entity
 
     /// <summary>
     /// Helper method for canceling animations on layout-affecting properties.
-    /// Use with [ComponentProperty(BeforeChange = nameof(CancelAnimation))] attribute.
+    /// Use with [ComponentProperty] attribute.
     /// Forces immediate updates by setting duration to 0 and interpolation mode to Step.
     /// </summary>
-    // CancelAnimation helper moved to Component so it is available to components
-    // in the component inheritance chain (Component -> RuntimeComponent -> Transformable ...)
+    public void CancelUpdates<T>(ref T newValue, ref float duration, ref InterpolationMode mode)
+    {
+        duration = 0f;
+        mode = InterpolationMode.Step;
+    }
 }

@@ -23,5 +23,5 @@ public enum SizeMode
     /// <summary>
     /// Size as percentage of parent dimensions.
     /// </summary>
-    Percentage
+    Percent
 }

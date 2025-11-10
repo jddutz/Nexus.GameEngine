@@ -1,5 +1,4 @@
 namespace Nexus.GameEngine.GUI.Layout;
-using System.Linq;
 
 /// <summary>
 /// A layout component that arranges its children horizontally.
@@ -11,16 +10,24 @@ public partial class HorizontalLayout : Container
     /// <summary>
     /// Vertical alignment of child components within the layout.
     /// </summary>
-    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [ComponentProperty]
     [TemplateProperty]
-    private VerticalAlignment _alignment = VerticalAlignment.Center;
+    private float _alignment = VerticalAlignment.Center;
+
+    // If true, children will be stretched vertically to fill the content height.
+    // This avoids checking for a non-existent VerticalAlignment.Stretch value.
+    [ComponentProperty]
+    [TemplateProperty]
+    private bool _stretchChildren = false;
+
+    public void SetStretchChildren(bool value) => _stretchChildren = value;
 
     /// <summary>
     /// Arranges child components horizontally with spacing and alignment.
     /// </summary>
     protected override void UpdateLayout()
     {
-    var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
+        var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
         var contentArea = GetContentArea();
@@ -40,12 +47,11 @@ public partial class HorizontalLayout : Container
                 VerticalAlignment.Top => contentArea.Origin.Y,
                 VerticalAlignment.Center => contentArea.Origin.Y + (contentArea.Size.Y - measured.Y) / 2,
                 VerticalAlignment.Bottom => contentArea.Origin.Y + contentArea.Size.Y - measured.Y,
-                VerticalAlignment.Stretch => contentArea.Origin.Y,
                 _ => contentArea.Origin.Y
             };
 
             var w = measured.X;
-            var h = Alignment == VerticalAlignment.Stretch ? contentArea.Size.Y : measured.Y;
+            var h = _stretchChildren ? contentArea.Size.Y : measured.Y;
 
             // Set child constraints
             var newConstraints = new Rectangle<int>(x, y, w, h);

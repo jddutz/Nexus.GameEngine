@@ -30,7 +30,7 @@ var element = new ElementTemplate
 ```csharp
 var element = new ElementTemplate
 {
-    SizeMode = SizeMode.Percentage,
+    SizeMode = SizeMode.Percent,
     WidthPercentage = 80,           // 80% of parent width
     HeightPercentage = 60,          // 60% of parent height
     MinSize = new(400, 300),        // Minimum for small screens

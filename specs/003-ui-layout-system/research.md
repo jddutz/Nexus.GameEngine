@@ -65,7 +65,7 @@ private Vector2D<int> CalculatePreferredSize(Rectangle<int> constraints)
     if (SizeMode == SizeMode.Fixed)
         return new Vector2D<int>((int)Width, (int)Height);
     
-    if (SizeMode == SizeMode.Percentage)
+    if (SizeMode == SizeMode.Percent)
         return new Vector2D<int>(
             (int)(constraints.Size.X * WidthPercentage / 100),
             (int)(constraints.Size.Y * HeightPercentage / 100)
@@ -457,7 +457,7 @@ public void SetPadding(Padding value, float duration = 0f, InterpolationMode int
 // RuntimeComponent.cs (or Entity.cs)
 /// <summary>
 /// Static BeforeChange hook that cancels all animations, forcing immediate updates.
-/// Use with [ComponentProperty(BeforeChange = nameof(CancelAnimation))] for layout-affecting properties.
+/// Use with [ComponentProperty] for layout-affecting properties.
 /// </summary>
 protected static void CancelAnimation<T>(ref T newValue, ref float duration, ref InterpolationMode mode)
 {
@@ -468,11 +468,11 @@ protected static void CancelAnimation<T>(ref T newValue, ref float duration, ref
 
 **Layout Properties** (No Animation):
 [// Layout.cs
-[ComponentProperty(BeforeChange = nameof(CancelAnimation))]  // Use static utility
+[ComponentProperty]  // Use static utility
 [TemplateProperty]
 private Padding _padding = new Padding(0);
 
-[ComponentProperty(BeforeChange = nameof(CancelAnimation))]  // Use static utility
+[ComponentProperty]  // Use static utility
 [TemplateProperty]
 private Vector2D<float> _spacing = new(0, 0);
 

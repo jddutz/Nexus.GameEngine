@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Events
+﻿namespace Tests.GameEngine.Events
 {
     public class IEventBusTests
     {

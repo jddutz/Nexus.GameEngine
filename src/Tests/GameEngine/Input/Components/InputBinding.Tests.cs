@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Input.Components
+﻿namespace Tests.GameEngine.Input.Components
 {
     public class InputBindingTests
     {

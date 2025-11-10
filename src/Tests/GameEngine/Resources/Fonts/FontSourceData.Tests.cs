@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Resources.Fonts
+﻿namespace Tests.GameEngine.Resources.Fonts
 {
     public class FontSourceDataTests
     {

@@ -1,19 +1,15 @@
 using Moq;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Layout;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures;
-using Nexus.GameEngine.Resources.Textures.Definitions;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Xunit;
 
-namespace Tests;
+namespace Tests.GameEngine.GUI.Layout;
 
 /// <summary>
 /// Unit tests for VerticalLayout component.
@@ -205,8 +201,12 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
         layout.Load(
             size: new Vector2D<int>(200, 100),
-            alignment: HorizontalAlignment.Stretch
+            alignment: HorizontalAlignment.Center
         );
+
+        // Indicate that children should stretch horizontally (replaces the old
+        // HorizontalAlignment.Stretch behavior).
+        layout.SetStretchChildren(true);
 
         var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
         layout.AddChild(childMock.Object);

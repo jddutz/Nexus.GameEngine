@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Assets
+﻿namespace Tests.GameEngine.Assets
 {
     public class AssetServiceTests
     {

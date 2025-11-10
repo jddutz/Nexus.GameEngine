@@ -1,9 +1,6 @@
-using System;
-using System.Linq;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources.Fonts;
 using Silk.NET.Maths;
-using Xunit;
 
 namespace Tests.GameEngine.GUI;
 

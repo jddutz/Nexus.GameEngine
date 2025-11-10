@@ -1,6 +1,4 @@
 using Nexus.GameEngine.GUI.Layout;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
-using Nexus.GameEngine.Resources.Textures.Definitions;
 
 namespace Nexus.GameEngine.GUI;
 
@@ -124,18 +122,63 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     private SizeMode _sizeMode = SizeMode.Fixed;
 
     /// <summary>
-    /// Width as percentage of parent (0-100) when SizeMode is Percentage.
+    /// Independent horizontal size mode (width).
+    /// If not set explicitly, defaults to Fixed to preserve existing behaviour.
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
-    private float _widthPercentage = 100f;
+    private SizeMode _horizontalSizeMode = SizeMode.Fixed;
 
     /// <summary>
-    /// Height as percentage of parent (0-100) when SizeMode is Percentage.
+    /// Independent vertical size mode (height).
+    /// If not set explicitly, defaults to Fixed to preserve existing behaviour.
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
-    private float _heightPercentage = 100f;
+    private SizeMode _verticalSizeMode = SizeMode.Fixed;
+
+    /// <summary>
+    /// Horizontal alignment used by parent layouts when positioning this element
+    /// inside the provided constraints rectangle. Default: Left.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _layoutHorizontal = HorizontalAlignment.Left;
+
+    /// <summary>
+    /// Vertical alignment used by parent layouts when positioning this element
+    /// inside the provided constraints rectangle. Default: Top.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _layoutVertical = VerticalAlignment.Top;
+
+    // Note: Percentage values are represented via RelativeWidth/RelativeHeight as fractional multipliers
+    // (e.g. 0.5 = 50%). We intentionally do not store separate WidthPercentage/HeightPercentage fields.
+
+    /// <summary>
+    /// Relative width modifier. Interpretation depends on HorizontalSizeMode:
+    /// - Fixed: ignored
+    /// - Percentage: if non-zero, treated as a fractional multiplier (e.g. 0.5 = 50%); otherwise uses WidthPercentage
+    /// - Stretch: treated as pixel offset added to the available width (negative to shrink by pixels)
+    /// - Intrinsic: treated as additional pixels to add to intrinsic size
+    /// Default: 0 (no modification)
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _relativeWidth = 0f;
+
+    /// <summary>
+    /// Relative height modifier. Interpretation depends on VerticalSizeMode:
+    /// - Fixed: ignored
+    /// - Percentage: if non-zero, treated as a fractional multiplier (e.g. 0.5 = 50%); otherwise uses HeightPercentage
+    /// - Stretch: treated as pixel offset added to the available height (negative to shrink by pixels)
+    /// - Intrinsic: treated as additional pixels to add to intrinsic size
+    /// Default: 0 (no modification)
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _relativeHeight = 0f;
 
     /// <summary>
     /// Minimum size constraints (width, height).
@@ -177,27 +220,21 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     {
         if (constraints.Size.X <= 0 || constraints.Size.Y <= 0)
             return;
-        
-        // Calculate preferred size based on SizeMode
-        var preferredSize = CalculatePreferredSize(constraints);
-        
-        // Apply size constraints (min/max)
+        // Calculate preferred width/height independently based on per-axis size modes
+        var preferredWidth = CalculatePreferredWidth(constraints);
+        var preferredHeight = CalculatePreferredHeight(constraints);
+
+        // Combine and apply size constraints (min/max)
+        var preferredSize = new Vector2D<int>(preferredWidth, preferredHeight);
         var finalSize = ApplySizeConstraints(preferredSize);
-        
-        // Update position and size
-        SetPosition(new Vector3D<float>(
-            constraints.Origin.X,
-            constraints.Origin.Y,
-            Position.Z  // Keep current Z
-        ));
-        
+
+        // Update size first
         SetSize(finalSize);
-        
-        // Ensure anchor is top-left for layout behavior
-        if (AnchorPoint.X != -1 || AnchorPoint.Y != -1)
-        {
-            SetAnchorPoint(new Vector2D<float>(-1, -1));
-        }
+
+        var posX = constraints.Center.X + LayoutHorizontal * constraints.HalfSize.X;
+        var posY = constraints.Center.Y + LayoutVertical * constraints.HalfSize.Y;
+
+        SetPosition(new Vector3D<float>(posX, posY, Position.Z));
     }
 
     /// <summary>
@@ -205,17 +242,86 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     /// </summary>
     protected virtual Vector2D<int> CalculatePreferredSize(Rectangle<int> constraints)
     {
-        return SizeMode switch
+        // Backwards-compatible: compute both axes via the new per-axis logic
+        var w = CalculatePreferredWidth(constraints);
+        var h = CalculatePreferredHeight(constraints);
+        return new Vector2D<int>(w, h);
+    }
+
+    /// <summary>
+    /// Calculate preferred width using the HorizontalSizeMode and RelativeWidth semantics.
+    /// </summary>
+    protected virtual int CalculatePreferredWidth(Rectangle<int> constraints)
+    {
+        if (constraints.Size.X <= 0)
+            return Size.X;
+
+        switch (HorizontalSizeMode)
         {
-            SizeMode.Fixed => Size,
-            SizeMode.Percentage => new Vector2D<int>(
-                (int)(constraints.Size.X * WidthPercentage / 100f),
-                (int)(constraints.Size.Y * HeightPercentage / 100f)
-            ),
-            SizeMode.Stretch => constraints.Size,
-            SizeMode.Intrinsic => CalculateIntrinsicSize(),
-            _ => Size
-        };
+            case SizeMode.Fixed:
+                return Size.X;
+
+            case SizeMode.Percent:
+            {
+                var multiplier = Math.Abs(RelativeWidth) > float.Epsilon ? RelativeWidth : 1f;
+                return (int)(constraints.Size.X * multiplier);
+            }
+
+            case SizeMode.Stretch:
+            {
+                var baseW = constraints.Size.X;
+                if (Math.Abs(RelativeWidth) > float.Epsilon)
+                    baseW = Math.Max(0, baseW + (int)RelativeWidth);
+                return baseW;
+            }
+
+            case SizeMode.Intrinsic:
+            {
+                var intrinsic = CalculateIntrinsicSize().X + (int)RelativeWidth;
+                return intrinsic;
+            }
+
+            default:
+                return Size.X;
+        }
+    }
+
+    /// <summary>
+    /// Calculate preferred height using the VerticalSizeMode and RelativeHeight semantics.
+    /// </summary>
+    protected virtual int CalculatePreferredHeight(Rectangle<int> constraints)
+    {
+        if (constraints.Size.Y <= 0)
+            return Size.Y;
+
+        switch (VerticalSizeMode)
+        {
+            case SizeMode.Fixed:
+                return Size.Y;
+
+            case SizeMode.Percent:
+            {
+                var multiplier = Math.Abs(RelativeHeight) > float.Epsilon ? RelativeHeight : 1f;
+                return (int)(constraints.Size.Y * multiplier);
+            }
+
+            case SizeMode.Stretch:
+            {
+                var baseH = constraints.Size.Y;
+                if (Math.Abs(RelativeHeight) > float.Epsilon)
+                    baseH = Math.Max(0, baseH + (int)RelativeHeight);
+                return baseH;
+            }
+
+            case SizeMode.Intrinsic:
+            {
+                var intrinsic = CalculateIntrinsicSize().Y + (int)RelativeHeight;
+                return intrinsic;
+            }
+
+            default:
+                return Size.Y;
+        }
     }
 
     /// <summary>
@@ -250,29 +356,56 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     /// </summary>
     public Vector2D<int> Measure(Vector2D<int> availableSize)
     {
-        Vector2D<int> desired;
-
-        switch (SizeMode)
+        // Compute desired size per-axis using the independent size modes and relative modifiers
+        int desiredWidth;
+        switch (HorizontalSizeMode)
         {
             case SizeMode.Fixed:
-                desired = TargetSize;
+                desiredWidth = TargetSize.X;
                 break;
-            case SizeMode.Percentage:
-                desired = new Vector2D<int>(
-                    (int)(availableSize.X * WidthPercentage / 100f),
-                    (int)(availableSize.Y * HeightPercentage / 100f)
-                );
+            case SizeMode.Percent:
+                desiredWidth = Math.Abs(RelativeWidth) > float.Epsilon
+                    ? (int)(availableSize.X * RelativeWidth)
+                    : (int)(availableSize.X * 1f);
                 break;
             case SizeMode.Stretch:
-                desired = availableSize;
+                desiredWidth = availableSize.X;
+                if (Math.Abs(RelativeWidth) > float.Epsilon)
+                    desiredWidth = Math.Max(0, desiredWidth + (int)RelativeWidth);
                 break;
             case SizeMode.Intrinsic:
-                desired = CalculateIntrinsicSize();
+                desiredWidth = CalculateIntrinsicSize().X + (int)RelativeWidth;
                 break;
             default:
-                desired = TargetSize;
+                desiredWidth = TargetSize.X;
                 break;
         }
+
+        int desiredHeight;
+        switch (VerticalSizeMode)
+        {
+            case SizeMode.Fixed:
+                desiredHeight = TargetSize.Y;
+                break;
+            case SizeMode.Percent:
+                desiredHeight = Math.Abs(RelativeHeight) > float.Epsilon
+                    ? (int)(availableSize.Y * RelativeHeight)
+                    : (int)(availableSize.Y * 1f);
+                break;
+            case SizeMode.Stretch:
+                desiredHeight = availableSize.Y;
+                if (Math.Abs(RelativeHeight) > float.Epsilon)
+                    desiredHeight = Math.Max(0, desiredHeight + (int)RelativeHeight);
+                break;
+            case SizeMode.Intrinsic:
+                desiredHeight = CalculateIntrinsicSize().Y + (int)RelativeHeight;
+                break;
+            default:
+                desiredHeight = TargetSize.Y;
+                break;
+        }
+
+        var desired = new Vector2D<int>(desiredWidth, desiredHeight);
 
         // Apply min/max constraints (0 means no limit for MaxSize)
         if (MinSize.X > 0 && desired.X < MinSize.X) desired.X = MinSize.X;

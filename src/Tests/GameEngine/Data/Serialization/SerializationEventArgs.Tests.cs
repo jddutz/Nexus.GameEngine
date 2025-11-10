@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Data.Serialization
+﻿namespace Tests.GameEngine.Data.Serialization
 {
     public class SerializationEventArgsTests
     {

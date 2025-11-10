@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics.Synchronization
+﻿namespace Tests.GameEngine.Graphics.Synchronization
 {
     public class FrameSyncTests
     {

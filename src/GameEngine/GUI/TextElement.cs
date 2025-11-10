@@ -1,9 +1,3 @@
-using System.Numerics;
-using Nexus.GameEngine.Graphics;
-using Nexus.GameEngine.Graphics.Commands;
-using Nexus.GameEngine.Resources.Fonts;
-using Nexus.GameEngine.Resources.Shaders;
-
 namespace Nexus.GameEngine.GUI;
 
 /// <summary>

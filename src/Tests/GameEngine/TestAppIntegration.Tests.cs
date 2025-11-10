@@ -1,7 +1,4 @@
-using System;
 using System.Reflection;
-using System.Threading;
-using Xunit;
 
 namespace Tests.GameEngine
 {

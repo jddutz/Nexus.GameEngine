@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Physics.Collision
+﻿namespace Tests.GameEngine.Physics.Collision
 {
     public class ICollidableTests
     {

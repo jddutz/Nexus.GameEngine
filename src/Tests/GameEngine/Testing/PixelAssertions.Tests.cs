@@ -1,6 +1,5 @@
 ﻿using Silk.NET.Maths;
 using Nexus.GameEngine.Testing;
-using Xunit;
 
 namespace Tests.GameEngine.Testing
 {

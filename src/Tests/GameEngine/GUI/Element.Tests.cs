@@ -2,7 +2,6 @@
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Silk.NET.Maths;
-using Xunit;
 
 namespace Tests.GameEngine.GUI;
 
@@ -48,9 +47,9 @@ public class ElementTests
         var descriptorMock = new Mock<IDescriptorManager>();
         var elem = new TestElement(descriptorMock.Object);
 
-        elem.SetSizeMode(SizeMode.Percentage);
-        elem.SetWidthPercentage(50f);
-        elem.SetHeightPercentage(25f);
+        elem.SetSizeMode(SizeMode.Percent);
+        elem.SetRelativeWidth(50f);
+        elem.SetRelativeHeight(25f);
         elem.ApplyUpdates(0.016);
 
         var measured = elem.Measure(new Vector2D<int>(200, 100));

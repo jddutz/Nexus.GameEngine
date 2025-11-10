@@ -1,7 +1,5 @@
-﻿using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Nexus.GameEngine.Testing;
-using Xunit;
 
 namespace Tests.GameEngine.Testing
 {

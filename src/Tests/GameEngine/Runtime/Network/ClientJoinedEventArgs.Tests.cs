@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Runtime.Network
+﻿namespace Tests.GameEngine.Runtime.Network
 {
     public class ClientJoinedEventArgsTests
     {

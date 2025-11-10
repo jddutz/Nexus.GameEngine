@@ -13,7 +13,7 @@ public partial class Container(IDescriptorManager descriptorManager)
     /// Padding around the layout container.
     /// Uses CancelAnimation to prevent layout thrashing during property changes.
     /// </summary>
-    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [ComponentProperty]
     [TemplateProperty]
     protected Padding _padding = new(0);
 
@@ -21,14 +21,14 @@ public partial class Container(IDescriptorManager descriptorManager)
     /// Space between children (x=horizontal, y=vertical).
     /// Uses CancelAnimation to prevent layout thrashing during property changes.
     /// </summary>
-    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [ComponentProperty]
     [TemplateProperty]
     protected Vector2D<float> _spacing = new(0, 0);
 
     /// <summary>
     /// Safe-area margins for avoiding unsafe areas (notches, rounded corners, etc.).
     /// </summary>
-    [ComponentProperty(BeforeChange = nameof(CancelAnimation))]
+    [ComponentProperty()]
     [TemplateProperty]
     protected SafeArea _safeArea = SafeArea.Zero;
 
@@ -75,6 +75,12 @@ public partial class Container(IDescriptorManager descriptorManager)
         // Call base activation (Element/Transformable) - Element no longer performs rendering setup
         base.OnActivate();
 
+        // By default, layout containers should fill the available space provided by their parent/viewport.
+        // Ensure the SizeMode is Stretch so that SetSizeConstraints from the parent (e.g. the root viewport)
+        // will cause the container to adopt the full available size instead of remaining at the default
+        // Fixed/zero size.
+        SetSizeMode(SizeMode.Stretch);
+
         UpdateLayout();
 
         ChildCollectionChanged += OnChildCollectionChanged;
@@ -109,7 +115,7 @@ public partial class Container(IDescriptorManager descriptorManager)
     /// </summary>
     protected virtual void UpdateLayout()
     {
-    var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
+        var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
         var contentArea = GetContentArea();
@@ -147,17 +153,12 @@ public partial class Container(IDescriptorManager descriptorManager)
     /// </summary>
     protected Rectangle<int> GetContentArea()
     {
-        // Use target position/size for layout calculations (handles deferred updates)
-        var position = TargetPosition;
-        var size = TargetSize;
-        var effectivePadding = GetEffectivePadding();
-
-        var x = (int)position.X + effectivePadding.Left;
-        var y = (int)position.Y + effectivePadding.Top;
-        var width = Math.Max(0, size.X - effectivePadding.Left - effectivePadding.Right);
-        var height = Math.Max(0, size.Y - effectivePadding.Top - effectivePadding.Bottom);
-
-        return new Rectangle<int>(x, y, width, height);
+        return new Rectangle<int>(
+            (int)Position.X + Padding.Left,
+            (int)Position.Y + Padding.Left,
+            Math.Max(0, Size.X - Padding.Left - Padding.Right),
+            Math.Max(0, Size.Y - Padding.Top - Padding.Bottom)
+        );
     }
 
     /// <summary>

@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using Xunit;
 using Nexus.GameEngine;
 
 namespace Tests.GameEngine

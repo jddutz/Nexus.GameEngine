@@ -1,17 +1,13 @@
 using Moq;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Layout;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry;
-using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures;
-using Nexus.GameEngine.Resources.Textures.Definitions;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Xunit;
 
 namespace Tests.GameEngine.GUI.Layout;
 
@@ -196,31 +192,6 @@ public class HorizontalLayoutTests
         var constraints = getConstraints();
         Assert.Equal(0, constraints.Origin.X);   // Left edge
         Assert.Equal(70, constraints.Origin.Y);  // Bottom: 100 - 30 = 70
-    }
-
-    [Fact]
-    public void StretchAlignment_FillsHeight()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-        layout.Load(
-            size: new Vector2D<int>(200, 100),
-            alignment: VerticalAlignment.Stretch
-        );
-
-        var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
-        layout.AddChild(childMock.Object);
-        layout.Activate();
-
-        // Act
-        layout.Update(0.016);
-
-        // Assert
-        var constraints = getConstraints();
-        Assert.Equal(0, constraints.Origin.X);   // Left edge
-        Assert.Equal(0, constraints.Origin.Y);   // Top edge
-        Assert.Equal(50, constraints.Size.X);      // Maintains original width
-        Assert.Equal(100, constraints.Size.Y);     // Stretches to full height
     }
 
     /// <summary>

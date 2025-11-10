@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Input
+﻿namespace Tests.GameEngine.Input
 {
     public class MouseEventTypeTests
     {

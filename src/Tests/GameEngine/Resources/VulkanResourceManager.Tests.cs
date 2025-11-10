@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Resources
+﻿namespace Tests.GameEngine.Resources
 {
     public class VulkanResourceManagerTests
     {

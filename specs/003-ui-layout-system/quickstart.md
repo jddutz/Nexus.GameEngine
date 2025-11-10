@@ -41,7 +41,7 @@ Elements can determine their size in four ways:
 
 - **Percentage**: Size relative to parent
   ```csharp
-  SizeMode = SizeMode.Percentage,
+  SizeMode = SizeMode.Percent,
   WidthPercentage = 50,   // 50% of parent width
   HeightPercentage = 75   // 75% of parent height
   ```
@@ -177,7 +177,7 @@ public static Template InventoryPanel => new GridLayoutTemplate
     Position = new(960, 540),
     
     // Take up 60% of screen width/height
-    SizeMode = SizeMode.Percentage,
+    SizeMode = SizeMode.Percent,
     WidthPercentage = 60,
     HeightPercentage = 60,
     
@@ -215,7 +215,7 @@ public static Template SettingsDialog => new ElementTemplate
     Position = new(960, 540),
     
     // Use percentage sizing to adapt to small screens
-    SizeMode = SizeMode.Percentage,
+    SizeMode = SizeMode.Percent,
     WidthPercentage = 40,
     HeightPercentage = 50,
     
@@ -402,7 +402,7 @@ Size = new(1000, 800)  // Exceeds 640x360 mobile screen!
 
 ✅ **Correct**: Use percentage with min/max
 ```csharp
-SizeMode = SizeMode.Percentage,
+SizeMode = SizeMode.Percent,
 WidthPercentage = 80,
 HeightPercentage = 70,
 MinSize = new(300, 200),

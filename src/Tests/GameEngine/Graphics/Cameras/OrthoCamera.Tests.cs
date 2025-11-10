@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics.Cameras
+﻿namespace Tests.GameEngine.Graphics.Cameras
 {
     public class OrthoCameraTests
     {

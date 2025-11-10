@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Graphics.Pipelines
+﻿namespace Tests.GameEngine.Graphics.Pipelines
 {
     public class PipelineDefinitions_RadialGradientTests
     {

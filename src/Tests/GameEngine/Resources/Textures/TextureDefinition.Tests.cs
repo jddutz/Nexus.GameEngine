@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Resources.Textures
+﻿namespace Tests.GameEngine.Resources.Textures
 {
     public class TextureDefinitionTests
     {

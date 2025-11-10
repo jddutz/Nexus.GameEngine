@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Assets.Build.Management
+﻿namespace Tests.GameEngine.Assets.Build.Management
 {
     public class IAssetProcessorManagerTests
     {

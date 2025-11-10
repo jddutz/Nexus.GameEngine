@@ -4,9 +4,6 @@ using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Descriptors;
-using Silk.NET.Maths;
-using Silk.NET.Vulkan;
-using Xunit;
 
 namespace Tests.GameEngine.GUI;
 

@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Tests.GameEngine.Audio
+﻿namespace Tests.GameEngine.Audio
 {
     public class AudioProcessingModeTests
     {
