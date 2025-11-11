@@ -133,8 +133,8 @@ src/GameEngine/
 │   └── Fonts/
 │       └── Roboto-Regular.ttf       # [NEW] Default embedded TrueType font
 └── Shaders/
-    ├── ui_element.vert              # [EXISTING] Reused for text rendering
-    └── ui_element.frag              # [EXISTING] Reused for text rendering
+    ├── ui.vert              # [EXISTING] Reused for text rendering
+    └── ui.frag              # [EXISTING] Reused for text rendering
 
 TestApp/
 ├── TestComponents/

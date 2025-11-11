@@ -26,7 +26,7 @@ public partial class SetTextureTest(
         Subcomponents = [
             new DrawableElementTemplate()
             {
-                Position = new Vector3D<float>(100, 100, 0),
+                Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(200, 100),
                 Texture = TestResources.TestTexture
             }
@@ -71,3 +71,4 @@ public partial class SetTextureTest(
         base.OnUpdate(deltaTime);
     }
 }
+

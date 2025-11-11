@@ -30,12 +30,9 @@ public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorMan
         
         // Compute hash of bindings for caching
         var hash = ComputeBindingsHash(bindings);
-        
+
         // Return cached layout if exists
-        if (_layoutCache.TryGetValue(hash, out var cachedLayout))
-        {
-            return cachedLayout;
-        }
+        if (_layoutCache.TryGetValue(hash, out var cachedLayout)) return cachedLayout;
         
         // Create new layout
         fixed (DescriptorSetLayoutBinding* pBindings = bindings)
@@ -56,7 +53,7 @@ public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorMan
             }
             
             _layoutCache.TryAdd(hash, layout);
-            
+
             return layout;
         }
     }
@@ -83,7 +80,7 @@ public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorMan
         };
         
         DescriptorSet descriptorSet;
-        var result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
+    var result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
         
         if (result == Result.ErrorOutOfPoolMemory || result == Result.ErrorFragmentedPool)
         {
@@ -99,9 +96,9 @@ public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorMan
         {
             throw new InvalidOperationException($"Failed to allocate descriptor set: {result}");
         }
-        
+
         _totalSetsAllocated++;
-        
+
         return descriptorSet;
     }
     

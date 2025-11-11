@@ -64,12 +64,12 @@
 
 ### Implementation for Phase 2
 
-- [x] T021 [P] Create ui_element.vert shader with Position2DTexCoord input in `src/GameEngine/Shaders/ui_element.vert`
-- [x] T022 [P] Create ui_element.frag shader with uber-shader logic (texture * tintColor) in `src/GameEngine/Shaders/ui_element.frag`
+- [x] T021 [P] Create ui.vert shader with Position2DTexCoord input in `src/GameEngine/Shaders/ui.vert`
+- [x] T022 [P] Create ui.frag shader with uber-shader logic (texture * tintColor) in `src/GameEngine/Shaders/ui.frag`
 - [x] T023 Update compile.bat to include ui_element shaders in `src/GameEngine/Shaders/compile.bat`
 - [x] T024 Run compile.bat to generate SPIR-V files: `src/GameEngine/Shaders/compile.bat`
-- [x] T025 [P] Copy compiled shaders to embedded resources in `src/GameEngine/EmbeddedResources/Shaders/ui_element.vert.spv`
-- [x] T026 [P] Copy compiled shaders to embedded resources in `src/GameEngine/EmbeddedResources/Shaders/ui_element.frag.spv`
+- [x] T025 [P] Copy compiled shaders to embedded resources in `src/GameEngine/EmbeddedResources/Shaders/ui.vert.spv`
+- [x] T026 [P] Copy compiled shaders to embedded resources in `src/GameEngine/EmbeddedResources/Shaders/ui.frag.spv`
 - [x] T027 Add UIElement shader definition to `src/GameEngine/Resources/Shaders/ShaderDefinitions.cs`
 - [x] T028 Mark uniform_color shader as obsolete in `src/GameEngine/Resources/Shaders/ShaderDefinitions.cs`
 - [x] T029 Run unit tests and verify shader metadata: `dotnet test Tests/Tests.csproj --filter UIElementShader`

@@ -45,14 +45,16 @@ public partial class VerticalLayout : Container
         {
             var measured = child.Measure(contentArea.Size);
 
-            // Calculate X based on numeric alignment (-1..1)
-            var align = Alignment; // -1 left, 0 center, 1 right
-            var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
-            var x = contentArea.Origin.X + (int)((contentArea.Size.X - measured.X) * alignFrac);
-
-            var y = pY;
+            // Determine final width first (stretch or measured)
             var w = _stretchChildren ? contentArea.Size.X : measured.X;
             var h = measured.Y;
+
+            // Calculate X based on numeric alignment (-1..1) using final width
+            var align = Alignment; // -1 left, 0 center, 1 right
+            var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
+            var x = contentArea.Origin.X + (int)((contentArea.Size.X - w) * alignFrac);
+
+            var y = pY;
 
             // Set child constraints
             var newConstraints = new Rectangle<int>(x, y, w, h);

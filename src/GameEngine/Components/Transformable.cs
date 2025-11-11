@@ -50,6 +50,17 @@ public partial class Transformable : RuntimeComponent, ITransformable
     protected Matrix4X4<float> _localMatrix = Matrix4X4<float>.Identity;
     
     /// <summary>
+    /// Cached world transformation matrix. Recalculated when local matrix or parent world matrix changes.
+    /// </summary>
+    protected Matrix4X4<float> _worldMatrix = Matrix4X4<float>.Identity;
+    
+    /// <summary>
+    /// Tracks whether the cached world matrix is valid.
+    /// Invalidated when local matrix changes or when parent changes notify us.
+    /// </summary>
+    protected bool _worldMatrixDirty = true;
+    
+    /// <summary>
     /// Gets the cached local transformation matrix (SRT: Scale-Rotation-Translation).
     /// Virtual to allow derived classes to override with custom behavior.
     /// </summary>
@@ -58,6 +69,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
     /// <summary>
     /// Recalculates the local transformation matrix from current position, rotation, and scale.
     /// Called automatically when any transform property changes.
+    /// Also invalidates the cached world matrix.
     /// </summary>
     protected virtual void UpdateLocalMatrix()
     {
@@ -67,6 +79,47 @@ public partial class Transformable : RuntimeComponent, ITransformable
         _localMatrix = Matrix4X4.CreateScale(_scale) *
                        Matrix4X4.CreateFromQuaternion(_rotation) *
                        Matrix4X4.CreateTranslation(_position);
+        
+        // Local matrix changed, so world matrix is now dirty
+        InvalidateWorldMatrix();
+    }
+    
+    /// <summary>
+    /// Invalidates the cached world matrix for this component and all children.
+    /// Called automatically when local transform changes or parent changes.
+    /// </summary>
+    protected virtual void InvalidateWorldMatrix()
+    {
+        _worldMatrixDirty = true;
+        
+        // Propagate invalidation to all children that are transformable
+        foreach (var child in Children)
+        {
+            if (child is Transformable transformableChild)
+            {
+                transformableChild.InvalidateWorldMatrix();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Recalculates the world matrix if it's dirty.
+    /// Called automatically when WorldMatrix property is accessed.
+    /// </summary>
+    protected virtual void UpdateWorldMatrix()
+    {
+        if (!_worldMatrixDirty)
+            return;
+        
+        // Hierarchical transform composition: WorldMatrix = ChildLocal * ParentWorld
+        // With S*R*T matrices, this order correctly transforms the child's local position
+        // by the parent's rotation, then adds the parent's world position
+        if (Parent is ITransformable parentTransform)
+            _worldMatrix = LocalMatrix * parentTransform.WorldMatrix;
+        else
+            _worldMatrix = LocalMatrix; // Root object: local space = world space
+        
+        _worldMatrixDirty = false;
     }
     
     /// <summary>
@@ -80,13 +133,8 @@ public partial class Transformable : RuntimeComponent, ITransformable
     {
         get
         {
-            // Hierarchical transform composition: WorldMatrix = ChildLocal * ParentWorld
-            // With S*R*T matrices, this order correctly transforms the child's local position
-            // by the parent's rotation, then adds the parent's world position
-            if (Parent is ITransformable parentTransform)
-                return LocalMatrix * parentTransform.WorldMatrix;
-            else
-                return LocalMatrix; // Root object: local space = world space
+            UpdateWorldMatrix();
+            return _worldMatrix;
         }
     }
     
@@ -282,10 +330,25 @@ public partial class Transformable : RuntimeComponent, ITransformable
     
     // OnLoad method is auto-generated from template
     
+    /// <summary>
+    /// Override AddChild to invalidate child world matrices when added to hierarchy.
+    /// </summary>
+    public override void AddChild(IComponent child)
+    {
+        base.AddChild(child);
+        
+        // Invalidate child's world matrix since it now has a new parent
+        if (child is Transformable transformableChild)
+        {
+            transformableChild.InvalidateWorldMatrix();
+        }
+    }
+    
     protected override void OnActivate()
     {
         base.OnActivate();
         UpdateLocalMatrix(); // Initialize cached matrix
+        InvalidateWorldMatrix(); // Ensure world matrix is recalculated on activation
     }
     
     // ==========================================

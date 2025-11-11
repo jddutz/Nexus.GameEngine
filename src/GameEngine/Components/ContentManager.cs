@@ -9,11 +9,9 @@ namespace Nexus.GameEngine.Components;
 /// Also tracks active cameras in the content tree for automatic viewport management.
 /// </summary>
 public class ContentManager(
-    IComponentFactory componentFactory,
-    IOptions<GraphicsSettings> graphicsOptions) 
+    IComponentFactory componentFactory) 
     : IContentManager
 {
-    private readonly GraphicsSettings _graphicsSettings = graphicsOptions.Value;
     private readonly Dictionary<string, IComponent> content = [];
     private readonly SortedSet<ICamera> _cameras = new(new RenderPriorityComparer<ICamera>());
     private readonly List<IDrawable> _visibleDrawables = [];

@@ -154,6 +154,14 @@ public record PipelineDescriptor
     public PushConstantRange[]? PushConstantRanges { get; init; }
 
     /// <summary>
+    /// Shader stages that are active for this pipeline. Used as a default for
+    /// push constant stage flags when draw commands don't provide an override.
+    /// Defaults to Vertex + Fragment stages which is the common case.
+    /// </summary>
+    public ShaderStageFlags ShaderStageFlags { get; init; } =
+        ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit;
+
+    /// <summary>
     /// Descriptor set layouts for shader resources (textures, buffers, etc.).
     /// </summary>
     public DescriptorSetLayout[]? DescriptorSetLayouts { get; init; }

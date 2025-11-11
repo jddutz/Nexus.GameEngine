@@ -26,6 +26,9 @@ public static class Colors
         );
     }
 
+    public static Vector4D<float> WithTransparency(this Vector4D<float> color, float t) =>
+        new(color[0], color[1], color[2], t);
+
     // Standard named colors
     public static Vector4D<float> Transparent => FromArgb(0x00FFFFFF);
     public static Vector4D<float> AliceBlue => FromArgb(0xFFF0F8FF);

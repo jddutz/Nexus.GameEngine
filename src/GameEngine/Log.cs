@@ -94,7 +94,6 @@ public static class Log
 #endif
     }
 
-#if DEBUG
     private static void WriteLog(
         string level, 
         string message, 
@@ -122,5 +121,4 @@ public static class Log
         var fileName = Path.GetFileNameWithoutExtension(filePath);
         return fileName;
     }
-#endif
 }

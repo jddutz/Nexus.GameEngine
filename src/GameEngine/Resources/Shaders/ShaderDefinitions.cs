@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Nexus.GameEngine.Graphics.PushConstants;
 using static Nexus.GameEngine.Graphics.Pipelines.VertexInputDescriptions;
 
 namespace Nexus.GameEngine.Resources.Shaders;
@@ -230,8 +231,8 @@ public static class ShaderDefinitions
     {
         Name = "UITexturedShader",
         Source = new EmbeddedSpvShaderSource(
-            "EmbeddedResources/Shaders/ui_element.vert.spv",
-            "EmbeddedResources/Shaders/ui_element.frag.spv",
+            "EmbeddedResources/Shaders/ui.vert.spv",
+            "EmbeddedResources/Shaders/ui.frag.spv",
             GameEngineAssembly),
         InputDescription = Position2DTexCoord,
         PushConstantRanges =
@@ -240,7 +241,7 @@ public static class ShaderDefinitions
             {
                 StageFlags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,
                 Offset = 0,
-                Size = 96 // mat4 model (64 bytes) + vec4 tintColor (16 bytes) + vec4 uvRect (16 bytes)
+                Size = 112 // mat4 model (64) + vec4 tintColor (16) + vec4 uvRect (16) + vec2 size (8) + vec2 padding (8)
             }
         ],
         DescriptorSetLayouts = new Dictionary<uint, DescriptorSetLayoutBinding[]>

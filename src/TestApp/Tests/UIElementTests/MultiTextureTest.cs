@@ -25,7 +25,7 @@ public partial class MultiTextureTest(
             new DrawableElementTemplate()
             {
                 Name = "RedElement",
-                Position = new Vector3D<float>(100, 100, 0),
+                Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(100, 100),
                 Texture = TestResources.TestTexture
             },
@@ -33,7 +33,7 @@ public partial class MultiTextureTest(
             new DrawableElementTemplate()
             {
                 Name = "WhiteElement",
-                Position = new Vector3D<float>(400, 100, 0),
+                Position = ToCenteredPositionDefault(400, 100),
                 Size = new Vector2D<int>(100, 100),
                 Texture = TestResources.WhiteTexture
             },
@@ -41,7 +41,7 @@ public partial class MultiTextureTest(
             new DrawableElementTemplate()
             {
                 Name = "IconElement",
-                Position = new Vector3D<float>(700, 100, 0),
+                Position = ToCenteredPositionDefault(700, 100),
                 Size = new Vector2D<int>(100, 100),
                 Texture = TestResources.TestIcon
             }
@@ -69,3 +69,4 @@ public partial class MultiTextureTest(
         };
     }
 }
+

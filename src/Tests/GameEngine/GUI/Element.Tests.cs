@@ -48,8 +48,8 @@ public class ElementTests
         var elem = new TestElement(descriptorMock.Object);
 
         elem.SetSizeMode(SizeMode.Percent);
-        elem.SetRelativeWidth(50f);
-        elem.SetRelativeHeight(25f);
+        elem.SetRelativeWidth(0.5f);
+        elem.SetRelativeHeight(0.25f);
         elem.ApplyUpdates(0.016);
 
         var measured = elem.Measure(new Vector2D<int>(200, 100));

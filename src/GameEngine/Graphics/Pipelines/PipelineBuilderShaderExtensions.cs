@@ -13,11 +13,15 @@ public static class PipelineBuilderShaderExtensions
     /// <param name="shader">The shader resource to use.</param>
     /// <returns>The builder instance for method chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown if shader is null.</exception>
-    public static IPipelineBuilder WithShader(this IPipelineBuilder builder, ShaderResource shader)
+    public static IPipelineBuilder WithShader(
+        this IPipelineBuilder builder,
+        ShaderResource shader,
+        ShaderStageFlags flags = ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit)
     {
         if (builder is PipelineBuilder impl)
         {
             impl.Shader = shader ?? throw new ArgumentNullException(nameof(shader));
+            impl.ShaderStages = flags;
         }
         return builder;
     }

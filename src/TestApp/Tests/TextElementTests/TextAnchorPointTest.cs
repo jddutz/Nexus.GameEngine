@@ -27,25 +27,28 @@ public partial class TextAnchorPointTest(
             {
                 Text = "Top-Left",
                 Font = FontDefinitions.RobotoTitle,
-                Position = new Vector3D<float>(100,100,0),
+                Position = ToCenteredPositionDefault(100, 100),
                 TintColor = Colors.Yellow,
-                AnchorPoint = new Vector2D<float>(-1, -1)
+                LayoutHorizontal = HorizontalAlignment.Left,
+                LayoutVertical = VerticalAlignment.Top
             },
             new TextElementTemplate()
             {
                 Text = "Center",
                 Font = FontDefinitions.RobotoTitle,
-                Position = new Vector3D<float>(200,200,0),
+                Position = ToCenteredPositionDefault(200, 200),
                 TintColor = Colors.Green,
-                AnchorPoint = new Vector2D<float>(0, 0)
+                LayoutHorizontal = HorizontalAlignment.Left,
+                LayoutVertical = VerticalAlignment.Top
             },
             new TextElementTemplate()
             {
                 Text = "Bottom-Right",
                 Font = FontDefinitions.RobotoTitle,
-                Position = new Vector3D<float>(300,300,0),
+                Position = ToCenteredPositionDefault(300, 300),
                 TintColor = Colors.Cyan,
-                AnchorPoint = new Vector2D<float>(1, 1)
+                LayoutHorizontal = HorizontalAlignment.Left,
+                LayoutVertical = VerticalAlignment.Top
             }
         ]
     };
@@ -102,3 +105,4 @@ public partial class TextAnchorPointTest(
         };
     }
 }
+

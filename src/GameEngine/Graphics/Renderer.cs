@@ -2,6 +2,7 @@ using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
+using Nexus.GameEngine.Graphics.PushConstants;
 
 namespace Nexus.GameEngine.Graphics;
 
@@ -48,11 +49,10 @@ public unsafe class Renderer(
 
     private static ICamera CreateAndActivateDefaultCamera(IComponentFactory factory, GraphicsSettings settings)
     {
-        var clearColor = settings.BackgroundColor ?? new Vector4D<float>(0, 0, 0.545f, 1);
         var template = new StaticCameraTemplate
         {
             Name = "DefaultCamera",
-            ClearColor = clearColor,
+            ClearColor = settings.BackgroundColor ?? Colors.DarkBlue,
             ScreenRegion = new Rectangle<float>(0, 0, 1, 1),
             RenderPriority = 100,  // High priority - renders last (UI overlay)
             RenderPassMask = RenderPasses.All
@@ -528,10 +528,27 @@ public unsafe class Renderer(
             }
         }
         
-        // Push constants if provided (these typically change per draw, so always push)
+        // Push constants if provided (these typically change per draw, so pin and push per-draw)
         if (drawCommand.PushConstants != null && drawCommand.Pipeline.Layout.Handle != 0)
         {
-            PushConstantsToShader(commandBuffer, drawCommand.Pipeline.Layout, drawCommand.PushConstants);
+            // Determine size of the concrete push-constant struct at runtime
+            var handle = GCHandle.Alloc(drawCommand.PushConstants, GCHandleType.Pinned);
+
+            // Pin the boxed value-type (push-constant structs are blittable) and pass pointer to Vulkan
+            try
+            {
+                context.VulkanApi.CmdPushConstants(
+                    commandBuffer,
+                    drawCommand.Pipeline.Layout,
+                    drawCommand.Pipeline.ShaderStageFlags,
+                    0, // offset
+                    (uint)Marshal.SizeOf(drawCommand.PushConstants),
+                    handle.AddrOfPinnedObject().ToPointer());
+            }
+            finally
+            {
+                handle.Free();
+            }
         }
         
         var vertexBuffers = stackalloc Silk.NET.Vulkan.Buffer[] { drawCommand.VertexBuffer };
@@ -539,77 +556,5 @@ public unsafe class Renderer(
         context.VulkanApi.CmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
         
         context.VulkanApi.CmdDraw(commandBuffer, drawCommand.VertexCount, drawCommand.InstanceCount, drawCommand.FirstVertex, 0);
-    }
-
-    private unsafe void PushConstantsToShader(CommandBuffer commandBuffer, PipelineLayout pipelineLayout, object pushConstants)
-    {
-        switch (pushConstants)
-        {
-            case VertexColorsPushConstants colors:
-            {
-                var size = (uint)Marshal.SizeOf<VertexColorsPushConstants>();
-                var dataPtr = &colors;
-                context.VulkanApi.CmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    ShaderStageFlags.VertexBit,
-                    0,  // offset
-                    size,
-                    dataPtr);
-                break;
-            }
-            case LinearGradientPushConstants linearGradient:
-            {
-                var size = (uint)Marshal.SizeOf<LinearGradientPushConstants>();
-                var dataPtr = &linearGradient;
-                context.VulkanApi.CmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    ShaderStageFlags.FragmentBit,  // Linear gradient uses fragment shader
-                    0,  // offset
-                    size,
-                    dataPtr);
-                break;
-            }
-            case RadialGradientPushConstants radialGradient:
-            {
-                var size = (uint)Marshal.SizeOf<RadialGradientPushConstants>();
-                var dataPtr = &radialGradient;
-                context.VulkanApi.CmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    ShaderStageFlags.FragmentBit,  // Radial gradient uses fragment shader
-                    0,  // offset
-                    size,
-                    dataPtr);
-                break;
-            }
-            case ImageTexturePushConstants imageTexture:
-            {
-                var size = (uint)Marshal.SizeOf<ImageTexturePushConstants>();
-                var dataPtr = &imageTexture;
-                context.VulkanApi.CmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,  // Both shaders access push constants
-                    0,  // offset
-                    size,
-                    dataPtr);
-                break;
-            }
-            case UIElementPushConstants uiElement:
-            {
-                var size = (uint)Marshal.SizeOf<UIElementPushConstants>();
-                var dataPtr = &uiElement;
-                context.VulkanApi.CmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    ShaderStageFlags.VertexBit | ShaderStageFlags.FragmentBit,
-                    0,  // offset
-                    size,
-                    dataPtr);
-                break;
-            }
-        }
     }
 }

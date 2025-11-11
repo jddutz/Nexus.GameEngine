@@ -1,3 +1,4 @@
+using Nexus.GameEngine.Graphics.PushConstants;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures.Definitions;
 
@@ -127,6 +128,7 @@ public partial class DrawableElement : Element, IDrawable
             // Create layout for set=1 (texture sampler)
             var layout = DescriptorManager.CreateDescriptorSetLayout(textureBindings);
             TextureDescriptorSet = DescriptorManager.AllocateDescriptorSet(layout);
+
             if (TextureDescriptorSet.HasValue && _texture != null)
             {
                 DescriptorManager.UpdateDescriptorSet(
@@ -146,9 +148,7 @@ public partial class DrawableElement : Element, IDrawable
     {
         if (Geometry == null) yield break;
 
-        var pushConstants = UIElementPushConstants.FromModelColorAndUV(WorldMatrix, TintColor, MinUV, MaxUV);
-
-        var drawCommand = new DrawCommand
+        yield return new DrawCommand
         {
             RenderMask = RenderPasses.UI,
             Pipeline = Pipeline,
@@ -159,11 +159,10 @@ public partial class DrawableElement : Element, IDrawable
             // For UIElement shader: bind texture descriptor set at set=1
             // ViewProjection UBO is already bound at set=0 by camera system
             DescriptorSet = TextureDescriptorSet ?? default,
-            // Push model matrix + color + UV rect (96 bytes: 64 for matrix + 16 for color + 16 for UV)
-            PushConstants = pushConstants
+            // Push model matrix + size + color + UV rect
+            // WorldMatrix now excludes Size scaling - Size passed separately
+            PushConstants = new UIElementPushConstants(WorldMatrix, TintColor, MinUV, MaxUV, Size, AnchorPoint)
         };
-
-        yield return drawCommand;
     }
 
     protected override void OnDeactivate()

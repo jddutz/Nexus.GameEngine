@@ -60,12 +60,15 @@ public unsafe class PipelineManager : IPipelineManager
     public PipelineHandle Get(string name)
     {
         // Try to get from cache
-        if (_pipelines.TryGetValue(name, out var cached))
+            if (_pipelines.TryGetValue(name, out var cached))
         {
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name);
+                return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name)
+                {
+                    ShaderStageFlags = cached.Descriptor.ShaderStageFlags
+                };
         }
         else
         {
@@ -79,12 +82,15 @@ public unsafe class PipelineManager : IPipelineManager
         ArgumentNullException.ThrowIfNull(definition);
 
         // Try to get from cache by name
-        if (_pipelines.TryGetValue(definition.Name, out var cached))
+            if (_pipelines.TryGetValue(definition.Name, out var cached))
         {
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name);
+                return new PipelineHandle(cached.Handle, cached.Layout, cached.Descriptor.Name)
+                {
+                    ShaderStageFlags = cached.Descriptor.ShaderStageFlags
+                };
         }
 
         // Build using definition's configuration
@@ -107,12 +113,15 @@ public unsafe class PipelineManager : IPipelineManager
         Interlocked.Increment(ref _totalCreateRequests);
 
         // Try to get from cache
-        if (_pipelines.TryGetValue(descriptor.Name, out var cached))
+            if (_pipelines.TryGetValue(descriptor.Name, out var cached))
         {
             Interlocked.Increment(ref _cacheHits);
             cached.AccessCount++;
             cached.LastAccessedAt = DateTime.UtcNow;
-            return new PipelineHandle(cached.Handle, cached.Layout, descriptor.Name);
+                return new PipelineHandle(cached.Handle, cached.Layout, descriptor.Name)
+                {
+                    ShaderStageFlags = cached.Descriptor.ShaderStageFlags
+                };
         }
 
         // Cache miss - create new pipeline
@@ -151,7 +160,10 @@ public unsafe class PipelineManager : IPipelineManager
         if (descriptor.GeometryShaderPath != null)
             TrackShaderDependency(descriptor.GeometryShaderPath, descriptor.Name);
 
-        return new PipelineHandle(pipeline, pipelineLayout, descriptor.Name);
+        return new PipelineHandle(pipeline, pipelineLayout, descriptor.Name)
+        {
+            ShaderStageFlags = descriptor.ShaderStageFlags
+        };
     }
 
     /// <inheritdoc/>
@@ -521,6 +533,17 @@ public unsafe class PipelineManager : IPipelineManager
             {
                 CleanupShaderModules(vertShaderModule, fragShaderModule, shaderStages);
                 return default;
+            }
+
+            // Debug: log descriptor set layouts used to create this pipeline layout so we can
+            // compare them with descriptor sets allocated later for elements.
+            if (descriptor.DescriptorSetLayouts != null && descriptor.DescriptorSetLayouts.Length > 0)
+            {
+                try
+                {
+                    var layoutHandles = string.Join(", ", descriptor.DescriptorSetLayouts.Select((l, i) => $"set{i}=0x{l.Handle:X}"));
+                }
+                catch { /* best-effort logging, don't throw */ }
             }
 
             // Create graphics pipeline

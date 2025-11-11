@@ -89,7 +89,7 @@ public partial class TexturedStressTest(
                 var elementTemplate = new DrawableElementTemplate
                 {
                     Name = $"Element_{row}_{col}",
-                    Position = new Vector3D<float>(x, y, 0),
+                    Position = ToCenteredPosition(x, y, 0, 1280, 720),
                     Size = new Vector2D<int>(ElementSize, ElementSize),
                     TintColor = color
                     // Texture defaults to UniformColor (all 100 elements share same texture)
@@ -261,3 +261,4 @@ public partial class TexturedStressTest(
         };
     }
 }
+

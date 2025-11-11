@@ -51,7 +51,13 @@ public partial class Container(IDescriptorManager descriptorManager)
     protected override void OnSizeConstraintsChanged(Rectangle<int> constraints)
     {
         base.OnSizeConstraintsChanged(constraints);
+        // Mark layout invalid and perform an immediate layout pass so child
+        // constraints are updated synchronously when SetSizeConstraints is called.
+        // This mirrors previous behavior where layout was expected to run
+        // immediately in many tests.
         Invalidate();
+        UpdateLayout();
+        _isLayoutInvalid = false;
     }
 
     /// <summary>
@@ -79,7 +85,14 @@ public partial class Container(IDescriptorManager descriptorManager)
         // Ensure the SizeMode is Stretch so that SetSizeConstraints from the parent (e.g. the root viewport)
         // will cause the container to adopt the full available size instead of remaining at the default
         // Fixed/zero size.
-        SetSizeMode(SizeMode.Stretch);
+    SetSizeMode(SizeMode.Stretch);
+
+    // Also propagate to per-axis size modes and apply updates immediately so that
+    // activation-time layout logic (which may run before the usual update loop)
+    // sees the container as Stretch.
+    SetHorizontalSizeMode(SizeMode.Stretch);
+    SetVerticalSizeMode(SizeMode.Stretch);
+    ApplyUpdates(0);
 
         UpdateLayout();
 
@@ -153,11 +166,13 @@ public partial class Container(IDescriptorManager descriptorManager)
     /// </summary>
     protected Rectangle<int> GetContentArea()
     {
+        // Use target position/size so layout calculations operate on the intended
+        // values even if deferred updates haven't been applied to the runtime fields yet.
         return new Rectangle<int>(
-            (int)Position.X + Padding.Left,
-            (int)Position.Y + Padding.Left,
-            Math.Max(0, Size.X - Padding.Left - Padding.Right),
-            Math.Max(0, Size.Y - Padding.Top - Padding.Bottom)
+            (int)TargetPosition.X + Padding.Left,
+            (int)TargetPosition.Y + Padding.Top,
+            Math.Max(0, TargetSize.X - Padding.Left - Padding.Right),
+            Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
         );
     }
 

@@ -20,6 +20,39 @@ public partial class RenderableTest(
     protected IRenderer Renderer => renderer;
     protected IWindow Window => windowService.GetWindow();
 
+    /// <summary>
+    /// Converts top-left origin coordinates to centered coordinate system.
+    /// For a 1280x720 window:
+    /// - (0, 0) in top-left → (-640, -360) in centered
+    /// - (100, 100) in top-left → (-540, -260) in centered
+    /// - (640, 360) in top-left → (0, 0) in centered (center of screen)
+    /// </summary>
+    protected Vector3D<float> ToCenteredPosition(float x, float y, float z = 0)
+    {
+        var halfWidth = Window.Size.X / 2f;
+        var halfHeight = Window.Size.Y / 2f;
+        return new Vector3D<float>(x - halfWidth, y - halfHeight, z);
+    }
+
+    /// <summary>
+    /// Static version of ToCenteredPosition for use in template initialization.
+    /// Assumes standard test window size of 1280x720.
+    /// </summary>
+    protected static Vector3D<float> ToCenteredPosition(float x, float y, float z, int windowWidth, int windowHeight)
+    {
+        var halfWidth = windowWidth / 2f;
+        var halfHeight = windowHeight / 2f;
+        return new Vector3D<float>(x - halfWidth, y - halfHeight, z);
+    }
+
+    /// <summary>
+    /// Static version assuming 1280x720 window for template initialization.
+    /// </summary>
+    protected static Vector3D<float> ToCenteredPositionDefault(float x, float y, float z = 0)
+    {
+        return ToCenteredPosition(x, y, z, 1280, 720);
+    }
+
     [Test("GetDrawCommands() should be called at least once")]
     public readonly static RenderableTestTemplate RenderableBaseTest = new();
 

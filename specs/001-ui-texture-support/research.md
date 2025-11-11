@@ -76,7 +76,7 @@
 - Default value: `TextureDefinitions.WhiteDummy` (1×1 white RGBA=1,1,1,1)
 - Element creates texture descriptor set in `OnActivate()`, loads texture from property
 - Users set `Texture = myTexture` for textured elements, leave default for solid colors
-- Same shader for all: `ui_element.vert/frag` (replaces `uniform_color` and `ui_textured`)
+- Same shader for all: `ui.vert/frag` (replaces `uniform_color` and `ui_textured`)
 - No TexturedElement subclass needed
 
 ---

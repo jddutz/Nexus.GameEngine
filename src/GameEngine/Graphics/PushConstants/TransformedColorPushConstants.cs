@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Nexus.GameEngine.Graphics;
+namespace Nexus.GameEngine.Graphics.PushConstants;
 
 /// <summary>
 /// Push constants for transformed uniform color rendering.

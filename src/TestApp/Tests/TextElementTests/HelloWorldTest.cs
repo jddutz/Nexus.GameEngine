@@ -28,9 +28,10 @@ public partial class HelloWorldTest(
             {
                 Text = "Hello, World!",
                 Font = FontDefinitions.RobotoTitle,
-                Position = new Vector3D<float>(100, 100, 0),  // Top-left at (100, 100)
+                Position = ToCenteredPositionDefault(100, 100),  // Top-left at (100, 100)
                 TintColor = Colors.White,
-                AnchorPoint = new Vector2D<float>(-1, -1)  // Top-left anchor (default)
+                LayoutHorizontal = HorizontalAlignment.Left,
+                LayoutVertical = VerticalAlignment.Top
             }
         ]
     };

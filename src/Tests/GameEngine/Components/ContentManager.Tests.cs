@@ -25,15 +25,6 @@ public class ContentManagerCameraTests
         return mockFactory;
     }
 
-    private static IOptions<GraphicsSettings> CreateMockGraphicsOptions()
-    {
-        var settings = new GraphicsSettings
-        {
-            BackgroundColor = new Vector4D<float>(0, 0, 0.545f, 1)
-        };
-        return Microsoft.Extensions.Options.Options.Create(settings);
-    }
-
     private static Mock<IComponentFactory> CreateMockFactoryForInitialize()
     {
         var mockCamera = new Mock<ICamera>();
@@ -71,7 +62,7 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactory();
-        var contentManager = new ContentManager(mockFactory.Object, CreateMockGraphicsOptions());
+        var contentManager = new ContentManager(mockFactory.Object);
 
         // Act
         var cameras = contentManager.ActiveCameras;
@@ -86,7 +77,7 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactory();
-        var contentManager = new ContentManager(mockFactory.Object, CreateMockGraphicsOptions());
+        var contentManager = new ContentManager(mockFactory.Object);
         
         // Create three mock cameras with different priorities (added in non-sorted order)
         var mockCamera1 = CreateMockCamera("Camera1", 10);
@@ -121,7 +112,7 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactoryForInitialize();
-        var contentManager = new ContentManager(mockFactory.Object, CreateMockGraphicsOptions());
+        var contentManager = new ContentManager(mockFactory.Object);
 
         // Load a camera component
         var cameraTemplate = new StaticCameraTemplate

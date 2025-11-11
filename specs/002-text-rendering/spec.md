@@ -427,7 +427,7 @@ The following features are explicitly **not** included in this MVP specification
 TextElement uses the existing **UIElement shader** (not ImageTexture shader):
 
 ```glsl
-// ui_element.vert
+// ui.vert
 layout(push_constant) uniform PushConstants {
     mat4 model;      // Per-glyph WorldMatrix
     vec4 tintColor;  // White (1,1,1,1) for text

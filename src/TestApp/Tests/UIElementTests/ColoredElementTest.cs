@@ -25,7 +25,7 @@ public partial class ColoredElementTest(
             new DrawableElementTemplate()
             {
                 Name = "RedElement",
-                Position = new Vector3D<float>(100, 100, 0),
+                Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(200, 100),
                 TintColor = new Vector4D<float>(1, 0, 0, 1)  // Red
                 // Texture defaults to UniformColor (1x1 white pixel)
@@ -56,3 +56,5 @@ public partial class ColoredElementTest(
         };
     }
 }
+
+

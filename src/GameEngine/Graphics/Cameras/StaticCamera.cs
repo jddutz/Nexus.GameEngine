@@ -1,8 +1,10 @@
 namespace Nexus.GameEngine.Graphics.Cameras;
 
 /// <summary>
-/// Orthographic camera for UI rendering. Creates a pixel-to-NDC projection matrix
-/// that transforms pixel coordinates to normalized device coordinates.
+/// Orthographic camera for UI rendering with centered coordinate system.
+/// Creates a projection matrix that transforms pixel coordinates (centered at origin)
+/// to normalized device coordinates. Origin (0,0) is at the center of the viewport,
+/// with coordinates ranging from (-width/2, -height/2) to (width/2, height/2).
 /// The viewport dimensions must be set via <see cref="SetViewportSize"/> before rendering.
 /// Manages its own ViewProjection UBO buffer and descriptor set for efficient rendering.
 /// </summary>
@@ -48,7 +50,7 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     // ComponentProperty attributes make these configurable via template and provide deferred updates
     [ComponentProperty]
     [TemplateProperty]
-    private Rectangle<float> _screenRegion = new(0, 0, 1, 1);
+    private Rectangle<float> _screenRegion = new(-1, -1, 2, 2);
 
     [ComponentProperty]
     [TemplateProperty]
@@ -74,6 +76,10 @@ public partial class StaticCamera : RuntimeComponent, ICamera
     // Cached view-projection matrix
     private Matrix4X4<float> _viewProjectionMatrix;
     private bool _viewProjectionDirty = true;
+    
+    // Cached visible rectangle in pixel coordinates (origin.x, origin.y, size.x, size.y)
+    private Rectangle<float> _visibleRect;
+    private bool _visibleRectDirty = true;
 
     /// <summary>
     /// Updates the camera's projection matrix to match the viewport dimensions.
@@ -96,34 +102,55 @@ public partial class StaticCamera : RuntimeComponent, ICamera
         // Identity view matrix (UI coordinates are in screen space)
         ViewMatrix = Matrix4X4<float>.Identity;
 
-        // Create pixel-to-NDC orthographic projection
-        // Our coordinate system: +Y goes DOWN (screen space)
-        // Geometry vertices use same convention: (-1,-1) is top-left, (1,1) is bottom-right
-        // We want: (0, 0) pixel -> (-1, -1) NDC (top-left)
-        //          (width, height) pixel -> (1, 1) NDC (bottom-right)
-        // CreateOrthographicOffCenter(left, right, bottom, top) with bottom > top inverts Y
+        // Create pixel-to-NDC orthographic projection with CENTERED origin
+        // Our coordinate system: (0,0) at center, +Y goes DOWN (screen space)
+        // We want: (-width/2, -height/2) pixel -> (-1, -1) NDC (top-left)
+        //          (width/2, height/2) pixel -> (1, 1) NDC (bottom-right)
+        // This matches shader calculations like: gl_Position = vec4(xy.x / (width/2), xy.y / (height/2), 0, 1)
         ProjectionMatrix = Matrix4X4.CreateOrthographicOffCenter(
-            0f,              // left
-            _viewportWidth,  // right
-            0f,              // bottom (NOT flipped - we want Y to go down)
-            _viewportHeight, // top (bottom < top means Y increases downward in NDC)
+            -_viewportWidth / 2f,   // left
+            _viewportWidth / 2f,    // right
+            -_viewportHeight / 2f,  // bottom
+            _viewportHeight / 2f,   // top
             _nearPlane,
             _farPlane);
 
         // Mark cached matrix as dirty
         _viewProjectionDirty = true;
         
+        // Mark visible rect dirty (depends on viewport size / screen region)
+        _visibleRectDirty = true;
+
         // Update UBO with new matrix
         UpdateViewProjectionUBO();
+    }
+
+    private void UpdateVisibleRect()
+    {
+        if (!_visibleRectDirty) return;
+
+        // With centered coordinate system, visible rect spans from -width/2 to +width/2
+        _visibleRect = new Rectangle<float>(
+            -_viewportWidth / 2f,
+            -_viewportHeight / 2f,
+            _viewportWidth,
+            _viewportHeight
+        );
+        
+        _visibleRectDirty = false;
     }
 
     public Matrix4X4<float> GetViewProjectionMatrix()
     {
         if (_viewProjectionDirty)
         {
-            _viewProjectionMatrix = ViewMatrix * ProjectionMatrix;
+            // Use GLSL column-vector convention: projection * view
+            // so that shaders can do: viewProjection * model * vec4(pos, 1.0)
+            _viewProjectionMatrix = ProjectionMatrix * ViewMatrix;
             _viewProjectionDirty = false;
+            Log.Debug($"ViewProjection Matrix: {_viewProjectionMatrix}");
         }
+
         return _viewProjectionMatrix;
     }
 
@@ -145,15 +172,23 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     public bool IsVisible(Box3D<float> bounds)
     {
-        // Always visible for UI/textures - StaticCamera has no depth restrictions
-        return true;
+        // Ensure cached visible rect is up to date (only recalculated on viewport/matrix changes)
+        UpdateVisibleRect();
+
+        // Check for overlap in X and Y. Return true only if they overlap.
+        var overlapX = bounds.Max.X >= _visibleRect.Origin.X && bounds.Min.X <= _visibleRect.Max.X;
+        var overlapY = bounds.Max.Y >= _visibleRect.Origin.Y && bounds.Min.Y <= _visibleRect.Max.Y;
+
+        return overlapX && overlapY;
     }
 
     public Ray3D<float> ScreenToWorldRay(Vector2D<int> screenPoint, int screenWidth, int screenHeight)
     {
-        // For UI camera, screen coordinates ARE world coordinates (pixels)
-        // Ray origin is at the screen point in pixel space
-        var rayOrigin = new Vector3D<float>(screenPoint.X, screenPoint.Y, 0);
+        // Convert from screen coordinates (top-left origin) to centered world coordinates
+        // Screen: (0,0) at top-left -> World: (-width/2, -height/2)
+        var worldX = screenPoint.X - (screenWidth / 2f);
+        var worldY = screenPoint.Y - (screenHeight / 2f);
+        var rayOrigin = new Vector3D<float>(worldX, worldY, 0);
 
         // Ray direction is always forward for orthographic projection
         return new Ray3D<float>(rayOrigin, Forward);
@@ -161,8 +196,11 @@ public partial class StaticCamera : RuntimeComponent, ICamera
 
     public Vector2D<int> WorldToScreenPoint(Vector3D<float> worldPoint, int screenWidth, int screenHeight)
     {
-        // For UI camera, world coordinates (pixels) ARE screen coordinates
-        return new Vector2D<int>((int)worldPoint.X, (int)worldPoint.Y);
+        // Convert from centered world coordinates to screen coordinates (top-left origin)
+        // World: (-width/2, -height/2) -> Screen: (0,0) at top-left
+        var screenX = (int)(worldPoint.X + (screenWidth / 2f));
+        var screenY = (int)(worldPoint.Y + (screenHeight / 2f));
+        return new Vector2D<int>(screenX, screenY);
     }
 
     protected override void OnActivate()

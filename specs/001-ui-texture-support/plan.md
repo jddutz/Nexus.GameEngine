@@ -218,14 +218,14 @@ Tests follow existing xUnit (unit) and TestApp (integration) patterns.
 ```
 
 **Implementation Steps**:
-1. Create `src/GameEngine/Shaders/ui_element.vert` (uber-shader):
+1. Create `src/GameEngine/Shaders/ui.vert` (uber-shader):
    - Input: `layout(location = 0) in vec2 inPos; layout(location = 1) in vec2 inTexCoord;`
    - UBO: `layout(set = 0, binding = 0) uniform ViewProjectionUBO { mat4 viewProjection; }`
    - Push constants: `layout(push_constant) uniform PushConstants { mat4 model; vec4 tintColor; }`
    - Output: `layout(location = 0) out vec2 fragTexCoord; layout(location = 1) out vec4 fragTintColor;`
    - Transform: `gl_Position = camera.viewProjection * model * vec4(inPos, 0.0, 1.0);`
 
-2. Create `src/GameEngine/Shaders/ui_element.frag` (uber-shader):
+2. Create `src/GameEngine/Shaders/ui.frag` (uber-shader):
    - Input: `layout(location = 0) in vec2 fragTexCoord; layout(location = 1) in vec4 fragTintColor;`
    - Texture: `layout(set = 1, binding = 0) uniform sampler2D texSampler;`
    - Output: `layout(location = 0) out vec4 outColor;`
@@ -243,12 +243,12 @@ Tests follow existing xUnit (unit) and TestApp (integration) patterns.
    - PushConstantRanges: 80 bytes (mat4 model + vec4 tintColor)
 
 **Files Created**:
-- `src/GameEngine/Shaders/ui_element.vert`
-- `src/GameEngine/Shaders/ui_element.frag`
-- `src/GameEngine/Shaders/ui_element.vert.spv` (compiled)
-- `src/GameEngine/Shaders/ui_element.frag.spv` (compiled)
-- `src/GameEngine/EmbeddedResources/Shaders/ui_element.vert.spv`
-- `src/GameEngine/EmbeddedResources/Shaders/ui_element.frag.spv`
+- `src/GameEngine/Shaders/ui.vert`
+- `src/GameEngine/Shaders/ui.frag`
+- `src/GameEngine/Shaders/ui.vert.spv` (compiled)
+- `src/GameEngine/Shaders/ui.frag.spv` (compiled)
+- `src/GameEngine/EmbeddedResources/Shaders/ui.vert.spv`
+- `src/GameEngine/EmbeddedResources/Shaders/ui.frag.spv`
 - `Tests/UIElementShaderTests.cs`
 
 **Files Modified**:
@@ -256,8 +256,8 @@ Tests follow existing xUnit (unit) and TestApp (integration) patterns.
 - `src/GameEngine/Resources/Shaders/ShaderDefinitions.cs`
 
 **Files Deprecated** (keep for backward compatibility, mark obsolete):
-- `src/GameEngine/Shaders/uniform_color.vert` (replaced by ui_element.vert)
-- `src/GameEngine/Shaders/uniform_color.frag` (replaced by ui_element.frag)
+- `src/GameEngine/Shaders/uniform_color.vert` (replaced by ui.vert)
+- `src/GameEngine/Shaders/uniform_color.frag` (replaced by ui.frag)
 
 **Verification**: 
 - Shaders compile without errors

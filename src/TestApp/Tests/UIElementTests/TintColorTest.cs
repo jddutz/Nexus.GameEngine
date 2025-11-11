@@ -25,7 +25,7 @@ public partial class TintColorTest(
             Subcomponents = [
             new DrawableElementTemplate()
             {
-                Position = new Vector3D<float>(100, 100, 0),
+                Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(150, 100),
                 Texture = TextureDefinitions.UniformColor,
                 TintColor = Colors.Red,
@@ -55,3 +55,4 @@ public partial class TintColorTest(
         };
     }
 }
+

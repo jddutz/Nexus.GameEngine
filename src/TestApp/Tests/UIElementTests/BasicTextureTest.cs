@@ -24,7 +24,7 @@ public partial class BasicTextureTest(
             new DrawableElementTemplate()
             {
                 Name = "TexturedElement",
-                Position = new Vector3D<float>(100, 100, 0),
+                Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(256, 256),
                 Texture = TestResources.TestTexture  // Solid red texture
             }

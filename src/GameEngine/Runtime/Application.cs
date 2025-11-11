@@ -49,13 +49,15 @@ public class Application(IServiceProvider services) : IApplication
             // This is optional - not all startup content needs to be IUserInterfaceElement
             if (startupContent is IUserInterfaceElement rootElement)
             {
-                var constraints = new Rectangle<int>(0, 0, window.Size.X, window.Size.Y);
+                // Use centered coordinate system to match StaticCamera's viewport
+                // Origin at center: (-width/2, -height/2) to (width/2, height/2)
+                var constraints = new Rectangle<int>(-window.Size.X / 2, -window.Size.Y / 2, window.Size.X, window.Size.Y);
                 rootElement.SetSizeConstraints(constraints);
                 
                 // Update constraints when window resizes
                 window.Resize += newSize =>
                 {
-                    rootElement.SetSizeConstraints(new Rectangle<int>(0, 0, newSize.X, newSize.Y));
+                    rootElement.SetSizeConstraints(new Rectangle<int>(-newSize.X / 2, -newSize.Y / 2, newSize.X, newSize.Y));
                 };
             }
 

@@ -1,3 +1,5 @@
+using Nexus.GameEngine.Graphics.PushConstants;
+
 namespace Nexus.GameEngine.GUI;
 
 /// <summary>
@@ -269,8 +271,9 @@ public partial class TextElement : DrawableElement
                 continue;
             }
 
-            // Calculate per-glyph world matrix
+            // Calculate per-glyph world matrix (position only, no size scaling)
             var glyphWorldMatrix = CalculateGlyphWorldMatrix(glyph, cursorX, baselineY);
+            var glyphSize = new Vector2D<int>(glyph.Width, glyph.Height);
 
             yield return new DrawCommand
             {
@@ -281,7 +284,7 @@ public partial class TextElement : DrawableElement
                 VertexCount = 4,
                 InstanceCount = 1,
                 RenderPriority = 1000, // UI text layer
-                PushConstants = UIElementPushConstants.FromModelAndColor(glyphWorldMatrix, TintColor),
+                PushConstants = new UIElementPushConstants(glyphWorldMatrix, TintColor, glyphSize),
                 DescriptorSet = _fontAtlasDescriptorSet.Value
             };
 
@@ -292,32 +295,28 @@ public partial class TextElement : DrawableElement
 
     /// <summary>
     /// Calculates the world matrix for a single glyph.
+    /// Returns position-only matrix WITHOUT size scaling (size passed separately in push constants).
     /// Combines:
-    /// 1. Glyph-local scale (from normalized -1,1 quad to glyph pixel dimensions)
-    /// 2. Glyph position within text (cursor + bearing)
-    /// 3. Element's screen-space position (accounting for AnchorPoint)
-    /// 
-    /// Note: We don't use Element's WorldMatrix because that includes Size scaling,
-    /// which would incorrectly scale glyphs by the total text dimensions.
+    /// 1. Glyph position within text (cursor + bearing + centering offset)
+    /// 2. Element's screen-space position (accounting for AnchorPoint)
     /// </summary>
     private Matrix4X4<float> CalculateGlyphWorldMatrix(GlyphInfo glyph, float cursorX, float baselineY)
     {
-        // Glyph dimensions (half-extents for scaling from normalized -1,1 space)
-        float scaleX = glyph.Width / 2.0f;
-        float scaleY = glyph.Height / 2.0f;
+        // Glyph half-extents (for centering offset calculation)
+        float halfWidth = glyph.Width / 2.0f;
+        float halfHeight = glyph.Height / 2.0f;
 
         // Calculate element's top-left corner in screen space
         // Position is where AnchorPoint is located, so offset by anchor to get top-left
         float elementOriginX = Position.X - (AnchorPoint.X * Size.X * 0.5f * Scale.X);
         float elementOriginY = Position.Y - (AnchorPoint.Y * Size.Y * 0.5f * Scale.Y);
 
-        // Glyph position in screen space (element origin + cursor + bearing + centering)
-        float glyphCenterX = elementOriginX + cursorX + glyph.BearingX + scaleX;
-        float glyphCenterY = elementOriginY + baselineY - glyph.BearingY + scaleY;
+        // Glyph center position in screen space (element origin + cursor + bearing + centering)
+        float glyphCenterX = elementOriginX + cursorX + glyph.BearingX + halfWidth;
+        float glyphCenterY = elementOriginY + baselineY - glyph.BearingY + halfHeight;
 
-        // Create glyph world matrix: scale to glyph size, then translate to screen position
-        return Matrix4X4.CreateScale(scaleX, scaleY, 1.0f) *
-               Matrix4X4.CreateTranslation(glyphCenterX, glyphCenterY, Position.Z);
+        // Return position-only matrix (size scaling handled in shader via push constants)
+        return Matrix4X4.CreateTranslation(glyphCenterX, glyphCenterY, Position.Z);
     }
 
     protected override void OnDeactivate()

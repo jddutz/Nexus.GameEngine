@@ -1,5 +1,6 @@
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Layout;
+using Nexus.GameEngine.Resources;
 using Silk.NET.Maths;
 
 namespace Nexus.IDE;
@@ -16,16 +17,17 @@ public static partial class Templates
         Padding = Padding.All(5),
         Subcomponents =
         [
-            new ElementTemplate()
+            new DrawableElementTemplate()
             {
-                Name = "WelcomeText",
-                // Center the text in the window
-                LayoutHorizontal = HorizontalAlignment.Center,
-                HorizontalSizeMode = SizeMode.Stretch,
-                LayoutVertical = VerticalAlignment.Center,
-                VerticalSizeMode = SizeMode.Stretch,
-                AnchorPoint = AnchorPoint.Center
-            },
+                Name = "Background",
+                Position = new Vector3D<float>(-200,-200,0),
+                Size = new Vector2D<int>(100,50),
+                HorizontalSizeMode = SizeMode.Fixed,
+                VerticalSizeMode = SizeMode.Fixed,
+                TintColor = Colors.CornflowerBlue.WithTransparency(0.1f),
+                LayoutHorizontal = HorizontalAlignment.Right,
+                LayoutVertical = VerticalAlignment.Bottom
+            },/*
             new TextElementTemplate()
             {
                 Name = "WelcomeText",
@@ -70,7 +72,7 @@ public static partial class Templates
                 LayoutHorizontal = HorizontalAlignment.Right,
                 LayoutVertical = VerticalAlignment.Bottom,
                 AnchorPoint = new Vector2D<float>(1f, 1f)
-            },
+            },*/
         ]
     };
 }

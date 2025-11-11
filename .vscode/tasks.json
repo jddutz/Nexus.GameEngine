@@ -33,6 +33,7 @@
             ],
             "problemMatcher": "$msCompile",
             "group": "build",
+            "dependsOn": ["compile-shaders"],
             "presentation": {
                 "echo": true,
                 "reveal": "always",

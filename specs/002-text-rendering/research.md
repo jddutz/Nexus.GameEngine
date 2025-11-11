@@ -138,7 +138,7 @@ foreach (char c in asciiPrintableRange) {
 
 **Shader Sampling Pattern**:
 ```glsl
-// ui_element.frag
+// ui.frag
 layout(set = 1, binding = 0) uniform sampler2D fontAtlas;
 
 void main() {
@@ -311,7 +311,7 @@ WorldMatrix = Matrix4x4.CreateScale(Size.X/2 × Scale.X, Size.Y/2 × Scale.Y, Sc
 
 ### 6. UIElement Shader Compatibility
 
-**Decision**: **Reuse existing `ui_element.vert` and `ui_element.frag` shaders** without modification
+**Decision**: **Reuse existing `ui.vert` and `ui.frag` shaders** without modification
 
 **Rationale**:
 - **Perfect Compatibility**: Shader already supports all required features:
@@ -326,7 +326,7 @@ WorldMatrix = Matrix4x4.CreateScale(Size.X/2 × Scale.X, Size.Y/2 × Scale.Y, Sc
 
 **Shader Verification** (from existing codebase):
 ```glsl
-// ui_element.vert
+// ui.vert
 #version 450
 
 layout(set = 0, binding = 0) uniform ViewProjection {
@@ -354,7 +354,7 @@ void main() {
     gl_Position = viewProjection * pc.model * vec4(inPosition, 0.0, 1.0);
 }
 
-// ui_element.frag
+// ui.frag
 #version 450
 
 layout(set = 1, binding = 0) uniform sampler2D texSampler;

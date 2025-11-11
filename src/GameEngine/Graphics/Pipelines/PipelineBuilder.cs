@@ -14,6 +14,8 @@ public class PipelineBuilder(
     // Internal state accessible by extension methods
     internal ShaderResource? Shader { get; set; }
     internal ShaderDefinition? ShaderDefinition { get; set; }
+    internal Silk.NET.Vulkan.ShaderStageFlags ShaderStages { get; set; } =
+        Silk.NET.Vulkan.ShaderStageFlags.VertexBit | Silk.NET.Vulkan.ShaderStageFlags.FragmentBit;
     internal IResourceManager Resources { get; } = resources;
     internal ISwapChain SwapChain { get; } = swapChain;
     internal IDescriptorManager DescriptorManager { get; } = descriptorManager;
@@ -65,6 +67,7 @@ public class PipelineBuilder(
             FragmentShaderPath = Shader.Definition.Name + ".frag",  // Legacy fallback for tracking
             VertexInputDescription = Shader.Definition.InputDescription,
             PushConstantRanges = Shader.Definition.PushConstantRanges,
+            	ShaderStageFlags = ShaderStages,
             DescriptorSetLayouts = descriptorSetLayouts,
             RenderPass = RenderPass.Value,
             Topology = Topology,
