@@ -3,12 +3,13 @@ namespace Nexus.GameEngine.GUI;
 /// <summary>
 /// Vertical alignment helpers exposing float constants in the range [-1,1].
 /// Use these values in layout calculations where -1 = top, 0 = center, 1 = bottom.
+/// NOTE: Consider using Align.Top, Align.Middle, Align.Bottom instead for consistency.
 /// </summary>
 public static class VerticalAlignment
 {
-    public const float Top = -1f;
-    public const float Center = 0f;
-    public const float Bottom = 1f;
+    public const float Top = Align.Top;
+    public const float Center = Align.Middle;
+    public const float Bottom = Align.Bottom;
 
     public static bool TryParse(string? name, out float value)
     {

@@ -15,6 +15,16 @@ public partial class TextElement : DrawableElement
     private string _text = string.Empty;
 
     /// <summary>
+    /// Text alignment within the element's bounds.
+    /// Determines how the text is positioned relative to the element's Position.
+    /// Default: TopLeft (-1, -1) - text starts at Position and extends right/down.
+    /// Use Align.TopLeft, Align.MiddleCenter, Align.BottomRight, etc.
+    /// </summary>
+    [TemplateProperty]
+    [ComponentProperty]
+    private Vector2D<float> _textAlign = Align.TopLeft;
+
+    /// <summary>
     /// Font definition from template (private, not exposed).
     /// Used to create FontResource in OnActivate.
     /// Cached for re-creation if SetFont(FontDefinition) is called.
@@ -172,6 +182,15 @@ public partial class TextElement : DrawableElement
     }
 
     /// <summary>
+    /// Calculates intrinsic size based on text content.
+    /// Override from Element to provide text-specific sizing.
+    /// </summary>
+    protected override Vector2D<int> CalculateIntrinsicSize()
+    {
+        return MeasureText(_text);
+    }
+
+    /// <summary>
     /// Measures the size of the specified text when rendered with the current font.
     /// </summary>
     /// <param name="text">The text to measure.</param>
@@ -296,9 +315,11 @@ public partial class TextElement : DrawableElement
     /// <summary>
     /// Calculates the world matrix for a single glyph.
     /// Returns position-only matrix WITHOUT size scaling (size passed separately in push constants).
-    /// Combines:
-    /// 1. Glyph position within text (cursor + bearing + centering offset)
-    /// 2. Element's screen-space position (accounting for AnchorPoint)
+    /// Uses TextAlign to position text relative to Element's Position.
+    /// TextAlign determines where the text block is positioned:
+    /// - TopLeft (-1, -1): text starts at Position
+    /// - MiddleCenter (0, 0): text is centered on Position  
+    /// - BottomRight (1, 1): text ends at Position
     /// </summary>
     private Matrix4X4<float> CalculateGlyphWorldMatrix(GlyphInfo glyph, float cursorX, float baselineY)
     {
@@ -306,14 +327,19 @@ public partial class TextElement : DrawableElement
         float halfWidth = glyph.Width / 2.0f;
         float halfHeight = glyph.Height / 2.0f;
 
-        // Calculate element's top-left corner in screen space
-        // Position is where AnchorPoint is located, so offset by anchor to get top-left
-        float elementOriginX = Position.X - (AnchorPoint.X * Size.X * 0.5f * Scale.X);
-        float elementOriginY = Position.Y - (AnchorPoint.Y * Size.Y * 0.5f * Scale.Y);
+        // Measure total text size to calculate alignment offset
+        var textSize = MeasureText(_text);
 
-        // Glyph center position in screen space (element origin + cursor + bearing + centering)
-        float glyphCenterX = elementOriginX + cursorX + glyph.BearingX + halfWidth;
-        float glyphCenterY = elementOriginY + baselineY - glyph.BearingY + halfHeight;
+        // Calculate text block offset based on TextAlign
+        // TextAlign of (-1,-1) means text starts at Position (no offset)
+        // TextAlign of (0,0) means text center is at Position (offset by -textSize/2)
+        // TextAlign of (1,1) means text ends at Position (offset by -textSize)
+        float textOffsetX = -TextAlign.X * textSize.X * 0.5f - textSize.X * 0.5f;
+        float textOffsetY = -TextAlign.Y * textSize.Y * 0.5f - textSize.Y * 0.5f;
+
+        // Glyph center position in screen space (Position + text offset + cursor + bearing + centering)
+        float glyphCenterX = Position.X + textOffsetX + cursorX + glyph.BearingX + halfWidth;
+        float glyphCenterY = Position.Y + textOffsetY + baselineY - glyph.BearingY + halfHeight;
 
         // Return position-only matrix (size scaling handled in shader via push constants)
         return Matrix4X4.CreateTranslation(glyphCenterX, glyphCenterY, Position.Z);

@@ -17,62 +17,51 @@ public static partial class Templates
         Padding = Padding.All(5),
         Subcomponents =
         [
-            new DrawableElementTemplate()
-            {
-                Name = "Background",
-                Position = new Vector3D<float>(-200,-200,0),
-                Size = new Vector2D<int>(100,50),
-                HorizontalSizeMode = SizeMode.Fixed,
-                VerticalSizeMode = SizeMode.Fixed,
-                TintColor = Colors.CornflowerBlue.WithTransparency(0.1f),
-                LayoutHorizontal = HorizontalAlignment.Right,
-                LayoutVertical = VerticalAlignment.Bottom
-            },/*
             new TextElementTemplate()
             {
                 Name = "WelcomeText",
                 Text = "Welcome to the Nexus",
+                TextAlign = Align.MiddleCenter,
                 // Center the text in the window
                 LayoutHorizontal = HorizontalAlignment.Center,
-                LayoutVertical = VerticalAlignment.Center,
-                AnchorPoint = AnchorPoint.Center
+                LayoutVertical = VerticalAlignment.Center
             },
             new TextElementTemplate()
             {
                 Name = "TopLeftLabel",
                 Text = "Top Left",
+                TextAlign = Align.TopLeft,
                 // Top-Left corner of the window
                 LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top,
-                AnchorPoint = new Vector2D<float>(-1f, -1f)
+                LayoutVertical = VerticalAlignment.Top
             },
             new TextElementTemplate()
             {
                 Name = "TopRightLabel",
                 Text = "Top Right",
+                TextAlign = Align.TopRight,
                 // Top-Right corner of the window
                 LayoutHorizontal = HorizontalAlignment.Right,
-                LayoutVertical = VerticalAlignment.Top,
-                AnchorPoint = new Vector2D<float>(1f, -1f)
+                LayoutVertical = VerticalAlignment.Top
             },
             new TextElementTemplate()
             {
                 Name = "BottomLeftLabel",
                 Text = "Bottom Left",
+                TextAlign = Align.BottomLeft,
                 // Bottom-Left corner of the window
                 LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Bottom,
-                AnchorPoint = new Vector2D<float>(-1f, 1f)
+                LayoutVertical = VerticalAlignment.Bottom
             },
             new TextElementTemplate()
             {
                 Name = "BottomRightLabel",
                 Text = "Bottom Right",
+                TextAlign = Align.BottomRight,
                 // Bottom-Right corner of the window
                 LayoutHorizontal = HorizontalAlignment.Right,
-                LayoutVertical = VerticalAlignment.Bottom,
-                AnchorPoint = new Vector2D<float>(1f, 1f)
-            },*/
+                LayoutVertical = VerticalAlignment.Bottom
+            },
         ]
     };
 }
