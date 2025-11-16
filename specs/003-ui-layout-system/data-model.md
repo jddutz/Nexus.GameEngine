@@ -355,7 +355,7 @@ var dialog = new LayoutTemplate
         new VerticalLayoutTemplate
         {
             Spacing = new(0, 10),
-            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalAlignment = Align.Center,
             Children = new[]
             {
                 new ElementTemplate { Size = new(200, 50), TintColor = new(1, 0, 0, 1) }, // Red button

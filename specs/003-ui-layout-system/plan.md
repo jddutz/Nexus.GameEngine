@@ -173,8 +173,8 @@ src/GameEngine/
 │   ├── GridLayout.cs                 # (new) Grid-based child arrangement
 │   ├── GridLayoutTemplate.cs         # (new) Auto-generated template
 │   ├── SizeMode.cs                   # (new) Enum: Fill, Shrink, Fixed, Percentage
-│   ├── HorizontalAlignment.cs        # (new) Enum: Left, Center, Right, Stretch
-│   ├── VerticalAlignment.cs          # (new) Enum: Top, Center, Bottom, Stretch
+│   ├── Align.cs        # (new) Enum: Left, Center, Right, Stretch
+│   ├── Align.cs          # (new) Enum: Top, Center, Bottom, Stretch
 │   └── README.md                     # (update) Document layout system
 │
 ├── Components/

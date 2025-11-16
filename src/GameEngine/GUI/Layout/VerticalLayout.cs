@@ -7,61 +7,50 @@ namespace Nexus.GameEngine.GUI.Layout;
 public partial class VerticalLayout : Container
 {
     public VerticalLayout(IDescriptorManager descriptorManager) : base(descriptorManager) { }
+
     /// <summary>
-    /// Horizontal alignment of child components within the layout.
+    /// Fixed height for each child item in the vertical layout.
+    /// If 0, children use their measured height.
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
-    private float _alignment = HorizontalAlignment.Center;
-
-    // If true, children will be stretched horizontally to fill the content width.
-    // This replaces the previous use of an Alignment.Stretch enum value so layouts
-    // don't need to query child sizing policy directly.
-    [ComponentProperty]
-    [TemplateProperty]
-    private bool _stretchChildren = false;
+    private int _itemHeight = 0;
 
     /// <summary>
-    /// Set whether children should be stretched horizontally.
-    /// Provided as a convenience for tests and templates; updated values are applied
-    /// during the normal component update cycle.
-    /// </summary>
-    public void SetStretchChildren(bool value) => _stretchChildren = value;
-
-    /// <summary>
-    /// Arranges child components vertically with spacing and alignment.
+    /// Arranges child components vertically with fixed height and full width.
+    /// Each child receives constraints with ItemHeight (or measured height if ItemHeight is 0)
+    /// and the full content area width. Children position themselves within these constraints
+    /// using their own AnchorPoint.
     /// </summary>
     protected override void UpdateLayout()
     {
         var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
-        var contentArea = GetContentArea();
+        var contentArea = new Rectangle<int>(
+            (int)(TargetPosition.X - (1.0f + AnchorPoint.X) * TargetSize.X * 0.5f) + Padding.Left,
+            (int)(TargetPosition.Y - (1.0f + AnchorPoint.Y) * TargetSize.Y * 0.5f) + Padding.Top,
+            Math.Max(0, TargetSize.X - Padding.Left - Padding.Right),
+            Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
+        );
 
-        var pY = contentArea.Origin.Y;
+        var y = contentArea.Origin.Y;
 
-        // Arrange children
+        // Arrange children vertically
         foreach (var child in children)
         {
-            var measured = child.Measure(contentArea.Size);
+            // Determine child height: use ItemHeight if set, otherwise measure
+            var h = ItemHeight > 0 ? ItemHeight : child.Measure(contentArea.Size).Y;
+            
+            // Give child full width of content area
+            var w = contentArea.Size.X;
 
-            // Determine final width first (stretch or measured)
-            var w = _stretchChildren ? contentArea.Size.X : measured.X;
-            var h = measured.Y;
-
-            // Calculate X based on numeric alignment (-1..1) using final width
-            var align = Alignment; // -1 left, 0 center, 1 right
-            var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
-            var x = contentArea.Origin.X + (int)((contentArea.Size.X - w) * alignFrac);
-
-            var y = pY;
-
-            // Set child constraints
-            var newConstraints = new Rectangle<int>(x, y, w, h);
-            child.SetSizeConstraints(newConstraints);
+            // Set child constraints - child will position itself using its AnchorPoint
+            var childConstraints = new Rectangle<int>(contentArea.Origin.X, y, w, h);
+            child.SetSizeConstraints(childConstraints);
 
             // Move to next position
-            pY += measured.Y + (int)Spacing.Y;
+            y += h + (int)Spacing.Y;
         }
     }
 }

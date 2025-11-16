@@ -85,7 +85,7 @@ public static class MenuTemplates
         // Spacing and padding
         Spacing = new(0, 15),
         Padding = new Padding(20),
-        HorizontalAlignment = HorizontalAlignment.Center,
+        HorizontalAlignment = Align.Center,
         
         Children = new[]
         {
@@ -141,7 +141,7 @@ public static Template GameHUD => new ElementTemplate
             AnchorPoint = new(0, 1),     // Bottom-center of layout...
             Position = new(960, 1060),   // ...centered horizontally, 20px from bottom
             Spacing = new(10, 0),
-            HorizontalAlignment = HorizontalAlignment.Center,
+            HorizontalAlignment = Align.Center,
             
             Children = new[]
             {
@@ -253,7 +253,7 @@ public static Template SettingsDialog => new ElementTemplate
                 new HorizontalLayoutTemplate
                 {
                     Spacing = new(10, 0),
-                    HorizontalAlignment = HorizontalAlignment.Center,
+                    HorizontalAlignment = Align.Center,
                     
                     Children = new[]
                     {
@@ -323,7 +323,7 @@ Position = new(screenWidth / 2, screenHeight / 2)
 new VerticalLayoutTemplate
 {
     Spacing = new(0, 10),
-    HorizontalAlignment = HorizontalAlignment.Stretch,  // Children fill width
+    HorizontalAlignment = Align.Stretch,  // Children fill width
     Children = items
 }
 ```
@@ -335,7 +335,7 @@ new HorizontalLayoutTemplate
 {
     Spacing = new(5, 0),
     Padding = new Padding(10),
-    VerticalAlignment = VerticalAlignment.Center,
+    VerticalAlignment = Align.Center,
     Children = iconButtons
 }
 ```

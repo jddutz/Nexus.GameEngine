@@ -26,12 +26,11 @@ public partial class ColorRectTest(
                 TintColor = Colors.Red,
                 // Set proper pixel-space transform: 200x100 rectangle from (100,100) to (300,200)
                 // Position is where the AnchorPoint is located
-                // LayoutHorizontal/LayoutVertical set the anchor, so Position=(100,100) in top-left coords
+                // AnchorPoint sets the anchor, so Position=(100,100) in top-left coords
                 // gets converted to centered coords for the camera system
                 Position = ToCenteredPositionDefault(100, 100),
                 Size = new Vector2D<int>(200, 100),
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top,
+                AnchorPoint = Align.TopLeft,
                 Visible = true
             }
         ]

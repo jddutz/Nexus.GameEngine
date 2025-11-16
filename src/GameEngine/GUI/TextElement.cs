@@ -15,16 +15,6 @@ public partial class TextElement : DrawableElement
     private string _text = string.Empty;
 
     /// <summary>
-    /// Text alignment within the element's bounds.
-    /// Determines how the text is positioned relative to the element's Position.
-    /// Default: TopLeft (-1, -1) - text starts at Position and extends right/down.
-    /// Use Align.TopLeft, Align.MiddleCenter, Align.BottomRight, etc.
-    /// </summary>
-    [TemplateProperty]
-    [ComponentProperty]
-    private Vector2D<float> _textAlign = Align.TopLeft;
-
-    /// <summary>
     /// Font definition from template (private, not exposed).
     /// Used to create FontResource in OnActivate.
     /// Cached for re-creation if SetFont(FontDefinition) is called.
@@ -315,8 +305,8 @@ public partial class TextElement : DrawableElement
     /// <summary>
     /// Calculates the world matrix for a single glyph.
     /// Returns position-only matrix WITHOUT size scaling (size passed separately in push constants).
-    /// Uses TextAlign to position text relative to Element's Position.
-    /// TextAlign determines where the text block is positioned:
+    /// Uses Alignment to position text relative to Element's Position.
+    /// Alignment determines where the text block is positioned:
     /// - TopLeft (-1, -1): text starts at Position
     /// - MiddleCenter (0, 0): text is centered on Position  
     /// - BottomRight (1, 1): text ends at Position
@@ -330,12 +320,12 @@ public partial class TextElement : DrawableElement
         // Measure total text size to calculate alignment offset
         var textSize = MeasureText(_text);
 
-        // Calculate text block offset based on TextAlign
-        // TextAlign of (-1,-1) means text starts at Position (no offset)
-        // TextAlign of (0,0) means text center is at Position (offset by -textSize/2)
-        // TextAlign of (1,1) means text ends at Position (offset by -textSize)
-        float textOffsetX = -TextAlign.X * textSize.X * 0.5f - textSize.X * 0.5f;
-        float textOffsetY = -TextAlign.Y * textSize.Y * 0.5f - textSize.Y * 0.5f;
+        // Calculate text block offset based on Alignment
+        // Alignment of (-1,-1) means text starts at Position (no offset)
+        // Alignment of (0,0) means text center is at Position (offset by -textSize/2)
+        // Alignment of (1,1) means text ends at Position (offset by -textSize)
+        float textOffsetX = -Alignment.X * textSize.X * 0.5f - textSize.X * 0.5f;
+        float textOffsetY = -Alignment.Y * textSize.Y * 0.5f - textSize.Y * 0.5f;
 
         // Glyph center position in screen space (Position + text offset + cursor + bearing + centering)
         float glyphCenterX = Position.X + textOffsetX + cursorX + glyph.BearingX + halfWidth;

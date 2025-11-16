@@ -2,6 +2,6 @@
 {
     public class HorizontalAlignmentTests
     {
-        // Scaffolded xUnit test class for HorizontalAlignment.cs
+        // Scaffolded xUnit test class for Align.cs
     }
 }

@@ -49,7 +49,7 @@ var menu = new VerticalLayoutTemplate
 {
     Padding = new Padding(20),
     Spacing = new(0, 15),          // 15px between children
-    HorizontalAlignment = HorizontalAlignment.Center,
+    HorizontalAlignment = Align.Center,
     Children = new[]
     {
         new ElementTemplate { Size = new(200, 50) },  // Button 1
@@ -68,7 +68,7 @@ var toolbar = new HorizontalLayoutTemplate
 {
     Padding = new Padding(10),
     Spacing = new(10, 0),          // 10px between children
-    VerticalAlignment = VerticalAlignment.Center,
+    VerticalAlignment = Align.Center,
     Children = toolButtons
 };
 ```

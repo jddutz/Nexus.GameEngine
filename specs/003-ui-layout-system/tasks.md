@@ -16,15 +16,15 @@ All tasks are organized by phase and user story. Follow the checklist format exa
 - [X] T005 [P] Create file: `src/GameEngine/GUI/GridLayout.cs` (placeholder for GridLayout implementation)
 - [X] T006 [P] Create file: `src/GameEngine/Data/Padding.cs` (define Padding struct)
 - [X] T007 [P] Create file: `src/GameEngine/GUI/SizeMode.cs` (define SizeMode enum)
-- [X] T008 [P] Create file: `src/GameEngine/GUI/HorizontalAlignment.cs` (define HorizontalAlignment enum)
-- [X] T009 [P] Create file: `src/GameEngine/GUI/VerticalAlignment.cs` (define VerticalAlignment enum)
+- [X] T008 [P] Create file: `src/GameEngine/GUI/Align.cs` (define HorizontalAlignment enum)
+- [X] T009 [P] Create file: `src/GameEngine/GUI/Align.cs` (define VerticalAlignment enum)
 - [X] T010 [P] Create test placeholders: `Tests/LayoutTests.cs` and `TestApp/Tests/LayoutIntegrationTests.cs`
 
 ## Phase 2 — Foundational (blocking prerequisites)
 
 - [X] T011 Implement `Padding` struct in `src/GameEngine/Data/Padding.cs` (fields: Left, Top, Right, Bottom; constructors; validation)
 - [X] T012 Implement `SizeMode` enum in `src/GameEngine/GUI/SizeMode.cs` (values: Fixed, Intrinsic, Stretch, Percentage)
-- [X] T013 Implement `HorizontalAlignment` and `VerticalAlignment` enums in `src/GameEngine/GUI/HorizontalAlignment.cs` and `src/GameEngine/GUI/VerticalAlignment.cs`
+- [X] T013 Implement `HorizontalAlignment` and `VerticalAlignment` enums in `src/GameEngine/GUI/Align.cs` and `src/GameEngine/GUI/Align.cs`
 - [X] T014 Update `src/GameEngine/GUI/Element.cs` — add fields and behavior: `SizeMode`, `WidthPercentage`, `HeightPercentage`, `MinSize`, `MaxSize`, `_sizeConstraints: Rectangle<int>`; implement `SetSizeConstraints(Rectangle<int> constraints)` to cache and only trigger recalculation when changed
 - [X] T015 Implement abstract `Layout` base class in `src/GameEngine/GUI/Layout.cs` (fields: Padding, Spacing, _needsLayout; overrides for `SetSizeConstraints()` and `OnUpdate()`; RecalculateLayout() stub)
 - [X] T016 Add `CancelAnimation<T>(ref T newValue, ref float duration, ref InterpolationMode mode)` protected helper to `src/GameEngine/Runtime/RuntimeComponent.cs` or `src/GameEngine/Runtime/Entity.cs` (where ComponentProperty generator expects it) so layout-affecting properties can disable animations

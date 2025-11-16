@@ -6,22 +6,31 @@ namespace Nexus.GameEngine.GUI;
 public enum SizeMode
 {
     /// <summary>
-    /// Use explicit Width/Height properties.
+    /// Use explicit FixedSize property, ignoring container constraints, content, and padding.
+    /// Formula: FixedSize
+    /// Example: FixedSize = (100, 50) → element is always 100×50 pixels
     /// </summary>
     Fixed,
 
     /// <summary>
-    /// Size determined by content (text, texture, children).
+    /// Size determined by content (text, texture, children) plus padding.
+    /// Formula: CalculateContentSize() + padding
+    /// Example: Text "Hello" with Padding = 10 → text bounds + 10px on each side
     /// </summary>
-    Intrinsic,
+    FitContent,
 
     /// <summary>
-    /// Fill available space from parent constraints.
+    /// Size as percentage of container constraints (multiplicative).
+    /// Formula: containerSize × RelativeSize
+    /// Example: RelativeSize = (0.5, 0.75) → 50% container width, 75% container height
     /// </summary>
-    Stretch,
+    Relative,
 
     /// <summary>
-    /// Size as percentage of parent dimensions.
+    /// Size relative to container with pixel offset (additive).
+    /// Formula: containerSize + RelativeSize
+    /// Example: RelativeSize = (-20, -10) → container width - 20px, container height - 10px
+    /// Use negative values for margins, positive for overflow.
     /// </summary>
-    Percent
+    Absolute
 }

@@ -59,30 +59,6 @@ public class HorizontalLayoutTests
     }
 
     [Fact]
-    public void Constructor_SetsDefaultValues()
-    {
-        // Arrange & Act
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-
-        // Assert
-        Assert.Equal(VerticalAlignment.Center, layout.Alignment);
-    }
-
-    [Fact]
-    public void Alignment_Property_Works()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-
-        // Act
-        layout.SetAlignment(VerticalAlignment.Top);
-        layout.ApplyUpdates(0.016f);
-
-        // Assert
-        Assert.Equal(VerticalAlignment.Top, layout.Alignment);
-    }
-
-    [Fact]
     public void NoChildren_DoesNothing()
     {
         // Arrange
@@ -94,104 +70,6 @@ public class HorizontalLayoutTests
 
         // Assert - No exceptions thrown
         Assert.True(true);
-    }
-
-    [Fact]
-    public void SingleChild_CentersVertically()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-        layout.Load(size: new Vector2D<int>(200, 100));
-        
-        var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(100, 50));
-        layout.AddChild(childMock.Object);
-        layout.Activate();
-
-        // Act
-        layout.Update(0.016);
-
-        // Assert
-        var childConstraints = getConstraints();
-        Assert.Equal(0, childConstraints.Origin.X);  // Starts at left edge
-        Assert.Equal(25, childConstraints.Origin.Y); // Centered vertically: (100-50)/2 = 25
-        Assert.Equal(100, childConstraints.Size.X);
-        Assert.Equal(50, childConstraints.Size.Y);
-    }
-
-    [Fact]
-    public void MultipleChildren_WithSpacing()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-        layout.Load(
-            size: new Vector2D<int>(200, 100),
-            spacing: new Vector2D<float>(20, 0) // 20px horizontal spacing
-        );
-        
-        var (child1Mock, getConstraints1) = CreateMockElement(new Vector2D<int>(50, 30));
-        var (child2Mock, getConstraints2) = CreateMockElement(new Vector2D<int>(75, 40));
-        layout.AddChild(child1Mock.Object);
-        layout.AddChild(child2Mock.Object);
-        layout.Activate();
-
-        // Act
-        layout.Update(0.016);
-
-        // Assert
-        var constraints1 = getConstraints1();
-        var constraints2 = getConstraints2();
-
-        Assert.Equal(0, constraints1.Origin.X);   // First child at start
-        Assert.Equal(35, constraints1.Origin.Y);  // Centered: (100-30)/2 = 35
-
-        Assert.Equal(70, constraints2.Origin.X);  // Second child after first + spacing: 50 + 20 = 70
-        Assert.Equal(30, constraints2.Origin.Y);  // Centered: (100-40)/2 = 30
-    }
-
-    [Fact]
-    public void TopAlignment_PositionsCorrectly()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-        layout.Load(
-            size: new Vector2D<int>(200, 100),
-            alignment: VerticalAlignment.Top
-        );
-
-        var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
-        layout.AddChild(childMock.Object);
-        layout.Activate();
-
-        // Act
-        layout.Update(0.016);
-
-        // Assert
-        var constraints = getConstraints();
-        Assert.Equal(0, constraints.Origin.X);  // Left edge
-        Assert.Equal(0, constraints.Origin.Y);  // Top edge
-    }
-
-    [Fact]
-    public void BottomAlignment_PositionsCorrectly()
-    {
-        // Arrange
-        var layout = new HorizontalLayout(_descriptorManagerMock.Object);
-        layout.Load(
-            size: new Vector2D<int>(200, 100),
-            alignment: VerticalAlignment.Bottom
-        );
-
-        var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
-        layout.AddChild(childMock.Object);
-        layout.Activate();
-
-        // Act
-        layout.Update(0.016);
-
-        // Assert
-        var constraints = getConstraints();
-        Assert.Equal(0, constraints.Origin.X);   // Left edge
-        Assert.Equal(70, constraints.Origin.Y);  // Bottom: 100 - 30 = 70
     }
 
     /// <summary>

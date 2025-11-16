@@ -42,14 +42,13 @@ public class ElementTests
     }
 
     [Fact]
-    public void Measure_Percentage_ComputesFromAvailable()
+    public void Measure_Relative_ComputesFromAvailable()
     {
         var descriptorMock = new Mock<IDescriptorManager>();
         var elem = new TestElement(descriptorMock.Object);
 
-        elem.SetSizeMode(SizeMode.Percent);
-        elem.SetRelativeWidth(0.5f);
-        elem.SetRelativeHeight(0.25f);
+        elem.SetSizeMode(SizeMode.Relative);
+        elem.SetRelativeSize(new Vector2D<float>(0.5f, 0.25f));
         elem.ApplyUpdates(0.016);
 
         var measured = elem.Measure(new Vector2D<int>(200, 100));
@@ -58,12 +57,12 @@ public class ElementTests
     }
 
     [Fact]
-    public void Measure_Stretch_ReturnsAvailable_And_MinMaxAreEnforced()
+    public void Measure_Absolute_ReturnsAvailable_And_MinMaxAreEnforced()
     {
         var descriptorMock = new Mock<IDescriptorManager>();
         var elem = new TestElement(descriptorMock.Object);
 
-        elem.SetSizeMode(SizeMode.Stretch);
+        elem.SetSizeMode(SizeMode.Absolute);
         elem.SetMinSize(new Vector2D<int>(50, 60));
         elem.SetMaxSize(new Vector2D<int>(80, 0)); // 0 means no limit for height
         elem.ApplyUpdates(0.016);
