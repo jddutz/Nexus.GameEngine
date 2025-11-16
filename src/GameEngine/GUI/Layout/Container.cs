@@ -45,28 +45,12 @@ public partial class Container(IDescriptorManager descriptorManager)
     }
 
     /// <summary>
-    /// Called when size constraints change.
-    /// Layout invalidates and recalculates on next update.
-    /// </summary>
-    protected override void OnSizeConstraintsChanged(Rectangle<int> constraints)
-    {
-        base.OnSizeConstraintsChanged(constraints);
-        // Mark layout invalid and perform an immediate layout pass so child
-        // constraints are updated synchronously when SetSizeConstraints is called.
-        // This mirrors previous behavior where layout was expected to run
-        // immediately in many tests.
-        Invalidate();
-        UpdateLayout();
-        _isLayoutInvalid = false;
-    }
-
-    /// <summary>
     /// Called when a child's size changes (for intrinsic sizing support).
     /// </summary>
     public void OnChildSizeChanged(IComponent child, Vector2D<int> oldValue)
     {
-        // If this layout uses intrinsic sizing, invalidate when children change size
-        if (SizeMode == SizeMode.Intrinsic)
+        // If this layout uses FitContent sizing, invalidate when children change size
+        if (SizeMode == SizeMode.FitContent)
         {
             Invalidate();
         }
@@ -82,17 +66,17 @@ public partial class Container(IDescriptorManager descriptorManager)
         base.OnActivate();
 
         // By default, layout containers should fill the available space provided by their parent/viewport.
-        // Ensure the SizeMode is Stretch so that SetSizeConstraints from the parent (e.g. the root viewport)
+        // Ensure the SizeMode is Absolute so that SetSizeConstraints from the parent (e.g. the root viewport)
         // will cause the container to adopt the full available size instead of remaining at the default
         // Fixed/zero size.
-    SetSizeMode(SizeMode.Stretch);
+        SetSizeMode(SizeMode.Absolute);
 
-    // Also propagate to per-axis size modes and apply updates immediately so that
-    // activation-time layout logic (which may run before the usual update loop)
-    // sees the container as Stretch.
-    SetHorizontalSizeMode(SizeMode.Stretch);
-    SetVerticalSizeMode(SizeMode.Stretch);
-    ApplyUpdates(0);
+        // Also propagate to per-axis size modes and apply updates immediately so that
+        // activation-time layout logic (which may run before the usual update loop)
+        // sees the container as Absolute (filling parent).
+        SetHorizontalSizeMode(SizeMode.Absolute);
+        SetVerticalSizeMode(SizeMode.Absolute);
+        ApplyUpdates(0);
 
         UpdateLayout();
 
@@ -131,11 +115,16 @@ public partial class Container(IDescriptorManager descriptorManager)
         var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
-        var contentArea = GetContentArea();
+        var contentArea = new Rectangle<int>(
+            (int)(TargetPosition.X - (1.0f + AnchorPoint.X) * TargetSize.X * 0.5f) + Padding.Left,
+            (int)(TargetPosition.Y - (1.0f + AnchorPoint.Y) * TargetSize.Y * 0.5f) + Padding.Top,
+            Math.Max(0, TargetSize.X - Padding.Left - Padding.Right),
+            Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
+        );
 
         // Give each child the full content area (they'll overlap if multiple children)
         foreach (var child in children)
-        {
+        {            
             child.SetSizeConstraints(contentArea);
         }
     }
@@ -155,24 +144,6 @@ public partial class Container(IDescriptorManager descriptorManager)
             Padding.Top + safeMargins.Top,
             Padding.Right + safeMargins.Right,
             Padding.Bottom + safeMargins.Bottom
-        );
-    }
-
-    /// <summary>
-    /// Calculates the content area available for child elements.
-    /// This is the layout's bounds minus the effective padding.
-    /// Uses target position/size if deferred updates are pending to ensure layout calculations
-    /// use the intended size rather than waiting for the next frame.
-    /// </summary>
-    protected Rectangle<int> GetContentArea()
-    {
-        // Use target position/size so layout calculations operate on the intended
-        // values even if deferred updates haven't been applied to the runtime fields yet.
-        return new Rectangle<int>(
-            (int)TargetPosition.X + Padding.Left,
-            (int)TargetPosition.Y + Padding.Top,
-            Math.Max(0, TargetSize.X - Padding.Left - Padding.Right),
-            Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
         );
     }
 

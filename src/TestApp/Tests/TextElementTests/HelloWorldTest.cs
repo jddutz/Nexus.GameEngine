@@ -30,7 +30,7 @@ public partial class HelloWorldTest(
                 Font = FontDefinitions.RobotoTitle,
                 Position = ToCenteredPositionDefault(100, 100),  // Top-left at (100, 100)
                 TintColor = Colors.White,
-                Alignment = Align.TopLeft
+                AnchorPoint = Align.TopLeft
             }
         ]
     };

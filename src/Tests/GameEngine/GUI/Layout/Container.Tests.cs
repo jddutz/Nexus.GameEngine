@@ -7,7 +7,7 @@ using Nexus.GameEngine.Resources.Geometry;
 using Nexus.GameEngine.Resources.Textures;
 using Silk.NET.Maths;
 
-namespace Tests.GameEngine.GUI;
+namespace Tests.GameEngine.GUI.Layout;
 
 public class ContainerLayoutTests
 {

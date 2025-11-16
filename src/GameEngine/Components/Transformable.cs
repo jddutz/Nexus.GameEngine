@@ -13,15 +13,18 @@ public partial class Transformable : RuntimeComponent, ITransformable
 
     [ComponentProperty]
     [TemplateProperty]
-    protected Vector3D<float> _position = Vector3D<float>.Zero;
+    protected Vector3D<float> _position = Vector3D<float>.Zero;    
+    partial void OnPositionChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
     
     [ComponentProperty]
     [TemplateProperty]
     protected Quaternion<float> _rotation = Quaternion<float>.Identity;
+    partial void OnRotationChanged(Quaternion<float> oldValue) => UpdateLocalMatrix();
     
     [ComponentProperty]
     [TemplateProperty]
     protected Vector3D<float> _scale = new Vector3D<float>(1f, 1f, 1f);
+    partial void OnScaleChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
     
     // ==========================================
     // VELOCITY FIELDS (for continuous animations)
@@ -58,7 +61,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
     /// Tracks whether the cached world matrix is valid.
     /// Invalidated when local matrix changes or when parent changes notify us.
     /// </summary>
-    protected bool _worldMatrixDirty = true;
+    protected bool _worldMatrixInvalid = true;
     
     /// <summary>
     /// Gets the cached local transformation matrix (SRT: Scale-Rotation-Translation).
@@ -90,15 +93,12 @@ public partial class Transformable : RuntimeComponent, ITransformable
     /// </summary>
     protected virtual void InvalidateWorldMatrix()
     {
-        _worldMatrixDirty = true;
+        _worldMatrixInvalid = true;
         
         // Propagate invalidation to all children that are transformable
-        foreach (var child in Children)
+        foreach (var child in GetChildren<Transformable>())
         {
-            if (child is Transformable transformableChild)
-            {
-                transformableChild.InvalidateWorldMatrix();
-            }
+            child.InvalidateWorldMatrix();
         }
     }
     
@@ -108,9 +108,6 @@ public partial class Transformable : RuntimeComponent, ITransformable
     /// </summary>
     protected virtual void UpdateWorldMatrix()
     {
-        if (!_worldMatrixDirty)
-            return;
-        
         // Hierarchical transform composition: WorldMatrix = ChildLocal * ParentWorld
         // With S*R*T matrices, this order correctly transforms the child's local position
         // by the parent's rotation, then adds the parent's world position
@@ -119,21 +116,14 @@ public partial class Transformable : RuntimeComponent, ITransformable
         else
             _worldMatrix = LocalMatrix; // Root object: local space = world space
         
-        _worldMatrixDirty = false;
+        _worldMatrixInvalid = false;
     }
-    
-    /// <summary>
-    /// Property change callbacks - regenerate matrix when transform properties change.
-    /// </summary>
-    partial void OnPositionChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
-    partial void OnRotationChanged(Quaternion<float> oldValue) => UpdateLocalMatrix();
-    partial void OnScaleChanged(Vector3D<float> oldValue) => UpdateLocalMatrix();
     
     public Matrix4X4<float> WorldMatrix
     {
         get
         {
-            UpdateWorldMatrix();
+            if (_worldMatrixInvalid) UpdateWorldMatrix();
             return _worldMatrix;
         }
     }

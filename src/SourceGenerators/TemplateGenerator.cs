@@ -118,13 +118,13 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Gets ComponentProperty and TemplateProperty fields declared directly on this class (not inherited).
+    /// Gets ComponentProperty and TemplateProperty fields and methods declared directly on this class (not inherited).
     /// </summary>
     private static List<PropertyInfo> GetComponentProperties(INamedTypeSymbol classSymbol)
     {
         var properties = new List<PropertyInfo>();
 
-        // Only get fields declared directly on this class
+        // Get fields declared directly on this class
         foreach (var field in classSymbol.GetMembers().OfType<IFieldSymbol>())
         {
             // Skip fields not declared on this specific type
@@ -156,7 +156,53 @@ public class TemplateGenerator : IIncrementalGenerator
                 FieldName = field.Name,
                 PropertyName = propertyName,
                 Type = field.Type.ToDisplayString(),
-                DefaultValue = GetDefaultValueExpression(field, syntax)
+                DefaultValue = GetDefaultValueExpression(field, syntax),
+                IsMethod = false
+            });
+        }
+
+        // Get partial methods declared directly on this class
+        foreach (var method in classSymbol.GetMembers().OfType<IMethodSymbol>())
+        {
+            // Skip methods not declared on this specific type
+            if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, classSymbol))
+                continue;
+
+            // Only process partial methods with TemplateProperty attribute
+            if (!method.IsPartialDefinition)
+                continue;
+
+            var templateAttr = method.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.Name == "TemplatePropertyAttribute");
+
+            if (templateAttr == null) continue;
+
+            // Method must have exactly one parameter
+            if (method.Parameters.Length != 1)
+                continue;
+
+            var parameter = method.Parameters[0];
+            var propertyType = parameter.Type.ToDisplayString();
+
+            // Get property name from TemplateProperty.Name attribute, or derive from method name
+            string propertyName = method.Name.StartsWith("Set") ? method.Name.Substring(3) : method.Name;
+            var nameArg = templateAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+            if (nameArg.Value.Value is string customName && !string.IsNullOrEmpty(customName))
+            {
+                propertyName = customName;
+            }
+
+            // For methods, we use nullable types with default null in templates
+            string nullableType = propertyType.EndsWith("?") ? propertyType : propertyType + "?";
+
+            properties.Add(new PropertyInfo
+            {
+                FieldName = string.Empty, // Not used for methods
+                PropertyName = propertyName,
+                Type = nullableType,
+                DefaultValue = "null",
+                IsMethod = true,
+                MethodName = method.Name
             });
         }
 
@@ -164,7 +210,7 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Gets all ComponentProperty and TemplateProperty fields from the entire inheritance hierarchy.
+    /// Gets all ComponentProperty and TemplateProperty fields and methods from the entire inheritance hierarchy.
     /// Used for generating the Load overload with all available template properties.
     /// </summary>
     private static List<PropertyInfo> GetAllTemplateProperties(INamedTypeSymbol classSymbol)
@@ -212,7 +258,57 @@ public class TemplateGenerator : IIncrementalGenerator
                     PropertyName = propertyName,
                     Type = field.Type.ToDisplayString(),
                     DefaultValue = GetDefaultValueExpression(field, syntax),
-                    DeclaringTypeName = field.ContainingType.ToDisplayString()
+                    DeclaringTypeName = field.ContainingType.ToDisplayString(),
+                    IsMethod = false
+                });
+            }
+
+            // Get all partial methods with TemplateProperty attribute from this class
+            foreach (var method in currentType.GetMembers().OfType<IMethodSymbol>())
+            {
+                // Only process partial methods declared on this specific type
+                if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, currentType))
+                    continue;
+
+                if (!method.IsPartialDefinition)
+                    continue;
+
+                var templateAttr = method.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.Name == "TemplatePropertyAttribute");
+
+                if (templateAttr == null) continue;
+
+                // Method must have exactly one parameter
+                if (method.Parameters.Length != 1)
+                    continue;
+
+                var parameter = method.Parameters[0];
+                var propertyType = parameter.Type.ToDisplayString();
+
+                // Get property name from TemplateProperty.Name attribute, or derive from method name
+                string propertyName = method.Name.StartsWith("Set") ? method.Name.Substring(3) : method.Name;
+                var nameArg = templateAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+                if (nameArg.Value.Value is string customName && !string.IsNullOrEmpty(customName))
+                {
+                    propertyName = customName;
+                }
+
+                // Skip if we've already seen this property name
+                if (seenProperties.Contains(propertyName)) continue;
+                seenProperties.Add(propertyName);
+
+                // For methods, we use nullable types with default null in templates
+                string nullableType = propertyType.EndsWith("?") ? propertyType : propertyType + "?";
+
+                properties.Add(new PropertyInfo
+                {
+                    FieldName = string.Empty,
+                    PropertyName = propertyName,
+                    Type = nullableType,
+                    DefaultValue = "null",
+                    DeclaringTypeName = method.ContainingType.ToDisplayString(),
+                    IsMethod = true,
+                    MethodName = method.Name
                 });
             }
 
@@ -437,41 +533,66 @@ public class TemplateGenerator : IIncrementalGenerator
         sb.AppendLine($"    /// <summary>");
         sb.AppendLine($"    /// Optional partial method for custom template loading logic.");
         sb.AppendLine($"    /// Implement this method in your component class to perform custom initialization.");
+        sb.AppendLine($"    /// Called after all template properties have been applied.");
         sb.AppendLine($"    /// </summary>");
         sb.AppendLine($"    partial void OnLoad({info.ClassName}Template template);");
         sb.AppendLine();
 
-        // Generate OnLoad method override that casts to specific template type
-        sb.AppendLine($"    /// <summary>");
-        sb.AppendLine($"    /// Loads component from template. Auto-generated override.");
-        sb.AppendLine($"    /// Assigns values directly to backing fields, bypassing the deferred update system.");
-        sb.AppendLine($"    /// Target properties will automatically return backing field values until explicitly set.");
-        sb.AppendLine($"    /// This ensures immediate configuration without going through animations.");
-        sb.AppendLine($"    /// </summary>");
-        sb.AppendLine($"    protected override void OnLoad(Nexus.GameEngine.Components.Template? componentTemplate)");
-        sb.AppendLine("    {");
-        sb.AppendLine($"        if (componentTemplate is {info.ClassName}Template template)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            // Call base.OnLoad first to handle any base class properties");
-        sb.AppendLine("            base.OnLoad(componentTemplate);");
-        sb.AppendLine();
-        sb.AppendLine("            // Assign directly to backing fields (target properties auto-return these until explicitly set)");
-        
-        foreach (var prop in info.Properties)
+        // Only generate Load delegation if this class has template properties
+        // Otherwise just implement direct assignment logic
+        if (info.AllTemplateProperties.Count > 0)
         {
-            sb.AppendLine($"            {prop.FieldName} = template.{prop.PropertyName};");
+            // Generate OnLoad method that delegates to Load(...)
+            sb.AppendLine($"    /// <summary>");
+            sb.AppendLine($"    /// Loads component from template. Auto-generated override.");
+            sb.AppendLine($"    /// Delegates to Load(...) method with individual template properties.");
+            sb.AppendLine($"    /// This ensures consistent behavior whether using templates or direct Load() calls.");
+            sb.AppendLine($"    /// </summary>");
+            sb.AppendLine($"    protected override void OnLoad(Nexus.GameEngine.Components.Template? componentTemplate)");
+            sb.AppendLine("    {");
+            sb.AppendLine($"        if (componentTemplate is {info.ClassName}Template template)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            // Call Load(...) with all template properties");
+            sb.Append("            Load(");
+            
+            // Build parameter list from all template properties
+            var parameters = new List<string>();
+            foreach (var prop in info.AllTemplateProperties)
+            {
+                parameters.Add($"{ToCamelCase(prop.PropertyName)}: template.{prop.PropertyName}");
+            }
+            
+            sb.Append(string.Join(", ", parameters));
+            sb.AppendLine(");");
+            
+            sb.AppendLine("        }");
+            sb.AppendLine("        else");
+            sb.AppendLine("        {");
+            sb.AppendLine("            // Fall back to base implementation for other template types");
+            sb.AppendLine("            base.OnLoad(componentTemplate);");
+            sb.AppendLine("        }");
+            sb.AppendLine("    }");
         }
-
-        sb.AppendLine();
-        sb.AppendLine("            // Call partial method hook if implemented");
-        sb.AppendLine("            OnLoad(template);");
-        sb.AppendLine("        }");
-        sb.AppendLine("        else");
-        sb.AppendLine("        {");
-        sb.AppendLine("            // Fall back to base implementation for other template types");
-        sb.AppendLine("            base.OnLoad(componentTemplate);");
-        sb.AppendLine("        }");
-        sb.AppendLine("    }");
+        else
+        {
+            // No template properties - just call base and OnLoad hook
+            sb.AppendLine($"    /// <summary>");
+            sb.AppendLine($"    /// Loads component from template. Auto-generated override.");
+            sb.AppendLine($"    /// Calls base implementation and OnLoad hook.");
+            sb.AppendLine($"    /// </summary>");
+            sb.AppendLine($"    protected override void OnLoad(Nexus.GameEngine.Components.Template? componentTemplate)");
+            sb.AppendLine("    {");
+            sb.AppendLine($"        if (componentTemplate is {info.ClassName}Template template)");
+            sb.AppendLine("        {");
+            sb.AppendLine("            base.OnLoad(componentTemplate);");
+            sb.AppendLine("            OnLoad(template);");
+            sb.AppendLine("        }");
+            sb.AppendLine("        else");
+            sb.AppendLine("        {");
+            sb.AppendLine("            base.OnLoad(componentTemplate);");
+            sb.AppendLine("        }");
+            sb.AppendLine("    }");
+        }
 
         sb.AppendLine("}");
 
@@ -480,7 +601,7 @@ public class TemplateGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Generates a convenient Load overload with optional parameters for all template properties.
-    /// This allows direct initialization without creating template objects, useful for testing.
+    /// This method handles both template creation AND application of properties to backing fields.
     /// Includes properties from the entire inheritance hierarchy.
     /// </summary>
     private static void GenerateLoadOverload(SourceProductionContext context, ComponentClassInfo info)
@@ -508,13 +629,13 @@ public class TemplateGenerator : IIncrementalGenerator
         // Generate Load overload with optional parameters
         sb.AppendLine($"    /// <summary>");
         sb.AppendLine($"    /// Convenience method to load component with individual property values.");
-        sb.AppendLine($"    /// Creates a template internally and calls Load(template).");
+        sb.AppendLine($"    /// Applies template properties directly to backing fields and calls OnLoad hook.");
         sb.AppendLine($"    /// Useful for testing and simple initialization scenarios.");
         sb.AppendLine($"    /// Includes all properties from the inheritance hierarchy.");
         sb.AppendLine($"    /// </summary>");
         
         // Build parameter list using ALL template properties (including inherited)
-    sb.Append($"    public void Load(");
+        sb.Append($"    public void Load(");
         
         var parameters = new List<string>();
         foreach (var prop in info.AllTemplateProperties)
@@ -527,25 +648,75 @@ public class TemplateGenerator : IIncrementalGenerator
             }
             parameters.Add($"{paramType} {ToCamelCase(prop.PropertyName)} = null");
         }
-        parameters.Add("string? name = null");
         
         sb.Append(string.Join(", ", parameters));
         sb.AppendLine(")");
         
         sb.AppendLine("    {");
+        
+        // Create template for OnLoad hook
         sb.AppendLine($"        var template = new {info.ClassName}Template");
         sb.AppendLine("        {");
         
-        // Assign all properties, using provided values or defaults
-        foreach (var prop in info.AllTemplateProperties)
+        // Assign all properties to template (for OnLoad hook)
+        var propList = info.AllTemplateProperties.ToList();
+        for (int i = 0; i < propList.Count; i++)
         {
+            var prop = propList[i];
             var paramName = ToCamelCase(prop.PropertyName);
-            sb.AppendLine($"            {prop.PropertyName} = {paramName} ?? {prop.DefaultValue},");
+            var comma = i < propList.Count - 1 ? "," : "";
+            sb.AppendLine($"            {prop.PropertyName} = {paramName} ?? {prop.DefaultValue}{comma}");
         }
-        sb.AppendLine("            Name = name");
         
         sb.AppendLine("        };");
-        sb.AppendLine("        Load(template);");
+        sb.AppendLine();
+        
+        // Call base.Load if this isn't the root to handle base class properties
+        if (info.BaseTemplateType != "Nexus.GameEngine.Components.Template")
+        {
+            var baseParameters = new List<string>();
+            foreach (var prop in info.AllTemplateProperties)
+            {
+                // Skip properties declared on this class
+                if (info.Properties.Any(p => p.PropertyName == prop.PropertyName))
+                    continue;
+                    
+                baseParameters.Add($"{ToCamelCase(prop.PropertyName)}: {ToCamelCase(prop.PropertyName)}");
+            }
+            
+            if (baseParameters.Count > 0)
+            {
+                sb.AppendLine("        // Call base Load to handle inherited properties");
+                sb.Append("        base.Load(");
+                sb.Append(string.Join(", ", baseParameters));
+                sb.AppendLine(");");
+                sb.AppendLine();
+            }
+        }
+        
+        // Apply properties declared on this class
+        sb.AppendLine("        // Apply properties declared on this class");
+        foreach (var prop in info.Properties)
+        {
+            var paramName = ToCamelCase(prop.PropertyName);
+            
+            if (prop.IsMethod)
+            {
+                // For methods, only call if the value was provided (HasValue for nullable types)
+                sb.AppendLine($"        if ({paramName}.HasValue)");
+                sb.AppendLine($"            {prop.MethodName}({paramName}.Value);");
+            }
+            else
+            {
+                // For fields, assign if provided, otherwise use default
+                sb.AppendLine($"        {prop.FieldName} = {paramName} ?? {prop.DefaultValue};");
+            }
+        }
+        
+        sb.AppendLine();
+        sb.AppendLine("        // Call OnLoad hook for custom initialization");
+        sb.AppendLine("        OnLoad(template);");
+        
         sb.AppendLine("    }");
 
         sb.AppendLine("}");
@@ -594,7 +765,7 @@ public class TemplateGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Information about a ComponentProperty or TemplateProperty field.
+    /// Information about a ComponentProperty or TemplateProperty field or method.
     /// </summary>
     private class PropertyInfo
     {
@@ -605,5 +776,9 @@ public class TemplateGenerator : IIncrementalGenerator
         // Full name of the type that declares this field (used to exclude properties
         // that are provided by the chosen base template when generating derived templates)
         public string DeclaringTypeName { get; set; } = string.Empty;
+        // True if this is a partial method with [TemplateProperty], false if it's a field
+        public bool IsMethod { get; set; } = false;
+        // Method name for partial methods (used in OnLoad generation)
+        public string MethodName { get; set; } = string.Empty;
     }
 }

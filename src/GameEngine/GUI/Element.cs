@@ -25,39 +25,25 @@ namespace Nexus.GameEngine.GUI;
 public partial class Element(IDescriptorManager descriptorManager) : Transformable, IUserInterfaceElement
 {
     protected IDescriptorManager DescriptorManager { get; } = descriptorManager;
-    
-    // Element is layout/transform only and must not depend on graphics services.
-    // Graphics-related dependencies belong to drawable components (Drawable / DrawableElement).
-
-    /// <summary>
-    /// Overrides UpdateLocalMatrix to account for AnchorPoint.
-    /// Computes the element's position based on where the anchor point should be.
-    /// Note: Does NOT include element Size scaling or AnchorPoint offset - those are handled 
-    /// in the shader via push constants to avoid double-application.
-    /// DOES include Position, Rotation, and Scale from Transformable.
-    /// </summary>
-    protected override void UpdateLocalMatrix()
-    {
-        // The shader handles both size scaling AND anchor offset via push constants:
-        // vec2 xy = (inPos - anchor) * size * 0.5;
-        // So the world matrix should contain SRT (Scale-Rotation-Translation) from Transformable,
-        // but NOT the element size scaling or anchor offset (those are in the shader).
-        
-        // Build transform: Scale (from Transformable) -> Rotation -> Translation
-        // Standard SRT (Scale-Rotation-Translation) matrix composition
-        _localMatrix = Matrix4X4.CreateScale(_scale) *
-                       Matrix4X4.CreateFromQuaternion(_rotation) *
-                       Matrix4X4.CreateTranslation(_position);
-    }
 
     /// <summary>
     /// Anchor point in normalized element space (-1 to 1).
     /// Defines which point of the element aligns with Position in screen space.
+    /// Also used by parent layouts to position this element within size constraints.
     /// (-1, -1) = top-left, (0, 0) = center, (1, 1) = bottom-right.
     /// Default: (-1, -1) for top-left alignment (standard UI behavior).
     /// </summary>
     [ComponentProperty]
-    protected Vector2D<float> _anchorPoint = new(-1, -1);
+    [TemplateProperty]
+    protected Vector2D<float> _anchorPoint = Align.MiddleCenter;
+
+    [ComponentProperty]
+    [TemplateProperty]
+    protected Vector2D<float> _alignment = Align.MiddleCenter;
+
+    [ComponentProperty]
+    [TemplateProperty]
+    protected Vector2D<int> _offset = Vector2D<int>.Zero;
 
     /// <summary>
     /// Pixel dimensions of the element (width, height).
@@ -66,6 +52,20 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     [ComponentProperty]
     [TemplateProperty]
     protected Vector2D<int> _size = new(0, 0);
+
+    /// <summary>
+    /// Template-only property for setting width.
+    /// Sets the X component of Size vector.
+    /// </summary>
+    [TemplateProperty(Name = "Width")]
+    partial void SetWidth(int value);
+
+    /// <summary>
+    /// Template-only property for setting height.
+    /// Sets the Y component of Size vector.
+    /// </summary>
+    [TemplateProperty(Name = "Height")]
+    partial void SetHeight(int value);
 
     partial void OnSizeChanged(Vector2D<int> oldValue)
     {
@@ -127,40 +127,30 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     private SizeMode _verticalSizeMode = SizeMode.Fixed;
 
     /// <summary>
-    /// Horizontal alignment used by parent layouts when positioning this element
-    /// inside the provided constraints rectangle. Default: Left.
+    /// Relative size modifier (width, height). Interpretation depends on HorizontalSizeMode/VerticalSizeMode:
+    /// - Fixed: ignored
+    /// - FitContent: ignored (size calculated from content)
+    /// - Relative: fractional multiplier (e.g. 0.5 = 50% of container)
+    /// - Absolute: pixel offset added to container size (e.g. -20 = container - 20px)
+    /// Default: (0, 0) (no modification)
     /// </summary>
-    [TemplateProperty]
     [ComponentProperty]
-    private Vector2D<float> _alignment = Align.TopLeft;
-
-    // Note: RelativeWidth/RelativeHeight are always treated as raw multipliers
-    // (e.g. 0.5 = 50% of the available space for display, 250 = 250x). Do not convert values to percentages.
-    // Displaying values as percentages is a view/formatting concern and should not be performed here.
+    [TemplateProperty]
+    private Vector2D<float> _relativeSize = new(0f, 0f);
 
     /// <summary>
-    /// Relative width modifier. Interpretation depends on HorizontalSizeMode:
-    /// - Fixed: ignored
-    /// - Percentage: if non-zero, treated as a fractional multiplier (e.g. 0.5 = 50%); otherwise uses WidthPercentage
-    /// - Stretch: treated as pixel offset added to the available width (negative to shrink by pixels)
-    /// - Intrinsic: treated as additional pixels to add to intrinsic size
-    /// Default: 0 (no modification)
+    /// Template-only property for setting relative width.
+    /// Sets the X component of RelativeSize.
     /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    private float _relativeWidth = 0f;
+    [TemplateProperty(Name = "RelativeWidth")]
+    partial void SetRelativeWidth(float value);
 
     /// <summary>
-    /// Relative height modifier. Interpretation depends on VerticalSizeMode:
-    /// - Fixed: ignored
-    /// - Percentage: if non-zero, treated as a fractional multiplier (e.g. 0.5 = 50%); otherwise uses HeightPercentage
-    /// - Stretch: treated as pixel offset added to the available height (negative to shrink by pixels)
-    /// - Intrinsic: treated as additional pixels to add to intrinsic size
-    /// Default: 0 (no modification)
+    /// Template-only property for setting relative height.
+    /// Sets the Y component of RelativeSize.
     /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    private float _relativeHeight = 0f;
+    [TemplateProperty(Name = "RelativeHeight")]
+    partial void SetRelativeHeight(float value);
 
     /// <summary>
     /// Minimum size constraints (width, height).
@@ -187,20 +177,12 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
         // Only trigger recalculation if constraints changed
         if (_sizeConstraints.Equals(constraints))
             return;
+
+        Log.Debug($"{Name} Updating Size Constraints: {Name} {constraints.Origin} {constraints.Size}");
             
         _sizeConstraints = constraints;
-        // When constraints change, element may need to recalculate its bounds
-        OnSizeConstraintsChanged(constraints);
-    }
 
-    /// <summary>
-    /// Called when size constraints change.
-    /// Override to implement custom sizing behavior.
-    /// Applies SizeMode logic and enforces MinSize/MaxSize constraints.
-    /// </summary>
-    protected virtual void OnSizeConstraintsChanged(Rectangle<int> constraints)
-    {
-        Log.Debug($"OnSizeConstraintsChanged: {Name} {constraints.Origin} {constraints.Size}");
+        // When constraints change, element may need to recalculate its bounds
 
         if (constraints.Size.X <= 0 || constraints.Size.Y <= 0)
             return;
@@ -209,48 +191,46 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
         var preferredWidth = HorizontalSizeMode switch
         {
             SizeMode.Fixed => Size.X,
-            SizeMode.Percent => Math.Max(0, (int)(constraints.Size.X * RelativeWidth)),
-            SizeMode.Stretch => Math.Max(0, constraints.Size.X + (int)RelativeWidth),
-            SizeMode.Intrinsic => CalculateIntrinsicSize().X + (int)RelativeWidth,
+            SizeMode.Relative => Math.Max(0, (int)(constraints.Size.X * RelativeSize.X)),
+            SizeMode.Absolute => Math.Max(0, constraints.Size.X + (int)RelativeSize.X),
+            SizeMode.FitContent => CalculateIntrinsicSize().X,
             _ => Size.X,
         };
 
-        Log.Debug($"preferredWidth: {preferredWidth}");
+        Log.Debug($"{Name} preferredWidth: {preferredWidth}");
 
         var preferredHeight = VerticalSizeMode switch
         {
             SizeMode.Fixed => Size.Y,
-            SizeMode.Percent => Math.Max(0, (int)(constraints.Size.Y * RelativeHeight)),
-            SizeMode.Stretch => Math.Max(0, constraints.Size.Y + (int)RelativeHeight),
-            SizeMode.Intrinsic => CalculateIntrinsicSize().Y + (int)RelativeHeight,
+            SizeMode.Relative => Math.Max(0, (int)(constraints.Size.Y * RelativeSize.Y)),
+            SizeMode.Absolute => Math.Max(0, constraints.Size.Y + (int)RelativeSize.Y),
+            SizeMode.FitContent => CalculateIntrinsicSize().Y,
             _ => Size.Y,
         };
 
-        Log.Debug($"preferredHeight: {preferredHeight}");
+        Log.Debug($"{Name} preferredHeight: {preferredHeight}");
 
         // Combine and apply size constraints (min/max)
         var preferredSize = new Vector2D<int>(preferredWidth, preferredHeight);
         var finalSize = ApplySizeConstraints(preferredSize);
 
-        Log.Debug($"finalSize: {finalSize}");
+        Log.Debug($"{Name} finalSize: {finalSize}");
 
         // Update size first
         SetSize(finalSize);
 
-        // If AnchorPoint wasn't explicitly set by template or API, seed it from layout
-        // LayoutHorizontal/LayoutVertical are template-only convenience values in [-1,1].
-        _anchorPoint = new Vector2D<float>(Alignment.X, Alignment.Y);
+        var posX = constraints.Center.X + Alignment.X * constraints.HalfSize.X + Offset.X;
+        var posY = constraints.Center.Y + Alignment.Y * constraints.HalfSize.Y + Offset.Y;
+        var newPosition = new Vector3D<float>(posX, posY, Position.Z);
+        SetPosition(newPosition);
+
+        Log.Debug($"{Name} Alignment: {Alignment}");
+        Log.Debug($"{Name} Position: {Position}");
+        Log.Debug($"{Name} AnchorPoint: {AnchorPoint}");
+        
         UpdateLocalMatrix();
-
-        Log.Debug($"WorldMatrix: {WorldMatrix}");
-
-        var posX = constraints.Center.X + Alignment.X * constraints.HalfSize.X;
-        var posY = constraints.Center.Y + Alignment.Y * constraints.HalfSize.Y;
-
-        SetPosition(new Vector3D<float>(posX, posY, Position.Z));
-
-        Log.Debug($"Position: {Position}");
-        Log.Debug($"AnchorPoint: {AnchorPoint}");
+        UpdateWorldMatrix();
+        Log.Debug($"{Name} WorldMatrix: {WorldMatrix}");
     }
 
     // When the single SizeMode property is changed, propagate the value to per-axis
@@ -313,23 +293,23 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
             case SizeMode.Fixed:
                 desiredWidth = TargetSize.X;
                 break;
-            case SizeMode.Percent:
-                if (Math.Abs(RelativeWidth) <= float.Epsilon)
+            case SizeMode.Relative:
+                if (Math.Abs(RelativeSize.X) <= float.Epsilon)
                     desiredWidth = availableSize.X;
                 else
                 {
-                    // RelativeWidth is a raw multiplier (no percent conversion).
-                    var mult = RelativeWidth;
+                    // RelativeSize.X is a raw multiplier (no percent conversion).
+                    var mult = RelativeSize.X;
                     desiredWidth = (int)(availableSize.X * mult);
                 }
                 break;
-            case SizeMode.Stretch:
+            case SizeMode.Absolute:
                 desiredWidth = availableSize.X;
-                if (Math.Abs(RelativeWidth) > float.Epsilon)
-                    desiredWidth = Math.Max(0, desiredWidth + (int)RelativeWidth);
+                if (Math.Abs(RelativeSize.X) > float.Epsilon)
+                    desiredWidth = Math.Max(0, desiredWidth + (int)RelativeSize.X);
                 break;
-            case SizeMode.Intrinsic:
-                desiredWidth = CalculateIntrinsicSize().X + (int)RelativeWidth;
+            case SizeMode.FitContent:
+                desiredWidth = CalculateIntrinsicSize().X;
                 break;
             default:
                 desiredWidth = TargetSize.X;
@@ -342,23 +322,23 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
             case SizeMode.Fixed:
                 desiredHeight = TargetSize.Y;
                 break;
-            case SizeMode.Percent:
-                if (Math.Abs(RelativeHeight) <= float.Epsilon)
+            case SizeMode.Relative:
+                if (Math.Abs(RelativeSize.Y) <= float.Epsilon)
                     desiredHeight = availableSize.Y;
                 else
                 {
-                    // RelativeHeight is a raw multiplier (no percent conversion).
-                    var mult = RelativeHeight;
+                    // RelativeSize.Y is a raw multiplier (no percent conversion).
+                    var mult = RelativeSize.Y;
                     desiredHeight = (int)(availableSize.Y * mult);
                 }
                 break;
-            case SizeMode.Stretch:
+            case SizeMode.Absolute:
                 desiredHeight = availableSize.Y;
-                if (Math.Abs(RelativeHeight) > float.Epsilon)
-                    desiredHeight = Math.Max(0, desiredHeight + (int)RelativeHeight);
+                if (Math.Abs(RelativeSize.Y) > float.Epsilon)
+                    desiredHeight = Math.Max(0, desiredHeight + (int)RelativeSize.Y);
                 break;
-            case SizeMode.Intrinsic:
-                desiredHeight = CalculateIntrinsicSize().Y + (int)RelativeHeight;
+            case SizeMode.FitContent:
+                desiredHeight = CalculateIntrinsicSize().Y;
                 break;
             default:
                 desiredHeight = TargetSize.Y;
@@ -393,6 +373,66 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
         if (MaxSize.Y > 0 && height > MaxSize.Y) height = MaxSize.Y;
         
         return new Vector2D<int>(width, height);
+    }
+
+    /// <summary>
+    /// Template setter for Width.
+    /// Sets the X component of Size vector.
+    /// </summary>
+    partial void SetWidth(int value)
+    {
+        _size = new Vector2D<int>(value, _size.Y);
+    }
+
+    /// <summary>
+    /// Template setter for Height.
+    /// Sets the Y component of Size vector.
+    /// </summary>
+    partial void SetHeight(int value)
+    {
+        _size = new Vector2D<int>(_size.X, value);
+    }
+
+    /// <summary>
+    /// Template setter for RelativeWidth.
+    /// Sets the X component of RelativeSize vector.
+    /// </summary>
+    partial void SetRelativeWidth(float value)
+    {
+        _relativeSize = new Vector2D<float>(value, _relativeSize.Y);
+    }
+
+    /// <summary>
+    /// Template setter for RelativeHeight.
+    /// Sets the Y component of RelativeSize vector.
+    /// </summary>
+    partial void SetRelativeHeight(float value)
+    {
+        _relativeSize = new Vector2D<float>(_relativeSize.X, value);
+    }
+
+    /// <summary>
+    /// Applies mode-specific default values after template properties are loaded.
+    /// For SizeMode.Relative, RelativeSize defaults to 1.0 (100%) if not explicitly set in template.
+    /// For SizeMode.Absolute, RelativeSize defaults to 0.0 (exact container size) if not explicitly set.
+    /// Checks template.HasValue to distinguish "not set" from "explicitly set to 0".
+    /// </summary>
+    partial void OnLoad(ElementTemplate template)
+    {
+        // Apply defaults for Relative mode only when not explicitly set in template
+        // This allows explicit 0.0f values (e.g., for slide-out animations)
+        
+        if (_horizontalSizeMode == SizeMode.Relative && !template.RelativeWidth.HasValue)
+        {
+            _relativeSize = new Vector2D<float>(1.0f, _relativeSize.Y);
+        }
+        
+        if (_verticalSizeMode == SizeMode.Relative && !template.RelativeHeight.HasValue)
+        {
+            _relativeSize = new Vector2D<float>(_relativeSize.X, 1.0f);
+        }
+        
+        // Absolute mode already has the correct default (0.0), so no action needed
     }
 
     /// <summary>
