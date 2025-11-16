@@ -1,24 +1,28 @@
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
-/// Marks a private field to be included in the component's template as a property.
-/// Unlike ComponentProperty, TemplateProperty fields:
-/// - Are assigned once during OnLoad from the template
-/// - Do not generate public properties
-/// - Do not support deferred updates or animation
-/// - Are typically used for definition types that need conversion to resources
+/// Marks a private field or partial method to be included in the component's template as a property.
+/// 
+/// When applied to fields:
+/// - Field is assigned once during OnLoad from the template
+/// - Does not generate public properties
+/// - Does not support deferred updates or animation
+/// - Typically used for definition types that need conversion to resources
+/// 
+/// When applied to partial methods:
+/// - Method must have exactly one parameter
+/// - Method is called during OnLoad if template property is set
+/// - Useful for computed setters that update multiple fields
+/// - Template property will be nullable and only call method if value is provided
 /// </summary>
 /// <remarks>
-/// Common pattern: Use TemplateProperty for definitions (TextureDefinition, ShaderDefinition)
+/// Common pattern for fields: Use TemplateProperty for definitions (TextureDefinition, ShaderDefinition)
 /// that need to be converted to resources (TextureResource, ShaderResource) in OnActivate.
 /// 
-/// Example:
+/// Example with field:
 /// <code>
 /// [TemplateProperty(Name = "Texture")]
 /// private TextureDefinition? _textureDefinition;
-/// 
-/// [TemplateProperty]
-/// private TextureResource? _texture;
 /// 
 /// protected override void OnActivate()
 /// {
@@ -26,13 +30,29 @@ namespace Nexus.GameEngine.Components;
 ///         SetTexture(_textureDefinition); // Converts definition to resource
 /// }
 /// </code>
+/// 
+/// Example with partial method:
+/// <code>
+/// [ComponentProperty]
+/// [TemplateProperty]
+/// private Vector2D&lt;float&gt; _relativeSize = new(0f, 0f);
+/// 
+/// [TemplateProperty(Name = "RelativeWidth")]
+/// partial void SetRelativeWidth(float value);
+/// 
+/// partial void SetRelativeWidth(float value)
+/// {
+///     _relativeSize = new Vector2D&lt;float&gt;(value, _relativeSize.Y);
+/// }
+/// </code>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Method, AllowMultiple = false)]
 public class TemplatePropertyAttribute : Attribute
 {
     /// <summary>
     /// The name of the property in the generated template.
-    /// If not specified, uses the field name with leading underscore removed and PascalCase.
+    /// If not specified, uses the field name with leading underscore removed and PascalCase,
+    /// or for methods, removes "Set" prefix if present.
     /// </summary>
     public string? Name { get; set; }
 }

@@ -52,7 +52,12 @@ public partial class GridLayout : Container
         var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
         if (children.Length == 0) return;
 
-        var contentArea = GetContentArea();
+        var contentArea = new Rectangle<int>(
+            (int)(TargetPosition.X - (1.0f + AnchorPoint.X) * TargetSize.X * 0.5f) + Padding.Left,
+            (int)(TargetPosition.Y - (1.0f + AnchorPoint.Y) * TargetSize.Y * 0.5f) + Padding.Top,
+            Math.Max(0, TargetSize.X - Padding.Left - Padding.Right),
+            Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
+        );
 
         var cols = Math.Max(1, ColumnCount);
         var rows = RowCount > 0 ? RowCount : (int)Math.Ceiling((double)children.Length / cols);
