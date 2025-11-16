@@ -7,12 +7,6 @@ namespace Nexus.GameEngine.GUI.Layout;
 public partial class VerticalLayout : Container
 {
     public VerticalLayout(IDescriptorManager descriptorManager) : base(descriptorManager) { }
-    /// <summary>
-    /// Horizontal alignment of child components within the layout.
-    /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    private float _alignment = HorizontalAlignment.Center;
 
     // If true, children will be stretched horizontally to fill the content width.
     // This replaces the previous use of an Alignment.Stretch enum value so layouts
@@ -50,7 +44,7 @@ public partial class VerticalLayout : Container
             var h = measured.Y;
 
             // Calculate X based on numeric alignment (-1..1) using final width
-            var align = Alignment; // -1 left, 0 center, 1 right
+            var align = Alignment.X; // -1 left, 0 center, 1 right
             var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
             var x = contentArea.Origin.X + (int)((contentArea.Size.X - w) * alignFrac);
 

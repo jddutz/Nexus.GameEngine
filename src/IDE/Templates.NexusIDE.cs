@@ -17,14 +17,18 @@ public static partial class Templates
         Padding = Padding.All(5),
         Subcomponents =
         [
-            new TextElementTemplate()
+            new VerticalLayoutTemplate()
             {
-                Name = "WelcomeText",
-                Text = "Welcome to the Nexus",
-                TextAlign = Align.MiddleCenter,
-                // Center the text in the window
-                LayoutHorizontal = HorizontalAlignment.Center,
-                LayoutVertical = VerticalAlignment.Center
+                Name = "VerticalLayout",
+                Alignment = Align.MiddleCenter,
+                Subcomponents = [
+                    new TextElementTemplate()
+                    {
+                        Name = "Label1",
+                        Text = "Welcome",
+                        TextAlign = Align.MiddleCenter
+                    },
+                ]
             },
             new TextElementTemplate()
             {
@@ -32,8 +36,7 @@ public static partial class Templates
                 Text = "Top Left",
                 TextAlign = Align.TopLeft,
                 // Top-Left corner of the window
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top
+                Alignment = Align.TopLeft
             },
             new TextElementTemplate()
             {
@@ -41,8 +44,7 @@ public static partial class Templates
                 Text = "Top Right",
                 TextAlign = Align.TopRight,
                 // Top-Right corner of the window
-                LayoutHorizontal = HorizontalAlignment.Right,
-                LayoutVertical = VerticalAlignment.Top
+                Alignment = Align.TopRight
             },
             new TextElementTemplate()
             {
@@ -50,8 +52,7 @@ public static partial class Templates
                 Text = "Bottom Left",
                 TextAlign = Align.BottomLeft,
                 // Bottom-Left corner of the window
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Bottom
+                Alignment = Align.BottomLeft
             },
             new TextElementTemplate()
             {
@@ -59,8 +60,7 @@ public static partial class Templates
                 Text = "Bottom Right",
                 TextAlign = Align.BottomRight,
                 // Bottom-Right corner of the window
-                LayoutHorizontal = HorizontalAlignment.Right,
-                LayoutVertical = VerticalAlignment.Bottom
+                Alignment = Align.BottomRight
             },
         ]
     };

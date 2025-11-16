@@ -7,15 +7,9 @@ namespace Nexus.GameEngine.GUI.Layout;
 public partial class HorizontalLayout : Container
 {
     public HorizontalLayout(IDescriptorManager descriptorManager) : base(descriptorManager) { }
-    /// <summary>
-    /// Vertical alignment of child components within the layout.
-    /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    private float _alignment = VerticalAlignment.Center;
 
     // If true, children will be stretched vertically to fill the content height.
-    // This avoids checking for a non-existent VerticalAlignment.Stretch value.
+    // This avoids checking for a non-existent Align.Stretch value.
     [ComponentProperty]
     [TemplateProperty]
     private bool _stretchChildren = false;
@@ -41,17 +35,13 @@ public partial class HorizontalLayout : Container
 
             var x = pX;
 
-            // Calculate Y based on alignment - use content area height for centering
-            var y = Alignment switch
-            {
-                VerticalAlignment.Top => contentArea.Origin.Y,
-                VerticalAlignment.Center => contentArea.Origin.Y + (contentArea.Size.Y - measured.Y) / 2,
-                VerticalAlignment.Bottom => contentArea.Origin.Y + contentArea.Size.Y - measured.Y,
-                _ => contentArea.Origin.Y
-            };
-
             var w = measured.X;
             var h = _stretchChildren ? contentArea.Size.Y : measured.Y;
+
+            // Calculate Y based on alignment.Y (-1..1) using final height
+            var align = Alignment.Y; // -1 top, 0 center, 1 bottom
+            var alignFrac = (align + 1.0f) * 0.5f; // 0..1 fraction
+            var y = contentArea.Origin.Y + (int)((contentArea.Size.Y - h) * alignFrac);
 
             // Set child constraints
             var newConstraints = new Rectangle<int>(x, y, w, h);

@@ -65,7 +65,7 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
 
         // Assert
-        Assert.Equal(HorizontalAlignment.Center, layout.Alignment);
+        Assert.Equal(Align.TopLeft, layout.Alignment);
     }
 
     [Fact]
@@ -75,11 +75,11 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
 
         // Act
-        layout.SetAlignment(HorizontalAlignment.Left);
+        layout.Load(alignment: Align.MiddleLeft);
         layout.ApplyUpdates(0.016f);
 
         // Assert
-        Assert.Equal(HorizontalAlignment.Left, layout.Alignment);
+        Assert.Equal(Align.MiddleLeft, layout.Alignment);
     }
 
     [Fact]
@@ -101,7 +101,10 @@ public class VerticalLayoutTests
     {
         // Arrange
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
-        layout.Load(size: new Vector2D<int>(200, 100));
+        layout.Load(
+            size: new Vector2D<int>(200, 100),
+            alignment: Align.MiddleCenter  // Center horizontally
+        );
         
         var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(100, 50));
         layout.AddChild(childMock.Object);
@@ -125,7 +128,8 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
         layout.Load(
             size: new Vector2D<int>(200, 100),
-            spacing: new Vector2D<float>(0, 15) // 15px vertical spacing
+            spacing: new Vector2D<float>(0, 15), // 15px vertical spacing
+            alignment: Align.MiddleCenter  // Center horizontally
         );
         
         var (child1Mock, getConstraints1) = CreateMockElement(new Vector2D<int>(50, 30));
@@ -155,7 +159,7 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
         layout.Load(
             size: new Vector2D<int>(200, 100),
-            alignment: HorizontalAlignment.Left
+            alignment: Align.MiddleLeft
         );
 
         var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
@@ -178,7 +182,7 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
         layout.Load(
             size: new Vector2D<int>(200, 100),
-            alignment: HorizontalAlignment.Right
+            alignment: Align.MiddleRight
         );
 
         var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));
@@ -201,11 +205,11 @@ public class VerticalLayoutTests
         var layout = new VerticalLayout(_descriptorManagerMock.Object);
         layout.Load(
             size: new Vector2D<int>(200, 100),
-            alignment: HorizontalAlignment.Center
+            alignment: Align.MiddleCenter
         );
 
         // Indicate that children should stretch horizontally (replaces the old
-        // HorizontalAlignment.Stretch behavior).
+        // Align.Stretch behavior).
         layout.SetStretchChildren(true);
 
         var (childMock, getConstraints) = CreateMockElement(new Vector2D<int>(50, 30));

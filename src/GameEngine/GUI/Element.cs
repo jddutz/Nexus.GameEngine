@@ -131,14 +131,8 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     /// inside the provided constraints rectangle. Default: Left.
     /// </summary>
     [TemplateProperty]
-    private float _layoutHorizontal = HorizontalAlignment.Left;
-
-    /// <summary>
-    /// Vertical alignment used by parent layouts when positioning this element
-    /// inside the provided constraints rectangle. Default: Top.
-    /// </summary>
-    [TemplateProperty]
-    private float _layoutVertical = VerticalAlignment.Top;
+    [ComponentProperty]
+    private Vector2D<float> _alignment = Align.TopLeft;
 
     // Note: RelativeWidth/RelativeHeight are always treated as raw multipliers
     // (e.g. 0.5 = 50% of the available space for display, 250 = 250x). Do not convert values to percentages.
@@ -245,13 +239,13 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
 
         // If AnchorPoint wasn't explicitly set by template or API, seed it from layout
         // LayoutHorizontal/LayoutVertical are template-only convenience values in [-1,1].
-        _anchorPoint = new Vector2D<float>(_layoutHorizontal, _layoutVertical);
+        _anchorPoint = new Vector2D<float>(Alignment.X, Alignment.Y);
         UpdateLocalMatrix();
 
         Log.Debug($"WorldMatrix: {WorldMatrix}");
 
-        var posX = constraints.Center.X + _layoutHorizontal * constraints.HalfSize.X;
-        var posY = constraints.Center.Y + _layoutVertical * constraints.HalfSize.Y;
+        var posX = constraints.Center.X + Alignment.X * constraints.HalfSize.X;
+        var posY = constraints.Center.Y + Alignment.Y * constraints.HalfSize.Y;
 
         SetPosition(new Vector3D<float>(posX, posY, Position.Z));
 

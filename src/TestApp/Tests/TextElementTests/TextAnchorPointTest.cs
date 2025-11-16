@@ -29,8 +29,7 @@ public partial class TextAnchorPointTest(
                 Font = FontDefinitions.RobotoTitle,
                 Position = ToCenteredPositionDefault(100, 100),
                 TintColor = Colors.Yellow,
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top
+                Alignment = Align.TopLeft
             },
             new TextElementTemplate()
             {
@@ -38,8 +37,7 @@ public partial class TextAnchorPointTest(
                 Font = FontDefinitions.RobotoTitle,
                 Position = ToCenteredPositionDefault(200, 200),
                 TintColor = Colors.Green,
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top
+                Alignment = Align.TopLeft
             },
             new TextElementTemplate()
             {
@@ -47,8 +45,7 @@ public partial class TextAnchorPointTest(
                 Font = FontDefinitions.RobotoTitle,
                 Position = ToCenteredPositionDefault(300, 300),
                 TintColor = Colors.Cyan,
-                LayoutHorizontal = HorizontalAlignment.Left,
-                LayoutVertical = VerticalAlignment.Top
+                Alignment = Align.TopLeft
             }
         ]
     };
