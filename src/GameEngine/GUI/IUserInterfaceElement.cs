@@ -40,6 +40,13 @@ public interface IUserInterfaceElement : ITransformable, IComponent
     Rectangle<int> GetBounds();
 
     /// <summary>
+    /// Measures the desired size of the element without an available size.
+    /// Layouts call this method to determine the intrinsic size of each child.
+    /// </summary>
+    /// <returns>The desired size (width, height) in pixels.</returns>
+    Vector2D<int> Measure();
+
+    /// <summary>
     /// Measures the desired size of the element given an available size.
     /// Layouts call this to ask children how large they would like to be when
     /// constrained by available space.

@@ -16,9 +16,15 @@ public static partial class Templates
         Padding = Padding.All(5),
         Subcomponents =
         [
-            /*new VerticalLayoutTemplate()
+            new VerticalLayoutTemplate()
             {
                 Name = "VerticalLayout",
+                Width = 300,
+                VerticalSizeMode = SizeMode.Absolute,
+                RelativeHeight = -200,
+                Alignment = Align.MiddleLeft,
+                AnchorPoint = Align.MiddleLeft,
+                OffsetLeft = 100,
                 Subcomponents = [
                     new DrawableElementTemplate()
                     {
@@ -46,16 +52,12 @@ public static partial class Templates
                         TintColor = Colors.Cyan
                     },
                 ]
-            },*/
+            },
             new DrawableElementTemplate()
             {
                 Name = "ContainerArea",
                 TintColor = Colors.Cyan,
                 Size = new Vector2D<int>(500,0),
-                VerticalSizeMode = SizeMode.Absolute,                
-                AnchorPoint = Align.MiddleRight,
-                Alignment = Align.MiddleCenter,
-                Offset = new Vector2D<int>(-200,0)                
             },
             new TextElementTemplate()
             {

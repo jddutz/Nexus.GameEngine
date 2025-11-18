@@ -27,25 +27,31 @@ public partial class TextAnchorPointTest(
             {
                 Text = "Top-Left",
                 Font = FontDefinitions.RobotoTitle,
-                Position = ToCenteredPositionDefault(100, 100),
-                TintColor = Colors.Yellow,
-                AnchorPoint = Align.TopLeft
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 100,
+                OffsetTop = 100,
+                TintColor = Colors.Yellow
             },
             new TextElementTemplate()
             {
                 Text = "Center",
                 Font = FontDefinitions.RobotoTitle,
-                Position = ToCenteredPositionDefault(200, 200),
-                TintColor = Colors.Green,
-                AnchorPoint = Align.TopLeft
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 200,
+                OffsetTop = 200,
+                TintColor = Colors.Green
             },
             new TextElementTemplate()
             {
                 Text = "Bottom-Right",
                 Font = FontDefinitions.RobotoTitle,
-                Position = ToCenteredPositionDefault(300, 300),
-                TintColor = Colors.Cyan,
-                AnchorPoint = Align.TopLeft
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 300,
+                OffsetTop = 300,
+                TintColor = Colors.Cyan
             }
         ]
     };

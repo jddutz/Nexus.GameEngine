@@ -9,12 +9,70 @@ public partial class HorizontalLayout : Container
     public HorizontalLayout(IDescriptorManager descriptorManager) : base(descriptorManager) { }
 
     /// <summary>
-    /// Fixed width for each child item in the horizontal layout.
-    /// If 0, children use their measured width.
+    /// Gets or sets the fixed height for each child item in pixels.
+    /// When set, overrides child heights. When null, uses child measured heights.
+    /// Default: null
+    /// </summary>
+    [ComponentProperty]
+    private int? _itemWidth = null;
+    
+    [TemplateProperty]
+    private void SetItemWidth(uint value)
+    {
+        if (value > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), "uint value is too large for int.");
+
+        _itemWidth = (int)value;
+    }
+
+    partial void OnItemWidthChanged(int? oldValue)
+    {
+        Invalidate();
+    }
+
+    [ComponentProperty]
+    private int? _itemSpacing;
+
+    /// <summary>
+    /// Gets or sets the fixed spacing between children in pixels.
+    /// When set, overrides automatic spacing. When null, uses Spacing mode.
+    /// Default: null
+    /// </summary>
+    [TemplateProperty(Name="ItemSpacing")]
+    private void SetItemSpacing(uint value)
+    {
+        if (value > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(value), "uint value is too large for int.");
+
+        _itemSpacing = (int)value;
+    }
+
+    /// <summary>
+    /// Gets or sets the automatic spacing distribution mode.
+    /// Used when ItemSpacing is null. Default: Stacked
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
-    private int _itemWidth = 0;
+    private SpacingMode _spacing = SpacingMode.Stacked;
+
+    partial void OnSpacingChanged(SpacingMode oldValue)
+    {
+        Invalidate();
+    }
+
+    /// <summary>
+    /// Gets or sets the alignment of the children group within the layout's content area.
+    /// Only applies when ItemSpacing is set (fixed spacing mode).
+    /// Range: -1.0 (left) to 1.0 (right). Default: 0.0 (center)
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private float _alignContent = 0f;
+
+    partial void OnAlignContentChanged(float oldValue)
+    {
+        Invalidate();
+    }
 
     /// <summary>
     /// Arranges child components horizontally with fixed width and full height.
@@ -24,9 +82,6 @@ public partial class HorizontalLayout : Container
     /// </summary>
     protected override void UpdateLayout()
     {
-        var children = GetChildren<IComponent>().OfType<IUserInterfaceElement>().ToArray();
-        if (children.Length == 0) return;
-
         var contentArea = new Rectangle<int>(
             (int)(TargetPosition.X - (1.0f + AnchorPoint.X) * TargetSize.X * 0.5f) + Padding.Left,
             (int)(TargetPosition.Y - (1.0f + AnchorPoint.Y) * TargetSize.Y * 0.5f) + Padding.Top,
@@ -34,23 +89,134 @@ public partial class HorizontalLayout : Container
             Math.Max(0, TargetSize.Y - Padding.Top - Padding.Bottom)
         );
 
-        var x = contentArea.Origin.X;
+        if (contentArea.Size.Y <= 0) return;
 
-        // Arrange children horizontally
-        foreach (var child in children)
+        Log.Debug($"HorizontalLayout.UpdateLayout called for {Name}");
+        var children = new List<IUserInterfaceElement>();
+        var measurements = new List<Vector2D<int>>();
+        var totalWidth = 0;
+
+        foreach(var child in Children.OfType<IUserInterfaceElement>())
         {
-            // Determine child width: use ItemWidth if set, otherwise measure
-            var w = ItemWidth > 0 ? ItemWidth : child.Measure(contentArea.Size).X;
-            
-            // Give child full height of content area
-            var h = contentArea.Size.Y;
+            var m = child.Measure();
+            if (m.X > 0)
+            {
+                children.Add(child);
+                measurements.Add(m);
+                totalWidth += _itemWidth ?? m.X;
+            }
+        }
 
-            // Set child constraints - child will position itself using its AnchorPoint
-            var childConstraints = new Rectangle<int>(x, contentArea.Origin.Y, w, h);
-            child.SetSizeConstraints(childConstraints);
+        Log.Debug($"Found {children.Count} children");
+        if (children.Count <= 0) return;
+        if (totalWidth <= 0) return;
 
-            // Move to next position
-            x += w + (int)Spacing.X;
+        int[] childWidths = measurements.Select(m => (int)(_itemWidth ?? m.X)).ToArray();
+
+        Log.Debug($"HorizontalLayout contentArea: Origin=({contentArea.Origin.X},{contentArea.Origin.Y}), Size=({contentArea.Size.X},{contentArea.Size.Y}), Alignment: {Alignment}");
+        
+        // Calculate layout based on spacing mode
+        Log.Debug($"ItemSpacing.HasValue: {_itemSpacing.HasValue}, ItemSpacing: {_itemSpacing}, Spacing: {_spacing}");
+        if (_itemSpacing.HasValue)
+        {
+            // Fixed spacing mode
+            LayoutWithFixedSpacing(
+                [.. children.Cast<IUserInterfaceElement>()], 
+                childWidths, 
+                _itemSpacing.Value, 
+                contentArea
+            );
+        }
+        else
+        {
+            // Automatic spacing mode
+            switch (Spacing)
+            {
+                case SpacingMode.Stacked:
+                    LayoutWithFixedSpacing(children.Cast<IUserInterfaceElement>().ToArray(), childWidths, 0, contentArea);
+                    break;
+                case SpacingMode.Justified:
+                    LayoutWithJustifiedSpacing(children.Cast<IUserInterfaceElement>().ToArray(), childWidths, contentArea);
+                    break;
+                case SpacingMode.Distributed:
+                    LayoutWithDistributedSpacing(children.Cast<IUserInterfaceElement>().ToArray(), childWidths, contentArea);
+                    break;
+            }
+        }
+    }
+
+    private void LayoutWithFixedSpacing(IUserInterfaceElement[] children, int[] childWidths, int itemSpacing, Rectangle<int> contentArea)
+    {
+        var totalWidth = childWidths.Sum() + itemSpacing * (children.Length - 1);
+        var remainingSpace = contentArea.Size.X - totalWidth;
+        var startX = contentArea.Origin.X + remainingSpace * (AlignContent + 1) / 2.0f;
+
+        Log.Debug($"LayoutWithFixedSpacing: totalWidth={totalWidth}, remainingSpace={remainingSpace}, startX={startX}, AlignContent={AlignContent}");
+
+        var currentX = startX;
+        for (int i = 0; i < children.Length; i++)
+        {
+            var childConstraints = new Rectangle<int>(
+                (int)currentX, 
+                contentArea.Origin.Y, 
+                childWidths[i], 
+                contentArea.Size.Y
+            );
+            Log.Debug($"Child {i} constraints: {childConstraints}");
+            children[i].SetSizeConstraints(childConstraints);
+            currentX += childWidths[i] + itemSpacing;
+        }
+    }
+
+    private void LayoutWithJustifiedSpacing(IUserInterfaceElement[] children, int[] childWidths, Rectangle<int> contentArea)
+    {
+        // Justified spacing requires at least 2 children. For single child, use AlignContent.
+        if (children.Length == 1)
+        {
+            LayoutWithFixedSpacing(children, childWidths, 0, contentArea);
+            return;
+        }
+
+        var totalChildWidth = childWidths.Sum();
+        var availableSpace = contentArea.Size.X - totalChildWidth;
+        var spacing = availableSpace / (children.Length - 1);
+
+        var currentX = contentArea.Origin.X;
+        for (int i = 0; i < children.Length; i++)
+        {
+            var childConstraints = new Rectangle<int>(
+                (int)currentX,
+                contentArea.Origin.Y,
+                childWidths[i],
+                contentArea.Size.Y
+            );
+            children[i].SetSizeConstraints(childConstraints);
+            currentX += childWidths[i] + spacing;
+        }
+    }    private void LayoutWithDistributedSpacing(IUserInterfaceElement[] children, int[] childWidths, Rectangle<int> contentArea)
+    {
+        // Distributed spacing with single child should use AlignContent.
+        if (children.Length == 1)
+        {
+            LayoutWithFixedSpacing(children, childWidths, 0, contentArea);
+            return;
+        }
+
+        var totalChildWidth = childWidths.Sum();
+        var availableSpace = contentArea.Size.X - totalChildWidth;
+        var spacing = availableSpace / (children.Length + 1);
+
+        var currentX = contentArea.Origin.X + spacing;
+        for (int i = 0; i < children.Length; i++)
+        {
+            var childConstraints = new Rectangle<int>(
+                (int)currentX,
+                contentArea.Origin.Y,
+                childWidths[i],
+                contentArea.Size.Y
+            );
+            children[i].SetSizeConstraints(childConstraints);
+            currentX += childWidths[i] + spacing;
         }
     }
 }

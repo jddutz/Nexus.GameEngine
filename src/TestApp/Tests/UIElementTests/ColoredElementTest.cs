@@ -25,7 +25,10 @@ public partial class ColoredElementTest(
             new DrawableElementTemplate()
             {
                 Name = "RedElement",
-                Position = ToCenteredPositionDefault(100, 100),
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 100,
+                OffsetTop = 100,
                 Size = new Vector2D<int>(200, 100),
                 TintColor = new Vector4D<float>(1, 0, 0, 1)  // Red
                 // Texture defaults to UniformColor (1x1 white pixel)

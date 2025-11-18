@@ -22,6 +22,13 @@ public partial class GridLayout : Container
     private int _rowCount = 0;
 
     /// <summary>
+    /// Number of rows in the grid. If 0, rows are calculated automatically.
+    /// </summary>
+    [ComponentProperty]
+    [TemplateProperty]
+    private Vector2D<int> _spacing = new Vector2D<int>(0, 0);
+
+    /// <summary>
     /// Whether grid cells should have uniform size based on the largest child component.
     /// </summary>
     [ComponentProperty]

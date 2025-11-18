@@ -18,14 +18,6 @@ public partial class Container(IDescriptorManager descriptorManager)
     protected Padding _padding = new(0);
 
     /// <summary>
-    /// Space between children (x=horizontal, y=vertical).
-    /// Uses CancelAnimation to prevent layout thrashing during property changes.
-    /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    protected Vector2D<float> _spacing = new(0, 0);
-
-    /// <summary>
     /// Safe-area margins for avoiding unsafe areas (notches, rounded corners, etc.).
     /// </summary>
     [ComponentProperty()]
@@ -154,5 +146,14 @@ public partial class Container(IDescriptorManager descriptorManager)
     {
         ChildCollectionChanged -= OnChildCollectionChanged;
         base.OnDeactivate();
+    }
+
+    /// <summary>
+    /// Sets size constraints and invalidates layout to ensure recalculation.
+    /// </summary>
+    public override void SetSizeConstraints(Rectangle<int> constraints)
+    {
+        base.SetSizeConstraints(constraints);
+        Invalidate();
     }
 }

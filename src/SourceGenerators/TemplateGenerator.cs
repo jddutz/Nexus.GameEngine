@@ -161,15 +161,11 @@ public class TemplateGenerator : IIncrementalGenerator
             });
         }
 
-        // Get partial methods declared directly on this class
+        // Get methods (partial or regular) declared directly on this class
         foreach (var method in classSymbol.GetMembers().OfType<IMethodSymbol>())
         {
             // Skip methods not declared on this specific type
             if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, classSymbol))
-                continue;
-
-            // Only process partial methods with TemplateProperty attribute
-            if (!method.IsPartialDefinition)
                 continue;
 
             var templateAttr = method.GetAttributes()
@@ -263,14 +259,11 @@ public class TemplateGenerator : IIncrementalGenerator
                 });
             }
 
-            // Get all partial methods with TemplateProperty attribute from this class
+            // Get all methods (partial or regular) with TemplateProperty attribute from this class
             foreach (var method in currentType.GetMembers().OfType<IMethodSymbol>())
             {
-                // Only process partial methods declared on this specific type
+                // Only process methods declared on this specific type
                 if (!SymbolEqualityComparer.Default.Equals(method.ContainingType, currentType))
-                    continue;
-
-                if (!method.IsPartialDefinition)
                     continue;
 
                 var templateAttr = method.GetAttributes()

@@ -1,7 +1,7 @@
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
-/// Marks a private field or partial method to be included in the component's template as a property.
+/// Marks a private field or method to be included in the component's template as a property.
 /// 
 /// When applied to fields:
 /// - Field is assigned once during OnLoad from the template
@@ -9,11 +9,12 @@ namespace Nexus.GameEngine.Components;
 /// - Does not support deferred updates or animation
 /// - Typically used for definition types that need conversion to resources
 /// 
-/// When applied to partial methods:
+/// When applied to methods:
 /// - Method must have exactly one parameter
-/// - Method is called during OnLoad if template property is set
+/// - Method is called during Load() if template property is set
 /// - Useful for computed setters that update multiple fields
 /// - Template property will be nullable and only call method if value is provided
+/// - Method should be a regular private method with implementation body inline
 /// </summary>
 /// <remarks>
 /// Common pattern for fields: Use TemplateProperty for definitions (TextureDefinition, ShaderDefinition)
@@ -31,16 +32,14 @@ namespace Nexus.GameEngine.Components;
 /// }
 /// </code>
 /// 
-/// Example with partial method:
+/// Example with method (implementation inline):
 /// <code>
 /// [ComponentProperty]
 /// [TemplateProperty]
 /// private Vector2D&lt;float&gt; _relativeSize = new(0f, 0f);
 /// 
 /// [TemplateProperty(Name = "RelativeWidth")]
-/// partial void SetRelativeWidth(float value);
-/// 
-/// partial void SetRelativeWidth(float value)
+/// private void SetRelativeWidth(float value)
 /// {
 ///     _relativeSize = new Vector2D&lt;float&gt;(value, _relativeSize.Y);
 /// }

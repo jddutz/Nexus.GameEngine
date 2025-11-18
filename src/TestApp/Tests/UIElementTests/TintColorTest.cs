@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.GUI.Layout;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Textures.Definitions;
 using Nexus.GameEngine.Runtime;
@@ -22,14 +23,16 @@ public partial class TintColorTest(
     [Test("Tint color test (white texture * red tint = red)")]
     public readonly static TintColorTestTemplate TintColorTestInstance = new()
     {
-            Subcomponents = [
+        Subcomponents = [
             new DrawableElementTemplate()
             {
-                Position = ToCenteredPositionDefault(100, 100),
-                Size = new Vector2D<int>(150, 100),
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 100,
+                OffsetTop = 100,
+                Size = new Vector2D<int>(150,100),
                 Texture = TextureDefinitions.UniformColor,
                 TintColor = Colors.Red,
-
             }
         ]
     };

@@ -26,7 +26,10 @@ public partial class UVCoordinateTest(
             Subcomponents = [
             new DrawableElementTemplate()
             {
-                Position = ToCenteredPositionDefault(128, 128),
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 128,
+                OffsetTop = 128,
                 Size = new Vector2D<int>(128, 128),
                 Texture = TestResources.TestAtlas,
                 MinUV = new Vector2D<float>(0.0f, 0.0f), // top-left corner

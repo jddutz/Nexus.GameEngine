@@ -22,16 +22,16 @@ public partial class SharedTextureTest(
     {
         Subcomponents = [
             // Create 10 elements in a grid, all sharing TestTexture
-            new DrawableElementTemplate() { Name = "Element1", Position = ToCenteredPositionDefault(100, 50), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element2", Position = ToCenteredPositionDefault(250, 50), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element3", Position = ToCenteredPositionDefault(400, 50), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element4", Position = ToCenteredPositionDefault(550, 50), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element5", Position = ToCenteredPositionDefault(700, 50), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element6", Position = ToCenteredPositionDefault(100, 200), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element7", Position = ToCenteredPositionDefault(250, 200), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element8", Position = ToCenteredPositionDefault(400, 200), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element9", Position = ToCenteredPositionDefault(550, 200), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "Element10", Position = ToCenteredPositionDefault(700, 200), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture }
+            new DrawableElementTemplate() { Name = "Element1", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 100, OffsetTop = 50, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element2", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 250, OffsetTop = 50, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element3", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 400, OffsetTop = 50, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element4", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 550, OffsetTop = 50, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element5", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 700, OffsetTop = 50, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element6", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 100, OffsetTop = 200, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element7", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 250, OffsetTop = 200, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element8", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 400, OffsetTop = 200, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element9", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 550, OffsetTop = 200, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "Element10", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 700, OffsetTop = 200, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture }
         ]
     };
 
