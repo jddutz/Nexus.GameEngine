@@ -22,12 +22,12 @@ public partial class MixedUITest(
     {
             Subcomponents = [
             // Row 1: Solid colors (UniformColor + tint)
-            new DrawableElementTemplate() { Name = "Red", Position = ToCenteredPositionDefault(100, 100), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(1, 0, 0, 1) },
-            new DrawableElementTemplate() { Name = "Green", Position = ToCenteredPositionDefault(300, 100), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 1, 0, 1) },
-            new DrawableElementTemplate() { Name = "Blue", Position = ToCenteredPositionDefault(500, 100), Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 0, 1, 1) },
+            new DrawableElementTemplate() { Name = "Red", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 100, OffsetTop = 100, Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(1, 0, 0, 1) },
+            new DrawableElementTemplate() { Name = "Green", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 300, OffsetTop = 100, Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 1, 0, 1) },
+            new DrawableElementTemplate() { Name = "Blue", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 500, OffsetTop = 100, Size = new Vector2D<int>(100, 100), TintColor = new Vector4D<float>(0, 0, 1, 1) },
             // Row 2: Textured elements
-            new DrawableElementTemplate() { Name = "RedTexture", Position = ToCenteredPositionDefault(100, 300), Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
-            new DrawableElementTemplate() { Name = "WhiteTexture", Position = ToCenteredPositionDefault(300, 300), Size = new Vector2D<int>(100, 100), Texture = TestResources.WhiteTexture }
+            new DrawableElementTemplate() { Name = "RedTexture", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 100, OffsetTop = 300, Size = new Vector2D<int>(100, 100), Texture = TestResources.TestTexture },
+            new DrawableElementTemplate() { Name = "WhiteTexture", Alignment = Align.TopLeft, AnchorPoint = Align.TopLeft, OffsetLeft = 300, OffsetTop = 300, Size = new Vector2D<int>(100, 100), Texture = TestResources.WhiteTexture }
         ]
     };
 

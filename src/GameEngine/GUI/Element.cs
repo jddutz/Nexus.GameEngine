@@ -45,6 +45,30 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     [TemplateProperty]
     protected Vector2D<int> _offset = Vector2D<int>.Zero;
 
+    [TemplateProperty(Name = "OffsetLeft")]
+    private void SetOffsetLeft(int value)
+    {
+        _offset = new(value, _offset.Y);
+    }
+
+    [TemplateProperty(Name = "OffsetRight")]
+    private void SetOffsetRight(int value)
+    {
+        _offset = new(-value, _offset.Y);
+    }
+
+    [TemplateProperty(Name = "OffsetTop")]
+    private void SetOffsetTop(int value)
+    {
+        _offset = new(_offset.X, value);
+    }
+
+    [TemplateProperty(Name = "OffsetBottom")]
+    private void SetOffsetBottom(int value)
+    {
+        _offset = new(_offset.X, -value);
+    }
+
     /// <summary>
     /// Pixel dimensions of the element (width, height).
     /// Combined with Scale (inherited from Transformable) to determine final rendered size.
@@ -58,14 +82,20 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     /// Sets the X component of Size vector.
     /// </summary>
     [TemplateProperty(Name = "Width")]
-    partial void SetWidth(int value);
+    private void SetWidth(int value)
+    {
+        _size = new(value, _size.Y);
+    }
 
     /// <summary>
     /// Template-only property for setting height.
     /// Sets the Y component of Size vector.
     /// </summary>
     [TemplateProperty(Name = "Height")]
-    partial void SetHeight(int value);
+    private void SetHeight(int value)
+    {
+        _size = new(_size.X, value);
+    }
 
     partial void OnSizeChanged(Vector2D<int> oldValue)
     {
@@ -143,14 +173,20 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     /// Sets the X component of RelativeSize.
     /// </summary>
     [TemplateProperty(Name = "RelativeWidth")]
-    partial void SetRelativeWidth(float value);
+    private void SetRelativeWidth(float value)
+    {
+        _relativeSize = new Vector2D<float>(value, _relativeSize.Y);
+    }
 
     /// <summary>
     /// Template-only property for setting relative height.
     /// Sets the Y component of RelativeSize.
     /// </summary>
     [TemplateProperty(Name = "RelativeHeight")]
-    partial void SetRelativeHeight(float value);
+    private void SetRelativeHeight(float value)
+    {
+        _relativeSize = new Vector2D<float>(_relativeSize.X, value);
+    }
 
     /// <summary>
     /// Minimum size constraints (width, height).
@@ -276,6 +312,11 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
     }
 
     /// <summary>
+    /// Returns the intrisic, preferred size of this element.
+    /// </summary>
+    public Vector2D<int> Measure() => CalculateIntrinsicSize();
+
+    /// <summary>
     /// Measures the desired size of this element given the available size.
     /// Default behavior depends on SizeMode:
     /// - Fixed: return TargetSize
@@ -375,41 +416,7 @@ public partial class Element(IDescriptorManager descriptorManager) : Transformab
         return new Vector2D<int>(width, height);
     }
 
-    /// <summary>
-    /// Template setter for Width.
-    /// Sets the X component of Size vector.
-    /// </summary>
-    partial void SetWidth(int value)
-    {
-        _size = new Vector2D<int>(value, _size.Y);
-    }
 
-    /// <summary>
-    /// Template setter for Height.
-    /// Sets the Y component of Size vector.
-    /// </summary>
-    partial void SetHeight(int value)
-    {
-        _size = new Vector2D<int>(_size.X, value);
-    }
-
-    /// <summary>
-    /// Template setter for RelativeWidth.
-    /// Sets the X component of RelativeSize vector.
-    /// </summary>
-    partial void SetRelativeWidth(float value)
-    {
-        _relativeSize = new Vector2D<float>(value, _relativeSize.Y);
-    }
-
-    /// <summary>
-    /// Template setter for RelativeHeight.
-    /// Sets the Y component of RelativeSize vector.
-    /// </summary>
-    partial void SetRelativeHeight(float value)
-    {
-        _relativeSize = new Vector2D<float>(_relativeSize.X, value);
-    }
 
     /// <summary>
     /// Applies mode-specific default values after template properties are loaded.

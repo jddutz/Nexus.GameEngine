@@ -1,4 +1,5 @@
 using Moq;
+using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.GUI.Layout;
@@ -32,28 +33,58 @@ public class ContainerLayoutTests
     [Fact]
     public void Container_PassesFullContentArea_ToChild_WhenNoPadding()
     {
+        // Arrange
         var container = new Container(_descriptorManagerMock.Object);
-
-        // Create a mock child that captures the constraints set by the container
         var childMock = new Mock<IUserInterfaceElement>();
+        
         Rectangle<int> captured = default;
         childMock.Setup(c => c.SetSizeConstraints(It.IsAny<Rectangle<int>>()))
             .Callback<Rectangle<int>>(r => captured = r);
 
+        container.Load(
+            size: new Vector2D<int>(200, 100),
+            anchorPoint: Align.TopLeft,
+            alignment: Align.TopLeft
+        );
+
         container.AddChild(childMock.Object);
+
+        // Act
         container.Activate();
 
-        // Give the container a viewport-sized constraint
-        var constraints = new Rectangle<int>(0, 0, 200, 100);
-        container.SetSizeConstraints(constraints);
-
-        // Run update (triggers layout)
-        container.Update(0.016);
-
-        // The child should receive the content area (no padding) which equals the full constraints
+        // Assert - child should receive the full content area (no padding)
         Assert.Equal(0, captured.Origin.X);
         Assert.Equal(0, captured.Origin.Y);
         Assert.Equal(200, captured.Size.X);
         Assert.Equal(100, captured.Size.Y);
+    }
+
+    [Fact]
+    public void ContainerWithNoPadding_PassesFullContentAreaToChild_WhenActivated()
+    {
+        // Arrange
+        var container = new Container(_descriptorManagerMock.Object);
+        var child = new Mock<IUserInterfaceElement>();
+
+        Rectangle<int> captured = default;
+        child.Setup(m => m.SetSizeConstraints(It.IsAny<Rectangle<int>>()))
+             .Callback<Rectangle<int>>(c => captured = c);
+
+        container.Load(
+            size: new Vector2D<int>(200,400),
+            anchorPoint: Align.MiddleCenter,
+            alignment: Align.MiddleCenter
+        );
+
+        container.AddChild(child.Object);
+
+        // Act
+        container.Activate();
+
+        // Assert
+        Assert.Equal(-100, captured.Origin.X);
+        Assert.Equal(-200, captured.Origin.Y);
+        Assert.Equal(200, captured.Size.X);
+        Assert.Equal(400, captured.Size.Y);
     }
 }

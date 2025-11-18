@@ -26,7 +26,10 @@ public partial class SetTextureTest(
         Subcomponents = [
             new DrawableElementTemplate()
             {
-                Position = ToCenteredPositionDefault(100, 100),
+                Alignment = Align.TopLeft,
+                AnchorPoint = Align.TopLeft,
+                OffsetLeft = 100,
+                OffsetTop = 100,
                 Size = new Vector2D<int>(200, 100),
                 Texture = TestResources.TestTexture
             }
