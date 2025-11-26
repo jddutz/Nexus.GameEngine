@@ -20,11 +20,10 @@ public abstract partial class Configurable : Entity, IConfigurable
     /// <param name="template">Template used for configuration, or null if created without template</param>
     protected virtual void OnLoad(Template? template) { }
 
-    /// <summary>
-    /// Partial method called by source generator to initialize target fields with backing field values.
-    /// This ensures both current and target values start identical, avoiding unnecessary updates.
-    /// </summary>
-    partial void InitializeComponentProperties();
+    protected virtual void Configure(Template template)
+    {
+        if (template.Name != null) SetCurrentName(template.Name);
+    }
 
     /// <summary>
     /// Load the component using the specified template (legacy Configurable.Template).
@@ -36,22 +35,12 @@ public abstract partial class Configurable : Entity, IConfigurable
     {
         Loading?.Invoke(this, new(template));
 
-        Name = template.Name ?? GetType().Name;
+        if (template.Name != null) SetCurrentName(template.Name);
+        Configure(template);
 
         OnLoad(template);
 
-        // Apply all deferred property updates from OnLoad (Set* calls)
-        // Use deltaTime=0 for instant application during configuration
-        ApplyUpdates(0);
-
-        // Initialize target fields to match backing fields (after Set* calls have been applied)
-        InitializeComponentProperties();
-
-        // Validate the component after configuration
-        Validate();
-
         IsLoaded = true;
-
         Loaded?.Invoke(this, new(template));
     }
 

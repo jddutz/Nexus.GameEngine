@@ -479,7 +479,7 @@ public class TransformableTests
 
         // Assert
         Assert.Equal(template.Position, transform.Position);
-        Assert.True(ApproximatelyEqual(template.Rotation, transform.Rotation));
+        Assert.True(ApproximatelyEqual(template.Rotation.Value, transform.Rotation));
         Assert.Equal(template.Scale, transform.Scale);
     }
 }

@@ -139,9 +139,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="position">New local position.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void SetPosition(Vector3D<float> position, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void SetPosition(Vector3D<float> position, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Set local position immediately.
+    /// </summary>
+    /// <param name="position">New local position.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void SetCurrentPosition(Vector3D<float> position, bool setTarget = false);
     
     /// <summary>
     /// Move in world space (absolute direction, ignoring rotation).
@@ -149,9 +155,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="delta">World-space movement delta.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void Translate(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void Translate(Vector3D<float> delta, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Move in world space immediately.
+    /// </summary>
+    /// <param name="delta">World-space movement delta.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void TranslateImmediate(Vector3D<float> delta, bool setTarget = false);
     
     /// <summary>
     /// Move in local space (relative to current rotation).
@@ -159,9 +171,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="delta">Local-space movement delta.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void TranslateLocal(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void TranslateLocal(Vector3D<float> delta, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Move in local space immediately.
+    /// </summary>
+    /// <param name="delta">Local-space movement delta.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void TranslateLocalImmediate(Vector3D<float> delta, bool setTarget = false);
     
     /// <summary>
     /// Sets the linear velocity for continuous movement (units per second).
@@ -179,9 +197,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="rotation">New rotation quaternion.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void SetRotation(Quaternion<float> rotation, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void SetRotation(Quaternion<float> rotation, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Set absolute rotation immediately.
+    /// </summary>
+    /// <param name="rotation">New rotation quaternion.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void SetCurrentRotation(Quaternion<float> rotation, bool setTarget = false);
     
     /// <summary>
     /// Rotate around local X axis (pitch - nod up/down).
@@ -189,9 +213,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void RotateX(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void RotateX(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Rotate around local X axis immediately.
+    /// </summary>
+    /// <param name="radians">Rotation angle in radians.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void RotateXImmediate(float radians, bool setTarget = false);
     
     /// <summary>
     /// Rotate around local Y axis (yaw - turn left/right).
@@ -199,9 +229,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void RotateY(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void RotateY(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Rotate around local Y axis immediately.
+    /// </summary>
+    /// <param name="radians">Rotation angle in radians.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void RotateYImmediate(float radians, bool setTarget = false);
     
     /// <summary>
     /// Rotate around local Z axis (roll - tilt side-to-side).
@@ -210,9 +246,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="radians">Rotation angle in radians.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void RotateZ(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void RotateZ(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Rotate around local Z axis immediately.
+    /// </summary>
+    /// <param name="radians">Rotation angle in radians.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void RotateZImmediate(float radians, bool setTarget = false);
     
     /// <summary>
     /// Rotate around arbitrary axis (in local space).
@@ -220,9 +262,16 @@ public interface ITransformable
     /// </summary>
     /// <param name="axis">Rotation axis (will be normalized).</param>
     /// <param name="radians">Rotation angle in radians.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void RotateAxis(Vector3D<float> axis, float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void RotateAxis(Vector3D<float> axis, float radians, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Rotate around arbitrary axis immediately.
+    /// </summary>
+    /// <param name="axis">Rotation axis (will be normalized).</param>
+    /// <param name="radians">Rotation angle in radians.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void RotateAxisImmediate(Vector3D<float> axis, float radians, bool setTarget = false);
     
     /// <summary>
     /// Orient to face target position.
@@ -230,9 +279,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="target">World position to look at.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void LookAt(Vector3D<float> target, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void LookAt(Vector3D<float> target, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Orient to face target position immediately.
+    /// </summary>
+    /// <param name="target">World position to look at.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void LookAtImmediate(Vector3D<float> target, bool setTarget = false);
     
     /// <summary>
     /// Orient to face target with specified world up vector.
@@ -240,9 +295,16 @@ public interface ITransformable
     /// </summary>
     /// <param name="target">World position to look at.</param>
     /// <param name="worldUp">World up direction (will be normalized).</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void LookAt(Vector3D<float> target, Vector3D<float> worldUp, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void LookAt(Vector3D<float> target, Vector3D<float> worldUp, InterpolationFunction<Quaternion<float>>? interpolator = null);
+
+    /// <summary>
+    /// Orient to face target with specified world up vector immediately.
+    /// </summary>
+    /// <param name="target">World position to look at.</param>
+    /// <param name="worldUp">World up direction (will be normalized).</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void LookAtImmediate(Vector3D<float> target, Vector3D<float> worldUp, bool setTarget = false);
     
     /// <summary>
     /// Sets the angular velocity for continuous rotation (radians per second).
@@ -261,9 +323,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scale">New scale vector.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void SetScale(Vector3D<float> scale, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void SetScale(Vector3D<float> scale, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Set absolute scale immediately.
+    /// </summary>
+    /// <param name="scale">New scale vector.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void SetCurrentScale(Vector3D<float> scale, bool setTarget = false);
     
     /// <summary>
     /// Multiply current scale by factor.
@@ -271,9 +339,15 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scaleFactor">Scale multiplier per axis.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void ScaleBy(Vector3D<float> scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void ScaleBy(Vector3D<float> scaleFactor, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Multiply current scale by factor immediately.
+    /// </summary>
+    /// <param name="scaleFactor">Scale multiplier per axis.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void ScaleByImmediate(Vector3D<float> scaleFactor, bool setTarget = false);
     
     /// <summary>
     /// Uniform scaling (multiply all axes by same factor).
@@ -281,7 +355,13 @@ public interface ITransformable
     /// Change is deferred until next ApplyUpdates() call if component is active.
     /// </summary>
     /// <param name="scaleFactor">Uniform scale multiplier.</param>
-    /// <param name="duration">Animation duration in seconds. -1 = use ComponentProperty default (default). 0 = instant update.</param>
-    /// <param name="interpolation">Interpolation mode. Use default if not specified.</param>
-    void ScaleUniform(float scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1));
+    /// <param name="interpolator">Optional interpolation function.</param>
+    void ScaleUniform(float scaleFactor, InterpolationFunction<Vector3D<float>>? interpolator = null);
+
+    /// <summary>
+    /// Uniform scaling immediately.
+    /// </summary>
+    /// <param name="scaleFactor">Uniform scale multiplier.</param>
+    /// <param name="setTarget">If true, also updates the target value to prevent interpolation back to old target.</param>
+    void ScaleUniformImmediate(float scaleFactor, bool setTarget = false);
 }

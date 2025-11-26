@@ -40,11 +40,11 @@ public struct UIElementPushConstants
 
     /// <summary>
     /// <summary>
-    /// Anchor point used to translate quad coordinates to pixel coordinates.
-    /// Typical convention: (-1,-1) = top-left, (0,0) = center, (1,1) = bottom-right.
+    /// Pivot point used to translate quad coordinates to pixel coordinates.
+    /// (0,0) = Top-Left, (0.5,0.5) = Center, (1,1) = Bottom-Right.
     /// Stored as floats in push constants.
     /// </summary>
-    public Vector2D<float> AnchorPoint;
+    public Vector2D<float> Pivot;
 
     /// <summary>
     /// Creates push constants with custom UV rectangle for sprite atlas support.
@@ -54,7 +54,7 @@ public struct UIElementPushConstants
     /// <param name="uvMin">Minimum UV coordinates (top-left)</param>
     /// <param name="uvMax">Maximum UV coordinates (bottom-right)</param>
     /// <param name="size">Element size in pixels (width, height)</param>
-    /// <param name="anchor">Anchor defining the element relative to its Position</param>
+    /// <param name="pivot">Pivot defining the element relative to its Position</param>
     /// <returns>UIElementPushConstants instance</returns>
     public UIElementPushConstants(
         Matrix4X4<float> model,
@@ -62,17 +62,17 @@ public struct UIElementPushConstants
         Vector2D<float> uvMin,
         Vector2D<float> uvMax,
         Vector2D<int> size,
-        Vector2D<float> anchor)
+        Vector2D<float> pivot)
     {
         Model = model;
         TintColor = tintColor;
         UvRect = new Vector4D<float>(uvMin.X, uvMin.Y, uvMax.X, uvMax.Y);
         Size = new Vector2D<float>(size.X, size.Y);
-        AnchorPoint = anchor;
+        Pivot = pivot;
     }
 
     /// <summary>
-    /// Simple constructor when using the full texture (uvRect = 0,0,1,1) and default anchor (0,0).
+    /// Simple constructor when using the full texture (uvRect = 0,0,1,1) and default pivot (0,0).
     /// </summary>
     public UIElementPushConstants(
         Matrix4X4<float> model,
@@ -83,27 +83,27 @@ public struct UIElementPushConstants
         TintColor = tintColor;
         UvRect = new Vector4D<float>(0f, 0f, 1f, 1f);
         Size = new Vector2D<float>(size.X, size.Y);
-        AnchorPoint = new Vector2D<float>(0f, 0f);
+        Pivot = new Vector2D<float>(0f, 0f);
     }
 
     /// <summary>
-    /// Constructor allowing explicit anchor with full-texture UVs.
+    /// Constructor allowing explicit pivot with full-texture UVs.
     /// </summary>
     public UIElementPushConstants(
         Matrix4X4<float> model,
         Vector4D<float> tintColor,
         Vector2D<int> size,
-        Vector2D<float> anchor)
+        Vector2D<float> pivot)
     {
         Model = model;
         TintColor = tintColor;
         UvRect = new Vector4D<float>(0f, 0f, 1f, 1f);
         Size = new Vector2D<float>(size.X, size.Y);
-        AnchorPoint = anchor;
+        Pivot = pivot;
     }
 
     /// <summary>
-    /// Constructor allowing explicit UV rectangle but default anchor (0,0).
+    /// Constructor allowing explicit UV rectangle but default pivot (0,0).
     /// </summary>
     public UIElementPushConstants(
         Matrix4X4<float> model,
@@ -116,6 +116,6 @@ public struct UIElementPushConstants
         TintColor = tintColor;
         UvRect = new Vector4D<float>(uvMin.X, uvMin.Y, uvMax.X, uvMax.Y);
         Size = new Vector2D<float>(size.X, size.Y);
-        AnchorPoint = new Vector2D<float>(0f, 0f);
+        Pivot = new Vector2D<float>(0f, 0f);
     }
 }

@@ -193,16 +193,28 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // POSITION METHODS
     // ==========================================
     
-    public void Translate(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void Translate(Vector3D<float> delta, InterpolationFunction<Vector3D<float>>? interpolator = null)
     {
-        SetPosition(_position + delta, duration, interpolation);
+        SetPosition(_position + delta, interpolator);
+    }
+
+    public void TranslateImmediate(Vector3D<float> delta, bool setTarget = false)
+    {
+        SetCurrentPosition(_position + delta, setTarget);
     }
     
-    public void TranslateLocal(Vector3D<float> delta, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void TranslateLocal(Vector3D<float> delta, InterpolationFunction<Vector3D<float>>? interpolator = null)
     {
         // Transform delta from local space to world space using current rotation
         var worldDelta = Vector3D.Transform(delta, _rotation);
-        SetPosition(_position + worldDelta, duration, interpolation);
+        SetPosition(_position + worldDelta, interpolator);
+    }
+
+    public void TranslateLocalImmediate(Vector3D<float> delta, bool setTarget = false)
+    {
+        // Transform delta from local space to world space using current rotation
+        var worldDelta = Vector3D.Transform(delta, _rotation);
+        SetCurrentPosition(_position + worldDelta, setTarget);
     }
     
     /// <summary>
@@ -218,37 +230,79 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // ROTATION METHODS
     // ==========================================
     
-    public void RotateX(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void RotateX(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null)
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitX, radians);
-        SetRotation(_rotation * rotation, duration, interpolation);
+        SetRotation(_rotation * rotation, interpolator);
+    }
+
+    public void RotateXImmediate(float radians, bool setTarget = false)
+    {
+        var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitX, radians);
+        SetCurrentRotation(_rotation * rotation, setTarget);
     }
     
-    public void RotateY(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void RotateY(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null)
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, radians);
-        SetRotation(_rotation * rotation, duration, interpolation);
+        SetRotation(_rotation * rotation, interpolator);
+    }
+
+    public void RotateYImmediate(float radians, bool setTarget = false)
+    {
+        var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitY, radians);
+        SetCurrentRotation(_rotation * rotation, setTarget);
     }
     
-    public void RotateZ(float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void RotateZ(float radians, InterpolationFunction<Quaternion<float>>? interpolator = null)
     {
         var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitZ, radians);
-        SetRotation(_rotation * rotation, duration, interpolation);
+        SetRotation(_rotation * rotation, interpolator);
+    }
+
+    public void RotateZImmediate(float radians, bool setTarget = false)
+    {
+        var rotation = Quaternion<float>.CreateFromAxisAngle(Vector3D<float>.UnitZ, radians);
+        SetCurrentRotation(_rotation * rotation, setTarget);
     }
     
-    public void RotateAxis(Vector3D<float> axis, float radians, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void RotateAxis(Vector3D<float> axis, float radians, InterpolationFunction<Quaternion<float>>? interpolator = null)
     {
         var normalizedAxis = Vector3D.Normalize(axis);
         var rotation = Quaternion<float>.CreateFromAxisAngle(normalizedAxis, radians);
-        SetRotation(_rotation * rotation, duration, interpolation);
+        SetRotation(_rotation * rotation, interpolator);
     }
-    
-    public void LookAt(Vector3D<float> target, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+
+    public void RotateAxisImmediate(Vector3D<float> axis, float radians, bool setTarget = false)
     {
-        LookAt(target, Vector3D<float>.UnitY, duration, interpolation);
+        var normalizedAxis = Vector3D.Normalize(axis);
+        var rotation = Quaternion<float>.CreateFromAxisAngle(normalizedAxis, radians);
+        SetCurrentRotation(_rotation * rotation, setTarget);
     }
     
-    public void LookAt(Vector3D<float> target, Vector3D<float> worldUp, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void LookAt(Vector3D<float> target, InterpolationFunction<Quaternion<float>>? interpolator = null)
+    {
+        LookAt(target, Vector3D<float>.UnitY, interpolator);
+    }
+
+    public void LookAtImmediate(Vector3D<float> target, bool setTarget = false)
+    {
+        LookAtImmediate(target, Vector3D<float>.UnitY, setTarget);
+    }
+    
+    public void LookAt(Vector3D<float> target, Vector3D<float> worldUp, InterpolationFunction<Quaternion<float>>? interpolator = null)
+    {
+        var rotation = CalculateLookAtRotation(target, worldUp);
+        SetRotation(rotation, interpolator);
+    }
+
+    public void LookAtImmediate(Vector3D<float> target, Vector3D<float> worldUp, bool setTarget = false)
+    {
+        var rotation = CalculateLookAtRotation(target, worldUp);
+        SetCurrentRotation(rotation, setTarget);
+    }
+
+    private Quaternion<float> CalculateLookAtRotation(Vector3D<float> target, Vector3D<float> worldUp)
     {
         var currentPosition = Parent is ITransformable parentTransform 
             ? WorldPosition 
@@ -259,8 +313,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
         // Handle edge case: if target is same as position, use default forward
         if (float.IsNaN(forward.X) || float.IsNaN(forward.Y) || float.IsNaN(forward.Z))
         {
-            SetRotation(Quaternion<float>.Identity, duration, interpolation);
-            return;
+            return Quaternion<float>.Identity;
         }
         
         // We want to rotate from default forward (-Z) to point toward target
@@ -272,20 +325,18 @@ public partial class Transformable : RuntimeComponent, ITransformable
         if (dot >= 0.999999f)
         {
             // Vectors are already aligned
-            SetRotation(Quaternion<float>.Identity, duration, interpolation);
-            return;
+            return Quaternion<float>.Identity;
         }
         else if (dot <= -0.999999f)
         {
             // Vectors are opposite, rotate 180° around world up
-            SetRotation(Quaternion<float>.CreateFromAxisAngle(worldUp, MathF.PI), duration, interpolation);
-            return;
+            return Quaternion<float>.CreateFromAxisAngle(worldUp, MathF.PI);
         }
         
         // General case: rotate around the perpendicular axis
         var axis = Vector3D.Normalize(Vector3D.Cross(defaultForward, forward));
         var angle = MathF.Acos(dot);
-        SetRotation(Quaternion<float>.CreateFromAxisAngle(axis, angle), duration, interpolation);
+        return Quaternion<float>.CreateFromAxisAngle(axis, angle);
     }
     
     /// <summary>
@@ -301,17 +352,30 @@ public partial class Transformable : RuntimeComponent, ITransformable
     // SCALE METHODS
     // ==========================================
     
-    public void ScaleBy(Vector3D<float> scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void ScaleBy(Vector3D<float> scaleFactor, InterpolationFunction<Vector3D<float>>? interpolator = null)
     {
         SetScale(new Vector3D<float>(
             _scale.X * scaleFactor.X,
             _scale.Y * scaleFactor.Y,
-            _scale.Z * scaleFactor.Z), duration, interpolation);
+            _scale.Z * scaleFactor.Z), interpolator);
+    }
+
+    public void ScaleByImmediate(Vector3D<float> scaleFactor, bool setTarget = false)
+    {
+        SetCurrentScale(new Vector3D<float>(
+            _scale.X * scaleFactor.X,
+            _scale.Y * scaleFactor.Y,
+            _scale.Z * scaleFactor.Z), setTarget);
     }
     
-    public void ScaleUniform(float scaleFactor, float duration = -1f, InterpolationMode interpolation = (InterpolationMode)(-1))
+    public void ScaleUniform(float scaleFactor, InterpolationFunction<Vector3D<float>>? interpolator = null)
     {
-        SetScale(_scale * scaleFactor, duration, interpolation);
+        SetScale(_scale * scaleFactor, interpolator);
+    }
+
+    public void ScaleUniformImmediate(float scaleFactor, bool setTarget = false)
+    {
+        SetCurrentScale(_scale * scaleFactor, setTarget);
     }
     
     // ==========================================
@@ -350,7 +414,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
         // Apply continuous linear velocity
         if (_velocity != Vector3D<float>.Zero)
         {
-            SetPosition(_position + _velocity * (float)deltaTime, duration: 0f);
+            SetPosition(_position + _velocity * (float)deltaTime);
         }
         
         // Apply continuous angular velocity
@@ -360,7 +424,7 @@ public partial class Transformable : RuntimeComponent, ITransformable
                 _angularVelocity.Y * (float)deltaTime,
                 _angularVelocity.X * (float)deltaTime,
                 _angularVelocity.Z * (float)deltaTime);
-            SetRotation(_rotation * deltaRotation, duration: 0f);
+            SetRotation(_rotation * deltaRotation);
         }
     }
 }

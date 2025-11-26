@@ -21,3 +21,9 @@ global using Nexus.GameEngine.Resources.Geometry;
 global using Nexus.GameEngine.Resources.Fonts;
 global using Nexus.GameEngine.Resources.Textures;
 global using Nexus.GameEngine.Runtime;
+
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("TestApp")]
+[assembly: InternalsVisibleTo("Tests")]
+[assembly: InternalsVisibleTo("IntegrationTests")]

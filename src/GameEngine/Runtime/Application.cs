@@ -51,13 +51,13 @@ public class Application(IServiceProvider services) : IApplication
             {
                 // Use centered coordinate system to match StaticCamera's viewport
                 // Origin at center: (-width/2, -height/2) to (width/2, height/2)
-                var constraints = new Rectangle<int>(-window.Size.X / 2, -window.Size.Y / 2, window.Size.X, window.Size.Y);
-                rootElement.SetSizeConstraints(constraints);
+                var constraints = new Rectangle<float>(-window.Size.X / 2f, -window.Size.Y / 2f, window.Size.X, window.Size.Y);
+                rootElement.UpdateLayout(constraints);
                 
                 // Update constraints when window resizes
                 window.Resize += newSize =>
                 {
-                    rootElement.SetSizeConstraints(new Rectangle<int>(-newSize.X / 2, -newSize.Y / 2, newSize.X, newSize.Y));
+                    rootElement.UpdateLayout(new Rectangle<float>(-newSize.X / 2f, -newSize.Y / 2f, newSize.X, newSize.Y));
                 };
             }
 

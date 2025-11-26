@@ -23,8 +23,7 @@ public record Template
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the array of child component templates.
-    /// Subcomponents are created recursively by ContentManager after parent configuration.
+    /// Gets the subcomponents to be created as children of this component.
     /// </summary>
-    public Template[] Subcomponents { get; set; } = [];
+    public Template[] Subcomponents { get; init; } = Array.Empty<Template>();
 }

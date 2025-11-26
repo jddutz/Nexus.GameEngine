@@ -15,13 +15,12 @@ layout(push_constant) uniform PushConstants {
     vec4 tintColor;
     vec4 uvRect;      // (minU, minV, maxU, maxV)
     vec2 size;        // Element size in pixels (width, height)
-    vec2 anchor;      // AnchorPoint (dx, dy)
+    vec2 pivot;       // Relative base point (dx, dy) in the range [0,1]
 };
 
 void main() {
-    // Compute local position in element space (centered, scaled by size)
-    vec2 xy = (inPos - anchor) * size * 0.5;
-    vec4 p = vec4(xy, 0, 1);
+    // Compute local position in element space (relative to pivot, scaled by size)
+    vec4 p = vec4((inPos - pivot) * size, 0, 1);
 
     // Apply model (world) and view-projection transforms so the element
     // is placed correctly in clip space. `world` contains position/rotation

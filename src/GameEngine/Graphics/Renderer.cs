@@ -2,7 +2,6 @@ using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
-using Nexus.GameEngine.Graphics.PushConstants;
 
 namespace Nexus.GameEngine.Graphics;
 

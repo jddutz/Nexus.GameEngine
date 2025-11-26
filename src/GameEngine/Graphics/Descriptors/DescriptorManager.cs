@@ -80,7 +80,8 @@ public unsafe class DescriptorManager(IGraphicsContext context) : IDescriptorMan
         };
         
         DescriptorSet descriptorSet;
-    var result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
+        
+        var result = context.VulkanApi.AllocateDescriptorSets(context.Device, &allocInfo, &descriptorSet);
         
         if (result == Result.ErrorOutOfPoolMemory || result == Result.ErrorFragmentedPool)
         {

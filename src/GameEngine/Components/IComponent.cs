@@ -37,7 +37,7 @@ public interface IComponent : IConfigurable, IDisposable
     /// Automatically set when <see cref="AddChild"/> is called on the parent.
     /// Read-only from outside the component; the tree structure is managed internally.
     /// </summary>
-    IComponent? Parent { get; }
+    IComponent? Parent { get; set; }
 
     /// <summary>
     /// Gets the child components of this component.
@@ -74,8 +74,7 @@ public interface IComponent : IConfigurable, IDisposable
     /// <typeparam name="T">The type of parent component to find.</typeparam>
     /// <param name="filter">Optional predicate to filter parent components.</param>
     /// <returns>The nearest parent component of type <typeparamref name="T"/>, or default if not found.</returns>
-    T? FindParent<T>(Func<T, bool>? filter = null)
-        where T : IComponent;
+    T? FindParent<T>(Func<T, bool>? filter = null);
 
     /// <summary>
     /// Adds a child component to this component's child collection.
