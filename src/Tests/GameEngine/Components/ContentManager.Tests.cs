@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Options;
-using Moq;
+﻿using Moq;
 using Nexus.GameEngine.Components;
-using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Graphics.Cameras;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;

@@ -80,6 +80,37 @@ Renderer uses `IBatchStrategy` to group compatible render commands and minimize 
 
 **Viewport Management**: Cameras create immutable `Viewport` records (Extent, ClearColor, RenderPassMask) via `GetViewport()`. Renderer iterates cameras in priority order.
 
+### Layout System
+
+**Directional Layout Components**: `VerticalLayout` and `HorizontalLayout` extend `Container` to provide automatic child positioning along a single axis.
+
+**Layout Properties**:
+- `ItemHeight` / `ItemWidth` (uint?): Fixed size for child elements (null = use child's natural size)
+- `ItemSpacing` (uint?): Gap between adjacent children (null = no spacing)
+- `Spacing` (SpacingMode): Distribution strategy - `Stacked` (default, stack directly), `Justified` (space-between), `Distributed` (space-evenly)
+- `AlignContent` (float): Cross-axis alignment from -1.0 (top/left) to 1.0 (bottom/right), default 0.0 (center)
+
+**SpacingMode Behavior**:
+- `Stacked` (0): Children positioned sequentially with ItemSpacing gap, aligned using AlignContent
+- `Justified` (1): First child at start, last at end, remaining space distributed evenly between
+- `Distributed` (2): Equal spacing before, between, and after all children
+
+**Zero-Size Handling**: Children with zero height (VerticalLayout) or zero width (HorizontalLayout) are excluded from layout calculations to prevent spacing artifacts.
+
+**Edge Cases**: Single-child layouts with Justified/Distributed modes delegate to Stacked behavior using AlignContent for positioning.
+
+**Template Usage**:
+```csharp
+new VerticalLayoutTemplate()
+{
+    ItemHeight = 50,        // Fixed 50px height per item
+    ItemSpacing = 10,       // 10px gap between items
+    Spacing = SpacingMode.Stacked,
+    AlignContent = -1.0f,   // Align to top
+    Subcomponents = [ /* children */ ]
+}
+```
+
 ### Testing Infrastructure
 
 **Unit Testing**: per-class test framework using xUnit

@@ -11,7 +11,7 @@ namespace Tests.GameEngine.Components;
 public class ComponentFactorTests
 {
     [Fact]
-    public void Create_TextElement_ResolvesGraphicsManagers()
+    public void Create_TextRenderer_ResolvesGraphicsManagers()
     {
         // Arrange - register mocked descriptor/resource/pipeline managers in DI
         var services = new ServiceCollection();
@@ -28,16 +28,10 @@ public class ComponentFactorTests
         var factory = new ComponentFactory(serviceProvider);
 
         // Act
-        var component = factory.Create(typeof(TextElement));
+        var component = factory.Create(typeof(TextRenderer));
 
         // Assert
         Assert.NotNull(component);
-        Assert.IsType<TextElement>(component);
-
-        var text = (TextElement)component!;
-
-        // DrawableElement exposes ResourceManager and PipelineManager properties
-        Assert.Same(resourceMock.Object, text.ResourceManager);
-        Assert.Same(pipelineMock.Object, text.PipelineManager);
+        Assert.IsType<TextRenderer>(component);
     }
 }

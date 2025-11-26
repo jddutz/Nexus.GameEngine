@@ -9,6 +9,11 @@ public partial class RuntimeComponent
     : Component, IRuntimeComponent
 {
     /// <summary>
+    /// Internal constructor to restrict inheritance to the engine assembly.
+    /// </summary>
+    internal RuntimeComponent() { }
+
+    /// <summary>
     /// Whether this component is currently active and should participate in updates.
     /// Changes to Active are deferred until the next frame boundary to ensure temporal consistency.
     /// Use IsActive() to check if component is both Enabled and Active.

@@ -18,12 +18,12 @@ public partial class TestComponent : RuntimeComponent, ITestComponent
         // Set size constraints for all UI element children
         // This ensures UI elements get properly sized and positioned
         // Note: Window size is 1280x720 in test environment
-        var constraints = new Rectangle<int>(-640, -360, 1280, 720);
+        var constraints = new Rectangle<float>(-640f, -360f, 1280f, 720f);
         foreach (var child in Children)
         {
             if (child is IUserInterfaceElement uiElement)
             {
-                uiElement.SetSizeConstraints(constraints);
+                uiElement.UpdateLayout(constraints);
                 
                 // Immediately apply deferred updates so Frame 0 renders with correct size/position
                 // Normally ContentManager.OnUpdate() applies these at the frame boundary,

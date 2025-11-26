@@ -15,10 +15,10 @@ public static partial class GeometryDefinitions
         Name = "TexturedQuad",
         Source = new VertexArrayGeometrySource<Vertex<Vector2D<float>, Vector2D<float>>>(
         [
-            new() { Position = new(-1f, -1f), Attribute1 = new(0f, 0f) }, // Top-left
-            new() { Position = new(-1f,  1f), Attribute1 = new(0f, 1f) }, // Bottom-left
-            new() { Position = new( 1f, -1f), Attribute1 = new(1f, 0f) }, // Top-right
-            new() { Position = new( 1f,  1f), Attribute1 = new(1f, 1f) }  // Bottom-right
+            new() { Position = new(0f, 0f), Attribute1 = new(0f, 0f) }, // Top-left
+            new() { Position = new(0f, 1f), Attribute1 = new(0f, 1f) }, // Bottom-left
+            new() { Position = new(1f, 0f), Attribute1 = new(1f, 0f) }, // Top-right
+            new() { Position = new(1f, 1f), Attribute1 = new(1f, 1f) }  // Bottom-right
         ])
     };
 }

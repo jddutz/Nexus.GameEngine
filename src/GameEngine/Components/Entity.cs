@@ -7,7 +7,10 @@ namespace Nexus.GameEngine.Components;
 /// </summary>
 public abstract partial class Entity
 {
-    private bool _isDirty = false;
+    public Entity()
+    {
+        _name = GetType().Name;
+    }
 
     /// <summary>
     /// Unique identifier for this component instance.
@@ -18,19 +21,25 @@ public abstract partial class Entity
     /// Human-readable name for this component instance.
     /// Changes are deferred until next ApplyUpdates() call.
     /// </summary>
-    private string _targetName = string.Empty;
-    private string _name = string.Empty;
-    public string Name
+    private ComponentPropertyUpdater<string> _nameUpdater;
+    private string _name;
+    public string Name => _name;
+
+    partial void OnNameChanged(string oldValue);
+
+    public void SetName(string value, InterpolationFunction<string>? interpolator = null)
     {
-        get => _name;
-        set
-        {
-            if (_targetName != value)
-            {
-                _targetName = value;
-                _isDirty = true;
-            }
-        }
+        _nameUpdater.Set(ref _name, value, interpolator);
+    }
+
+    public void SetCurrentName(string value)
+    {
+        if (value == _name) return;
+
+        var oldValue = _name;
+        _name = value;
+
+        OnNameChanged(oldValue);
     }
 
     /// <summary>
@@ -42,22 +51,6 @@ public abstract partial class Entity
     /// <param name="deltaTime">Time elapsed since last frame in seconds</param>
     public virtual void ApplyUpdates(double deltaTime)
     {
-        // Apply deferred Name property update (instant, no interpolation)
-        if (_isDirty)
-        {
-            _name = _targetName;
-            _isDirty = false;
-        }
-    }
-
-    /// <summary>
-    /// Helper method for canceling animations on layout-affecting properties.
-    /// Use with [ComponentProperty] attribute.
-    /// Forces immediate updates by setting duration to 0 and interpolation mode to Step.
-    /// </summary>
-    public void CancelUpdates<T>(ref T newValue, ref float duration, ref InterpolationMode mode)
-    {
-        duration = 0f;
-        mode = InterpolationMode.Step;
+        _nameUpdater.Apply(ref _name, deltaTime);
     }
 }

@@ -4,7 +4,7 @@ namespace Nexus.GameEngine.Graphics;
 /// Interface for components that issue draw commands.
 /// </summary>
 public interface IDrawable : IRuntimeComponent
-{
+{    
     /// <summary>
     /// Gets whether this drawable component should be rendered.
     /// The renderer will skip calling GetDrawCommands() if this is false.

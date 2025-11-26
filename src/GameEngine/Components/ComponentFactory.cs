@@ -48,7 +48,7 @@ public class ComponentFactory(
     /// 1. Creates the component via DI
     /// 2. Configures the component with the template (sets IsLoaded = true)
     /// 
-    /// The component is NOT configured or activated.
+    /// The component is configured (Loaded) but NOT activated.
     /// ContentManager is responsible for setting the ContentManager reference before calling this.
     /// </summary>
     /// <inheritdoc/>
@@ -58,9 +58,9 @@ public class ComponentFactory(
         if (component == null) return null;
 
         // Configure the component if it supports configuration
-        if (component is IConfigurable configurable)
+        if (component is ILoadable loadable)
         {
-            configurable.Load(template);
+            loadable.Load(template);
         }
 
         return component;

@@ -2,9 +2,9 @@ namespace Nexus.GameEngine.GUI.Layout;
 
 /// <summary>
 /// Interface for layout containers that arrange child components.
-/// Extends ILayoutable to participate in parent layouts while also managing child layouts.
+/// Extends IUserInterfaceElement to participate in parent layouts while also managing child layouts.
 /// </summary>
-public interface ILayout : IComponent, ILayoutable
+public interface ILayout : IUserInterfaceElement
 {
     /// <summary>
     /// Called when a child's size changes (for intrinsic sizing support).

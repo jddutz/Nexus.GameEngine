@@ -274,17 +274,13 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
     private static void GenerateProperty(StringBuilder sb, PropertyInfo prop)
     {
         var fieldName = prop.FieldName; // Use the existing field
-        var targetFieldName = $"{fieldName}Target";
+        var stateFieldName = $"{fieldName}State";
 
         sb.AppendLine($"    // Generated property: {prop.Name} (from field {fieldName})");
 
-        // Target field to store the pending value for next frame update
-        sb.AppendLine($"    private bool {targetFieldName}__hasUpdate;");
-        sb.AppendLine($"    private {prop.Type} {targetFieldName} = default!;");
+        // State field to store the pending value and interpolator
+        sb.AppendLine($"    private global::Nexus.GameEngine.Components.ComponentPropertyUpdater<{prop.Type}> {stateFieldName};");
         
-        // Cache EqualityComparer to avoid property access overhead
-        sb.AppendLine($"    private static readonly global::System.Collections.Generic.EqualityComparer<{prop.Type}> {fieldName}__comparer = global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default;");
-
         sb.AppendLine();
         
         // Generate read-only property that returns current value from backing field
@@ -303,29 +299,44 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine($"    /// </summary>");
         sb.AppendLine($"    public {propertyType} Target{prop.Name}");
         sb.AppendLine("    {");
-        sb.AppendLine($"        get => {targetFieldName}__hasUpdate ? {targetFieldName} : {fieldName};");
+        sb.AppendLine($"        get => {stateFieldName}.GetTarget({fieldName});");
         sb.AppendLine("    }");
         sb.AppendLine();
         
-        // Generate Set method with optional duration and interpolation parameters
-        // Default is 0f duration (instant on next frame) and Step interpolation
-        sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, float duration = 0f, global::Nexus.GameEngine.Components.InterpolationMode interpolation = global::Nexus.GameEngine.Components.InterpolationMode.Step)");
+        // Generate Set method with optional interpolation function
+        sb.AppendLine($"    public void Set{prop.Name}({prop.Type} value, global::Nexus.GameEngine.Components.InterpolationFunction<{prop.Type}>? interpolator = null)");
         sb.AppendLine("    {");
-        // If a BeforeChange hook was specified, call it so callers can modify value/duration/interpolation
-        if (!string.IsNullOrEmpty(prop.BeforeChange))
-        {
-            sb.AppendLine($"        {prop.BeforeChange}(ref value, ref duration, ref interpolation);");
-            sb.AppendLine();
-        }
-        sb.AppendLine($"        if ({targetFieldName}__hasUpdate && {fieldName}__comparer.Equals({targetFieldName}, value))");
-        sb.AppendLine("            return;");
+        sb.AppendLine($"        var oldValue = {fieldName};");
+        sb.AppendLine($"        if ({stateFieldName}.Set(ref {fieldName}, value, interpolator))");
+        sb.AppendLine($"        {{");
+        sb.AppendLine($"            if (interpolator == null)");
+        sb.AppendLine($"            {{");
+        var callbackArgSet = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
+        sb.AppendLine($"                On{prop.Name}Changed({callbackArgSet});");
+        sb.AppendLine($"            }}");
+        sb.AppendLine($"            else");
+        sb.AppendLine($"            {{");
+        sb.AppendLine($"                _isDirty = true;");
+        sb.AppendLine($"            }}");
+        sb.AppendLine($"        }}");
+        sb.AppendLine("    }");
         sb.AppendLine();
-        sb.AppendLine($"        {targetFieldName} = value;");
-        sb.AppendLine($"        {targetFieldName}__hasUpdate = true;");
-        sb.AppendLine($"        _isDirty = true;");
+
+        // Generate SetCurrent method
+        sb.AppendLine($"    public void SetCurrent{prop.Name}({prop.Type} value, bool setTarget = false)");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        var oldValue = {fieldName};");
+        sb.AppendLine($"        {fieldName} = value;");
+        sb.AppendLine($"        if (setTarget)");
+        sb.AppendLine("        {");
+        sb.AppendLine($"            {stateFieldName}.Set(ref {fieldName}, value, null);");
+        sb.AppendLine("        }");
         sb.AppendLine();
-        sb.AppendLine($"        // TODO: Store duration and interpolation for animated updates");
-        sb.AppendLine($"        // For now, all updates are instant (applied on next ApplyUpdates call)");
+        sb.AppendLine($"        if (!global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals(oldValue, value))");
+        sb.AppendLine("        {");
+        var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
+        sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
+        sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
@@ -366,154 +377,29 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         foreach (var prop in properties)
         {
             var fieldName = prop.FieldName;
-            var targetFieldName = $"{fieldName}Target";
+            var stateFieldName = $"{fieldName}State";
 
-            // All properties are now instant update (animation is TODO for future)
-            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
-            {
-                // Arrays - use optimized array comparison (no LINQ overhead)
-                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                
-                sb.AppendLine($"        // Array property - using optimized element-wise comparison");
-                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && ({targetFieldName} == null || {fieldName} == null ||");
-                sb.AppendLine($"            {targetFieldName}.Length != {fieldName}.Length ||");
-                sb.AppendLine($"            !ArraysEqual_{prop.Name}({targetFieldName}, {fieldName})))");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            var oldValue = {fieldName};");
-                // Check if field type allows null (contains ?)
-                var allowsNull = prop.Type.Contains("?");
-                if (allowsNull)
-                {
-                    sb.AppendLine($"            {fieldName} = {targetFieldName} != null ? new {elementType}[{targetFieldName}.Length] : null;");
-                    sb.AppendLine($"            if ({targetFieldName} != null && {fieldName} != null)");
-                    sb.AppendLine($"                global::System.Array.Copy({targetFieldName}, {fieldName}, {targetFieldName}.Length);");
-                }
-                else
-                {
-                    sb.AppendLine($"            {fieldName} = {targetFieldName} ?? [];");
-                }
-                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
-                sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                sb.AppendLine("        }");
-            }
-            else if (prop.IsCollection)
-            {
-                // Other collections - use SequenceEqual
-                sb.AppendLine($"        // Collection property - using SequenceEqual for value comparison");
-                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && ({targetFieldName} == null || {fieldName} == null ||");
-                sb.AppendLine($"            !global::System.Linq.Enumerable.SequenceEqual({targetFieldName}, {fieldName})))");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            var oldValue = {fieldName};");
-                sb.AppendLine($"            {fieldName} = {targetFieldName}!;");
-                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
-                sb.AppendLine($"            On{prop.Name}Changed(oldValue!);");
-                sb.AppendLine("        }");
-            }
-            else
-            {
-                // Non-collection property - use default equality comparer
-                sb.AppendLine($"        if ({targetFieldName}__hasUpdate && !{fieldName}__comparer.Equals({targetFieldName}, {fieldName}))");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            var oldValue = {fieldName};");
-                sb.AppendLine($"            {fieldName} = {targetFieldName};");
-                sb.AppendLine($"            {targetFieldName}__hasUpdate = false;");
-                var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
-                sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-                sb.AppendLine("        }");
-            }
+            sb.AppendLine($"        // Apply updates for {prop.Name}");
+            sb.AppendLine($"        var {fieldName}Old = {fieldName};");
+            sb.AppendLine($"        if ({stateFieldName}.Apply(ref {fieldName}, (float)deltaTime))");
+            sb.AppendLine("        {");
+            var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? $"{fieldName}Old!" : $"{fieldName}Old";
+            sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
+            sb.AppendLine("        }");
             sb.AppendLine();
         }
 
         // Clear dirty flag after processing
         if (properties.Count > 0)
         {
-            sb.AppendLine("        // All properties processed, clear dirty flag");
-            sb.AppendLine("        _isDirty = false;");
+            sb.AppendLine("        // Check if any properties still have pending updates");
+            var checks = properties.Select(p => $"{p.FieldName}State.HasPendingUpdate");
+            sb.AppendLine($"        _isDirty = {string.Join(" || ", checks)};");
         }
 
         sb.AppendLine("    }");
         
-        // Generate array comparison helper methods for each unique array element type
-        var arrayProps = properties.Where(p => p.TypeSymbol is IArrayTypeSymbol).ToList();
-        var uniqueArrayTypes = new HashSet<string>();
-        
-        foreach (var prop in arrayProps)
-        {
-            if (prop.TypeSymbol is IArrayTypeSymbol arrayType)
-            {
-                var elementType = arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                var methodName = $"ArraysEqual_{prop.Name}";
-                
-                if (uniqueArrayTypes.Add(elementType))
-                {
-                    sb.AppendLine();
-                    sb.AppendLine($"    // Helper for array comparison of {elementType}");
-                    sb.AppendLine($"    private static bool {methodName}({prop.Type} a, {prop.Type} b)");
-                    sb.AppendLine("    {");
-                    sb.AppendLine("        if (a == null || b == null) return a == b;");
-                    sb.AppendLine("        if (a.Length != b.Length) return false;");
-                    sb.AppendLine("        for (int i = 0; i < a.Length; i++)");
-                    sb.AppendLine($"            if (!global::System.Collections.Generic.EqualityComparer<{elementType}>.Default.Equals(a[i], b[i]))");
-                    sb.AppendLine("                return false;");
-                    sb.AppendLine("        return true;");
-                    sb.AppendLine("    }");
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Generates optimized interpolation code for a specific type.
-    /// Returns code that interpolates between 'start' and 'end' with parameter 't'.
-    /// </summary>
-    private static string GenerateInterpolationCode(ITypeSymbol type, string startExpr, string endExpr, string tExpr)
-    {
-        var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        
-        // Check for basic numeric types
-        if (type.SpecialType == SpecialType.System_Single) // float
-            return $"{startExpr} + ({endExpr} - {startExpr}) * {tExpr}";
-        
-        if (type.SpecialType == SpecialType.System_Double) // double
-            return $"{startExpr} + ({endExpr} - {startExpr}) * {tExpr}";
-        
-        if (type.SpecialType == SpecialType.System_Int32) // int
-            return $"(int)({startExpr} + ({endExpr} - {startExpr}) * {tExpr})";
-        
-        // Check for Silk.NET types (Vector, Matrix, Quaternion, etc.)
-        if (type.ContainingNamespace?.ToDisplayString() == "Silk.NET.Maths")
-        {
-            var simpleTypeName = type.Name;
-            
-            // Quaternion needs special handling - use SLERP instead of linear interpolation
-            if (simpleTypeName.StartsWith("Quaternion"))
-            {
-                return $"global::Silk.NET.Maths.Quaternion.Slerp({startExpr}, {endExpr}, {tExpr})";
-            }
-            
-            // Vector and Matrix types support operator overloads for linear interpolation
-            if (simpleTypeName.StartsWith("Vector") || simpleTypeName.StartsWith("Matrix"))
-            {
-                // Silk.NET types support operator+ and operator*
-                return $"{startExpr} + ({endExpr} - {startExpr}) * {tExpr}";
-            }
-        }
-        
-        // Check if type implements IInterpolatable<T>
-        var implementsInterpolatable = false;
-        if (type is INamedTypeSymbol namedType)
-        {
-            implementsInterpolatable = namedType.AllInterfaces
-                .Any(i => i.Name == "IInterpolatable" && i.IsGenericType);
-        }
-        
-        if (implementsInterpolatable)
-        {
-            return $"{startExpr}.Interpolate({endExpr}, {tExpr}, Interpolation)";
-        }
-        
-        // Fallback: return end value (step interpolation)
-        return endExpr;
+        // No helper methods needed anymore (ArraysEqual, etc. are handled by EqualityComparer.Default in the struct or user logic)
     }
 
     private class PropertyInfo

@@ -18,9 +18,8 @@ public partial class Component
 
     /// <summary>
     /// Parent component in the component tree.
-    /// Internal setter prevents source generation while allowing tree management.
     /// </summary>
-    public virtual IComponent? Parent { get; internal set; }
+    public virtual IComponent? Parent { get; set; }
 
     /// <summary>
     /// Child components of this component.
@@ -32,24 +31,15 @@ public partial class Component
     {
         if (!_children.Contains(child))
         {
-            if (string.IsNullOrEmpty(child.Name)) child.Name = child.GetType().Name;
-
             _children.Add(child);
 
-            // Set parent using concrete type to access internal setter
-            if (child is Component component)
-            {
-                component.Parent = this;
-            }
+            child.Parent = this;
 
             ChildCollectionChanged?.Invoke(child, new()
             {
                 Added = [child]
             });
 
-        }
-        else
-        {
         }
     }
 
@@ -85,9 +75,9 @@ public partial class Component
         {
 
             // Clear parent using concrete type to access internal setter
-            if (child is RuntimeComponent runtimeChild)
+            if (child is Component component)
             {
-                runtimeChild.Parent = null;
+                component.Parent = null;
             }
 
             ChildCollectionChanged?.Invoke(child, new()
@@ -141,7 +131,6 @@ public partial class Component
     }
 
     public virtual T? FindParent<T>(Func<T, bool>? filter = null)
-        where T : IComponent
     {
         var current = Parent;
 
