@@ -33,6 +33,21 @@ public static partial class Templates
                     new RenderableTestTemplate()
                     {
                         Name = "Renderable Test"
+                    },
+                    new ProfilingActivationTestTemplate()
+                    {
+                        Name = "Profiling Activation Test",
+                        FrameCount = 3
+                    },
+                    new SubsystemProfilingTestTemplate()
+                    {
+                        Name = "Subsystem Profiling Test",
+                        FrameCount = 10
+                    },
+                    new BottleneckIdentificationTestTemplate()
+                    {
+                        Name = "Bottleneck Identification Test",
+                        FrameCount = 15
                     }
                 ]
             },

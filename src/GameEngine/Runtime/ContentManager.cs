@@ -1,6 +1,7 @@
 using System.Reflection.Metadata.Ecma335;
 using Nexus.GameEngine;
 using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.Performance;
 using Nexus.GameEngine.Runtime;
 
 /// <summary>
@@ -10,7 +11,8 @@ using Nexus.GameEngine.Runtime;
 /// Also tracks active cameras in the content tree for automatic viewport management.
 /// </summary>
 public class ContentManager(
-    IComponentFactory componentFactory) 
+    IComponentFactory componentFactory,
+    IProfiler profiler) 
     : IContentManager
 {
     private readonly Dictionary<string, IComponent> content = [];
@@ -92,9 +94,8 @@ public class ContentManager(
                 return null;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log.Exception(ex, $"Error loading template {template.Name}");
             return null;
         }
     }
@@ -237,6 +238,8 @@ public class ContentManager(
 
     public void OnUpdate(double deltaTime)
     {
+        using var _ = new PerformanceScope("Update", profiler);
+        
         var unloadedKeys = new List<string>();
         var componentStack = new Stack<IComponent>();
         
