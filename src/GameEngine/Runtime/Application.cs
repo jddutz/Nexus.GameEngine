@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Nexus.GameEngine.GUI;
+using Nexus.GameEngine.Performance;
 
 namespace Nexus.GameEngine.Runtime;
 
@@ -38,6 +39,7 @@ public class Application(IServiceProvider services) : IApplication
         {
             var contentManager = services.GetRequiredService<IContentManager>();
             var renderer = services.GetRequiredService<IRenderer>();
+            var profiler = services.GetRequiredService<IProfiler>();
 
             if (startupTemplate == null) return;
 
@@ -61,8 +63,17 @@ public class Application(IServiceProvider services) : IApplication
                 };
             }
 
-            window.Update += contentManager.OnUpdate;
-            window.Render += renderer.OnRender;
+            window.Update += deltaTime =>
+            {
+                profiler.BeginFrame();
+                contentManager.OnUpdate(deltaTime);
+            };
+            
+            window.Render += deltaTime =>
+            {
+                renderer.OnRender(deltaTime);
+                profiler.EndFrame();
+            };
         };
 
         window.Run();

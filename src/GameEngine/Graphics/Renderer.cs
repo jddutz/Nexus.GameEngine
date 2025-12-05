@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Synchronization;
+using Nexus.GameEngine.Performance;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
 
@@ -28,7 +29,8 @@ public unsafe class Renderer(
     IContentManager contentManager,
     IWindowService windowService,
     IComponentFactory componentFactory,
-    IOptions<GraphicsSettings> graphicsOptions)
+    IOptions<GraphicsSettings> graphicsOptions,
+    IProfiler profiler)
     : IRenderer
 {
     private readonly GraphicsSettings _graphicsSettings = graphicsOptions.Value;
@@ -68,6 +70,8 @@ public unsafe class Renderer(
 
     public void OnRender(double deltaTime)
     {
+        using var _ = new PerformanceScope("Render", profiler);
+        
         try
         {
             // Skip rendering if window is minimized (swapchain extent is 0x0)

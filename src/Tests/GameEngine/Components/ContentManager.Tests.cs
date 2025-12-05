@@ -1,6 +1,7 @@
 ﻿using Moq;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics.Cameras;
+using Nexus.GameEngine.Performance;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 
@@ -60,7 +61,8 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactory();
-        var contentManager = new ContentManager(mockFactory.Object);
+        var mockProfiler = new Mock<IProfiler>();
+        var contentManager = new ContentManager(mockFactory.Object, mockProfiler.Object);
 
         // Act
         var cameras = contentManager.ActiveCameras;
@@ -75,7 +77,8 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactory();
-        var contentManager = new ContentManager(mockFactory.Object);
+        var mockProfiler = new Mock<IProfiler>();
+        var contentManager = new ContentManager(mockFactory.Object, mockProfiler.Object);
         
         // Create three mock cameras with different priorities (added in non-sorted order)
         var mockCamera1 = CreateMockCamera("Camera1", 10);
@@ -110,7 +113,8 @@ public class ContentManagerCameraTests
     {
         // Arrange
         var mockFactory = CreateMockFactoryForInitialize();
-        var contentManager = new ContentManager(mockFactory.Object);
+        var mockProfiler = new Mock<IProfiler>();
+        var contentManager = new ContentManager(mockFactory.Object, mockProfiler.Object);
 
         // Load a camera component
         var cameraTemplate = new StaticCameraTemplate

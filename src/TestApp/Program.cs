@@ -11,6 +11,7 @@ using Nexus.GameEngine.Graphics.Commands;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Synchronization;
+using Nexus.GameEngine.Performance;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources.Geometry;
@@ -86,6 +87,7 @@ class Program
                 .AddSingleton<IComponentFactory, ComponentFactory>()
                 .AddSingleton<IContentManager, ContentManager>()
                 .AddSingleton<IActionFactory, ActionFactory>()
+                .AddSingleton<IProfiler, Profiler>()
                 .AddPixelSampling()
                 .AddDiscoveredServices<IComponent>()
                 .AddDiscoveredServices<IAction>()

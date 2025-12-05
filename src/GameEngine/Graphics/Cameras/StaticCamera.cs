@@ -148,7 +148,6 @@ public partial class StaticCamera : RuntimeComponent, ICamera
             // so that shaders can do: viewProjection * model * vec4(pos, 1.0)
             _viewProjectionMatrix = ProjectionMatrix * ViewMatrix;
             _viewProjectionDirty = false;
-            Log.Debug($"ViewProjection Matrix: {_viewProjectionMatrix}");
         }
 
         return _viewProjectionMatrix;
