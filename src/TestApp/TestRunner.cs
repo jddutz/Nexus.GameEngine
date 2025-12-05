@@ -17,42 +17,50 @@ namespace TestApp;
 /// TestRunner is a RuntimeComponent that discovers and executes integration tests.
 /// It manages test lifecycle, result output, and application exit based on test outcomes.
 /// </summary>
-public partial class TestRunner(IWindowService windowService, IRenderer renderer) : RuntimeComponent
+public partial class TestRunner : RuntimeComponent
 {
-    private readonly IWindow window = windowService.GetWindow();
+    public TestRunner(IWindowService windowService, IRenderer renderer) : base()
+    {
+        this.window = windowService.GetWindow();
+        this.renderer = renderer;
+    }
 
-    private readonly List<ComponentTest> tests = [];
+    private readonly IWindow window;
+    private readonly IRenderer renderer;
+
     private readonly Stopwatch stopwatch = new();
     private int frameCount = 0;
     private int framesRendered = 0;
-    private int currentTestIndex = 0;
-
-    /// <summary>
-    /// Optional filter pattern for test names. If provided, only tests with names containing this string (case-insensitive) will be executed.
-    /// </summary>
-    [ComponentProperty]
-    [TemplateProperty]
-    private string? _testFilter;
+    private ITestComponent? currentTest = null;
+    private readonly Queue<ITestComponent> tests = new();
 
     protected override void OnActivate()
     {
-        base.OnActivate();
-
         renderer.AfterRendering += OnRenderComplete;
-
-        // Discover tests after template configuration is applied
-        tests.AddRange(DiscoverTests());
-        
-        if (!string.IsNullOrEmpty(_testFilter))
-        {
-            Log.Info($"Test filter applied: '{_testFilter}' - {tests.Count} tests discovered");
-        }
-        else
-        {
-            Log.Info($"No test filter - {tests.Count} tests discovered");
-        }
-        
         stopwatch.Start();
+    }
+
+    /// <summary>
+    /// Override default activation behavior to register test children instead of activating them.
+    /// Tests will be activated one at a time in OnUpdate().
+    /// </summary>
+    public override void ActivateChildren()
+    {
+        // Register test components instead of activating them
+        // Enqueue so we process them in order
+        tests.Clear();
+
+        // Only get immediate children (recursive=false is default, but being explicit)
+        foreach(var child in GetChildren<ITestComponent>(recursive: false))
+        {
+            tests.Enqueue(child);
+            Log.Debug($"Test component registered: {child.GetType().Name}");
+        }
+
+        if (tests.Count == 0)
+        {
+            Log.Debug($"No test components were registered");
+        }
     }
 
     private void OnRenderComplete(object? sender, RenderEventArgs e)
@@ -60,48 +68,8 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
         framesRendered++;
     }
 
-    private IEnumerable<ComponentTest> DiscoverTests()
-    {
-        // Find all public static fields of type Template with a [Test] attribute
-        var fields = typeof(TestComponent)
-            .Assembly
-            .GetTypes()
-            .SelectMany(t => t.GetFields(BindingFlags.Public | BindingFlags.Static))
-            .ToList();
-
-        foreach (var field in fields)
-        {
-            if (!typeof(Template).IsAssignableFrom(field.FieldType))
-                continue;
-
-            var testAttr = field.GetCustomAttribute<TestAttribute>();
-            if (testAttr == null)
-                continue;
-
-            var template = field.GetValue(null) as Template;
-            if (template == null)
-                continue;
-
-            var name = !string.IsNullOrEmpty(template.Name) ? template.Name : field.DeclaringType?.Name ?? field.Name;
-            var desc = testAttr.Description;
-
-            // Apply filter if specified
-            if (!string.IsNullOrEmpty(_testFilter) && 
-                !name.Contains(_testFilter, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            yield return new ComponentTest(template)
-            {
-                TestName = name,
-                Description = desc
-            };
-        }
-    }
-
     /// <summary>
-    /// Updates the TestRunner each frame. Instantiates test components and manages test execution flow.
+    /// Updates the TestRunner each frame. Activates test components one at a time.
     /// Closes the window and outputs results when all tests are complete.
     /// </summary>
     /// <param name="deltaTime">Elapsed time since last update.</param>
@@ -109,28 +77,24 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
     {
         frameCount++;
 
-        if (Children.OfType<ITestComponent>().Where(c => c.IsActive()).Any()) return;
-
-        if (currentTestIndex < tests.Count)
+        if (currentTest != null && currentTest.IsActive()) 
         {
-            var test = tests[currentTestIndex++];
-
-            if (test != null && test.Template != null)
-            {
-                var child = CreateChild(test.Template);
-                if (child is ITestComponent testComponent)
-                {
-                    // Explicitly activate the test component
-                    Log.Debug($"Activating test component {testComponent.GetType().Name}");
-                    testComponent.Activate();
-                    test.TestComponent = testComponent;
-                }
-            }
-
+            Log.Debug($"Update {frameCount}, current test: {currentTest.Name ?? "null"}");
             return;
         }
+        
+        // If we're done, deactivate and exit
+        if (tests.Count == 0)
+        {
+            Log.Info($"Update {frameCount}, all tests complete - deactivating");
+            Deactivate();
+            return; 
+        }
 
-        Deactivate();
+        // Dequeue next test if current test is complete or we don't have one
+        currentTest = tests.Dequeue();
+        Log.Debug($"Update {frameCount}, starting test: {currentTest.Name ?? "null"}");
+        currentTest.Activate();
     }
 
     protected override void OnDeactivate()
@@ -159,11 +123,13 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
 
         var failedTestsSummary = "\n==== Failed Tests ====";
 
-        foreach (var test in tests)
-        {
-            if (test.TestComponent is null) continue;
+        var testComponents = GetChildren<ITestComponent>().ToList();
 
-            var results = test.TestComponent.GetTestResults();
+        foreach (var test in testComponents)
+        {
+            if (test is null) continue;
+
+            var results = test.GetTestResults();
 
             foreach (var result in results)
             {
@@ -176,18 +142,19 @@ public partial class TestRunner(IWindowService windowService, IRenderer renderer
                 else
                 {
                     failed.Add(result);
-                    failedTestsSummary += $"\n{test.TestName} {test.Description}: Expected {result.ExpectedResult}, Actual {result.ActualResult}";
+                    var testName = test.Name ?? test.GetType().Name;
+                    failedTestsSummary += $"\n{testName}: Expected {result.ExpectedResult}, Actual {result.ActualResult}";
                 }
             }
         }
 
         var resultsSummary = $"Test run complete!\n"
             + $"\n====== SUMMARY ======\n"
-            + $"Test Components Discovered: {tests.Count}\n"
+            + $"Test Components Discovered: {testComponents.Count}\n"
             + $"Number of Test Results: {passed.Count + failed.Count}\n"
             + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
             + $"Updates: {frameCount}\n"            
-            + $"Frames Rendered: {framesRendered}\n"
+            + $"Rendered: {framesRendered}\n"
             + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds:F0}\n"
             + $"Passed: {passed.Count}\n"
             + $"Failed: {failed.Count}\n"

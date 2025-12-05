@@ -10,7 +10,7 @@ public interface IValidatable
     /// Gets whether the component is valid (no validation errors).
     /// Triggers validation if not already cached.
     /// </summary>
-    bool IsValid { get; }
+    bool IsValid();
 
     /// <summary>
     /// Gets the current validation errors for this component.
@@ -25,9 +25,9 @@ public interface IValidatable
 
     /// <summary>
     /// Validate this component and all its subcomponents.
-    /// Stores validation errors internally and returns them.
-    /// Subsequent calls return cached results until configuration changes.
+    /// Always performs validation and updates the cache.
+    /// Use IsValid() to check cached validation state without re-validating.
     /// </summary>
-    /// <returns>Collection of validation errors</returns>
-    bool Validate(bool ignoreCached = false);
+    /// <returns>True if valid, false if validation errors exist</returns>
+    bool Validate();
 }

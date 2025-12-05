@@ -1,3 +1,4 @@
+using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
@@ -15,13 +16,9 @@ public partial class RenderableTest(
     IPixelSampler pixelSampler,
     IRenderer renderer,
     IWindowService windowService)
-    : TestComponent
+    : TestComponent(windowService)
 {
     protected IRenderer Renderer => renderer;
-    protected IWindow Window => windowService.GetWindow();
-
-    [Test("GetDrawCommands() should be called at least once")]
-    public readonly static RenderableTestTemplate RenderableBaseTest = new();
 
     [ComponentProperty]
     [TemplateProperty]
@@ -30,7 +27,12 @@ public partial class RenderableTest(
     public uint FramesRendered { get; private set; }
 
     // Only visible while test is active
-    public bool IsVisible() => IsActive();
+    public bool IsVisible()
+    {
+        var visible = IsActive();
+        Log.Debug($"[{GetType().Name}] IsVisible() => {visible} (IsActive={IsActive()})");
+        return visible;
+    }
 
     /// <summary>
     /// Virtual method to allow derived tests to calculate sample coordinates dynamically.
@@ -73,6 +75,15 @@ public partial class RenderableTest(
     }
     private Dictionary<int, Vector4D<float>[]> _expectedResults = new Dictionary<int, Vector4D<float>[]>();
 
+    public virtual IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    {
+        Log.Debug($"[{GetType().Name}] GetDrawCommands called (IsActive={IsActive()})");
+        
+        // Base RenderableTest doesn't render anything - it's just a container for child elements
+        // Derived tests should override this if they need to render directly
+        return [];
+    }
+
     protected override void OnActivate()
     {
         base.OnActivate();
@@ -99,19 +110,30 @@ public partial class RenderableTest(
     }
 
     protected override void OnUpdate(double deltaTime)
-    {
-        // Deactivate one frame after FrameCount, 
-        // to allow the last frame to be fully executed
-        if (FramesRendered > FrameCount) Deactivate();
+    {        
+        Log.Info($"[{GetType().Name}] OnUpdate called (FramesRendered={FramesRendered}/{FrameCount})");
+        
+        // Deactivate when we've reached the target frame count
+        // Note: Visibility is checked at START of Update (before this runs), so the current frame
+        // will still render even after we deactivate here. This is expected behavior.
+        if (FramesRendered >= FrameCount)
+        {
+            Log.Info($"[{GetType().Name}] Test complete after {FramesRendered} frames, deactivating");
+            Deactivate();
+        }
     }
 
     private void OnRenderComplete(object? sender, RenderEventArgs e)
     {
         FramesRendered++;
+        Log.Debug($"[{GetType().Name}] Frame {FramesRendered} rendered");
     }
 
     protected override void OnDeactivate()
     {
+        Log.Info($"[{GetType().Name}] OnDeactivate called");
+        
+        renderer.AfterRendering -= OnRenderComplete;
         pixelSampler.Deactivate();
         
         base.OnDeactivate();

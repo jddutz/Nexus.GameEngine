@@ -50,9 +50,17 @@ public abstract partial class Configurable : Entity, IConfigurable
     private bool? _validationState;
 
     /// <summary>
-    /// Indicates whether the component is in a valid state
+    /// Indicates whether the component is in a valid state.
+    /// Uses cached validation results if available, otherwise validates and caches the result.
     /// </summary>
-    public bool IsValid => _validationState == true;
+    public bool IsValid()
+    {
+        if (_validationState == null)
+        {
+            Validate();
+        }
+        return _validationState == true;
+    }
 
     /// <summary>
     /// Backing list for current validation errors
@@ -77,11 +85,12 @@ public abstract partial class Configurable : Entity, IConfigurable
 
     protected virtual IEnumerable<ValidationError> OnValidate() => [];
 
-    public bool Validate(bool ignoreCached = false)
+    /// <summary>
+    /// Validates the component, always performing validation and updating the cache.
+    /// Use IsValid() to check cached validation state without re-validating.
+    /// </summary>
+    public bool Validate()
     {
-        // Return cached results if available
-        if (!ignoreCached && _validationState != null) return IsValid;
-
         Validating?.Invoke(this, EventArgs.Empty);
 
         // Ignore child validation

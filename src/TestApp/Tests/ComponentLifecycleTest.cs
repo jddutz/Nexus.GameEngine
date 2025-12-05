@@ -1,13 +1,14 @@
+using Nexus.GameEngine;
+using Nexus.GameEngine.Runtime;
+
 namespace TestApp.Tests;
 
 /// <summary>
 /// Tests that all RuntimeComponent lifecycle methods are called in the correct order.
 /// </summary>
-public partial class ComponentLifecycleTest : TestComponent, ITestComponent
-{
-    [Test("Lifecycle methods should be called in correct order")]
-    public static readonly ComponentLifecycleTestTemplate test = new();
-    
+public partial class ComponentLifecycleTest(IWindowService windowService) 
+    : TestComponent(windowService), ITestComponent
+{    
     // Track the order of calls
     private readonly List<string> callOrder = [];
 
@@ -15,15 +16,18 @@ public partial class ComponentLifecycleTest : TestComponent, ITestComponent
     {
         base.OnActivate();
         callOrder.Add("OnActivate");
+        Log.Info($"OnActivate called");
     }
 
     protected override void OnUpdate(double deltaTime)
     {
         base.OnUpdate(deltaTime);
         callOrder.Add("OnUpdate");
+        Log.Info($"OnUpdate called (Frame {Updates}/{FrameCount})");
         
         if (Updates >= FrameCount)
         {
+            Log.Info($"Test complete, deactivating");
             Deactivate();
         }
     }
@@ -31,6 +35,7 @@ public partial class ComponentLifecycleTest : TestComponent, ITestComponent
     protected override void OnDeactivate()
     {
         callOrder.Add("OnDeactivate");
+        Log.Info($"OnDeactivate called");
         base.OnDeactivate();
     }
 

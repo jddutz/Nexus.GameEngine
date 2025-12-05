@@ -9,9 +9,10 @@ public partial class RuntimeComponent
     : Component, IRuntimeComponent
 {
     /// <summary>
-    /// Internal constructor to restrict inheritance to the engine assembly.
+    /// Parameterless constructor for dependency injection.
+    /// Components are instantiated via DI and configured through templates.
     /// </summary>
-    internal RuntimeComponent() { }
+    public RuntimeComponent() { }
 
     /// <summary>
     /// Whether this component is currently active and should participate in updates.
@@ -26,51 +27,51 @@ public partial class RuntimeComponent
     /// Returns whether this component is currently active and enabled.
     /// This is the combined state that determines if the component participates in updates.
     /// </summary>
-    public bool IsActive() => IsValid && IsLoaded && Active;
+    public bool IsActive() => IsValid() && IsLoaded && Active;
 
     public event EventHandler<EventArgs>? Activating;
     public event EventHandler<EventArgs>? Activated;
 
-    protected virtual void OnActivate() { }
+    protected virtual void OnActivate() 
+    {
+
+    }
 
     public void Activate()
     {
-        // Enforce constraint: A component can only be activated if its parent is active (or it has no parent)
-        if (Parent is IRuntimeComponent runtimeParent && !runtimeParent.IsActive()) return;
+        if (Parent is IRuntimeComponent parent && !parent.IsActive()) return;
 
-        // Validate before activation (uses cached results if available)
-        if (!Validate()) return;
+        // Validate before activation (uses cached results if available, validates if cache is null)
+        if (!IsValid()) return;
 
         Activating?.Invoke(this, EventArgs.Empty);
 
-        // Activate root to leaf
+        OnActivate();
 
         // Set active state immediately (not deferred) BEFORE activating children
         // so that child validation can check parent.IsActive() correctly
         _active = true;
 
-        OnActivate();
-
-        foreach (var child in Children.OfType<IRuntimeComponent>())
-        {
-            child.Activate();
-        }
+        ActivateChildren();
 
         Activated?.Invoke(this, EventArgs.Empty);
     }
 
-    public void ActivateChildren()
+    public virtual void ActivateChildren()
     {
-        foreach(var child in GetChildren<IRuntimeComponent>())
+        // Only activate immediate children, not grandchildren
+        // Each child's Activate() will handle its own children
+        foreach(var child in Children.OfType<IRuntimeComponent>())
         {
             child.Activate();
         }
     }
-    
-    public void ActivateChildren<TChild>()
+
+    public virtual void ActivateChildren<TChild>()
         where TChild : IRuntimeComponent
     {
-        foreach(var child in GetChildren<TChild>())
+        // Only activate immediate children, not grandchildren
+        foreach(var child in Children.OfType<TChild>())
         {
             child.Activate();
         }

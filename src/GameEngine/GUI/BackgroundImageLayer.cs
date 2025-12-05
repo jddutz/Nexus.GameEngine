@@ -37,7 +37,7 @@ public partial class BackgroundImageLayer(
     [TemplateProperty]
     protected bool _visible = true;
 
-    public bool IsVisible() => IsValid && IsActive() && Visible;
+    public bool IsVisible() => IsValid() && IsActive() && Visible;
 
     public PipelineHandle Pipeline =>
         pipelineManager.GetOrCreate(PipelineDefinitions.ImageTexture);

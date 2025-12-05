@@ -11,6 +11,17 @@
             "cwd": "${workspaceFolder}/src/IDE",
             "console": "internalConsole",
             "stopAtEntry": false
+        },
+        {
+            "name": "Launch TestApp",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-solution",
+            "program": "${workspaceFolder}/src/TestApp/bin/Debug/net9.0/TestApp.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/TestApp",
+            "console": "internalConsole",
+            "stopAtEntry": false
         }
     ]
 }

@@ -30,14 +30,14 @@ namespace Nexus.GameEngine.Graphics;
 /// </remarks>
 public unsafe class Context : IGraphicsContext
 {
-    private readonly IValidation? _validationLayers;
+    private readonly IVkValidation? _validationLayers;
     private readonly VulkanSettings _vkSettings;
 
     public Context(
         IWindowService windowService,
         IOptions<ApplicationSettings> options,
         IOptions<VulkanSettings> vkSettings,
-        IValidation? validationLayers = null)
+        IVkValidation? validationLayers = null)
     {
         _validationLayers = validationLayers;
         _vkSettings = vkSettings.Value;

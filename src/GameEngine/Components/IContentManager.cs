@@ -9,7 +9,7 @@ namespace Nexus.GameEngine.Components;
 public interface IContentManager : IDisposable
 {
     /// <summary>
-    /// Loads and creates content from a template. This is the primary method for creating
+    /// Creates and activates components from a template. This is the primary method for creating
     /// main content that will be rendered immediately.
     /// 
     /// Process: Creates → Configures (IsLoaded=true) → Activates all IRuntimeComponents → Caches
@@ -20,7 +20,7 @@ public interface IContentManager : IDisposable
     /// <param name="template">The template describing the content to load.</param>
     /// <param name="activate">If true (default), activates all IRuntimeComponents in the tree.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? Load(Template template, bool activate = true);
+    IComponent? Load(Template template);
 
     /// <summary>
     /// Creates a component instance via dependency injection without configuration or activation.

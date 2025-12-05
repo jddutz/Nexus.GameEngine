@@ -18,9 +18,9 @@ public static class Log
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG
+
         WriteLog("DBG", message, memberName, filePath, lineNumber);
-#endif
+
     }
 
     /// <summary>
@@ -32,9 +32,9 @@ public static class Log
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG
+
         WriteLog("INF", message, memberName, filePath, lineNumber);
-#endif
+
     }
 
     /// <summary>
@@ -46,9 +46,9 @@ public static class Log
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG
+
         WriteLog("WRN", message, memberName, filePath, lineNumber);
-#endif
+
     }
 
     /// <summary>
@@ -60,9 +60,9 @@ public static class Log
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG
+
         WriteLog("ERR", message, memberName, filePath, lineNumber);
-#endif
+
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public static class Log
         [CallerFilePath] string filePath = "",
         [CallerLineNumber] int lineNumber = 0)
     {
-#if DEBUG
+
         if (message != null)
         {
             WriteLog("ERR", message, memberName, filePath, lineNumber);
@@ -91,7 +91,7 @@ public static class Log
         {
             WriteLog("ERR", $"Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}", memberName, filePath, lineNumber);
         }
-#endif
+
     }
 
     private static void WriteLog(
@@ -105,9 +105,9 @@ public static class Log
         var className = GetClassNameFromFilePath(filePath);
         var output = $"{timestamp}|{level}|{lineNumber:D4}|{className}: {message}";
 
-        // Write to debug channel only (visible in debugger output and console when attached)
+        // Write to both console and debug channel
         Console.WriteLine(output);
-        //DebugConsole.WriteLine(output);
+        System.Diagnostics.Debug.WriteLine(output);
     }
 
     /// <summary>

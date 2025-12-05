@@ -38,18 +38,11 @@ class Program
     /// <param name="args">Command-line arguments. Supports --filter=<pattern> to filter tests by name.</param>
     private static void Main(string[] args)
     {
+        // Default to -1 (premature exit) until TestRunner completes successfully
+        Environment.ExitCode = -1;
+        
         try
         {
-            // Parse command-line arguments
-            string? testFilter = null;
-            foreach (var arg in args)
-            {
-                if (arg.StartsWith("--filter=", StringComparison.OrdinalIgnoreCase))
-                {
-                    testFilter = arg.Substring("--filter=".Length);
-                }
-            }
-
             // Create configuration with application settings
             var configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
@@ -73,7 +66,7 @@ class Program
                 .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
                 .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))
                 .AddSingleton<IWindowService, WindowService>()
-                .AddSingleton<IValidation, Validation>()
+                .AddSingleton<IVkValidation, VkValidation>()
                 .AddSingleton<IGraphicsContext, Context>()
                 .AddSingleton<ISwapChain, SwapChain>()
                 .AddSingleton<ISyncManager, SyncManager>()
@@ -110,13 +103,8 @@ class Program
                 WindowState = WindowState.Normal,
                 VSync = true
             };
-
-            // Run with test filter if provided
-            var mainMenuTemplate = testFilter != null 
-                ? Templates.CreateMainMenuWithFilter(testFilter)
-                : Templates.MainMenu;
             
-            application.Run(windowOptions, mainMenuTemplate);
+            application.Run(windowOptions, Templates.Tests);
         }
         catch (Exception ex)
         {
