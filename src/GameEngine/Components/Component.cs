@@ -92,14 +92,24 @@ public partial class Component
     }
 
     // Tree navigation methods (basic implementations)
-    public virtual IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool depthFirst = false)
+    public virtual IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool recursive = false, bool depthFirst = false)
         where T : IComponent
     {
-        if (depthFirst)
+        if (!recursive)
         {
+            // Non-recursive: only immediate children
             foreach (var child in Children)
             {
-                foreach (var grandchild in child.GetChildren(filter, depthFirst))
+                if (child is T result && (filter == null || filter(result)))
+                    yield return result;
+            }
+        }
+        else if (depthFirst)
+        {
+            // Recursive depth-first
+            foreach (var child in Children)
+            {
+                foreach (var grandchild in child.GetChildren(filter, recursive: true, depthFirst))
                 {
                     yield return grandchild;
                 }
@@ -110,12 +120,13 @@ public partial class Component
         }
         else
         {
+            // Recursive breadth-first
             foreach (var child in Children)
             {
                 if (child is T result && (filter == null || filter(result)))
                     yield return result;
 
-                foreach (var grandchild in child.GetChildren(filter, depthFirst))
+                foreach (var grandchild in child.GetChildren(filter, recursive: true, depthFirst))
                 {
                     yield return grandchild;
                 }
@@ -127,7 +138,7 @@ public partial class Component
         where T : IComponent
     {
         if (Parent == null) return [];
-        return Parent.GetChildren(filter);
+        return Parent.GetChildren(filter, recursive: false);
     }
 
     public virtual T? FindParent<T>(Func<T, bool>? filter = null)

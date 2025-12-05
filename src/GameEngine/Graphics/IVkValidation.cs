@@ -16,7 +16,7 @@ namespace Nexus.GameEngine.Graphics;
 /// - Performance profiling with validation overhead measurement
 /// - Optional validation in shipped applications
 /// </remarks>
-public interface IValidation : IDisposable
+public interface IVkValidation : IDisposable
 {
     /// <summary>
     /// Gets whether validation layers are enabled based on configuration.

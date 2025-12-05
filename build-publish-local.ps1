@@ -14,7 +14,7 @@ param(
 
 
 # Extract base version from csproj
-$csprojPath = "GameEngine\GameEngine.csproj"
+$csprojPath = "src\GameEngine\GameEngine.csproj"
 $baseVersion = Select-String -Path $csprojPath -Pattern "<Version>(.*?)</Version>" | ForEach-Object { $_.Matches[0].Groups[1].Value }
 if (-not $baseVersion) { $baseVersion = "1.0.0" }
 # Generate build number (date-based)
@@ -90,7 +90,7 @@ try {
     }
     
     New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-    dotnet pack "GameEngine\GameEngine.csproj" --configuration $Configuration --no-build --output $OutputPath /p:Version=$semverVersion
+    dotnet pack $csprojPath --configuration $Configuration --no-build --output $OutputPath /p:Version=$semverVersion
     if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
     
     Write-Host "Packages created:" -ForegroundColor Cyan

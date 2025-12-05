@@ -46,15 +46,15 @@ public interface IComponent : IConfigurable, IDisposable
     IEnumerable<IComponent> Children { get; }
 
     /// <summary>
-    /// Searches the component children recursively, returning all child components
-    /// of the specified type <typeparamref name="T"/>.
-    /// Optionally filters the children using the provided predicate.
+    /// Returns child components of the specified type <typeparamref name="T"/>.
+    /// By default returns only immediate children. Set recursive=true to search the entire subtree.
     /// </summary>
     /// <typeparam name="T">The type of child components to return.</typeparam>
     /// <param name="filter">Optional predicate to filter child components.</param>
-    /// <param name="depthFirst">If true, performs a depth-first search; otherwise, breadth-first.</param>
+    /// <param name="recursive">If true, searches all descendants; if false (default), only immediate children.</param>
+    /// <param name="depthFirst">If true and recursive, performs depth-first search; otherwise breadth-first.</param>
     /// <returns>Enumerable of child components of type <typeparamref name="T"/>.</returns>
-    IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool depthFirst = false)
+    IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool recursive = false, bool depthFirst = false)
         where T : IComponent;
 
     /// <summary>

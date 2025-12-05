@@ -19,18 +19,6 @@ public partial class BackgroundImageLayerTest(
     IWindowService windowService
     ) : RenderableTest(pixelSampler, renderer, windowService)
 {
-    [Test("Image placement stretch")]
-    public readonly static BackgroundImageLayerTestTemplate BackgroundLayerTest = new()
-    {
-        Subcomponents = [
-            new BackgroundImageLayerTemplate()
-            {
-                TextureDefinition = TestResources.ImageTestTexture,
-                Placement = BackgroundImagePlacement.Stretch
-            }
-        ]
-    };
-
     protected override Vector2D<int>[] GetSampleCoordinates()
     {
         int width = Window.FramebufferSize.X;

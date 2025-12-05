@@ -49,7 +49,7 @@ class Program
                 .Configure<GraphicsSettings>(configuration.GetSection("Graphics"))
                 .Configure<VulkanSettings>(configuration.GetSection("Graphics:Vulkan"))
                 .AddSingleton<IWindowService, WindowService>()
-                .AddSingleton<IValidation, Validation>()
+                .AddSingleton<IVkValidation, VkValidation>()
                 .AddSingleton<IGraphicsContext, Context>()
                 .AddSingleton<ISwapChain, SwapChain>()
                 .AddSingleton<ISyncManager, SyncManager>()

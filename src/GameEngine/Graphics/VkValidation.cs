@@ -10,7 +10,7 @@ namespace Nexus.GameEngine.Graphics;
 /// <summary>
 /// Manages Vulkan validation layers and debug messenger for runtime error detection and diagnostics.
 /// </summary>
-public unsafe class Validation : IValidation
+public unsafe class VkValidation : IVkValidation
 {
     private readonly VulkanSettings _vkSettings;
     private readonly string[] _layerNames;
@@ -21,7 +21,7 @@ public unsafe class Validation : IValidation
     private DebugUtilsMessengerEXT _debugMessenger;
     private bool _isInitialized;
 
-    public Validation(IOptions<VulkanSettings> options)
+    public VkValidation(IOptions<VulkanSettings> options)
     {
         _vkSettings = options.Value;
         _layerNames = DetectValidationLayers();

@@ -1,3 +1,5 @@
+using System.Reflection.Metadata.Ecma335;
+using Nexus.GameEngine;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime;
 
@@ -48,7 +50,7 @@ public class ContentManager(
     /// Use Create() when you need more control over the activation lifecycle.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? Load(Template template, bool activate = true)
+    public IComponent? Load(Template template)
     {
         if (string.IsNullOrEmpty(template.Name)) return null;
 
@@ -66,19 +68,20 @@ public class ContentManager(
             {
                 content[template.Name] = created;
 
+                // Validate the component tree
+                created.Validate();
+
                 // Update layout for UI elements
-                if (created is IUserInterfaceElement uiElement)
+                if (!created.IsValid()) return created;
+                
+                if(created is IUserInterfaceElement uiElement)
                 {
                     uiElement.UpdateLayout();
                 }
 
-                // Validate the component tree
-                ValidateComponentTree(created);
-
-                // Activate all IRuntimeComponents in the tree so content is ready to render
-                if (activate)
+                if(created is IRuntimeComponent rc)
                 {
-                    ActivateComponentTree(created);
+                    rc.Activate();
                 }
 
                 // Note: Camera list is refreshed automatically during OnUpdate()
@@ -89,8 +92,9 @@ public class ContentManager(
                 return null;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Log.Exception(ex, $"Error loading template {template.Name}");
             return null;
         }
     }
@@ -207,40 +211,6 @@ public class ContentManager(
         return Create(componentType, template);
     }
 
-    /// <inheritdoc/>
-    /// <summary>
-    /// Activates a component tree by traversing it and activating all IRuntimeComponent instances.
-    /// Unlike OnUpdate, this does NOT skip based on IsActive() - all RuntimeComponents in the tree
-    /// must be activated. Tree pruning happens during Update, not during activation.
-    /// </summary>
-    private void ActivateComponentTree(IComponent root)
-    {
-        var componentStack = new Stack<IComponent>();
-        componentStack.Push(root);
-        
-        while (componentStack.Count > 0)
-        {
-            var component = componentStack.Pop();
-            
-            // Activate if it's a RuntimeComponent (activation handles its own children recursively)
-            if (component is IRuntimeComponent runtimeComponent)
-            {
-                runtimeComponent.Activate();
-
-                // RuntimeComponent.Activate() recursively activates IRuntimeComponent children
-                // So we don't need to traverse them manually - continue to next component
-                continue;
-            }
-            
-            // For non-RuntimeComponents (plain containers), manually traverse their children
-            // to find RuntimeComponents that need activation
-            foreach (var child in component.Children)
-            {
-                componentStack.Push(child);
-            }
-        }
-    }
-
     /// <summary>
     /// Validates the component tree by calling Validate() on all IValidatable components.
     /// </summary>
@@ -275,11 +245,11 @@ public class ContentManager(
         foreach (var kvp in content)
         {
             var component = kvp.Value;
-            
+
             // Remove unloaded components from the dictionary
             if (!component.IsLoaded)
             {
-                unloadedKeys.Add(kvp.Key);
+                content.Remove(kvp.Key);
                 continue;
             }
             
@@ -296,9 +266,9 @@ public class ContentManager(
             var component = componentStack.Pop();
             
             // Apply updates to all Entity-based components
-            if (component is Entity entity)
+            if (component is IRuntimeComponent rc && rc.IsActive())
             {
-                entity.ApplyUpdates(deltaTime);
+                rc.ApplyUpdates(deltaTime);
             }
             
             // Traverse all children
@@ -355,7 +325,11 @@ public class ContentManager(
             {
                 if (runtimeComponent.IsActive())
                 {
-                    runtimeComponent.Update(deltaTime);
+                    // Only update roots. Children are updated by their parents.
+                    if (component.Parent == null)
+                    {
+                        runtimeComponent.Update(deltaTime);
+                    }
                 }
             }
         }
