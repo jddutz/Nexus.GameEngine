@@ -1131,3 +1131,24 @@ partial class TextElement
 - [PropertyChanged Pattern](https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.inotifypropertychanged)
 - [Easing Functions](https://easings.net/)
 - [Interpolation Methods](https://en.wikipedia.org/wiki/Interpolation)
+
+## Property Binding System Integration
+
+The Deferred Property Generation System serves as the foundation for the Property Binding System. By generating `PropertyChanged` events and `SetCurrent{PropertyName}` methods, it enables:
+
+1.  **Observable Properties**: The binding system subscribes to the generated `PropertyChanged` events to detect source changes.
+2.  **Immediate Updates**: Bindings use the generated `SetCurrent{PropertyName}` methods (or equivalent direct backing field access via generated code) to update target properties immediately, bypassing interpolation when synchronizing values.
+3.  **Type Safety**: The `PropertyBindingsGenerator` reads the component's properties to generate a strongly-typed `PropertyBindings` class that exposes binding configuration methods for each property.
+
+### Interaction Flow
+
+1.  **Source Change**: A property on the source component changes (e.g., `Health`).
+2.  **Event Fired**: The generated setter calls `NotifyPropertyChanged("Health")`.
+3.  **Binding Triggered**: The `PropertyBinding` instance listening to this event receives the notification.
+4.  **Value Conversion**: If a converter is configured, the value is transformed (e.g., `float` -> `string`).
+5.  **Target Update**: The binding updates the target property.
+    *   If the target is an animated property, it sets the target value, triggering the animation system.
+    *   If the target needs immediate synchronization (e.g., initial load), it uses the direct update mechanism.
+
+This integration ensures that property bindings work seamlessly with the animation system, allowing bound values to animate smoothly when they change.
+

@@ -149,3 +149,21 @@ public virtual IComponent? CreateChild(Template template)
 ```
 
 **Why Components Use ContentManager**: Child components need lifecycle management (caching, updates, disposal), not just creation. ContentManager provides this while internally delegating creation to ComponentFactory.
+
+### Property Binding System
+
+**Declarative Bindings**: Use `PropertyBindings` in templates to link properties between components.
+- **One-Way**: `Bindings = { TargetProp = Binding.FromParent<SourceType>(s => s.SourceProp) }`
+- **Two-Way**: `Bindings = { TargetProp = Binding.TwoWay<SourceType>(s => s.SourceProp) }`
+- **Converters**: `.WithConverter(new StringFormatConverter("Health: {0:F0}"))`
+
+**Lifecycle Integration**:
+- Bindings are configured in `OnLoad` via template.
+- Bindings are **activated** in `OnActivate` (subscriptions created).
+- Bindings are **deactivated** in `OnDeactivate` (subscriptions removed).
+- **Memory Safety**: Automatic cleanup prevents leaks.
+
+**Source Generators**:
+- `PropertyBindingsGenerator`: Creates `{Component}PropertyBindings` class.
+- `ComponentPropertyGenerator`: Adds `NotifyChange` support and `PropertyChanged` events.
+

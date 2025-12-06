@@ -23,6 +23,17 @@ public partial class RuntimeComponent
     [TemplateProperty]
     protected bool _active = false;
 
+    private PropertyBindings? _bindings;
+
+    protected override void OnLoad(Template? template)
+    {
+        base.OnLoad(template);
+        if (template != null)
+        {
+            _bindings = template.Bindings;
+        }
+    }
+
     /// <summary>
     /// Returns whether this component is currently active and enabled.
     /// This is the combined state that determines if the component participates in updates.
@@ -34,7 +45,13 @@ public partial class RuntimeComponent
 
     protected virtual void OnActivate() 
     {
-
+        if (_bindings != null)
+        {
+            foreach (var (propName, binding) in _bindings)
+            {
+                binding.Activate(this, propName);
+            }
+        }
     }
 
     public void Activate()
@@ -126,7 +143,16 @@ public partial class RuntimeComponent
     public event EventHandler<EventArgs>? Deactivating;
     public event EventHandler<EventArgs>? Deactivated;
 
-    protected virtual void OnDeactivate() { }
+    protected virtual void OnDeactivate() 
+    {
+        if (_bindings != null)
+        {
+            foreach (var (_, binding) in _bindings)
+            {
+                binding.Deactivate();
+            }
+        }
+    }
 
     public void Deactivate()
     {

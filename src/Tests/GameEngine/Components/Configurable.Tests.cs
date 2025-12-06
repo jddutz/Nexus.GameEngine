@@ -6,35 +6,35 @@ using System;
 
 namespace Tests.GameEngine.Components;
 
+public partial record TestConfigurableTemplate : Template
+{
+    public int TestProperty { get; set; }
+}
+
+public partial class TestConfigurable : Configurable
+{
+    public List<string> LifecycleLog { get; } = new();
+    public int TestProperty { get; set; }
+
+    protected override void Configure(Template template)
+    {
+        LifecycleLog.Add("Configure");
+        base.Configure(template);
+        if (template is TestConfigurableTemplate t)
+        {
+            TestProperty = t.TestProperty;
+        }
+    }
+
+    protected override void OnLoad(Template? template)
+    {
+        LifecycleLog.Add("OnLoad");
+        base.OnLoad(template);
+    }
+}
+
 public class ConfigurableTests
 {
-    public record TestConfigurableTemplate : Template
-    {
-        public int TestProperty { get; set; }
-    }
-
-    public class TestConfigurable : Configurable
-    {
-        public List<string> LifecycleLog { get; } = new();
-        public int TestProperty { get; set; }
-
-        protected override void Configure(Template template)
-        {
-            LifecycleLog.Add("Configure");
-            base.Configure(template);
-            if (template is TestConfigurableTemplate t)
-            {
-                TestProperty = t.TestProperty;
-            }
-        }
-
-        protected override void OnLoad(Template? template)
-        {
-            LifecycleLog.Add("OnLoad");
-            base.OnLoad(template);
-        }
-    }
-
     [Fact]
     public void Load_OrchestratesLifecycleCorrectly()
     {
