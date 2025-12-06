@@ -6,7 +6,7 @@
 /// Runtime border component that implements event-driven rendering behavior.
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
-public partial class Border(IDescriptorManager descriptorManager, IResourceManager resourceManager, IPipelineManager pipelineManager)
+public partial class Border()
     : RuntimeComponent, IDrawable
 {
     // ComponentProperty fields - generator creates public properties with deferred updates

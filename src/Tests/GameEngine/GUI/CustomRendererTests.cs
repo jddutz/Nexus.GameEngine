@@ -9,25 +9,25 @@ using Silk.NET.Vulkan;
 
 namespace Tests.GameEngine.GUI;
 
+// Custom renderer implementation for testing
+public partial class MyCustomRenderer : RuntimeComponent, IDrawable
+{
+    public bool IsVisible() => true;
+
+    public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
+    {
+        yield return new DrawCommand
+        {
+            RenderMask = 1,
+            Pipeline = PipelineHandle.Invalid,
+            VertexBuffer = default,
+            VertexCount = 3
+        };
+    }
+}
+
 public class CustomRendererTests
 {
-    // Custom renderer implementation for testing
-    public class MyCustomRenderer : RuntimeComponent, IDrawable
-    {
-        public bool IsVisible() => true;
-
-        public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
-        {
-            yield return new DrawCommand
-            {
-                RenderMask = 1,
-                Pipeline = PipelineHandle.Invalid,
-                VertexBuffer = default,
-                VertexCount = 3
-            };
-        }
-    }
-
     [Fact]
     public void CustomRenderer_CanBeCreated_AndImplementsIDrawable()
     {

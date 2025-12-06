@@ -26,4 +26,9 @@ public record Template
     /// Gets the subcomponents to be created as children of this component.
     /// </summary>
     public Template[] Subcomponents { get; init; } = Array.Empty<Template>();
+
+    /// <summary>
+    /// Gets the property bindings configuration for this component.
+    /// </summary>
+    public virtual PropertyBindings? Bindings { get; init; }
 }

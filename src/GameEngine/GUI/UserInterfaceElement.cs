@@ -42,7 +42,9 @@ public partial class UserInterfaceElement : RectTransform
     [TemplateProperty]
     protected SafeArea _safeArea = SafeArea.Zero;
 
+#pragma warning disable CS0414 // Field is assigned but its value is never used
     private bool _isLayoutInvalid = true;
+#pragma warning restore CS0414
 
     public void InvalidateLayout()
     {

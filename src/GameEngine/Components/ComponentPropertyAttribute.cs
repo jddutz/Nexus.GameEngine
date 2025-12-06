@@ -30,5 +30,11 @@ public sealed class ComponentPropertyAttribute : Attribute
     /// Use this to modify the value before it is set.
     /// </summary>
     public string? BeforeChange { get; set; }
+
+    /// <summary>
+    /// Whether to generate PropertyChanged notification for this property.
+    /// Default: false (no notification overhead unless needed)
+    /// </summary>
+    public bool NotifyChange { get; set; } = false;
 }
 
