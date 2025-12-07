@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Nexus.GameEngine.Runtime.Systems;
 
 namespace Nexus.GameEngine.Components;
 
@@ -33,6 +34,16 @@ public class ComponentFactory(
         var obj = ActivatorUtilities.CreateInstance(serviceProvider, componentType);
         if (obj is not IComponent component)
             throw new InvalidOperationException($"Type '{componentType.FullName}' created by DI does not implement IComponent.");
+
+        // Inject systems
+        if (component is Component baseComponent)
+        {
+            baseComponent.Graphics = serviceProvider.GetRequiredService<IGraphicsSystem>();
+            baseComponent.Resources = serviceProvider.GetRequiredService<IResourceSystem>();
+            baseComponent.Content = serviceProvider.GetRequiredService<IContentSystem>();
+            baseComponent.Window = serviceProvider.GetRequiredService<IWindowSystem>();
+            baseComponent.Input = serviceProvider.GetRequiredService<IInputSystem>();
+        }
 
         return component;
     }

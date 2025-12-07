@@ -2,147 +2,289 @@
 
 **Feature Branch**: `011-systems-architecture`  
 **Created**: November 30, 2025  
+**Updated**: December 6, 2025 (revised after component consolidation and property binding implementation)
 **Status**: Draft  
-**Input**: User description: "Refactor component architecture to introduce Systems pattern for framework service access"
+**Input**: User description: "Introduce Systems pattern to eliminate dependency injection throughout the framework, reducing constructor bloat and tight coupling between framework classes"
+
+## Context
+
+The codebase has undergone significant architectural improvements:
+- **Component Consolidation (Spec 014)**: Unified component hierarchy into single `Component` class with partial files
+- **Property Bindings (Spec 013)**: Implemented robust declarative property binding system
+- **Component Creation**: Components already use parameterless constructors - they don't inject framework services
+
+**Current Problem**: Framework classes (`Renderer`, `PipelineManager`, `ResourceManager`, `BufferManager`, etc.) heavily use constructor injection, creating:
+- Deep constructor parameter lists (5-9 parameters common)
+- Tight coupling between framework services
+- Inheritance trees where every subclass must pass dependencies up
+- Difficult testing requiring extensive mocking
+
+**Solution**: Systems pattern - empty marker interfaces with extension methods providing functionality, eliminating constructor injection.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Create Components Without Constructor Injection Bloat (Priority: P1)
+### User Story 1 - Framework Classes Without Constructor Injection (Priority: P1)
 
-Developers can create new game components without needing to inject and pass through framework services (graphics, resources, input, window) via constructors. Components access framework services directly through strongly-typed system properties that the framework automatically initializes.
+Framework developers can create new framework services without needing to inject multiple dependencies via constructors. Services access other framework capabilities through strongly-typed system properties initialized by the DI container.
 
-**Why this priority**: This is the core value proposition and addresses the primary pain point. Without this, the entire refactoring provides no benefit.
+**Why this priority**: This is the core value proposition. Constructor injection bloat makes the framework difficult to maintain and extend.
 
-**Independent Test**: Create a new drawable component class that needs window dimensions and graphics context. Verify the component has a parameterless constructor and accesses window size via `this.Window` property. Component should compile and run without requiring any constructor parameters.
+**Independent Test**: Refactor `Renderer` class (currently has 9 constructor parameters) to use systems. Verify it compiles, runs identically, and has zero constructor parameters for framework services.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer needs to create a component requiring window dimensions, **When** they define the component class, **Then** they can access window size via the `Window` property without declaring constructor parameters
-2. **Given** a component needs multiple framework services (graphics, resources, window), **When** the component is instantiated by the framework, **Then** all system properties are initialized and accessible in the component's lifecycle methods
-3. **Given** an existing component with constructor-injected services, **When** the developer migrates to systems architecture, **Then** they can remove all framework service constructor parameters and access the same functionality via system properties
+1. **Given** a framework class like `Renderer` with multiple constructor dependencies, **When** refactored to use systems, **Then** constructor parameters are reduced to zero for framework services (domain dependencies may remain)
+2. **Given** a framework class needs graphics, resources, and window services, **When** using systems pattern, **Then** it accesses capabilities via `this.Graphics`, `this.Resources`, and `this.Window` properties
+3. **Given** a framework class using systems, **When** instantiated by DI container, **Then** system properties are automatically initialized before any method calls
 
 ---
 
-### User Story 2 - Discover Available Framework Capabilities via IntelliSense (Priority: P2)
+### User Story 2 - Discover Framework Capabilities via IntelliSense (Priority: P2)
 
-Developers can discover what framework capabilities are available to their components by typing `this.` and seeing the available systems (Graphics, Resources, Window, Input, Content) appear in IntelliSense with full type information and extension methods.
+Framework developers discover available framework capabilities by typing `this.` and seeing available systems (Graphics, Resources, Window, Input, Content) with full type information and extension methods.
 
-**Why this priority**: Improves developer experience and discoverability but doesn't block core functionality. Can be delivered after the basic system properties work.
+**Why this priority**: Improves developer experience and discoverability. Can be delivered after basic system properties work.
 
-**Independent Test**: Open a component class in the IDE, type `this.Graphics.` and verify IntelliSense shows available graphics operations. Select a method and verify it compiles and provides correct documentation tooltips.
+**Independent Test**: In a framework class, type `this.Graphics.` and verify IntelliSense shows available graphics operations with correct documentation.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer is working in a component class, **When** they type `this.` in a method body, **Then** IntelliSense displays all available system properties (Graphics, Resources, Window, Input, Content) with type information
-2. **Given** a developer types `this.Graphics.`, **When** IntelliSense appears, **Then** all graphics-related extension methods are displayed with documentation
-3. **Given** a developer selects a system extension method, **When** they complete the call, **Then** the code compiles without errors and the method delegates to the appropriate underlying service
+1. **Given** a framework class using systems, **When** developer types `this.` in a method body, **Then** IntelliSense displays available system properties (Graphics, Resources, Window, Input, Content)
+2. **Given** developer types `this.Graphics.`, **When** IntelliSense appears, **Then** all graphics-related extension methods display with documentation
+3. **Given** developer selects a system extension method, **When** completing the call, **Then** code compiles and method delegates to underlying service
 
 ---
 
-### User Story 3 - Test Components with Mocked Systems (Priority: P3)
+### User Story 3 - Test Framework Classes with Mocked Systems (Priority: P3)
 
-Developers can write unit tests for their components by creating the component with `new`, setting system properties to mocked implementations, and verifying behavior without needing the full framework infrastructure.
+Framework developers write unit tests by creating mock system implementations and verifying behavior without full framework infrastructure.
 
-**Why this priority**: Essential for maintainability but can be implemented after core functionality works. Existing components can continue using existing test patterns during migration.
+**Why this priority**: Essential for maintainability but can be implemented after core functionality. Existing tests can continue using current patterns during migration.
 
-**Independent Test**: Write a unit test that creates a component directly, assigns a mocked `IGraphicsSystem` to its `Graphics` property, calls a component method that uses graphics functionality, and verifies the expected graphics operations were invoked on the mock.
+**Independent Test**: Write unit test for framework class, assign mocked `IGraphicsSystem`, call method using graphics, verify expected operations were invoked.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer is writing a unit test for a component, **When** they create the component with `new MyComponent()`, **Then** they can assign mocked system implementations to the component's system properties
-2. **Given** a component uses graphics functionality, **When** a test mocks the `IGraphicsSystem` and calls the component method, **Then** the test can verify the expected graphics operations were invoked
-3. **Given** a component created outside the framework (e.g., in tests), **When** the component attempts to use an uninitialized system, **Then** the framework provides a clear error message indicating systems must be set before component activation
+1. **Given** a unit test for a framework class, **When** creating the class for testing, **Then** developer can assign mocked systems to system properties
+2. **Given** a framework class uses graphics functionality, **When** test mocks `IGraphicsSystem` and calls the method, **Then** test verifies expected operations were invoked
+3. **Given** a framework class created outside normal DI flow, **When** attempting to use uninitialized system, **Then** framework provides clear error message
 
 ---
 
-### User Story 4 - Simplified Component Hierarchy with Consolidated Base Class (Priority: P1)
+### User Story 4 - Eliminate Service Location Anti-Pattern (Priority: P1)
 
-Developers work with a single `Component` base class that provides all component functionality (identity, configuration, hierarchy, lifecycle) instead of navigating through four separate classes (Entity, Configurable, Component, RuntimeComponent).
+Framework classes access services through strongly-typed system properties instead of service locator or manual DI resolution, maintaining compile-time type safety.
 
-**Why this priority**: Simplifies the mental model and reduces confusion. This is part of the core architecture improvement and should be delivered with the systems refactoring.
+**Why this priority**: Service locator pattern is considered an anti-pattern. Systems pattern provides better discoverability and type safety.
 
-**Independent Test**: Create a new component inheriting from `Component`. Verify it has access to identity (Id, Name), configuration (OnLoad), hierarchy (Parent, Children), and lifecycle (OnActivate, OnUpdate) methods without needing to inherit from multiple classes.
+**Independent Test**: Verify no framework classes use `serviceProvider.GetRequiredService<T>()` except in composition root and system initialization. All service access is through typed system properties.
 
 **Acceptance Scenarios**:
 
-1. **Given** a developer creates a new component, **When** they inherit from `Component`, **Then** they have access to all component capabilities (identity, configuration, hierarchy, lifecycle)
-2. **Given** an existing component inherits from `RuntimeComponent`, **When** the developer updates the base class to `Component`, **Then** all existing functionality continues to work without changes
-3. **Given** a developer is reading component code, **When** they look at the class declaration, **Then** they see a single `Component` base class with functionality organized in partial class files by concern
+1. **Given** a framework class needs access to graphics context, **When** using systems pattern, **Then** it uses `this.Graphics` instead of `_serviceProvider.GetRequiredService<IGraphicsContext>()`
+2. **Given** all framework classes migrated to systems, **When** searching codebase for service location, **Then** only DI composition root and system initialization contain `GetRequiredService` calls
+3. **Given** a new framework class, **When** it needs framework capabilities, **Then** developer uses system properties (compile-time safe) rather than service location (runtime lookup)
 
 ---
 
 ### Edge Cases
 
-- What happens when a component is created directly with `new` without using `ComponentFactory` and attempts to access system properties before they're initialized? The framework should detect this during the activation lifecycle and throw `InvalidOperationException` with a clear message: "System properties not initialized. Components must be created via ComponentFactory or ContentManager."
+- **What happens when a framework class is instantiated outside DI and attempts to access system properties?** The systems will be null and accessing them will throw `NullReferenceException`. This is intentional - framework classes must be created via DI.
 
-- How does the system handle components that need domain-specific dependencies (not framework services)? Domain dependencies continue to be injected via constructor as before. The systems pattern only replaces framework service injection, not all dependency injection.
+- **How does the system handle framework classes that need domain-specific dependencies (not framework services)?** Domain dependencies continue to be injected via constructor. The systems pattern only replaces framework service injection, not all DI.
 
-- What happens if a system extension method is called on a null system reference? This shouldn't happen in normal use since systems are initialized by the framework. If it does (improper component creation), the `null!` suppression will cause a `NullReferenceException` pointing to the missing system initialization.
+- **What happens if a system extension method is called on a null system reference?** Runtime `NullReferenceException` occurs, pointing to improper initialization. Framework classes must be created via DI container.
 
-- How are systems handled during component disposal? System properties are references to singleton services managed by the DI container. Components don't own systems and shouldn't dispose them. The DI container handles system lifecycle.
+- **How are systems handled during framework class disposal?** System properties are references to singleton services managed by DI container. Framework classes don't own systems and shouldn't dispose them. DI container handles system lifecycle.
 
-- What if a component needs access to a system that hasn't been created yet (Phase 2 systems)? The system property won't exist on the base `Component` class until that phase is implemented. This is a non-breaking addition - new properties can be added to the base class without affecting existing components.
+- **What about circular dependencies between systems?** Systems are marker interfaces wrapping existing services. Circular dependencies that exist today remain; systems pattern doesn't introduce new ones. If circular dependencies exist, they must be resolved through refactoring (e.g., extract shared functionality to new service).
+
+- **How do we handle framework classes that need conditional behavior based on whether a service is available?** Systems are always initialized for framework classes created by DI. For optional services, use traditional nullable DI: `IServiceProvider.GetService<T>()` returns null if not registered.
+
+- **What about performance of extension method calls vs direct method calls?** Extension methods have identical performance to direct instance method calls - they're just syntactic sugar. The IL is identical after compilation.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The framework MUST provide five core system interfaces: `IResourceSystem`, `IGraphicsSystem`, `IContentSystem`, `IWindowSystem`, and `IInputSystem`
+- **FR-001**: Framework MUST provide five core system interfaces: `IResourceSystem`, `IGraphicsSystem`, `IContentSystem`, `IWindowSystem`, and `IInputSystem`
 
 - **FR-002**: Each system interface MUST be an empty marker interface with all functionality provided through extension methods to prevent coupling to implementation details
 
-- **FR-003**: The `Component` base class MUST provide non-nullable system properties (Graphics, Resources, Content, Window, Input) initialized with the null-forgiving operator (`= null!`)
+- **FR-003**: System implementation classes MUST be internal sealed classes that wrap existing framework services (IGraphicsContext, IResourceManager, etc.)
 
-- **FR-004**: `ComponentFactory` MUST initialize all system properties immediately after component instantiation and before any component lifecycle methods are invoked
+- **FR-004**: Extension methods MUST cast marker interface to internal implementation to access wrapped services
 
-- **FR-005**: The framework MUST validate system initialization during the component activation lifecycle and throw `InvalidOperationException` with a descriptive message if systems are not initialized
+- **FR-005**: Framework base class (if created) or initialization infrastructure MUST provide system properties that DI container initializes
 
-- **FR-006**: Components MUST support parameterless constructors for framework service access (domain dependencies may still use constructor injection)
+- **FR-006**: System implementations MUST be registered as singletons in DI container
 
-- **FR-007**: The component hierarchy MUST be consolidated from four classes (Entity, Configurable, Component, RuntimeComponent) into a single `Component` class organized using partial class files
+- **FR-007**: Framework classes SHOULD have parameterless constructors or minimal domain-only constructor parameters (zero framework service parameters)
 
-- **FR-008**: The consolidated `Component` class MUST preserve all existing functionality: identity (Id, Name), configuration (Load, Configure, Validate), hierarchy (Parent, Children), and lifecycle (Activate, Update, Deactivate)
+- **FR-008**: System extension method namespaces MUST be included in `GlobalUsings.cs` for automatic availability
 
-- **FR-009**: System extension methods MUST delegate to underlying framework services accessed via the internal system implementation classes
+- **FR-009**: Framework classes created via DI MUST have system properties initialized before any method invocations
 
-- **FR-010**: The framework MUST register system implementations as singletons in the DI container and cache them in `ComponentFactory` to avoid repeated service resolution
+- **FR-010**: Migration MUST maintain backward compatibility - existing functionality must work identically after refactoring
 
-- **FR-011**: System extension method namespaces MUST be added to `GlobalUsings.cs` to provide automatic availability across the codebase
+- **FR-011**: Framework classes MUST NOT use service locator pattern (`serviceProvider.GetRequiredService<T>()`) except in composition root and system initialization
 
-- **FR-012**: Components created for testing MUST be able to have system properties assigned directly to support mocking without requiring the full framework
+- **FR-012**: System extension methods MUST delegate to underlying framework services accessed via internal implementation classes
 
-- **FR-013**: The migration MUST maintain backward compatibility for components that don't directly inject framework services (no breaking changes to component creation API)
-
-- **FR-014**: The framework MUST support incremental migration where some components use the new systems pattern while others temporarily retain constructor injection until migrated
+- **FR-013**: Testing infrastructure MUST support mocking systems for unit tests without requiring full DI container
 
 ### Key Entities
 
-- **System**: A logical grouping of related framework services accessed via a marker interface and extension methods. Represents a cohesive area of framework functionality (graphics, resources, input, window management, content management).
+- **System**: Logical grouping of related framework services accessed via marker interface and extension methods. Represents cohesive area of framework functionality (graphics, resources, input, window, content).
 
-- **Component**: The fundamental building block of the game engine. Has identity, configuration, hierarchical relationships, and lifecycle. Accesses framework capabilities through system properties.
+- **System Interface**: Empty marker interface (e.g., `IGraphicsSystem`) with no members. Serves as extension point for functionality.
 
-- **ComponentFactory**: Responsible for component instantiation and system property initialization. Ensures all components are properly configured before entering their lifecycle.
+- **System Implementation**: Internal sealed class wrapping underlying framework services. Provides extension methods access to services. Example: `GraphicsSystem` wraps `IGraphicsContext`, `IPipelineManager`, `ISwapChain`.
 
-- **System Implementation**: Internal sealed class that wraps underlying framework services and provides access to extension methods. One implementation per system interface.
+- **Extension Method**: Static method providing system functionality. Casts system interface to internal implementation to access wrapped services. Example: `DrawQuad(this IGraphicsSystem graphics, ...)`.
 
-- **Extension Method**: Static method that provides system functionality. Casts the system interface to the internal implementation to access underlying services.
+- **Framework Class**: Any class in the framework infrastructure (Renderer, PipelineManager, BufferManager, etc.) that needs access to framework services.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of new components created after the refactoring can be implemented with parameterless constructors (zero framework service constructor parameters)
+- **SC-001**: Constructor parameter count for framework classes reduced by 100% for framework services (domain dependencies may remain)
 
-- **SC-002**: Component creation performance improves or remains neutral compared to the current constructor injection approach (measured via benchmark showing system property assignment vs ActivatorUtilities overhead)
+- **SC-002**: Zero uses of service locator pattern (`GetRequiredService<T>()`) in framework classes (except composition root and system initialization)
 
-- **SC-003**: Existing component tests pass after migration with updated mocking strategy (mock systems instead of individual services)
+- **SC-003**: Framework compilation succeeds with zero errors after migration
 
-- **SC-004**: Developers can discover available framework capabilities by typing `this.` in any component method and seeing all five system properties in IntelliSense
+- **SC-004**: All existing integration tests pass without modification after migration
 
-- **SC-005**: The consolidated `Component` class hierarchy reduces cognitive load by eliminating three intermediate base classes while maintaining 100% of existing functionality
+- **SC-005**: Developers can discover framework capabilities via IntelliSense by typing `this.` in framework classes
 
-- **SC-006**: Components created incorrectly (without ComponentFactory) produce clear error messages that guide developers to correct usage within the first activation attempt
+- **SC-006**: Performance remains neutral - benchmarks show no degradation from extension method overhead
 
-- **SC-007**: The migration maintains zero breaking changes to the component creation API (`ContentManager.CreateInstance()` continues to work identically)
+- **SC-007**: Code reviews confirm framework classes have simplified constructors (average reduction from 5-9 parameters to 0-2)
 
-- **SC-008**: Code reviews show reduced constructor parameter counts for drawable components (target: average reduction from 3-5 parameters to 0 framework service parameters)
+- **SC-008**: Unit tests can mock systems without requiring full DI infrastructure
+
+## Assumptions
+
+- **Assumption 1**: Extension methods on marker interfaces provide adequate IntelliSense discoverability (verified by LINQ precedent)
+
+- **Assumption 2**: Performance of extension methods is identical to instance methods (verified - they're syntactic sugar, identical IL)
+
+- **Assumption 3**: Internal sealed classes can be safely cast from marker interfaces within extension methods (C# language guarantee)
+
+- **Assumption 4**: Existing framework service interfaces (IGraphicsContext, IResourceManager, etc.) remain unchanged - systems wrap them
+
+- **Assumption 5**: DI container supports property injection or framework classes can receive systems via initialization method after construction
+
+- **Assumption 6**: Migration can be done incrementally - not all framework classes need systems simultaneously
+
+- **Assumption 7**: No external code depends on framework class constructor signatures (internal framework only)
+
+- **Assumption 8**: Test infrastructure can create mock system implementations for unit testing
+
+## Dependencies
+
+- **Dependency 1**: Component consolidation (Spec 014) COMPLETE - provides foundation for systems pattern
+
+- **Dependency 2**: Property bindings (Spec 013) COMPLETE - demonstrates successful use of declarative patterns
+
+- **Dependency 3**: DI container configuration must be updated to register system implementations as singletons
+
+- **Dependency 4**: Framework classes must be refactored sequentially to avoid breaking dependencies
+
+- **Dependency 5**: Extension method namespaces must be added to `GlobalUsings.cs` before widespread adoption
+
+## Scope
+
+### In Scope
+
+- Creating five system marker interfaces (IGraphicsSystem, IResourceSystem, IWindowSystem, IInputSystem, IContentSystem)
+- Implementing internal sealed system implementation classes wrapping existing services
+- Creating extension methods for all framework capabilities on system interfaces
+- Eliminating constructor injection of framework services from framework classes
+- Updating DI registration to include system singletons
+- Adding system extension method namespaces to GlobalUsings.cs
+- Refactoring Renderer, PipelineManager, and other high-impact framework classes
+- Updating unit tests to use mocked systems
+- Performance benchmarking to verify no degradation
+
+### Out of Scope
+
+- Changing existing framework service interfaces (IGraphicsContext, etc.) - systems wrap them, don't replace them
+- Refactoring component classes - they already don't use constructor injection for framework services
+- Creating new framework capabilities - this is purely architectural refactoring
+- Changing DI lifetime scopes (singleton, scoped, transient) for existing services
+- Modifying game engine public API - this is internal framework refactoring
+- Hot-reload or runtime system switching - systems are initialized once at startup
+- Custom component base classes - focus is on framework infrastructure
+
+### Migration Strategy
+
+**Phase 1: Infrastructure**
+1. Create system interfaces and implementations
+2. Register systems in DI container
+3. Add extension methods for high-frequency operations
+4. Add system namespaces to GlobalUsings.cs
+
+**Phase 2: High-Impact Classes**
+1. Refactor `Renderer` (9 parameters → ~0-2)
+2. Refactor `PipelineManager` (5 parameters → ~0)
+3. Refactor `ResourceManager` (4 parameters → ~0)
+4. Update unit tests for refactored classes
+
+**Phase 3: Remaining Framework Classes**
+1. Refactor buffer managers, descriptor managers
+2. Refactor remaining graphics infrastructure
+3. Refactor content management classes
+4. Update all remaining tests
+
+**Phase 4: Validation**
+1. Run full test suite
+2. Performance benchmarks
+3. Integration test validation
+4. Code review for service locator anti-pattern usage
+
+## Non-Goals
+
+- This spec does NOT add new framework capabilities
+- This spec does NOT change component architecture (already consolidated in Spec 014)
+- This spec does NOT modify the property binding system (Spec 013)
+- This spec does NOT affect game developer-facing APIs
+- This spec does NOT introduce new DI patterns - systems are singletons like current services
+- This spec does NOT change how components are created - ContentManager/ComponentFactory unchanged
+- This spec does NOT replace all constructor injection - domain dependencies still use constructors
+
+## Technical Notes
+
+### Why Marker Interfaces + Extension Methods?
+
+1. **Zero coupling**: Consumers cannot accidentally depend on implementation details
+2. **Evolution**: Can add/change extension methods without breaking binary compatibility
+3. **IntelliSense**: Extension methods appear as instance methods, natural discoverability
+4. **Testing**: Can mock marker interfaces with custom implementations
+5. **Precedent**: LINQ uses this pattern extensively (`IEnumerable<T>` + extension methods)
+
+### Alternative Approaches Considered
+
+**Service Locator Pattern**: ❌ Anti-pattern, runtime errors, poor discoverability
+**Property Injection**: ❌ Magic, harder to test, implicit dependencies
+**Ambient Context**: ❌ Global state, testing nightmares
+**Constructor Injection**: ❌ Current problem - creates bloat and tight coupling
+**Abstract Factory**: ❌ Adds complexity without solving discoverability
+
+### Performance Considerations
+
+Extension methods compile to identical IL as instance methods:
+```csharp
+// Extension method call:
+graphics.DrawQuad(position, size);
+
+// Compiles to identical IL as:
+GraphicsSystemExtensions.DrawQuad(graphics, position, size);
+
+// JIT inlines both identically - zero overhead
+```
+
+Systems are singletons - one instance per application lifetime, no allocation overhead.
+

@@ -2,6 +2,7 @@ using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Runtime;
+using Nexus.GameEngine.Runtime.Extensions;
 using Silk.NET.Windowing;
 using System.Diagnostics;
 using System.Reflection;
@@ -19,13 +20,11 @@ namespace TestApp;
 /// </summary>
 public partial class TestRunner : Component
 {
-    public TestRunner(IWindowService windowService, IRenderer renderer) : base()
+    public TestRunner(IRenderer renderer) : base()
     {
-        this.window = windowService.GetWindow();
         this.renderer = renderer;
     }
 
-    private readonly IWindow window;
     private readonly IRenderer renderer;
 
     private readonly Stopwatch stopwatch = new();
@@ -105,7 +104,7 @@ public partial class TestRunner : Component
 
         try
         {
-            window.Close();
+            Window.GetWindow().Close();
         }
         catch
         {
@@ -154,7 +153,7 @@ public partial class TestRunner : Component
             + $"Number of Test Results: {passed.Count + failed.Count}\n"
             + $"Total Time: {stopwatch.ElapsedMilliseconds}ms\n"
             + $"Updates: {frameCount}\n"            
-            + $"Rendered: {framesRendered}\n"
+            + $"Renders: {framesRendered}\n"
             + $"Avg FPS: {framesRendered / stopwatch.Elapsed.TotalSeconds:F0}\n"
             + $"Passed: {passed.Count}\n"
             + $"Failed: {failed.Count}\n"

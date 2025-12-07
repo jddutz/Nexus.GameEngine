@@ -1,3 +1,9 @@
+using Microsoft.Extensions.DependencyInjection;
+using Nexus.GameEngine.Resources.Geometry;
+using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Resources.Textures;
+using Nexus.GameEngine.Resources.Fonts;
+
 namespace Nexus.GameEngine.Resources;
 
 /// <summary>
@@ -6,41 +12,28 @@ namespace Nexus.GameEngine.Resources;
 /// </summary>
 public class ResourceManager : IResourceManager
 {
-    private readonly IGeometryResourceManager _geometry;
-    private readonly IShaderResourceManager _shaders;
-    private readonly ITextureResourceManager _textures;
-    private readonly IFontResourceManager _fonts;
+    private readonly IServiceProvider _provider;
     
-    public ResourceManager(
-        IGeometryResourceManager geometry,
-        IShaderResourceManager shaders,
-        ITextureResourceManager textures,
-        IFontResourceManager fonts)
+    public ResourceManager(IServiceProvider provider)
     {
-        _geometry = geometry;
-        _shaders = shaders;
-        _textures = textures;
-        _fonts = fonts;
+        _provider = provider;
     }
     
     /// <inheritdoc />
-    public IGeometryResourceManager Geometry => _geometry;
+    public IGeometryResourceManager Geometry => _provider.GetRequiredService<IGeometryResourceManager>();
     
     /// <inheritdoc />
-    public IShaderResourceManager Shaders => _shaders;
+    public IShaderResourceManager Shaders => _provider.GetRequiredService<IShaderResourceManager>();
     
     /// <inheritdoc />
-    public ITextureResourceManager Textures => _textures;
+    public ITextureResourceManager Textures => _provider.GetRequiredService<ITextureResourceManager>();
     
     /// <inheritdoc />
-    public IFontResourceManager Fonts => _fonts;
+    public IFontResourceManager Fonts => _provider.GetRequiredService<IFontResourceManager>();
     
     /// <inheritdoc />
     public void Dispose()
     {
-        _geometry?.Dispose();
-        _shaders?.Dispose();
-        _textures?.Dispose();
-        // Note: Fonts doesn't implement IDisposable yet
+        // Resources are managed by DI container
     }
 }

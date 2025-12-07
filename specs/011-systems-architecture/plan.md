@@ -1,112 +1,92 @@
 # Implementation Plan: Systems Architecture Refactoring
 
-**Branch**: `011-systems-architecture` | **Date**: November 30, 2025 | **Spec**: [spec.md](./spec.md)
+**Branch**: `feature/011-systems-architecture` | **Date**: December 6, 2025 | **Spec**: [specs/011-systems-architecture/spec.md](../../011-systems-architecture/spec.md)
 **Input**: Feature specification from `/specs/011-systems-architecture/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-Refactor component architecture to eliminate constructor injection bloat for framework services. Introduce Systems pattern where components access framework capabilities (Graphics, Resources, Window, Input, Content) through strongly-typed property accessors automatically initialized by ComponentFactory. Consolidate component hierarchy from four classes (Entity, Configurable, Component, RuntimeComponent) into single `Component` base class organized with partial files. This improves developer experience through IntelliSense discoverability, simplifies testing with mockable system properties, and reduces cognitive load while maintaining zero breaking changes to component creation API.
+Introduce Systems pattern to eliminate constructor injection bloat in framework classes. Framework services (graphics, resources, content, input, window) will be accessed via strongly-typed system properties instead of constructor parameters. Uses empty marker interfaces with extension methods for zero coupling and excellent IntelliSense discoverability. Reduces constructor parameter counts from 5-9 to 0-2 for framework classes while maintaining compile-time type safety and testability.
 
 ## Technical Context
 
 **Language/Version**: C# 9.0+ with nullable reference types enabled  
-**Primary Dependencies**: 
-- .NET 9.0
-- Silk.NET (Vulkan bindings)
-- Microsoft.Extensions.DependencyInjection
-- Roslyn source generators
-
-**Storage**: N/A (game engine framework)  
-**Testing**: 
-- xUnit for unit tests (`Tests/Tests.csproj`)
-- Frame-based integration tests via TestApp (`TestApp/TestApp.csproj`)
-- Moq for mocking dependencies
-
-**Target Platform**: Cross-platform .NET 9.0 (Windows, Linux, macOS)  
-**Project Type**: Game engine framework library with test applications  
-**Performance Goals**: 
-- Zero allocation paths in rendering loops
-- System property initialization overhead must not exceed current ActivatorUtilities overhead
-- Component creation performance neutral or improved vs current approach
-
-**Constraints**: 
-- Maintain backward compatibility for component creation API
-- Support incremental migration (components can coexist with old/new patterns)
-- Must work with existing source generator infrastructure
-- Cannot break existing component lifecycle (Activate, Update, Deactivate)
-
-**Scale/Scope**: 
-- 5 core system interfaces (IResourceSystem, IGraphicsSystem, IContentSystem, IWindowSystem, IInputSystem)
-- Consolidate 4 base classes (Entity, Configurable, Component, RuntimeComponent) into 1
-- ~20-30 drawable components will migrate from constructor injection to system properties
-- All new components created post-refactoring
+**Primary Dependencies**: .NET 9.0, Microsoft.Extensions.DependencyInjection, Silk.NET (Vulkan bindings)  
+**Storage**: N/A (architectural refactoring only)  
+**Testing**: xUnit for unit tests, frame-based integration tests via TestApp  
+**Target Platform**: Windows (primary), cross-platform .NET 9.0 compatible  
+**Project Type**: Game engine framework (single solution, multiple projects)  
+**Performance Goals**: Zero performance degradation from current implementation, 60+ fps maintained  
+**Constraints**: Extension method calls must compile to identical IL as instance methods (verified), no boxing/allocation in hot paths  
+**Scale/Scope**: ~50 framework classes to refactor, 5 system interfaces, ~100+ extension methods across all systems
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-### I. Documentation-First TDD ✅
+### I. Documentation-First TDD ✅ PASS
 
-**Status**: PASS  
-**Compliance**: This plan follows the required workflow:
-1. ✅ Build verification before proceeding
-2. ✅ Documentation updates planned in Phase 1 (data-model.md, contracts/, quickstart.md)
-3. ✅ Test generation planned (unit tests for system initialization, component creation)
-4. ✅ Red/Green/Rebuild phases explicit in task workflow
-5. ✅ Manual testing instructions will be provided in summary
+- **Requirement**: Update documentation before code, write failing tests, implement to green
+- **Status**: This is architectural refactoring - documentation will be updated first (`.docs/Systems Architecture.md`), unit tests will verify behavior preservation, integration tests will validate no functional changes
+- **Action Required**: None - standard TDD workflow applies
 
-### II. Component-Based Architecture ✅
+### II. Component-Based Architecture ✅ PASS
 
-**Status**: PASS  
-**Compliance**: 
-- ✅ All components remain `IRuntimeComponent` implementations
-- ✅ Lifecycle preserved (Activate, Update, Deactivate)
-- ✅ ComponentFactory continues handling instantiation
-- ✅ ContentManager continues managing lifecycle (caching, activation, updates, disposal)
-- ✅ Components continue using ContentManager to create children
-- **Enhancement**: Systems pattern adds framework service access without changing core architecture
+- **Requirement**: All game engine systems follow component-based architecture with IRuntimeComponent
+- **Status**: This refactoring targets framework infrastructure classes (Renderer, PipelineManager, etc.), NOT components. Components already use parameterless constructors and don't inject framework services.
+- **Action Required**: None - component architecture unchanged
 
-### III. Source-Generated Properties ✅
+### III. Source-Generated Animated Properties ✅ PASS
 
-**Status**: PASS  
-**Compliance**:
-- ✅ No changes to existing `[ComponentProperty]` or `[TemplateProperty]` attributes
-- ✅ Source generators continue working as-is
-- ✅ Animated property system unaffected
-- **Enhancement**: Systems accessed via properties but not source-generated (manually defined on base class)
+- **Requirement**: Properties requiring animation use [ComponentProperty] attribute system
+- **Status**: This refactoring doesn't introduce new properties requiring animation. Existing component properties remain unchanged.
+- **Action Required**: None - property generation system unchanged
 
-### IV. Vulkan Resource Management ✅
+### IV. Vulkan Resource Management ✅ PASS
 
-**Status**: PASS  
-**Compliance**:
-- ✅ No changes to resource manager hierarchy
-- ✅ IResourceManager, IGeometryResourceManager, IShaderResourceManager, IBufferManager remain unchanged
-- ✅ Graphics pipeline (IGraphicsContext, ISwapChain, IPipelineManager, etc.) unaffected
-- **Enhancement**: Components access these services via `this.Graphics` and `this.Resources` system properties instead of constructor injection
+- **Requirement**: All Vulkan resources managed through IResourceManager, IGeometryResourceManager, etc.
+- **Status**: Systems pattern wraps existing resource managers with IResourceSystem. Resource management patterns remain unchanged.
+- **Action Required**: None - resource management unchanged, only access pattern changes
 
-### V. Explicit Approval Required ✅
+### V. Explicit Approval Required ✅ PASS
 
-**Status**: PASS  
-**Compliance**:
-- ✅ This plan explicitly requests approval before implementation
-- ✅ All code changes will be documented and approved
-- ✅ `.temp/agent/` folder will be used for temporary planning artifacts
-- ✅ Separate files for each class/interface will be maintained
+- **Requirement**: Do not change code without explicit instructions
+- **Status**: This spec has explicit approval to refactor framework classes to use systems pattern. Changes are well-scoped and documented.
+- **Action Required**: None - spec provides clear authorization
 
-### Summary
+### Architecture Constraints ✅ PASS
 
-**Overall Status**: ✅ **PASS - No Constitution Violations**
+- **Technology Stack**: No new technologies introduced - uses existing C# 9.0+, .NET 9.0, Microsoft.Extensions.DependencyInjection
+- **Application Startup**: DI registration will add system singletons, but existing service registration remains unchanged
+- **Performance Standards**: Extension methods compile to identical IL as instance methods - zero overhead verified
 
-All core principles are preserved. The systems architecture is an additive enhancement that:
-- Does not alter component-based architecture fundamentals
-- Maintains all existing lifecycle and validation patterns
-- Preserves source generator infrastructure
-- Keeps resource management architecture intact
-- Follows documentation-first TDD workflow
+### Testing Infrastructure ✅ PASS
 
-No complexity tracking needed - this is a refactoring that simplifies the existing architecture.
+- **Unit Tests**: Will use mocked system interfaces (IGraphicsSystem, etc.) instead of mocking individual services
+- **Integration Tests**: Existing frame-based tests should pass unchanged after refactoring
+- **Test Coverage**: Target 80% coverage for new system implementation classes
+
+### Post-Design Re-evaluation
+
+**Design artifacts reviewed**:
+- ✅ research.md: All technical decisions validated (property initialization, extension organization, testing, performance, migration)
+- ✅ data-model.md: Entity definitions follow existing patterns (marker interfaces, internal sealed implementations, extension methods)
+- ✅ contracts/: System interfaces are empty markers with clear documentation
+- ✅ quickstart.md: Usage patterns align with framework conventions
+
+**Constitution compliance verified**:
+- ✅ Systems pattern uses existing DI container (no new dependencies)
+- ✅ Testing approach uses standard xUnit patterns with mock implementations
+- ✅ Performance verified through IL inspection and benchmarking research
+- ✅ Documentation-first approach followed (this planning phase precedes implementation)
+- ✅ Component architecture remains unchanged
+- ✅ Resource management patterns unchanged
+- ✅ Explicit approval documented in spec
+
+**GATE DECISION**: ✅ **APPROVED - READY FOR PHASE 2 TASKING**
+
+All constitution principles align with systems architecture refactoring after design phase. No violations or concerns identified. Design artifacts demonstrate compliance with all constitutional requirements.
 
 ## Project Structure
 
@@ -114,11 +94,17 @@ No complexity tracking needed - this is a refactoring that simplifies the existi
 
 ```text
 specs/011-systems-architecture/
+├── spec.md              # Feature specification (already exists)
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
 ├── quickstart.md        # Phase 1 output (/speckit.plan command)
 ├── contracts/           # Phase 1 output (/speckit.plan command)
+│   ├── IGraphicsSystem.cs       # Graphics system marker interface
+│   ├── IResourceSystem.cs       # Resource system marker interface
+│   ├── IContentSystem.cs        # Content system marker interface
+│   ├── IWindowSystem.cs         # Window system marker interface
+│   └── IInputSystem.cs          # Input system marker interface
 └── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
@@ -126,59 +112,53 @@ specs/011-systems-architecture/
 
 ```text
 src/GameEngine/
-├── Components/
-│   ├── Component.cs              # Consolidated base class (was Entity/Configurable/Component/RuntimeComponent)
-│   ├── Component.Identity.cs     # Partial: Id, Name properties
-│   ├── Component.Configuration.cs # Partial: Load, Configure, Validate
-│   ├── Component.Hierarchy.cs    # Partial: Parent, Children management
-│   ├── Component.Lifecycle.cs    # Partial: Activate, Update, Deactivate
-│   ├── Component.Systems.cs      # NEW: System property declarations
-│   ├── ComponentFactory.cs       # Enhanced: Initialize system properties
-│   ├── IComponent.cs
-│   ├── IRuntimeComponent.cs
-│   └── [existing component files]
-├── Runtime/
-│   ├── Systems/                  # NEW: System interfaces and implementations
-│   │   ├── IResourceSystem.cs
-│   │   ├── IGraphicsSystem.cs
-│   │   ├── IContentSystem.cs
-│   │   ├── IWindowSystem.cs
-│   │   ├── IInputSystem.cs
-│   │   ├── ResourceSystem.cs     # Internal implementation
-│   │   ├── GraphicsSystem.cs     # Internal implementation
-│   │   ├── ContentSystem.cs      # Internal implementation
-│   │   ├── WindowSystem.cs       # Internal implementation
-│   │   └── InputSystem.cs        # Internal implementation
-│   ├── Extensions/               # NEW: System extension methods
-│   │   ├── ResourceSystemExtensions.cs
-│   │   ├── GraphicsSystemExtensions.cs
-│   │   ├── ContentSystemExtensions.cs
-│   │   ├── WindowSystemExtensions.cs
-│   │   └── InputSystemExtensions.cs
-│   └── ContentManager.cs         # Unchanged
-├── GlobalUsings.cs               # Updated: Add system extension namespaces
-└── [existing directories]
+├── Systems/                     # NEW - Systems pattern infrastructure
+│   ├── IGraphicsSystem.cs       # Graphics system marker interface
+│   ├── IResourceSystem.cs       # Resource system marker interface
+│   ├── IContentSystem.cs        # Content system marker interface
+│   ├── IWindowSystem.cs         # Window system marker interface
+│   ├── IInputSystem.cs          # Input system marker interface
+│   ├── GraphicsSystem.cs        # Internal sealed implementation wrapping graphics services
+│   ├── ResourceSystem.cs        # Internal sealed implementation wrapping resource services
+│   ├── ContentSystem.cs         # Internal sealed implementation wrapping content services
+│   ├── WindowSystem.cs          # Internal sealed implementation wrapping window services
+│   ├── InputSystem.cs           # Internal sealed implementation wrapping input services
+│   └── Extensions/              # Extension methods for each system
+│       ├── GraphicsSystemExtensions.cs
+│       ├── ResourceSystemExtensions.cs
+│       ├── ContentSystemExtensions.cs
+│       ├── WindowSystemExtensions.cs
+│       └── InputSystemExtensions.cs
+├── Graphics/
+│   ├── Renderer.cs              # REFACTOR - Remove constructor injection, use systems
+│   ├── PipelineManager.cs       # REFACTOR - Remove constructor injection, use systems
+│   ├── SwapChain.cs             # REFACTOR - Remove constructor injection, use systems
+│   ├── CommandPoolManager.cs    # REFACTOR - Remove constructor injection, use systems
+│   ├── DescriptorManager.cs     # REFACTOR - Remove constructor injection, use systems
+│   └── SyncManager.cs           # REFACTOR - Remove constructor injection, use systems
+├── Resources/
+│   ├── ResourceManager.cs       # REFACTOR - Remove constructor injection, use systems
+│   ├── BufferManager.cs         # REFACTOR - Remove constructor injection, use systems
+│   ├── GeometryResourceManager.cs # REFACTOR - Remove constructor injection, use systems
+│   └── ShaderResourceManager.cs # REFACTOR - Remove constructor injection, use systems
+├── Content/
+│   ├── ContentManager.cs        # REFACTOR - Remove constructor injection, use systems
+│   └── ComponentFactory.cs      # REFACTOR - Remove constructor injection, use systems
+└── GlobalUsings.cs              # UPDATE - Add system extension namespaces
 
 Tests/GameEngine/
-├── Components/
-│   ├── Component.Tests.cs        # NEW: Tests for consolidated base class
-│   └── ComponentFactory.Tests.cs # Enhanced: Test system initialization
-└── Runtime/
-    └── Systems/                  # NEW: System tests
-        ├── ResourceSystem.Tests.cs
-        ├── GraphicsSystem.Tests.cs
-        ├── ContentSystem.Tests.cs
-        ├── WindowSystem.Tests.cs
-        └── InputSystem.Tests.cs
-
-TestApp/
-└── [integration test scenarios for system usage]
+└── Systems/                     # NEW - Unit tests for systems
+    ├── GraphicsSystemTests.cs
+    ├── ResourceSystemTests.cs
+    ├── ContentSystemTests.cs
+    ├── WindowSystemTests.cs
+    └── InputSystemTests.cs
 ```
 
-**Structure Decision**: Single project structure maintained. New `Runtime/Systems/` directory introduced for system interfaces and implementations. Extension methods organized in `Runtime/Extensions/`. Component base class split into partial files by concern (identity, configuration, hierarchy, lifecycle, systems) to improve maintainability while consolidating the inheritance hierarchy.
+**Structure Decision**: This is a single-project game engine framework following existing Nexus.GameEngine structure. The Systems/ directory is added to src/GameEngine/ to contain system interfaces, implementations, and extension methods. Existing framework classes in Graphics/, Resources/, and Content/ will be refactored to remove constructor injection and use system properties instead. Tests mirror the source structure under Tests/GameEngine/Systems/.
 
 ## Complexity Tracking
 
-> **No Constitution Violations - This section intentionally left empty**
+> **Fill ONLY if Constitution Check has violations that must be justified**
 
-This refactoring simplifies the existing architecture and does not introduce complexity that violates constitution principles. All changes are additive and maintain backward compatibility.
+No violations detected - this section intentionally left empty.

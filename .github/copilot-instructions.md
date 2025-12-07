@@ -35,11 +35,16 @@ cd src/GameEngine/Shaders
 
 ### Core Systems
 
+**Systems Pattern**: Framework services are exposed via marker interfaces (`IGraphicsSystem`, `IResourceSystem`, `IContentSystem`, `IWindowSystem`, `IInputSystem`) with functionality provided by extension methods.
+- **Access**: Framework classes access systems via properties (e.g., `this.Graphics`, `this.Resources`).
+- **No Constructor Injection**: Do NOT inject internal managers (e.g., `IPipelineManager`) into framework classes. Use the System properties instead.
+- **No Service Locator**: Do NOT use `GetRequiredService<T>()` in framework classes.
+
 **Component-Based Architecture**: Everything is an `IRuntimeComponent` that can contain other components via a `Children` property. Components implement only the behavior interfaces they need.
 
-**Vulkan Rendering**: Core graphics infrastructure. See `src/GameEngine/Graphics/` for implementations of IGraphicsContext, ISwapChain, IPipelineManager, ICommandPoolManager, ISyncManager, IDescriptorManager, IRenderer, and ICamera.
+**Vulkan Rendering**: Core graphics infrastructure. See `src/GameEngine/Graphics/` for implementations. Accessed via `IGraphicsSystem`.
 
-**Resource Management**: Unified resource management via IResourceManager. See `src/GameEngine/Resources/` for implementations.
+**Resource Management**: Unified resource management via `IResourceSystem`. See `src/GameEngine/Resources/` for implementations.
 
 **Testing Infrastructure**: Frame-based integration testing using TestApp. See `src/GameEngine/Testing/README.md` for details. Tests support `--filter` argument for case-insensitive name filtering.
 

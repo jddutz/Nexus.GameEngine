@@ -7,16 +7,13 @@ using Nexus.GameEngine.Graphics.PushConstants;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
 using Nexus.GameEngine.Resources.Textures;
+using Nexus.GameEngine.Runtime.Extensions;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Components;
 
 public partial class SpriteRenderer : Component, IDrawable
 {
-    private readonly IPipelineManager _pipelineManager;
-    private readonly IDescriptorManager _descriptorManager;
-    private readonly IResourceManager _resourceManager;
-
     [ComponentProperty]
     [TemplateProperty]
     protected TextureResource? _texture;
@@ -34,11 +31,8 @@ public partial class SpriteRenderer : Component, IDrawable
     private PipelineHandle _pipeline;
     private IGeometryResource? _geometry;
 
-    public SpriteRenderer(IPipelineManager pipelineManager, IDescriptorManager descriptorManager, IResourceManager resourceManager)
+    public SpriteRenderer()
     {
-        _pipelineManager = pipelineManager;
-        _descriptorManager = descriptorManager;
-        _resourceManager = resourceManager;
     }
 
     public bool IsVisible() => Visible && IsActive();
@@ -47,8 +41,8 @@ public partial class SpriteRenderer : Component, IDrawable
     {
         base.OnActivate();
         
-        _pipeline = _pipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
-        _geometry = _resourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
+        _pipeline = Graphics.GetPipeline(PipelineDefinitions.UIElement);
+        _geometry = Resources.GetGeometry(GeometryDefinitions.TexturedQuad);
 
         UpdateDescriptorSet();
     }
@@ -57,7 +51,7 @@ public partial class SpriteRenderer : Component, IDrawable
     {
         if (_geometry != null)
         {
-            _resourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
+            Resources.ReleaseGeometry(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         
@@ -77,10 +71,10 @@ public partial class SpriteRenderer : Component, IDrawable
              return;
         }
 
-        var layout = _descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[1]);
-        _descriptorSet = _descriptorManager.AllocateDescriptorSet(layout);
+        var layout = Graphics.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[1]);
+        _descriptorSet = Graphics.AllocateDescriptorSet(layout);
 
-        _descriptorManager.UpdateDescriptorSet(
+        Graphics.UpdateDescriptorSet(
             _descriptorSet.Value,
             _texture.ImageView,
             _texture.Sampler,

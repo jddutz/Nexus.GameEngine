@@ -8,14 +8,10 @@ namespace Nexus.GameEngine.Input.Components;
 /// </summary>
 /// <typeparam name="TAction">The type of action to execute when the key binding is triggered. Must implement IAction.</typeparam>
 /// <remarks>
-/// Initializes a new instance of the KeyBinding class with dependency injection.
+/// Initializes a new instance of the KeyBinding class.
 /// </remarks>
-/// <param name="windowService">The window service to use for getting input context</param>
-/// <param name="actionFactory">The action factory for creating and executing actions</param>
-public partial class KeyBinding(
-    IWindowService windowService,
-    IActionFactory actionFactory)
-    : InputBinding(windowService, actionFactory)
+public partial class KeyBinding()
+    : InputBinding
 {
     /// <summary>
     /// The key that triggers this binding

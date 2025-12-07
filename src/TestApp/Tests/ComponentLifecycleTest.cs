@@ -6,8 +6,8 @@ namespace TestApp.Tests;
 /// <summary>
 /// Tests that all RuntimeComponent lifecycle methods are called in the correct order.
 /// </summary>
-public partial class ComponentLifecycleTest(IWindowService windowService) 
-    : TestComponent(windowService), ITestComponent
+public partial class ComponentLifecycleTest() 
+    : TestComponent, ITestComponent
 {    
     // Track the order of calls
     private readonly List<string> callOrder = [];

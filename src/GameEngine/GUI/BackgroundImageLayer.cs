@@ -1,5 +1,6 @@
 ﻿using Nexus.GameEngine.Graphics.PushConstants;
 using Nexus.GameEngine.Resources.Geometry.Definitions;
+using Nexus.GameEngine.Runtime.Extensions;
 
 namespace Nexus.GameEngine.GUI;
 
@@ -9,10 +10,7 @@ namespace Nexus.GameEngine.GUI;
 /// Uses texture resources and descriptor sets.
 /// Renders in Main pass at priority 0 (background layer).
 /// </summary>
-public partial class BackgroundImageLayer(
-    IDescriptorManager descriptorManager,
-    IResourceManager resourceManager,
-    IPipelineManager pipelineManager)
+public partial class BackgroundImageLayer()
     : Component, IDrawable
 {
     private IGeometryResource? _geometry;
@@ -40,14 +38,14 @@ public partial class BackgroundImageLayer(
     public bool IsVisible() => IsValid() && IsActive() && Visible;
 
     public PipelineHandle Pipeline =>
-        pipelineManager.GetOrCreate(PipelineDefinitions.ImageTexture);
+        Graphics.GetPipeline(PipelineDefinitions.ImageTexture);
 
     protected override void OnActivate()
     {
         base.OnActivate();
 
         // Load texture with specified definition
-        _texture = resourceManager.Textures.GetOrCreate(_textureDefinition);
+        _texture = Resources.GetTexture(_textureDefinition);
         
         // Get or create descriptor set layout
         var shader = ShaderDefinitions.ImageTexture;
@@ -57,11 +55,11 @@ public partial class BackgroundImageLayer(
                 $"Shader {shader.Name} does not define descriptor set layout for set 0");
         }
 
-        var layout = descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
-        _textureDescriptorSet = descriptorManager.AllocateDescriptorSet(layout);
+        var layout = Graphics.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[0]);
+        _textureDescriptorSet = Graphics.AllocateDescriptorSet(layout);
 
         // Update descriptor set with texture
-        descriptorManager.UpdateDescriptorSet(
+        Graphics.UpdateDescriptorSet(
             _textureDescriptorSet.Value,
             _texture.ImageView,
             _texture.Sampler,
@@ -69,7 +67,7 @@ public partial class BackgroundImageLayer(
             binding: 0);
         
         // Create textured quad geometry
-        _geometry = resourceManager.Geometry.GetOrCreate(GeometryDefinitions.TexturedQuad);
+        _geometry = Resources.GetGeometry(GeometryDefinitions.TexturedQuad);
     }
 
     public IEnumerable<DrawCommand> GetDrawCommands(RenderContext context)
@@ -123,7 +121,7 @@ public partial class BackgroundImageLayer(
         // Clean up texture resources
         if (_texture != null && _textureDefinition != null)
         {
-            resourceManager.Textures.Release(_textureDefinition);
+            Resources.ReleaseTexture(_textureDefinition);
             _texture = null;
             
         }
@@ -135,7 +133,7 @@ public partial class BackgroundImageLayer(
         
         if (_geometry != null)
         {
-            resourceManager.Geometry.Release(GeometryDefinitions.TexturedQuad);
+            Resources.ReleaseGeometry(GeometryDefinitions.TexturedQuad);
             _geometry = null;
         }
         

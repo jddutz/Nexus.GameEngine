@@ -10,9 +10,8 @@ namespace TestApp.Tests;
 /// Tests FR-005: Runtime enable/disable without restart.
 /// </summary>
 public partial class ProfilingActivationTest(
-    IProfiler profiler,
-    IWindowService windowService)
-    : TestComponent(windowService), ITestComponent
+    IProfiler profiler)
+    : TestComponent, ITestComponent
 {
     private bool _initialStateChecked = false;
     private bool _enabledStateChecked = false;

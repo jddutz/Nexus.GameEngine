@@ -9,14 +9,10 @@ namespace Nexus.GameEngine.Input.Components;
 /// when the specified mouse input occurs.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the MouseBinding class with dependency injection.
+/// Initializes a new instance of the MouseBinding class.
 /// </remarks>
-/// <param name="windowService">The window service to use for getting input context</param>
-/// <param name="actionFactory">The action factory for creating and executing actions</param>
-public partial class MouseBinding(
-    IWindowService windowService,
-    IActionFactory actionFactory)
-    : InputBinding(windowService, actionFactory)
+public partial class MouseBinding()
+    : InputBinding
 {
     /// <summary>
     /// The mouse button that triggers this binding.

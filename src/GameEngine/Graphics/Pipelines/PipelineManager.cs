@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
+using Nexus.GameEngine.Runtime.Systems;
 
 namespace Nexus.GameEngine.Graphics.Pipelines;
 
@@ -13,7 +14,7 @@ namespace Nexus.GameEngine.Graphics.Pipelines;
 public unsafe class PipelineManager : IPipelineManager
 {
     private readonly IGraphicsContext _context;
-    private readonly IWindowService _windowService;
+    private readonly IWindow _window;
     private readonly IResourceManager _resources;
     private readonly IDescriptorManager _descriptorManager;
     private readonly Vk _vk;
@@ -40,20 +41,18 @@ public unsafe class PipelineManager : IPipelineManager
         IGraphicsContext context,
         IWindowService windowService,
         ISwapChain swapChain,
-        IResourceManager resources,
+        IResourceManager resourceManager,
         IDescriptorManager descriptorManager)
     {
         _context = context;
-        _windowService = windowService;
+        _window = windowService.GetWindow();
         _swapChain = swapChain;
-        _resources = resources;
+        _resources = resourceManager;
         _descriptorManager = descriptorManager;
         _vk = _context.VulkanApi;
 
         // Subscribe to window resize events
-        var window = _windowService.GetWindow();
-        window.Resize += OnWindowResize;
-
+        _window.Resize += OnWindowResize;
     }
 
     /// <inheritdoc/>
@@ -840,8 +839,7 @@ public unsafe class PipelineManager : IPipelineManager
         // Unsubscribe from window events
         try
         {
-            var window = _windowService.GetWindow();
-            window.Resize -= OnWindowResize;
+            _window.Resize -= OnWindowResize;
         }
         catch
         {

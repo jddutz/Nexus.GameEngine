@@ -18,7 +18,7 @@
             "request": "launch",
             "preLaunchTask": "build-solution",
             "program": "${workspaceFolder}/src/TestApp/bin/Debug/net9.0/TestApp.dll",
-            "args": [],
+            "args": ["--benchmark"],
             "cwd": "${workspaceFolder}/src/TestApp",
             "console": "internalConsole",
             "stopAtEntry": false

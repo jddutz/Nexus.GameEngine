@@ -17,11 +17,6 @@ public record Template
     public virtual Type? ComponentType { get; init; } = null;
 
     /// <summary>
-    /// Gets the name of the component.
-    /// </summary>
-    public string? Name { get; init; }
-
-    /// <summary>
     /// Gets the subcomponents to be created as children of this component.
     /// </summary>
     public Template[] Subcomponents { get; init; } = Array.Empty<Template>();
