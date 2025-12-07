@@ -5,5 +5,5 @@ namespace Nexus.GameEngine.Actions;
 /// </summary>
 public interface IActionFactory
 {
-    Task<ActionResult> ExecuteAsync(ActionId actionId, IRuntimeComponent context);
+    Task<ActionResult> ExecuteAsync(ActionId actionId, IComponent context);
 }

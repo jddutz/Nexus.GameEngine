@@ -6,7 +6,7 @@ namespace Nexus.GameEngine.Input.Components;
 /// of child input binding components. When this mapping is active, all child
 /// input bindings are activated. When deactivated, all child bindings are deactivated.
 /// </summary>
-public partial class InputMap : RuntimeComponent
+public partial class InputMap : Component
 {
     /// <summary>
     /// Description of when this input mapping should be active.

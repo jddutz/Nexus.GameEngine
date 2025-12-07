@@ -11,7 +11,7 @@ using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI;
 
-public partial class TextRenderer : RuntimeComponent, IDrawable
+public partial class TextRenderer : Component, IDrawable
 {
     private readonly IPipelineManager _pipelineManager;
     private readonly IDescriptorManager _descriptorManager;

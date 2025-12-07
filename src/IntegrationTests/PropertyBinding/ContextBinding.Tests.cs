@@ -29,8 +29,8 @@ public class ContextBindingTests
         {
             Bindings = new ManualBindings
             {
-                Color = Nexus.GameEngine.Components.PropertyBinding.FromContext<ThemeProvider>()
-                               .GetPropertyValue("PrimaryColor")
+                Color = Binding.FromContext<ThemeProvider>()
+                               .GetPropertyValue(t => t.PrimaryColor)
             }
         };
         
@@ -51,7 +51,7 @@ public class ContextBindingTests
         Assert.Equal("Red", button.Color);
     }
 
-    public class ThemeProvider : RuntimeComponent
+    public class ThemeProvider : Component
     {
         private string _primaryColor = "White";
         public string PrimaryColor
@@ -67,18 +67,18 @@ public class ContextBindingTests
         public event EventHandler<PropertyChangedEventArgs<string>>? PrimaryColorChanged;
     }
 
-    public class ContainerComponent : RuntimeComponent { }
+    public class ContainerComponent : Component { }
 
-    public class ButtonComponent : RuntimeComponent
+    public class ButtonComponent : Component
     {
         public string? Color { get; set; }
     }
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? Color { get; init; }
+        public IPropertyBinding? Color { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (Color != null) yield return ("Color", Color);
         }

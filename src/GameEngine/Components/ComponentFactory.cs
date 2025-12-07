@@ -23,7 +23,7 @@ public class ComponentFactory(
     /// <inheritdoc/>
     public IComponent? Create(Type componentType)
     {
-        if (componentType == null) throw new ArgumentNullException(nameof(componentType));
+        ArgumentNullException.ThrowIfNull(componentType);
 
         if (componentType.IsAbstract || componentType.IsInterface)
             throw new InvalidOperationException($"Cannot create component for abstract or interface type '{componentType.FullName}'. Provide a concrete component type.");

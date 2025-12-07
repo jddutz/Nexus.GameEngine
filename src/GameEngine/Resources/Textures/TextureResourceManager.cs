@@ -357,7 +357,7 @@ public unsafe class TextureResourceManager(
         // Free the command buffer by resetting the pool
         // Note: This is safe because we waited for the queue to be idle
         var pool = commandPoolManager.GetOrCreatePool(Graphics.Commands.CommandPoolType.TransientGraphics);
-        pool.FreeCommandBuffers(new[] { commandBuffer });
+        pool.FreeCommandBuffers([commandBuffer]);
     }
     
     private ImageView CreateImageView(Image image, Format format)

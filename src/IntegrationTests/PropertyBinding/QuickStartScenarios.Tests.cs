@@ -9,7 +9,7 @@ namespace IntegrationTests.PropertyBinding;
 
 // --- Scenario 1 & 2 Components ---
 
-public class PlayerCharacter : RuntimeComponent
+public class PlayerCharacter : Component
 {
     private float _health = 100f;
     public float Health 
@@ -25,19 +25,19 @@ public class PlayerCharacter : RuntimeComponent
     public event EventHandler<PropertyChangedEventArgs<float>>? HealthChanged;
 }
 
-public class HealthBar : RuntimeComponent
+public class HealthBar : Component
 {
     public float CurrentHealth { get; set; }
 }
 
-public class TextDisplay : RuntimeComponent
+public class TextDisplay : Component
 {
     public string Text { get; set; } = "";
 }
 
 // --- Scenario 3 Components ---
 
-public class AudioSettings : RuntimeComponent
+public class AudioSettings : Component
 {
     private float _masterVolume = 0.75f;
     public float MasterVolume 
@@ -56,7 +56,7 @@ public class AudioSettings : RuntimeComponent
     public event EventHandler<PropertyChangedEventArgs<float>>? MasterVolumeChanged;
 }
 
-public class Slider : RuntimeComponent
+public class Slider : Component
 {
     private float _value;
     public float Value 
@@ -92,7 +92,7 @@ public class PercentageConverter : Nexus.GameEngine.Data.IValueConverter, IBidir
 
 // --- Scenario 4 Components ---
 
-public class ScoreCounter : RuntimeComponent
+public class ScoreCounter : Component
 {
     private int _score = 0;
     public int Score 
@@ -108,14 +108,14 @@ public class ScoreCounter : RuntimeComponent
     public event EventHandler<PropertyChangedEventArgs<int>>? ScoreChanged;
 }
 
-public class ScoreDisplay : RuntimeComponent
+public class ScoreDisplay : Component
 {
     public int DisplayValue { get; set; }
 }
 
 // --- Scenario 5 Components ---
 
-public class ThemeContext : RuntimeComponent
+public class ThemeContext : Component
 {
     private string _primaryColor = "White";
     public string PrimaryColor 
@@ -131,12 +131,12 @@ public class ThemeContext : RuntimeComponent
     public event EventHandler<PropertyChangedEventArgs<string>>? PrimaryColorChanged;
 }
 
-public class ThemedButton : RuntimeComponent
+public class ThemedButton : Component
 {
     public string BackgroundColor { get; set; } = "";
 }
 
-public class ThemedPanel : RuntimeComponent
+public class ThemedPanel : Component
 {
     public string BorderColor { get; set; } = "";
 }
@@ -144,9 +144,9 @@ public class ThemedPanel : RuntimeComponent
 // --- Helper for Manual Bindings ---
 public class ManualBindings : PropertyBindings
 {
-    private readonly List<(string, Nexus.GameEngine.Components.PropertyBinding)> _bindings = new();
-    public void Add(string name, Nexus.GameEngine.Components.PropertyBinding binding) => _bindings.Add((name, binding));
-    public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator() => _bindings.GetEnumerator();
+    private readonly List<(string, IPropertyBinding)> _bindings = new();
+    public void Add(string name, IPropertyBinding binding) => _bindings.Add((name, binding));
+    public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator() => _bindings.GetEnumerator();
 }
 
 public class QuickStartScenariosTests
@@ -156,7 +156,8 @@ public class QuickStartScenariosTests
     {
         // Setup
         var bindings = new ManualBindings();
-        bindings.Add("CurrentHealth", Binding.FromParent<PlayerCharacter>(p => p.Health));
+        bindings.Add("CurrentHealth", Binding.FromParent<PlayerCharacter>()
+            .GetPropertyValue(p => p.Health));
 
         var player = new PlayerCharacter();
         var healthBar = new HealthBar();
@@ -183,8 +184,9 @@ public class QuickStartScenariosTests
     public void Scenario1_DisplayNumericValueAsText()
     {
         var bindings = new ManualBindings();
-        bindings.Add("Text", Binding.FromParent<PlayerCharacter>(p => p.Health)
-                                    .AsFormattedString("Health: {0:F1}"));
+        bindings.Add("Text", Binding.FromParent<PlayerCharacter>()
+            .GetPropertyValue(p => p.Health)
+            .AsFormattedString("Health: {0:F1}"));
 
         var player = new PlayerCharacter();
         player.Health = 75.5f;
@@ -212,9 +214,10 @@ public class QuickStartScenariosTests
     public void Scenario2_BindToNamedComponent()
     {
         var bindings = new ManualBindings();
-        bindings.Add("CurrentHealth", Binding.FromNamedObject<PlayerCharacter>("Player", p => p.Health));
+        bindings.Add("CurrentHealth", Binding.FromNamedObject<PlayerCharacter>("Player")
+            .GetPropertyValue(p => p.Health));
 
-        var root = new RuntimeComponent();
+        var root = new Component();
         var player = new PlayerCharacter();
         var healthBar = new HealthBar();
         
@@ -222,7 +225,7 @@ public class QuickStartScenariosTests
         root.AddChild(player);
         root.AddChild(healthBar);
         
-        player.Load(new Template { Name = "Player" });
+        player.Load(new ComponentTemplate { Name = "Player" });
         player.Health = 80f;
         
         healthBar.Load(new Template { Bindings = bindings });
@@ -243,9 +246,10 @@ public class QuickStartScenariosTests
     public void Scenario3_TwoWayBinding()
     {
         var bindings = new ManualBindings();
-        bindings.Add("Value", Binding.FromContext<AudioSettings>(s => s.MasterVolume)
-                                     .TwoWay()
-                                     .WithConverter(new PercentageConverter()));
+        bindings.Add("Value", Binding.FromContext<AudioSettings>()
+            .GetPropertyValue(s => s.MasterVolume)
+            .TwoWay()
+            .WithConverter(new PercentageConverter()));
 
         var settings = new AudioSettings();
         settings.MasterVolume = 0.75f;
@@ -275,9 +279,10 @@ public class QuickStartScenariosTests
     public void Scenario4_BindBetweenSiblings()
     {
         var bindings = new ManualBindings();
-        bindings.Add("DisplayValue", Binding.FromSibling<ScoreCounter>(s => s.Score));
+        bindings.Add("DisplayValue", Binding.FromSibling<ScoreCounter>()
+            .GetPropertyValue(s => s.Score));
 
-        var container = new RuntimeComponent();
+        var container = new Component();
         var counter = new ScoreCounter();
         var display = new ScoreDisplay();
         
@@ -306,10 +311,12 @@ public class QuickStartScenariosTests
     public void Scenario5_ContextBasedTheming()
     {
         var btnBindings = new ManualBindings();
-        btnBindings.Add("BackgroundColor", Binding.FromContext<ThemeContext>(t => t.PrimaryColor));
+        btnBindings.Add("BackgroundColor", Binding.FromContext<ThemeContext>()
+            .GetPropertyValue(t => t.PrimaryColor));
         
         var panelBindings = new ManualBindings();
-        panelBindings.Add("BorderColor", Binding.FromContext<ThemeContext>(t => t.PrimaryColor));
+        panelBindings.Add("BorderColor", Binding.FromContext<ThemeContext>()
+            .GetPropertyValue(t => t.PrimaryColor));
 
         var theme = new ThemeContext();
         theme.PrimaryColor = "Red";

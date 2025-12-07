@@ -1,5 +1,6 @@
 using System.Reflection.Metadata.Ecma335;
 using Nexus.GameEngine;
+using Nexus.GameEngine.Components;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Performance;
 using Nexus.GameEngine.Runtime;
@@ -45,7 +46,7 @@ public class ContentManager(
     /// This method:
     /// 1. Creates the component and its subcomponents from the template
     /// 2. Configures all components (sets IsLoaded = true)
-    /// 3. Activates all IRuntimeComponents in the tree (if activate = true)
+    /// 3. Activates all IComponents in the tree (if activate = true)
     /// 4. Caches the content for reuse
     /// 
     /// Use Load() when you want content ready to render immediately.
@@ -54,10 +55,10 @@ public class ContentManager(
     /// <inheritdoc/>
     public IComponent? Load(Template template)
     {
-        if (string.IsNullOrEmpty(template.Name)) return null;
-
+        var name = (template as ComponentTemplate)?.Name;
+        
         // Try to get existing content first
-        if (content.TryGetValue(template.Name, out var existingComponent))
+        if (!string.IsNullOrEmpty(name) && content.TryGetValue(name, out var existingComponent))
         {
             return existingComponent;
         }
@@ -68,7 +69,8 @@ public class ContentManager(
             var created = CreateInstance(template);
             if (created != null)
             {
-                content[template.Name] = created;
+                var key = !string.IsNullOrEmpty(name) ? name : Guid.NewGuid().ToString();
+                content[key] = created;
 
                 // Validate the component tree
                 created.Validate();
@@ -81,7 +83,7 @@ public class ContentManager(
                     uiElement.UpdateLayout();
                 }
 
-                if(created is IRuntimeComponent rc)
+                if(created is IActivatable rc && template is ComponentTemplate ct && ct.Active != null && ct.Active.HasValue == true)
                 {
                     rc.Activate();
                 }
@@ -269,9 +271,9 @@ public class ContentManager(
             var component = componentStack.Pop();
             
             // Apply updates to all Entity-based components
-            if (component is IRuntimeComponent rc && rc.IsActive())
+            if (component.IsActive())
             {
-                rc.ApplyUpdates(deltaTime);
+                component.ApplyUpdates(deltaTime);
             }
             
             // Traverse all children
@@ -282,7 +284,7 @@ public class ContentManager(
         }
         
         // SECOND PASS: Update all active RuntimeComponents and rebuild visible drawables and cameras
-        // Follow same pattern as Renderer: traverse tree, update IRuntimeComponents
+        // Follow same pattern as Renderer: traverse tree, update IComponents
         componentStack.Clear();
         _visibleDrawables.Clear();  // Clear each frame - will be repopulated during traversal
         _cameras.Clear();  // Also clear cameras - will be repopulated during traversal
@@ -310,7 +312,7 @@ public class ContentManager(
             // Collect active cameras as we traverse
             if (component is ICamera camera)
             {
-                if (camera is IRuntimeComponent cameraRuntime && cameraRuntime.IsActive())
+                if (camera.IsActive())
                 {
                     _cameras.Add(camera);
                 }
@@ -324,15 +326,12 @@ public class ContentManager(
             
             // Update if it's a RuntimeComponent and active
             // Note: We still traverse children above to collect drawables from entire tree
-            if (component is IRuntimeComponent runtimeComponent)
+            if (component.IsActive())
             {
-                if (runtimeComponent.IsActive())
+                // Only update roots. Children are updated by their parents.
+                if (component.Parent == null)
                 {
-                    // Only update roots. Children are updated by their parents.
-                    if (component.Parent == null)
-                    {
-                        runtimeComponent.Update(deltaTime);
-                    }
+                    component.Update(deltaTime);
                 }
             }
         }
@@ -374,7 +373,7 @@ public class ContentManager(
             // Check if this component is an active camera
             if (component is ICamera camera)
             {
-                if (camera is IRuntimeComponent runtimeComponent && runtimeComponent.IsActive())
+                if (camera.IsActive())
                 {
                     _cameras.Add(camera);
                 }

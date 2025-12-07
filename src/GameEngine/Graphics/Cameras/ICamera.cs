@@ -1,6 +1,6 @@
 namespace Nexus.GameEngine.Graphics.Cameras;
 
-public interface ICamera : IRuntimeComponent, IRenderPriority
+public interface ICamera : IComponent, IRenderPriority
 {
     /// <summary>
     /// Gets the screen region this camera renders to, in normalized coordinates (0-1).

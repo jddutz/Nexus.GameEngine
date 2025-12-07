@@ -1,19 +1,11 @@
-﻿namespace Nexus.GameEngine.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-/// <summary>
-/// Base class for all runtime components in the system.
-/// Provides component tree management, lifecycle methods, and configuration.
-/// Implements IRuntimeComponent, which triggers source generation of animated property implementations.
-/// </summary>
-public partial class RuntimeComponent
-    : Component, IRuntimeComponent
+namespace Nexus.GameEngine.Components;
+
+public partial class Component
 {
-    /// <summary>
-    /// Parameterless constructor for dependency injection.
-    /// Components are instantiated via DI and configured through templates.
-    /// </summary>
-    public RuntimeComponent() { }
-
     /// <summary>
     /// Whether this component is currently active and should participate in updates.
     /// Changes to Active are deferred until the next frame boundary to ensure temporal consistency.
@@ -24,15 +16,6 @@ public partial class RuntimeComponent
     protected bool _active = false;
 
     private PropertyBindings? _bindings;
-
-    protected override void OnLoad(Template? template)
-    {
-        base.OnLoad(template);
-        if (template != null)
-        {
-            _bindings = template.Bindings;
-        }
-    }
 
     /// <summary>
     /// Returns whether this component is currently active and enabled.
@@ -56,7 +39,7 @@ public partial class RuntimeComponent
 
     public void Activate()
     {
-        if (Parent is IRuntimeComponent parent && !parent.IsActive()) return;
+        if (Parent is IActivatable parent && !parent.IsActive()) return;
 
         // Validate before activation (uses cached results if available, validates if cache is null)
         if (!IsValid()) return;
@@ -78,14 +61,14 @@ public partial class RuntimeComponent
     {
         // Only activate immediate children, not grandchildren
         // Each child's Activate() will handle its own children
-        foreach(var child in Children.OfType<IRuntimeComponent>())
+        foreach(var child in Children.OfType<IActivatable>())
         {
             child.Activate();
         }
     }
 
     public virtual void ActivateChildren<TChild>()
-        where TChild : IRuntimeComponent
+        where TChild : IActivatable
     {
         // Only activate immediate children, not grandchildren
         foreach(var child in Children.OfType<TChild>())
@@ -127,7 +110,7 @@ public partial class RuntimeComponent
         }
 
         // Create a snapshot of children to allow collection modifications during update
-        foreach (var child in Children.OfType<IRuntimeComponent>().ToArray())
+        foreach (var child in Children.OfType<IUpdatable>().ToArray())
         {
             child.Update(deltaTime);
         }
@@ -138,6 +121,14 @@ public partial class RuntimeComponent
 
         Updated?.Invoke(this, EventArgs.Empty);
         IsUpdating = false;
+    }
+    
+    public void UpdateChildren(double deltaTime)
+    {
+         foreach (var child in Children.OfType<IUpdatable>().ToArray())
+        {
+            child.Update(deltaTime);
+        }
     }
 
     public event EventHandler<EventArgs>? Deactivating;
@@ -164,7 +155,7 @@ public partial class RuntimeComponent
         _active = false;
 
         // Deactivate leaf to root
-        foreach (var child in Children.OfType<IRuntimeComponent>())
+        foreach (var child in Children.OfType<IActivatable>())
         {
             child.Deactivate();
         }
@@ -172,5 +163,13 @@ public partial class RuntimeComponent
         OnDeactivate();
 
         Deactivated?.Invoke(this, EventArgs.Empty);
+    }
+    
+    public void DeactivateChildren()
+    {
+        foreach (var child in Children.OfType<IActivatable>())
+        {
+            child.Deactivate();
+        }
     }
 }

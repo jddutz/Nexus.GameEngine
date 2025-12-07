@@ -1,4 +1,5 @@
 using System;
+using System.Linq.Expressions;
 using System.Reflection;
 using Nexus.GameEngine.Components.Lookups;
 using Nexus.GameEngine.Data;
@@ -7,16 +8,37 @@ using Nexus.GameEngine.Events;
 namespace Nexus.GameEngine.Components;
 
 /// <summary>
-/// Encapsulates the configuration and runtime state for a property binding.
-/// Manages the lifecycle of event subscriptions between source and target components.
+/// Non-generic interface for property bindings to enable collection storage and lifecycle management.
 /// </summary>
-public class PropertyBinding
+public interface IPropertyBinding
+{
+    /// <summary>
+    /// Activates the binding by resolving source component and subscribing to property changes.
+    /// </summary>
+    void Activate(IComponent targetComponent, string targetPropertyName);
+    
+    /// <summary>
+    /// Deactivates the binding by unsubscribing from events and clearing references.
+    /// </summary>
+    void Deactivate();
+}
+
+/// <summary>
+/// Property binding transformation pipeline.
+/// TSource: The source component type (constant through pipeline)
+/// TValue: The current value type flowing through the pipeline (transforms at each step)
+/// </summary>
+/// <typeparam name="TSource">Source component type</typeparam>
+/// <typeparam name="TValue">Current value type in the pipeline</typeparam>
+public class PropertyBinding<TSource, TValue> : IPropertyBinding where TSource : class, IComponent
 {
     private ILookupStrategy? _lookupStrategy;
     private string? _sourcePropertyName;
     private IValueConverter? _converter;
     private BindingMode _mode = BindingMode.OneWay;
+    private Func<TSource, TValue>? _transform;
 
+    // Runtime state
     private IComponent? _sourceComponent;
     private EventInfo? _sourceEvent;
     private Delegate? _sourceHandler;
@@ -33,107 +55,104 @@ public class PropertyBinding
     {
         _lookupStrategy = strategy;
     }
+    
+    // Private constructor for pipeline transformations
+    private PropertyBinding(ILookupStrategy? strategy, string? sourceProp, Func<TSource, TValue>? transform, IValueConverter? converter = null, BindingMode mode = BindingMode.OneWay)
+    {
+        _lookupStrategy = strategy;
+        _sourcePropertyName = sourceProp;
+        _transform = transform;
+        _converter = converter;
+        _mode = mode;
+    }
 
-    #region Fluent API - Static Factory Methods
+    #region Fluent API - Property Extraction and Transformation
 
     /// <summary>
-    /// Creates a binding that searches for the first parent component of type T.
+    /// Extracts a property value from the source component.
+    /// Type inference: compiler infers TProp from the lambda expression.
     /// </summary>
-    /// <typeparam name="T">The type of the parent component to find.</typeparam>
-    /// <returns>A new PropertyBinding instance configured with ParentLookup strategy.</returns>
-    public static PropertyBinding FromParent<T>() where T : class, IComponent
+    /// <typeparam name="TProp">Property type (inferred from lambda)</typeparam>
+    /// <param name="selector">Lambda expression selecting the property</param>
+    /// <returns>New binding with TValue = TProp</returns>
+    public PropertyBinding<TSource, TProp> GetPropertyValue<TProp>(Expression<Func<TSource, TProp>> selector)
     {
-        return new PropertyBinding(new ParentLookup<T>());
+        string propName = ExtractPropertyName(selector);
+        var compiled = selector.Compile();
+        
+        return new PropertyBinding<TSource, TProp>(
+            _lookupStrategy,
+            propName,
+            compiled,
+            _converter,
+            _mode
+        );
     }
 
     /// <summary>
-    /// Creates a binding that searches the entire component tree for a component with the specified name.
+    /// Converts the current value to a formatted string.
     /// </summary>
-    /// <param name="name">The name of the component to find.</param>
-    /// <returns>A new PropertyBinding instance configured with NamedObjectLookup strategy.</returns>
-    public static PropertyBinding FromNamedObject(string name)
+    /// <param name="format">Format string (e.g., "Health: {0:F0}")</param>
+    /// <returns>New binding with TValue = string</returns>
+    public PropertyBinding<TSource, string> AsFormattedString(string format)
     {
-        return new PropertyBinding(new NamedObjectLookup(name));
+        var converter = new StringFormatConverter(format);
+        
+        return new PropertyBinding<TSource, string>(
+            _lookupStrategy,
+            _sourcePropertyName,
+            source =>
+            {
+                var value = _transform != null ? _transform(source) : (object?)source;
+                return converter.Convert(value) as string ?? "";
+            },
+            converter,
+            _mode
+        );
     }
 
     /// <summary>
-    /// Creates a binding that searches siblings for the first component of type T.
+    /// Applies a custom converter to transform the current value.
     /// </summary>
-    /// <typeparam name="T">The type of the sibling component to find.</typeparam>
-    /// <returns>A new PropertyBinding instance configured with SiblingLookup strategy.</returns>
-    public static PropertyBinding FromSibling<T>() where T : IComponent
-    {
-        return new PropertyBinding(new SiblingLookup<T>());
-    }
-
-    /// <summary>
-    /// Creates a binding that searches immediate children for the first component of type T.
-    /// </summary>
-    /// <typeparam name="T">The type of the child component to find.</typeparam>
-    /// <returns>A new PropertyBinding instance configured with ChildLookup strategy.</returns>
-    public static PropertyBinding FromChild<T>() where T : IComponent
-    {
-        return new PropertyBinding(new ChildLookup<T>());
-    }
-
-    /// <summary>
-    /// Creates a binding that searches up the tree for the first ancestor of type T.
-    /// </summary>
-    /// <typeparam name="T">The type of the ancestor component to find.</typeparam>
-    /// <returns>A new PropertyBinding instance configured with ContextLookup strategy.</returns>
-    public static PropertyBinding FromContext<T>() where T : IComponent
-    {
-        return new PropertyBinding(new ContextLookup<T>());
-    }
-
-    #endregion
-
-    #region Fluent API - Configuration Methods
-
-    /// <summary>
-    /// Specifies the source property to bind to.
-    /// </summary>
-    /// <param name="propertyName">The name of the property on the source component.</param>
-    /// <returns>The current PropertyBinding instance for chaining.</returns>
-    public PropertyBinding GetPropertyValue(string propertyName)
-    {
-        _sourcePropertyName = propertyName;
-        return this;
-    }
-
-    /// <summary>
-    /// Adds a value converter to transform values during binding updates.
-    /// </summary>
-    /// <param name="converter">The converter to use.</param>
-    /// <returns>The current PropertyBinding instance for chaining.</returns>
-    public PropertyBinding WithConverter(IValueConverter converter)
+    /// <param name="converter">Converter to apply</param>
+    /// <returns>Current binding instance</returns>
+    public PropertyBinding<TSource, TValue> WithConverter(IValueConverter converter)
     {
         _converter = converter;
         return this;
     }
 
     /// <summary>
-    /// Adds a format string converter for converting values to formatted strings.
+    /// Configures the binding for two-way synchronization (source ↔ target).
     /// </summary>
-    /// <param name="format">The format string (e.g., "{0:F1}").</param>
-    /// <returns>The current PropertyBinding instance for chaining.</returns>
-    public PropertyBinding AsFormattedString(string format)
+    /// <returns>Current binding instance</returns>
+    public PropertyBinding<TSource, TValue> TwoWay()
     {
-        _converter = new StringFormatConverter(format);
+        _mode = BindingMode.TwoWay;
         return this;
     }
 
     /// <summary>
-    /// Configures the binding for two-way synchronization (source ↔ target).
+    /// Terminal method: registers the binding and returns default value for template property assignment.
+    /// Type inference: compiler infers TValue? as return type.
     /// </summary>
-    /// <remarks>
-    /// Requires IBidirectionalConverter if a converter is used.
-    /// </remarks>
-    /// <returns>The current PropertyBinding instance for chaining.</returns>
-    public PropertyBinding TwoWay()
+    /// <returns>Default value of TValue (null for reference types, 0 for value types)</returns>
+    public TValue? Bind()
     {
-        _mode = BindingMode.TwoWay;
-        return this;
+        // In real implementation, this would register with a binding manager
+        // For now, return default to satisfy template property assignment
+        return default;
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private static string ExtractPropertyName<T, TProp>(Expression<Func<T, TProp>> expr)
+    {
+        if (expr.Body is MemberExpression member)
+            return member.Member.Name;
+        throw new ArgumentException("Expression must be a property access");
     }
 
     #endregion
@@ -153,7 +172,7 @@ public class PropertyBinding
     /// - Performs initial sync (source → target)
     /// - If TwoWay mode, subscribes to target's PropertyChanged event
     /// </remarks>
-    internal void Activate(IComponent targetComponent, string targetPropertyName)
+    public void Activate(IComponent targetComponent, string targetPropertyName)
     {
         if (_lookupStrategy == null) throw new InvalidOperationException("Lookup strategy not set.");
         if (_sourcePropertyName == null) throw new InvalidOperationException("Source property name not set.");
@@ -292,7 +311,7 @@ public class PropertyBinding
     /// - Unsubscribes from target PropertyChanged event (TwoWay mode)
     /// - Clears cached component references
     /// </remarks>
-    internal void Deactivate()
+    public void Deactivate()
     {
         if (_sourceComponent != null && _sourceEvent != null && _sourceHandler != null)
         {
@@ -316,4 +335,61 @@ public class PropertyBinding
     }
 
     #endregion
+}
+
+/// <summary>
+/// Static factory class for creating property bindings with various lookup strategies.
+/// </summary>
+public static class Binding
+{
+    /// <summary>
+    /// Creates a binding that searches for the first parent component of type TSource.
+    /// </summary>
+    /// <typeparam name="TSource">The type of the parent component to find</typeparam>
+    /// <returns>PropertyBinding configured with ParentLookup strategy</returns>
+    public static PropertyBinding<TSource, TSource> FromParent<TSource>() where TSource : class, IComponent
+    {
+        return new PropertyBinding<TSource, TSource>(new ParentLookup<TSource>());
+    }
+
+    /// <summary>
+    /// Creates a binding that searches the entire component tree for a component with the specified name.
+    /// </summary>
+    /// <typeparam name="TSource">The expected type of the named component</typeparam>
+    /// <param name="name">The name of the component to find</param>
+    /// <returns>PropertyBinding configured with NamedObjectLookup strategy</returns>
+    public static PropertyBinding<TSource, TSource> FromNamedObject<TSource>(string name) where TSource : class, IComponent
+    {
+        return new PropertyBinding<TSource, TSource>(new NamedObjectLookup(name));
+    }
+
+    /// <summary>
+    /// Creates a binding that searches siblings for the first component of type TSource.
+    /// </summary>
+    /// <typeparam name="TSource">The type of the sibling component to find</typeparam>
+    /// <returns>PropertyBinding configured with SiblingLookup strategy</returns>
+    public static PropertyBinding<TSource, TSource> FromSibling<TSource>() where TSource : class, IComponent
+    {
+        return new PropertyBinding<TSource, TSource>(new SiblingLookup<TSource>());
+    }
+
+    /// <summary>
+    /// Creates a binding that searches immediate children for the first component of type TSource.
+    /// </summary>
+    /// <typeparam name="TSource">The type of the child component to find</typeparam>
+    /// <returns>PropertyBinding configured with ChildLookup strategy</returns>
+    public static PropertyBinding<TSource, TSource> FromChild<TSource>() where TSource : class, IComponent
+    {
+        return new PropertyBinding<TSource, TSource>(new ChildLookup<TSource>());
+    }
+
+    /// <summary>
+    /// Creates a binding that searches up the tree for the first ancestor of type TSource.
+    /// </summary>
+    /// <typeparam name="TSource">The type of the ancestor component to find</typeparam>
+    /// <returns>PropertyBinding configured with ContextLookup strategy</returns>
+    public static PropertyBinding<TSource, TSource> FromContext<TSource>() where TSource : class, IComponent
+    {
+        return new PropertyBinding<TSource, TSource>(new ContextLookup<TSource>());
+    }
 }

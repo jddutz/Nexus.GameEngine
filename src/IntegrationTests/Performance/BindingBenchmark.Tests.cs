@@ -16,7 +16,7 @@ public class BindingBenchmarkTests
         _output = output;
     }
 
-    public class BenchmarkComponent : RuntimeComponent
+    public class BenchmarkComponent : Component
     {
         private float _value;
         public float Value 
@@ -46,7 +46,8 @@ public class BindingBenchmarkTests
         var targetBinding = new BenchmarkComponent();
         
         var bindings = new ManualBindings();
-        bindings.Add("Value", Binding.FromParent<BenchmarkComponent>(p => p.Value));
+        bindings.Add("Value", Binding.FromParent<BenchmarkComponent>()
+            .GetPropertyValue(p => p.Value));
         
         sourceBinding.Load(new Template());
         sourceBinding.AddChild(targetBinding);

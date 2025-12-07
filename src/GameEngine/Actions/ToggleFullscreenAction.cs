@@ -14,7 +14,7 @@ public class ToggleFullscreenAction(IWindowService windowService) : IAction
     /// <returns>ActionId for ToggleFullscreenAction</returns>
     public static ActionId GetActionId() => ActionId.FromType<ToggleFullscreenAction>();
 
-    public Task<ActionResult> ExecuteAsync(IRuntimeComponent? context = null)
+    public Task<ActionResult> ExecuteAsync(IComponent? context = null)
     {
         try
         {

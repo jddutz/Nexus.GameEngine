@@ -8,7 +8,7 @@ using Silk.NET.Windowing;
 
 namespace TestApp.Tests;
 
-public partial class TestComponent : RuntimeComponent, ITestComponent
+public partial class TestComponent : Component, ITestComponent
 {
     protected IWindow Window { get; init; }
 

@@ -8,11 +8,15 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// The viewport dimensions must be set via <see cref="SetViewportSize"/> before rendering.
 /// Manages its own ViewProjection UBO buffer and descriptor set for efficient rendering.
 /// </summary>
-public partial class StaticCamera : RuntimeComponent, ICamera
+public partial class StaticCamera : Component, ICamera
 {
     private readonly IBufferManager _bufferManager;
     private readonly IDescriptorManager _descriptorManager;
     private readonly IGraphicsContext _graphicsContext;
+
+    public StaticCamera()
+    {
+    }
 
     // UBO for ViewProjection matrix
     private Silk.NET.Vulkan.Buffer _viewProjectionBuffer;
@@ -239,7 +243,7 @@ public partial class StaticCamera : RuntimeComponent, ICamera
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.VertexBit
         };
-        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout(new[] { layoutBinding });
+        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout([layoutBinding]);
 
         // Allocate descriptor set
         _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);

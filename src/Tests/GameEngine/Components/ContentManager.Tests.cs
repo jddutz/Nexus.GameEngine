@@ -16,7 +16,7 @@ public class ContentManagerCameraTests
     private static Mock<IComponentFactory> CreateMockFactory()
     {
         var mockCamera = new Mock<ICamera>();
-        mockCamera.As<IRuntimeComponent>();
+        mockCamera.As<IComponent>();
         
         var mockFactory = new Mock<IComponentFactory>();
         mockFactory.Setup(f => f.Create<StaticCamera>()).Returns(mockCamera.Object);
@@ -27,7 +27,7 @@ public class ContentManagerCameraTests
     private static Mock<IComponentFactory> CreateMockFactoryForInitialize()
     {
         var mockCamera = new Mock<ICamera>();
-        mockCamera.As<IRuntimeComponent>()
+        mockCamera.As<IComponent>()
             .Setup(c => c.IsActive()).Returns(true);
         mockCamera.As<IComponent>()
             .Setup(c => c.Parent).Returns((IComponent?)null);
@@ -48,7 +48,7 @@ public class ContentManagerCameraTests
     private static Mock<ICamera> CreateMockCamera(string name, int renderPriority)
     {
         var mockCamera = new Mock<ICamera>();
-        mockCamera.As<IRuntimeComponent>();
+        mockCamera.As<IComponent>();
         mockCamera.As<IComponent>()
             .Setup(c => c.Name).Returns(name);
         mockCamera.Setup(c => c.RenderPriority).Returns(renderPriority);
@@ -120,6 +120,7 @@ public class ContentManagerCameraTests
         var cameraTemplate = new StaticCameraTemplate
         {
             Name = "TestCamera",
+            Active = true,
             ClearColor = new Vector4D<float>(0, 0, 0, 1),
             ScreenRegion = new Rectangle<float>(0, 0, 1, 1),
             RenderPriority = 100

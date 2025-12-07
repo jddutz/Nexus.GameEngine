@@ -420,3 +420,5 @@ FodyWeavers.xsd
 *.msp
 
 .temp/*
+
+packages/

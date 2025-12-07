@@ -7,7 +7,7 @@ namespace TestApp.Tests;
 /// Test components should deactivate themselves when testing is complete (IsActive = false).
 /// TestRunner monitors IsActive to determine when tests are finished.
 /// </summary>
-public interface ITestComponent : IRuntimeComponent
+public interface ITestComponent : IComponent
 {
     int FrameCount { get; }
     IEnumerable<TestResult> GetTestResults();

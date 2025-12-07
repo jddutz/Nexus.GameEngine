@@ -45,7 +45,7 @@ namespace TestNamespace
         var references = new List<MetadataReference>
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.RuntimeComponent).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.Component).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.TemplatePropertyAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.IConfigurable).Assembly.Location),
             MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),

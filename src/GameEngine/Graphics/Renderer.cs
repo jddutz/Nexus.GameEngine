@@ -60,7 +60,7 @@ public unsafe class Renderer(
         };
         
         var camera = factory.CreateInstance(template) as ICamera;
-        if (camera is IRuntimeComponent runtimeComponent)
+        if (camera is IComponent runtimeComponent)
         {
             runtimeComponent.Activate();
         }

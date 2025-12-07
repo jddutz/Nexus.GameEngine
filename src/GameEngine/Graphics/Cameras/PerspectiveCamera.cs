@@ -3,7 +3,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// A typical 3D perspective camera with configurable FOV, view range, and perspective control.
 /// </summary>
-public partial class PerspectiveCamera : RuntimeComponent, ICamera
+public partial class PerspectiveCamera : Component, ICamera
 {
     private readonly IBufferManager _bufferManager;
     private readonly IDescriptorManager _descriptorManager;
@@ -284,7 +284,7 @@ public partial class PerspectiveCamera : RuntimeComponent, ICamera
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.VertexBit
         };
-        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout(new[] { layoutBinding });
+        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout([layoutBinding]);
 
         // Allocate descriptor set
         _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);

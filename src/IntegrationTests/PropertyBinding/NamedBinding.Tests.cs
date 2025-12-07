@@ -19,11 +19,10 @@ public class NamedBindingTests
         // Setup template with binding
         var template = new Template
         {
-            Name = "Target",
             Bindings = new ManualBindings
             {
-                CurrentValue = Nexus.GameEngine.Components.PropertyBinding.FromNamedObject("Source")
-                                      .GetPropertyValue("Value")
+                CurrentValue = Binding.FromNamedObject<SourceComponent>("Source")
+                                      .GetPropertyValue(s => s.Value)
             }
         };
         
@@ -32,8 +31,8 @@ public class NamedBindingTests
         root.AddChild(target);
         
         // Act - Load & Activate
-        root.Load(new Template { Name = "Root" });
-        source.Load(new Template { Name = "Source" });
+        root.Load(new ComponentTemplate { Name = "Root" });
+        source.Load(new ComponentTemplate { Name = "Source" });
         target.Load(template);
         
         root.Activate();
@@ -48,9 +47,9 @@ public class NamedBindingTests
         Assert.Equal(20, target.CurrentValue);
     }
 
-    public class ContainerComponent : RuntimeComponent { }
+    public class ContainerComponent : Component { }
 
-    public class SourceComponent : RuntimeComponent
+    public class SourceComponent : Component
     {
         private int _value;
         public int Value
@@ -66,16 +65,16 @@ public class NamedBindingTests
         public event EventHandler<PropertyChangedEventArgs<int>>? ValueChanged;
     }
 
-    public class TargetComponent : RuntimeComponent
+    public class TargetComponent : Component
     {
         public int CurrentValue { get; set; }
     }
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? CurrentValue { get; init; }
+        public IPropertyBinding? CurrentValue { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (CurrentValue != null) yield return ("CurrentValue", CurrentValue);
         }

@@ -53,11 +53,19 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
 
     private static bool InheritsFromComponentBase(INamedTypeSymbol classSymbol)
     {
+        // Check if it is Component itself
+        if (classSymbol.Name == "Component" && classSymbol.ContainingNamespace.ToDisplayString() == "Nexus.GameEngine.Components")
+            return true;
+
         var current = classSymbol.BaseType;
         while (current != null)
         {
+            if (current.Name == "Component" && current.ContainingNamespace.ToDisplayString() == "Nexus.GameEngine.Components")
+                return true;
+            
             if (current.Name == "Entity")
                 return true;
+
             current = current.BaseType;
         }
         return false;
@@ -68,6 +76,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         IEnumerable<ClassDeclarationSyntax> classes,
         SourceProductionContext context)
     {
+        var processedSymbols = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+
         foreach (var classDecl in classes)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
@@ -75,6 +85,10 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             var semanticModel = compilation.GetSemanticModel(classDecl.SyntaxTree);
             var classSymbol = semanticModel.GetDeclaredSymbol(classDecl);
             if (classSymbol is null) continue;
+
+            // Skip if already processed
+            if (processedSymbols.Contains(classSymbol)) continue;
+            processedSymbols.Add(classSymbol);
 
             // Get properties to generate
             var properties = GetPropertiesToGenerate(classSymbol);
@@ -248,7 +262,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         }
 
         // Generate ApplyUpdates method
-        GenerateApplyUpdatesMethod(sb, properties);
+        bool isRootComponent = classSymbol.Name == "Component" && classSymbol.ContainingNamespace.ToDisplayString() == "Nexus.GameEngine.Components";
+        GenerateApplyUpdatesMethod(sb, properties, isRootComponent);
 
         sb.AppendLine("}");
 
@@ -353,7 +368,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void GenerateApplyUpdatesMethod(StringBuilder sb, List<PropertyInfo> properties)
+    private static void GenerateApplyUpdatesMethod(StringBuilder sb, List<PropertyInfo> properties, bool isRootComponent)
     {
         // Generate partial method declarations for property change callbacks
         foreach (var prop in properties)
@@ -381,9 +396,17 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
 
         // Generate override of ApplyUpdates method to support inheritance
         sb.AppendLine("    // Generated deferred property update override");
-        sb.AppendLine("    public override void ApplyUpdates(double deltaTime)");
-        sb.AppendLine("    {");
-        sb.AppendLine("        base.ApplyUpdates(deltaTime);");
+        if (isRootComponent)
+        {
+            sb.AppendLine("    public virtual void ApplyUpdates(double deltaTime)");
+            sb.AppendLine("    {");
+        }
+        else
+        {
+            sb.AppendLine("    public override void ApplyUpdates(double deltaTime)");
+            sb.AppendLine("    {");
+            sb.AppendLine("        base.ApplyUpdates(deltaTime);");
+        }
         sb.AppendLine();
         
         // Generate early-exit check for performance using single _isDirty flag

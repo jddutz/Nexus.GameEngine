@@ -21,8 +21,8 @@ public class TwoWayBindingTests
         {
             Bindings = new ManualBindings
             {
-                Value = Nexus.GameEngine.Components.PropertyBinding.FromParent<VolumeSource>()
-                               .GetPropertyValue("Volume")
+                Value = Binding.FromParent<VolumeSource>()
+                               .GetPropertyValue(s => s.Volume)
                                .TwoWay()
             }
         };
@@ -67,8 +67,8 @@ public class TwoWayBindingTests
         {
             Bindings = new ManualBindings
             {
-                Value = Nexus.GameEngine.Components.PropertyBinding.FromParent<VolumeSource>()
-                               .GetPropertyValue("Volume")
+                Value = Binding.FromParent<VolumeSource>()
+                               .GetPropertyValue(s => s.Volume)
                                .WithConverter(new MultiplyConverter(2.0f))
                                .TwoWay()
             }
@@ -97,7 +97,7 @@ public class TwoWayBindingTests
         Assert.Equal(50, child.Value);
     }
 
-    public class VolumeSource : RuntimeComponent
+    public class VolumeSource : Component
     {
         private float _volume;
         public float Volume
@@ -113,7 +113,7 @@ public class TwoWayBindingTests
         public event EventHandler<PropertyChangedEventArgs<float>>? VolumeChanged;
     }
 
-    public class SliderTarget : RuntimeComponent
+    public class SliderTarget : Component
     {
         private float _value;
         public float Value
@@ -131,9 +131,9 @@ public class TwoWayBindingTests
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? Value { get; init; }
+        public IPropertyBinding? Value { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (Value != null) yield return ("Value", Value);
         }

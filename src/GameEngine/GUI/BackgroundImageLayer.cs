@@ -13,7 +13,7 @@ public partial class BackgroundImageLayer(
     IDescriptorManager descriptorManager,
     IResourceManager resourceManager,
     IPipelineManager pipelineManager)
-    : RuntimeComponent, IDrawable
+    : Component, IDrawable
 {
     private IGeometryResource? _geometry;
     

@@ -36,12 +36,23 @@ Nexus.GameEngine.sln
 
 ### Component System
 
-The engine is built around a hierarchical component system where everything inherits from `IRuntimeComponent`:
+The engine is built around a hierarchical component system with a unified `Component` base class:
 
-- **Component Trees**: All game objects, UI elements, and systems form parent-child hierarchies
-- **Behavior Interfaces**: Components implement only the behaviors they need (IDrawable, IUpdatable, etc.)
-- **Template Configuration**: Components are configured using strongly-typed template records
-- **Dependency Injection**: Components receive dependencies through constructor injection
+- **Unified Component Class**: A single `Component` class (defined via partial classes) provides identity, configuration, hierarchy, and lifecycle capabilities.
+  - **Component.Identity.cs**: Entity identification (Name, Tags)
+  - **Component.Configuration.cs**: Template loading and validation
+  - **Component.Hierarchy.cs**: Parent-child relationships and tree navigation
+  - **Component.Lifecycle.cs**: Activation, updates, and disposal
+- **Component Trees**: All game objects, UI elements, and systems form parent-child hierarchies.
+- **Behavior Interfaces**: Components implement only the behaviors they need:
+  - `IActivatable`: Lifecycle activation/deactivation
+  - `IUpdatable`: Per-frame update logic
+  - `IDrawable`: Rendering capabilities
+  - `ILoadable`: Template configuration
+  - `IValidatable`: State validation
+- **Template Configuration**: Components are configured using strongly-typed template records.
+- **Dependency Injection**: Components receive dependencies through constructor injection.
+- **Property Bindings**: Type-safe property synchronization using `PropertyBinding<TSource, TValue>` with fluent API.
 
 #### Transform System
 

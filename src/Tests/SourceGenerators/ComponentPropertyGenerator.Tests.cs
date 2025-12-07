@@ -28,7 +28,7 @@ using Nexus.GameEngine.Components;
 
 namespace TestNamespace
 {
-    public partial class TestComponent : RuntimeComponent
+    public partial class TestComponent : Component
     {
         [ComponentProperty(NotifyChange = true)]
         private float _health;
@@ -52,7 +52,7 @@ namespace TestNamespace
         var references = new List<MetadataReference>
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.RuntimeComponent).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.Component).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.ComponentPropertyAttribute).Assembly.Location),
             MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
             MetadataReference.CreateFromFile(Assembly.Load("netstandard").Location)

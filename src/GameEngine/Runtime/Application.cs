@@ -63,6 +63,11 @@ public class Application(IServiceProvider services) : IApplication
                 };
             }
 
+            if (startupContent is IActivatable rc)
+            {
+                rc.Activate();
+            }
+
             window.Update += deltaTime =>
             {
                 profiler.BeginFrame();
