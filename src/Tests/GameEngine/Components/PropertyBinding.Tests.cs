@@ -20,8 +20,8 @@ public class PropertyBindingTests
         
         lookupMock.Setup(l => l.Resolve(target)).Returns(source);
         
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health");
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health);
             
         // Act
         binding.Activate(target, "CurrentHealth");
@@ -44,8 +44,8 @@ public class PropertyBindingTests
         
         lookupMock.Setup(l => l.Resolve(target)).Returns(source);
         
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health");
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health);
             
         binding.Activate(target, "CurrentHealth");
         
@@ -71,8 +71,8 @@ public class PropertyBindingTests
         converterMock.Setup(c => c.Convert(100.0f)).Returns(50.0f);
         converterMock.Setup(c => c.Convert(200.0f)).Returns(100.0f);
 
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health)
             .WithConverter(converterMock.Object);
             
         // Act
@@ -96,9 +96,9 @@ public class PropertyBindingTests
         
         lookupMock.Setup(l => l.Resolve(target)).Returns(source);
         
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
-            .AsFormattedString("HP: {0}");
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health)
+            .AsFormattedString("HP: {0:F0}");
             
         // Act
         binding.Activate(target, "Status");
@@ -112,90 +112,101 @@ public class PropertyBindingTests
     }
 
     [Fact]
-    public void Activate_ShouldSkipUpdate_WhenConverterReturnsNull()
+    public void TwoWay_ShouldSyncBothDirections()
     {
         // Arrange
         var lookupMock = new Mock<ILookupStrategy>();
         var source = new TestSourceComponent { Health = 100 };
-        var target = new TestTargetComponent { CurrentHealth = 10 };
+        var target = new TestTargetComponent();
         
         lookupMock.Setup(l => l.Resolve(target)).Returns(source);
         
-        var converterMock = new Mock<IValueConverter>();
-        converterMock.Setup(c => c.Convert(It.IsAny<object>())).Returns((object?)null);
-
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
-            .WithConverter(converterMock.Object);
-            
-        // Act
-        binding.Activate(target, "CurrentHealth");
-        
-        // Assert
-        Assert.Equal(10, target.CurrentHealth); // Should not have changed
-        
-        // Trigger change
-        source.Health = 200;
-        Assert.Equal(10, target.CurrentHealth); // Should still not change
-    }
-
-    [Fact]
-    public void FromNamedObject_ShouldCreateBinding()
-    {
-        // Act
-        var binding = PropertyBinding.FromNamedObject("SourceName");
-        
-        // Assert
-        Assert.NotNull(binding);
-    }
-
-    [Fact]
-    public void TwoWay_ShouldUpdateSource_WhenTargetChanges()
-    {
-        // Arrange
-        var lookupMock = new Mock<ILookupStrategy>();
-        var source = new TestSourceComponent { Health = 100 };
-        var target = new TestTargetComponent { CurrentHealth = 100 };
-        
-        lookupMock.Setup(l => l.Resolve(target)).Returns(source);
-        
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health)
             .TwoWay();
             
         binding.Activate(target, "CurrentHealth");
         
-        // Act
-        target.CurrentHealth = 50;
+        // Assert initial sync
+        Assert.Equal(100, target.CurrentHealth);
         
-        // Assert
-        Assert.Equal(50, source.Health);
-    }
-
-    [Fact]
-    public void TwoWay_ShouldPreventInfiniteLoops()
-    {
-        // Arrange
-        var lookupMock = new Mock<ILookupStrategy>();
-        var source = new TestSourceComponent { Health = 100 };
-        var target = new TestTargetComponent { CurrentHealth = 100 };
-        
-        lookupMock.Setup(l => l.Resolve(target)).Returns(source);
-        
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
-            .TwoWay();
-            
-        binding.Activate(target, "CurrentHealth");
-        
-        // Act
-        // This would cause a stack overflow if loop prevention is missing
-        // Source -> Target -> Source -> Target ...
+        // Act: Change source
         source.Health = 50;
+        Assert.Equal(50, target.CurrentHealth);
+        
+        // Act: Change target
+        target.CurrentHealth = 75;
+        Assert.Equal(75, source.Health);
+    }
+
+    [Fact]
+    public void BindingFromParent_ShouldUseParentLookupStrategy()
+    {
+        // Arrange
+        var parent = new TestSourceComponent { Health = 100 };
+        var target = new TestTargetComponent();
+        parent.AddChild(target);
+        
+        var binding = Binding.FromParent<TestSourceComponent>()
+            .GetPropertyValue(p => p.Health);
+            
+        // Act
+        binding.Activate(target, "CurrentHealth");
         
         // Assert
+        Assert.Equal(100, target.CurrentHealth);
+        
+        parent.Health = 50;
         Assert.Equal(50, target.CurrentHealth);
-        Assert.Equal(50, source.Health);
+    }
+
+    [Fact]
+    public void BindingFromSibling_ShouldUseSiblingLookupStrategy()
+    {
+        // Arrange
+        var parent = new TestTargetComponent();
+        var source = new TestSourceComponent { Health = 100 };
+        var target = new TestTargetComponent();
+        
+        parent.AddChild(source);
+        parent.AddChild(target);
+        
+        var binding = Binding.FromSibling<TestSourceComponent>()
+            .GetPropertyValue(s => s.Health);
+            
+        // Act
+        binding.Activate(target, "CurrentHealth");
+        
+        // Assert
+        Assert.Equal(100, target.CurrentHealth);
+        
+        source.Health = 75;
+        Assert.Equal(75, target.CurrentHealth);
+    }
+
+    [Fact]
+    public void BindingFromNamedObject_ShouldUseNamedLookupStrategy()
+    {
+        // Arrange
+        var root = new TestTargetComponent();
+        var source = new TestSourceComponent { Health = 100 };
+        var target = new TestTargetComponent();
+        
+        source.SetName("HealthSource");
+        root.AddChild(source);
+        root.AddChild(target);
+        
+        var binding = Binding.FromNamedObject<TestSourceComponent>("HealthSource")
+            .GetPropertyValue(s => s.Health);
+            
+        // Act
+        binding.Activate(target, "CurrentHealth");
+        
+        // Assert
+        Assert.Equal(100, target.CurrentHealth);
+        
+        source.Health = 50;
+        Assert.Equal(50, target.CurrentHealth);
     }
 
     [Fact]
@@ -212,8 +223,8 @@ public class PropertyBindingTests
         converterMock.Setup(c => c.Convert(100.0f)).Returns(50.0f);
         converterMock.Setup(c => c.ConvertBack(25.0f)).Returns(50.0f);
 
-        var binding = new PropertyBinding(lookupMock.Object)
-            .GetPropertyValue("Health")
+        var binding = new PropertyBinding<TestSourceComponent, float>(lookupMock.Object)
+            .GetPropertyValue(s => s.Health)
             .WithConverter(converterMock.Object)
             .TwoWay();
             
@@ -227,7 +238,7 @@ public class PropertyBindingTests
         converterMock.Verify(c => c.ConvertBack(25.0f), Times.Once);
     }
 
-    private class TestSourceComponent : RuntimeComponent
+    private class TestSourceComponent : Component
     {
         private float _health;
         public float Health 
@@ -244,7 +255,7 @@ public class PropertyBindingTests
         public event EventHandler<PropertyChangedEventArgs<float>>? HealthChanged;
     }
     
-    private class TestTargetComponent : RuntimeComponent
+    private class TestTargetComponent : Component
     {
         private float _currentHealth;
         public float CurrentHealth 

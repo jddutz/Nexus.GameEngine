@@ -7,7 +7,7 @@
 /// Templates configure the visual properties, runtime components subscribe to events and implement behavior.
 /// </summary>
 public partial class Border()
-    : RuntimeComponent, IDrawable
+    : Component, IDrawable
 {
     // ComponentProperty fields - generator creates public properties with deferred updates
     [ComponentProperty]

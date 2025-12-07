@@ -11,8 +11,8 @@ public class ParentLookup<T> : ILookupStrategy where T : class, IComponent
 {
     public IComponent? Resolve(IComponent targetComponent)
     {
-        if (targetComponent == null) throw new ArgumentNullException(nameof(targetComponent));
-        
+        ArgumentNullException.ThrowIfNull(targetComponent);
+
         return targetComponent.Parent as T;
     }
 }

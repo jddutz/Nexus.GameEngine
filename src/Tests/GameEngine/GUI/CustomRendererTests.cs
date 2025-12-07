@@ -10,7 +10,7 @@ using Silk.NET.Vulkan;
 namespace Tests.GameEngine.GUI;
 
 // Custom renderer implementation for testing
-public partial class MyCustomRenderer : RuntimeComponent, IDrawable
+public partial class MyCustomRenderer : Component, IDrawable
 {
     public bool IsVisible() => true;
 
@@ -33,7 +33,7 @@ public class CustomRendererTests
     {
         var renderer = new MyCustomRenderer();
         Assert.IsAssignableFrom<IDrawable>(renderer);
-        Assert.IsAssignableFrom<RuntimeComponent>(renderer);
+        Assert.IsAssignableFrom<Component>(renderer);
     }
 
     [Fact]

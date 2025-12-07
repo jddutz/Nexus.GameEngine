@@ -11,7 +11,7 @@ using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.Components;
 
-public partial class SpriteRenderer : RuntimeComponent, IDrawable
+public partial class SpriteRenderer : Component, IDrawable
 {
     private readonly IPipelineManager _pipelineManager;
     private readonly IDescriptorManager _descriptorManager;

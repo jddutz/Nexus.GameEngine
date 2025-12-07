@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace Nexus.GameEngine.Components;
 
-public partial class RectTransform : RuntimeComponent, IRectTransform
+public partial class RectTransform : Component, IRectTransform
 {
     [ComponentProperty]
     [TemplateProperty]
@@ -87,7 +87,7 @@ public partial class RectTransform : RuntimeComponent, IRectTransform
         _localMatrix = scaleMatrix * rotationMatrix * translationMatrix;
 
         // Calculate World Matrix        
-        var parent = FindParent<IRectTransform>();
+        var parent = GetParent<IRectTransform>();
         if (parent == null)
         {
             _worldMatrix = _localMatrix;

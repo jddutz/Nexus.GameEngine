@@ -14,7 +14,7 @@ public class ActionFactory(IServiceProvider serviceProvider) : IActionFactory
     /// <param name="actionId">The ActionId containing the action type to execute</param>
     /// <param name="context">The runtime component context for the action</param>
     /// <returns>ActionResult indicating success/failure and any data</returns>
-    public async Task<ActionResult> ExecuteAsync(ActionId actionId, IRuntimeComponent context)
+    public async Task<ActionResult> ExecuteAsync(ActionId actionId, IComponent context)
     {
         // Handle None/empty ActionId
         if (actionId == ActionId.None || actionId.ActionType == null)

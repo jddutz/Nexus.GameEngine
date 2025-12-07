@@ -17,8 +17,8 @@ public class ParentChildBindingTests
         // Manual bindings configuration
         var bindings = new ManualBindings
         {
-            CurrentHealth = Nexus.GameEngine.Components.PropertyBinding.FromParent<ParentComponent>()
-                .GetPropertyValue(nameof(ParentComponent.Health))
+            CurrentHealth = Binding.FromParent<ParentComponent>()
+                .GetPropertyValue(p => p.Health)
         };
 
         var childTemplate = new Template
@@ -70,7 +70,7 @@ public class ParentChildBindingTests
         Assert.Equal(50, child.CurrentHealth);
     }
 
-    public class ParentComponent : RuntimeComponent
+    public class ParentComponent : Component
     {
         private float _health;
         public float Health
@@ -86,16 +86,16 @@ public class ParentChildBindingTests
         public event EventHandler<PropertyChangedEventArgs<float>>? HealthChanged;
     }
 
-    public class ChildComponent : RuntimeComponent
+    public class ChildComponent : Component
     {
         public float CurrentHealth { get; set; }
     }
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? CurrentHealth { get; init; }
+        public IPropertyBinding? CurrentHealth { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (CurrentHealth != null) yield return ("CurrentHealth", CurrentHealth);
         }

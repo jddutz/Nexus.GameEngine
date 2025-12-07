@@ -16,7 +16,7 @@ namespace Nexus.GameEngine.Input.Components;
 public abstract partial class InputBinding(
     IWindowService windowService,
     IActionFactory actionFactory)
-    : RuntimeComponent
+    : Component
 {
     /// <summary>
     /// Direct access to Silk.NET Input interface for component input handling.

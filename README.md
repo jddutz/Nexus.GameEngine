@@ -43,28 +43,31 @@ class Program
 
 **Important**: Do not create components that depend on InputContext (like KeyBinding) before calling `app.RunAsync()`, as the window and input system are not yet initialized. Use the `StartupTemplate` property instead to defer creation until the proper time in the application lifecycle.
 
-## RuntimeComponent System Design Summary
+## Component System Design Summary
 
-**Core Principle**: Everything is an IRuntimeComponent that can contain other components via a Children property. Components implement only the behavior interfaces they need.
+**Core Principle**: Everything is a Component that can contain other components via a Children property. Components implement only the behavior interfaces they need.
 
 ### Architecture Overview
 
-The RuntimeComponent system is built on a hierarchical composition model where:
+The Component system is built on a hierarchical composition model where:
 
-1. **Universal Interface**: All game objects, UI elements, input handlers, and system components implement `IRuntimeComponent`
+1. **Universal Class**: All game objects, UI elements, input handlers, and system components inherit from the unified `Component` class
 2. **Tree Structure**: Components form parent-child relationships through the `Children` property and `Parent` references
-3. **Behavioral Composition**: Components implement specific behavior interfaces (`IDrawable`, `IUpdatable`, etc.) only when needed
+3. **Behavioral Composition**: Components implement specific behavior interfaces (`IDrawable`, `IUpdatable`, `IActivatable`) only when needed
 4. **Template-Based Configuration**: Components are configured using strongly-typed template records
 5. **Dependency Injection**: Components receive dependencies through constructor injection
 6. **Lifecycle Management**: Automatic activation, validation, and disposal cascades through the component tree
+7. **Partial Class Organization**: Component functionality is organized into partial classes (Identity, Configuration, Hierarchy, Lifecycle)
 
 ### Core Interfaces and Types
 
 See the actual interface definitions in the codebase:
 
-- [`IRuntimeComponent`](GameEngine/Components/IRuntimeComponent.cs) - Base component interface
-- [`IRuntimeComponent<T>`](GameEngine/Components/IRuntimeComponent.cs) - Generic typed component interface
-- [`ComponentTemplate`](GameEngine/Components/ComponentTemplate.cs) - Base template class
+- [`IComponent`](GameEngine/Components/IComponent.cs) - Unified component interface (combines all capabilities)
+- [`IActivatable`](GameEngine/Components/IActivatable.cs) - Lifecycle activation interface
+- [`IUpdatable`](GameEngine/Components/IUpdatable.cs) - Per-frame update interface
+- [`Component`](GameEngine/Components/Component.Identity.cs) - Base component class (partial definitions in Identity, Configuration, Hierarchy, Lifecycle)
+- [`Template`](GameEngine/Components/Template.cs) - Base template class
 
 ### Component Categories
 
@@ -79,7 +82,8 @@ See the actual interface definitions in the codebase:
 
 - `KeyBinding<TAction>`: Maps keyboard input to actions
 - `MouseBinding<TAction>`: Maps mouse input to actions
-- `GamepadBinding<TAction>`: Maps gamepad input to actions
+
+All components inherit from the base `Component` class and implement only the interfaces they need (e.g., `IDrawable`, `IUpdatable`, `IActivatable`).
 
 **UI Components:**
 

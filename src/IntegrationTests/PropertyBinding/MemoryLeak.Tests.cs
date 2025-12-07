@@ -7,7 +7,7 @@ namespace IntegrationTests.PropertyBinding;
 
 public class MemoryLeakTests
 {
-    public class LeakTestComponent : RuntimeComponent
+    public class LeakTestComponent : Component
     {
         private float _value;
         public float Value 
@@ -36,7 +36,8 @@ public class MemoryLeakTests
             targetRef = new WeakReference(target);
             
             var bindings = new ManualBindings();
-            bindings.Add("Value", Binding.FromParent<LeakTestComponent>(p => p.Value));
+            bindings.Add("Value", Binding.FromParent<LeakTestComponent>()
+                .GetPropertyValue(p => p.Value));
             
             source.Load(new Template());
             
@@ -49,7 +50,7 @@ public class MemoryLeakTests
             // Act: Cycle activation
             // Note: Activate() usually cascades to children, but since it's not in Children list,
             // we must activate target manually.
-            // However, PropertyBinding.Activate is called by RuntimeComponent.OnActivate.
+            // However, PropertyBinding.Activate is called by Component.OnActivate.
             
             for (int i = 0; i < 1000; i++)
             {

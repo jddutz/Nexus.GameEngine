@@ -42,7 +42,7 @@ using Nexus.GameEngine.Components;
 
 namespace TestNamespace
 {
-    public partial class BaseComponent : RuntimeComponent, IConfigurable {}
+    public partial class BaseComponent : Component {}
 
     public partial class DerivedComponent : BaseComponent {}
 }";
@@ -65,7 +65,7 @@ using Nexus.GameEngine.Components;
 
 namespace TestNamespace
 {
-    public partial class TestComponent : RuntimeComponent
+    public partial class TestComponent : Component
     {
         [ComponentProperty]
         private int _health;
@@ -79,8 +79,8 @@ namespace TestNamespace
         var output = RunGenerator(source);
 
         // Assert
-        Assert.Contains("public Nexus.GameEngine.Components.PropertyBinding? Health { get; init; }", output);
-        Assert.Contains("public Nexus.GameEngine.Components.PropertyBinding? Name { get; init; }", output);
+        Assert.Contains("public IPropertyBinding? Health { get; init; }", output);
+        Assert.Contains("public IPropertyBinding? Name { get; init; }", output);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ using Nexus.GameEngine.Components;
 
 namespace TestNamespace
 {
-    public partial class TestComponent : RuntimeComponent
+    public partial class TestComponent : Component
     {
         [ComponentProperty]
         private int _score;
@@ -113,7 +113,7 @@ namespace TestNamespace
         var references = new List<MetadataReference>
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.RuntimeComponent).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.Component).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.IConfigurable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Nexus.GameEngine.Components.PropertyBindings).Assembly.Location),
             MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),

@@ -1,15 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Nexus.GameEngine.Components;
 
 public partial class Component
-    : Configurable, IComponent, IDisposable
 {
     /// <summary>
     /// Content manager used to create and manage subcomponents.
     /// </summary>
     public IContentManager? ContentManager { get; set; }
 
-    public event EventHandler<EventArgs>? Unloading;
-    public event EventHandler<EventArgs>? Unloaded;
+    public event EventHandler? Unloading;
+    public event EventHandler? Unloaded;
 
     // Tree Management Events
     public event EventHandler<ChildCollectionChangedEventArgs>? ChildCollectionChanged;
@@ -31,6 +34,17 @@ public partial class Component
     {
         if (!_children.Contains(child))
         {
+            // If child already has a parent, remove it from there first
+            if (child.Parent != null && child.Parent != this)
+            {
+                // Cast to IHierarchical to access RemoveChild if IComponent doesn't have it directly
+                // But Component implements IComponent which implements IHierarchical
+                if (child.Parent is IHierarchical parent)
+                {
+                    parent.RemoveChild(child);
+                }
+            }
+
             _children.Add(child);
 
             child.Parent = this;
@@ -86,12 +100,9 @@ public partial class Component
             });
 
         }
-        else
-        {
-        }
     }
 
-    // Tree navigation methods (basic implementations)
+    // Tree navigation methods
     public virtual IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool recursive = false, bool depthFirst = false)
         where T : IComponent
     {
@@ -141,7 +152,8 @@ public partial class Component
         return Parent.GetChildren(filter, recursive: false);
     }
 
-    public virtual T? FindParent<T>(Func<T, bool>? filter = null)
+    public virtual T? GetParent<T>(Func<T, bool>? filter = null)
+        where T : IComponent
     {
         var current = Parent;
 
@@ -155,6 +167,16 @@ public partial class Component
 
         return default;
     }
+    
+    public IComponent GetRoot()
+    {
+        var current = (IComponent)this;
+        while (current.Parent != null)
+        {
+            current = current.Parent;
+        }
+        return current;
+    }
 
     protected virtual void OnUnload() { }
 
@@ -167,7 +189,10 @@ public partial class Component
         // Deactivate leaf to root
         foreach (var child in Children)
         {
-            child.Unload();
+            if (child is ILoadable loadable)
+            {
+                 loadable.Unload();
+            }
         }
 
         OnUnload();
@@ -176,7 +201,7 @@ public partial class Component
 
         Unloaded?.Invoke(this, EventArgs.Empty);
     }
-
+    
     protected virtual void OnDispose() { }
 
     public void Dispose()
@@ -184,7 +209,6 @@ public partial class Component
         GC.SuppressFinalize(this);
 
         // Dispose children first (leaf to root)
-        // ToArray so we can modify the collection while iterating
         foreach (var child in Children.OfType<IDisposable>().ToArray()) 
         {
             child.Dispose();

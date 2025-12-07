@@ -33,19 +33,18 @@ public class CrossTreeBindingTests
         // Setup template with binding
         var template = new Template
         {
-            Name = "Target",
             Bindings = new ManualBindings
             {
-                CurrentValue = Nexus.GameEngine.Components.PropertyBinding.FromNamedObject("Source")
-                                      .GetPropertyValue("Value")
+                CurrentValue = Binding.FromNamedObject<SourceComponent>("Source")
+                                      .GetPropertyValue(s => s.Value)
             }
         };
         
         // Act - Load & Activate
-        root.Load(new Template { Name = "Root" });
-        branch1.Load(new Template { Name = "Branch1" });
-        branch2.Load(new Template { Name = "Branch2" });
-        source.Load(new Template { Name = "Source" });
+        root.Load(new ComponentTemplate { Name = "Root" });
+        branch1.Load(new ComponentTemplate { Name = "Branch1" });
+        branch2.Load(new ComponentTemplate { Name = "Branch2" });
+        source.Load(new ComponentTemplate { Name = "Source" });
         target.Load(template);
         
         root.Activate();
@@ -60,9 +59,9 @@ public class CrossTreeBindingTests
         Assert.Equal(99, target.CurrentValue);
     }
 
-    public class ContainerComponent : RuntimeComponent { }
+    public class ContainerComponent : Component { }
 
-    public class SourceComponent : RuntimeComponent
+    public class SourceComponent : Component
     {
         private int _value;
         public int Value
@@ -78,16 +77,16 @@ public class CrossTreeBindingTests
         public event EventHandler<PropertyChangedEventArgs<int>>? ValueChanged;
     }
 
-    public class TargetComponent : RuntimeComponent
+    public class TargetComponent : Component
     {
         public int CurrentValue { get; set; }
     }
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? CurrentValue { get; init; }
+        public IPropertyBinding? CurrentValue { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (CurrentValue != null) yield return ("CurrentValue", CurrentValue);
         }

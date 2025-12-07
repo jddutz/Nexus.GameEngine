@@ -17,7 +17,7 @@ namespace TestApp;
 /// TestRunner is a RuntimeComponent that discovers and executes integration tests.
 /// It manages test lifecycle, result output, and application exit based on test outcomes.
 /// </summary>
-public partial class TestRunner : RuntimeComponent
+public partial class TestRunner : Component
 {
     public TestRunner(IWindowService windowService, IRenderer renderer) : base()
     {

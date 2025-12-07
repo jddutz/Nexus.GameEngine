@@ -82,7 +82,7 @@ namespace Tests.GameEngine
                         try
                         {
                             // Main has signature void Main(string[] args)
-                            mainMethod.Invoke(null, new object[] { new string[0] });
+                            mainMethod.Invoke(null, [new string[0]]);
                         }
                         catch (TargetInvocationException tie)
                         {

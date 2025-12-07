@@ -5,7 +5,7 @@ namespace Nexus.GameEngine.GUI.Layout;
 /// <summary>
 /// Base class for layout controllers that arrange sibling components.
 /// </summary>
-public abstract partial class LayoutController : RuntimeComponent
+public abstract partial class LayoutController : Component
 {
     /// <summary>
     /// Updates the layout of the specified container's children.

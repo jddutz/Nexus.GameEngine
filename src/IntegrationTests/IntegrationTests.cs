@@ -52,7 +52,7 @@ namespace IntegrationTests
 
                 // Run TestApp - it will execute all tests and set exit code
                 var args = Array.Empty<string>();
-                mainMethod!.Invoke(null, new object[] { args });
+                mainMethod!.Invoke(null, [args]);
 
                 // TestApp sets Environment.ExitCode to the number of failed tests
                 // Exit code 0 = all tests passed

@@ -8,7 +8,7 @@ namespace Nexus.GameEngine.Performance;
 /// Acts as a facade over IProfiler service, making performance data available for data binding.
 /// Does not handle rendering - rendering should be wired up separately via data binding.
 /// </summary>
-public partial class PerformanceMonitor : RuntimeComponent
+public partial class PerformanceMonitor : Component
 {
     private readonly IProfiler _profiler = new Profiler();
     

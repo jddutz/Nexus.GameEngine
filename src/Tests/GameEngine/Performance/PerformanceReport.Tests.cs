@@ -24,7 +24,7 @@ public class PerformanceReportTests
     public void Constructor_CalculatesAverageFrameTime()
     {
         // Arrange
-        var frames = CreateFrameProfiles(new[] { 10.0, 20.0, 30.0 });
+        var frames = CreateFrameProfiles([10.0, 20.0, 30.0]);
 
         // Act
         var report = new PerformanceReport(frames);
@@ -37,7 +37,7 @@ public class PerformanceReportTests
     public void Constructor_CalculatesMinMaxFrameTime()
     {
         // Arrange
-        var frames = CreateFrameProfiles(new[] { 15.0, 8.0, 23.0, 12.0 });
+        var frames = CreateFrameProfiles([15.0, 8.0, 23.0, 12.0]);
 
         // Act
         var report = new PerformanceReport(frames);
@@ -51,7 +51,7 @@ public class PerformanceReportTests
     public void AverageFPS_CalculatesFromAverageFrameTime()
     {
         // Arrange - 16.67ms = ~60 FPS
-        var frames = CreateFrameProfiles(new[] { 16.67 });
+        var frames = CreateFrameProfiles([16.67]);
 
         // Act
         var report = new PerformanceReport(frames);
@@ -65,7 +65,7 @@ public class PerformanceReportTests
     public void FrameTimeVarianceMs_CalculatesCorrectly()
     {
         // Arrange
-        var frames = CreateFrameProfiles(new[] { 10.0, 25.0, 15.0 });
+        var frames = CreateFrameProfiles([10.0, 25.0, 15.0]);
 
         // Act
         var report = new PerformanceReport(frames);
@@ -78,12 +78,12 @@ public class PerformanceReportTests
     public void GetTopNSlowest_ReturnsSlowesttOperations()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0), ("Update", 5.0), ("Input", 1.0) },
-            new[] { ("Render", 12.0), ("Update", 4.0), ("Input", 0.5) },
-            new[] { ("Render", 11.0), ("Update", 6.0), ("Input", 1.5) }
-        });
+            [("Render", 12.0), ("Update", 4.0), ("Input", 0.5)],
+            [("Render", 11.0), ("Update", 6.0), ("Input", 1.5)]
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -101,10 +101,10 @@ public class PerformanceReportTests
     public void GetTopNSlowest_HandlesRequestForMoreThanAvailable()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0), ("Update", 5.0) }
-        });
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -119,7 +119,7 @@ public class PerformanceReportTests
     public void GetThresholdViolations_ReturnsFramesExceedingThreshold()
     {
         // Arrange
-        var frames = CreateFrameProfiles(new[] { 5.0, 15.0, 8.0, 20.0, 12.0 });
+        var frames = CreateFrameProfiles([5.0, 15.0, 8.0, 20.0, 12.0]);
         var report = new PerformanceReport(frames);
 
         // Act
@@ -134,12 +134,12 @@ public class PerformanceReportTests
     public void GetAverageTimePerLabel_CalculatesCorrectly()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0), ("Update", 5.0) },
-            new[] { ("Render", 12.0), ("Update", 3.0) },
-            new[] { ("Render", 8.0), ("Update", 4.0) }
-        });
+            [("Render", 12.0), ("Update", 3.0)],
+            [("Render", 8.0), ("Update", 4.0)]
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -156,11 +156,11 @@ public class PerformanceReportTests
     public void GetTotalTimePerLabel_CalculatesCorrectly()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0), ("Update", 5.0) },
-            new[] { ("Render", 12.0), ("Update", 3.0) }
-        });
+            [("Render", 12.0), ("Update", 3.0)]
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -176,12 +176,12 @@ public class PerformanceReportTests
     public void GetStatisticsForLabel_ReturnsCorrectStatistics()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0) },
-            new[] { ("Render", 15.0) },
-            new[] { ("Render", 12.0) }
-        });
+            [("Render", 15.0)],
+            [("Render", 12.0)]
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -202,10 +202,10 @@ public class PerformanceReportTests
     public void GetStatisticsForLabel_ReturnsNullForNonExistentLabel()
     {
         // Arrange
-        var frames = CreateFramesWithSamples(new[]
-        {
+        var frames = CreateFramesWithSamples(
+        [
             new[] { ("Render", 10.0) }
-        });
+        ]);
 
         var report = new PerformanceReport(frames);
 
@@ -220,7 +220,7 @@ public class PerformanceReportTests
     public void ToString_FormatsReportInfo()
     {
         // Arrange
-        var frames = CreateFrameProfiles(new[] { 10.0, 20.0, 30.0 });
+        var frames = CreateFrameProfiles([10.0, 20.0, 30.0]);
         var report = new PerformanceReport(frames);
 
         // Act

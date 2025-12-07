@@ -12,13 +12,12 @@ public interface IContentManager : IDisposable
     /// Creates and activates components from a template. This is the primary method for creating
     /// main content that will be rendered immediately.
     /// 
-    /// Process: Creates → Configures (IsLoaded=true) → Activates all IRuntimeComponents → Caches
+    /// Process: Creates → Configures (IsLoaded=true) → Activates all components → Caches
     /// 
     /// Use Load() when you want content ready to render the next frame.
     /// Use Create() when you need more control over activation timing.
     /// </summary>
     /// <param name="template">The template describing the content to load.</param>
-    /// <param name="activate">If true (default), activates all IRuntimeComponents in the tree.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
     IComponent? Load(Template template);
 

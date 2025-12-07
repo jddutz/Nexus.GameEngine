@@ -16,7 +16,7 @@ public static partial class Templates
     /// Includes the TestRunner and key bindings for toggling fullscreen and quitting the application.
     /// Uses RuntimeComponentTemplate so it participates in the update lifecycle.
     /// </summary>
-    public static readonly RuntimeComponentTemplate Tests = new()
+    public static readonly ComponentTemplate Tests = new()
     {
         // Set required properties here
         Name = "Tests",

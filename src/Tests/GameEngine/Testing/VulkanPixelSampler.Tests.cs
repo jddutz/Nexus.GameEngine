@@ -60,7 +60,7 @@ public class VulkanPixelSamplerTests
     {
         // Arrange
         // Don't enable sampler to avoid Vulkan resource creation in unit tests
-        _sampler.SampleCoordinates = new[] { new Vector2D<int>(10, 10) };
+        _sampler.SampleCoordinates = [new Vector2D<int>(10, 10)];
 
         // Act
         var results = _sampler.GetResults();
@@ -103,13 +103,13 @@ public class VulkanPixelSamplerTests
     public void PixelSampler_OnBeforePresent_CapturesResultsWhenActive()
     {
         // Arrange
-        _sampler.SampleCoordinates = new[] { new Vector2D<int>(0, 0) };
+        _sampler.SampleCoordinates = [new Vector2D<int>(0, 0)];
         _sampler.Activate();
 
         // Act: call the private OnBeforePresent handler via reflection (avoid subscribing to the real event)
         var args = new Nexus.GameEngine.Graphics.PresentEventArgs { Image = default, ImageIndex = 0 };
         var onBefore = typeof(VulkanPixelSampler).GetMethod("OnBeforePresent", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        onBefore.Invoke(_sampler, new object?[] { this, args });
+        onBefore.Invoke(_sampler, [this, args]);
 
         // Assert: results should contain one captured frame with the same length as sample coords
         var results = _sampler.GetResults();
@@ -128,16 +128,16 @@ public class VulkanPixelSamplerTests
     var vectorMethod = type.GetMethod("SrgbToLinear", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
 
         // low value -> linear = srgb/12.92 branch
-        var low = (float)channelMethod.Invoke(null, new object[] { 0.02f })!;
+        var low = (float)channelMethod.Invoke(null, [0.02f])!;
         Assert.Equal(0.02f / 12.92f, low, 6);
 
         // high value -> gamma branch (approx > 0.04045)
-        var high = (float)channelMethod.Invoke(null, new object[] { 0.5f })!;
+        var high = (float)channelMethod.Invoke(null, [0.5f])!;
         Assert.True(high > 0.0f);
 
         // vector conversion should preserve alpha and convert channels
         var vec = new Silk.NET.Maths.Vector4D<float>(0.5f, 0.02f, 0.5f, 0.75f);
-        var converted = (Silk.NET.Maths.Vector4D<float>)vectorMethod.Invoke(null, new object[] { vec })!;
+        var converted = (Silk.NET.Maths.Vector4D<float>)vectorMethod.Invoke(null, [vec])!;
         Assert.Equal(0.75f, converted.W);
         Assert.NotEqual(vec.X, converted.X);
     }

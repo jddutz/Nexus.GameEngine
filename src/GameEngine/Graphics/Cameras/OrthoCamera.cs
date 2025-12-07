@@ -3,7 +3,7 @@ namespace Nexus.GameEngine.Graphics.Cameras;
 /// <summary>
 /// Orthographic camera for simulating 2D using 3D world coordinates. Orientation is fixed.
 /// </summary>
-public partial class OrthoCamera : RuntimeComponent, ICamera
+public partial class OrthoCamera : Component, ICamera
 {
     private readonly IBufferManager _bufferManager;
     private readonly IDescriptorManager _descriptorManager;
@@ -267,7 +267,7 @@ public partial class OrthoCamera : RuntimeComponent, ICamera
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.VertexBit
         };
-        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout(new[] { layoutBinding });
+        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout([layoutBinding]);
 
         // Allocate descriptor set
         _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);

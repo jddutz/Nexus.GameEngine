@@ -14,7 +14,7 @@ public class QuitGameAction(IWindowService windowService) : IAction
     /// <returns>ActionId for QuitGameAction</returns>
     public static ActionId GetActionId() => ActionId.FromType<QuitGameAction>();
 
-    public Task<ActionResult> ExecuteAsync(IRuntimeComponent? context = null)
+    public Task<ActionResult> ExecuteAsync(IComponent? context = null)
     {
         try
         {

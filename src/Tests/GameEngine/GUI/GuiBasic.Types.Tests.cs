@@ -111,7 +111,7 @@ public class GuiBasicTypesTests
         g3.Validate();
 
         // Too few stops
-        var bad = new GradientDefinition { Stops = new GradientStop[] { new GradientStop(0, new Vector4D<float>(0,0,0,1)) } };
+        var bad = new GradientDefinition { Stops = [new GradientStop(0, new Vector4D<float>(0,0,0,1))] };
         Assert.Throws<ArgumentException>(() => bad.Validate());
 
         // Too many stops

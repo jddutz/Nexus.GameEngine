@@ -5,7 +5,7 @@ namespace Nexus.GameEngine.Components;
 /// Implements the ITransformable interface with full animation support.
 /// Uses Vulkan/Silk.NET conventions: -Z forward, +Y up, +X right (right-handed).
 /// </summary>
-public partial class Transformable : RuntimeComponent, ITransformable
+public partial class Transformable : Component, ITransformable
 {
     // ==========================================
     // ANIMATED PROPERTIES (with ComponentProperty attribute)

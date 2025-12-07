@@ -21,8 +21,8 @@ public class SiblingBindingTests
         {
             Bindings = new ManualBindings
             {
-                CurrentValue = Nexus.GameEngine.Components.PropertyBinding.FromSibling<SourceComponent>()
-                                      .GetPropertyValue("Value")
+                CurrentValue = Binding.FromSibling<SourceComponent>()
+                                      .GetPropertyValue(s => s.Value)
             }
         };
         
@@ -47,9 +47,9 @@ public class SiblingBindingTests
         Assert.Equal(200, target.CurrentValue);
     }
 
-    public class ContainerComponent : RuntimeComponent { }
+    public class ContainerComponent : Component { }
 
-    public class SourceComponent : RuntimeComponent
+    public class SourceComponent : Component
     {
         private int _value;
         public int Value
@@ -65,16 +65,16 @@ public class SiblingBindingTests
         public event EventHandler<PropertyChangedEventArgs<int>>? ValueChanged;
     }
 
-    public class TargetComponent : RuntimeComponent
+    public class TargetComponent : Component
     {
         public int CurrentValue { get; set; }
     }
 
     public class ManualBindings : PropertyBindings
     {
-        public Nexus.GameEngine.Components.PropertyBinding? CurrentValue { get; init; }
+        public IPropertyBinding? CurrentValue { get; init; }
         
-        public override IEnumerator<(string propertyName, Nexus.GameEngine.Components.PropertyBinding binding)> GetEnumerator()
+        public override IEnumerator<(string propertyName, IPropertyBinding binding)> GetEnumerator()
         {
             if (CurrentValue != null) yield return ("CurrentValue", CurrentValue);
         }

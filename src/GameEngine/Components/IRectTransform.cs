@@ -7,7 +7,7 @@ namespace Nexus.GameEngine.Components;
 /// Designed for UI elements and 2D game objects.
 /// Coordinate system: Top-Left origin (0,0), +X Right, +Y Down.
 /// </summary>
-public interface IRectTransform
+public interface IRectTransform : IComponent
 {
     /// <summary>
     /// Position in parent space (or screen space if no parent).

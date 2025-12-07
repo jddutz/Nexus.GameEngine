@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
+
 namespace Nexus.GameEngine.Components;
 
-public abstract partial class Configurable : Entity, IConfigurable
+public partial class Component
 {
     // Configuration Events
     public event EventHandler<ConfigurationEventArgs>? Loading;
@@ -18,12 +21,15 @@ public abstract partial class Configurable : Entity, IConfigurable
     /// Parent is Loadd before calling this method.
     /// </summary>
     /// <param name="template">Template used for configuration, or null if created without template</param>
-    protected virtual void OnLoad(Template? template) { }
-
-    protected virtual void Configure(Template template)
+    protected virtual void OnLoad(Template? template) 
     {
-        if (template.Name != null) SetCurrentName(template.Name);
+        if (template != null)
+        {
+            _bindings = template.Bindings;
+        }
     }
+
+
 
     /// <summary>
     /// Load the component using the specified template (legacy Configurable.Template).
@@ -35,10 +41,12 @@ public abstract partial class Configurable : Entity, IConfigurable
     {
         Loading?.Invoke(this, new(template));
 
-        if (template.Name != null) SetCurrentName(template.Name);
         Configure(template);
 
         OnLoad(template);
+
+        // Apply initial property values immediately
+        ApplyUpdates(0);
 
         IsLoaded = true;
         Loaded?.Invoke(this, new(template));

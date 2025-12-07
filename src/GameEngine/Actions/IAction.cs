@@ -16,5 +16,5 @@ public interface IAction
     /// <param name="context">The component that triggered this action. 
     /// Can be used to navigate the component tree or access component-specific data.</param>
     /// <returns>Result indicating success/failure and any additional data</returns>
-    Task<ActionResult> ExecuteAsync(IRuntimeComponent? context = null);
+    Task<ActionResult> ExecuteAsync(IComponent? context = null);
 }

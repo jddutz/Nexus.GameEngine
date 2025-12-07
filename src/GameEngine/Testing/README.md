@@ -33,7 +33,7 @@ services.AddPixelSampling();
 2. **Inject into test components**:
 
 ```csharp
-public class MyTestComponent(IPixelSampler pixelSampler) : RuntimeComponent(), ITestComponent
+public class MyTestComponent(IPixelSampler pixelSampler) : Component, ITestComponent
 {
     protected override void OnActivate()
     {
