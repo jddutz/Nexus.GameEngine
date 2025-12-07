@@ -10,9 +10,8 @@ namespace TestApp.Tests;
 /// Tests FR-001: Per-frame timing data collection for rendering, updates, resource loading, input.
 /// </summary>
 public partial class SubsystemProfilingTest(
-    IProfiler profiler,
-    IWindowService windowService)
-    : TestComponent(windowService), ITestComponent
+    IProfiler profiler)
+    : TestComponent, ITestComponent
 {
     private const int FramesToProfile = 5;
     private bool _dataCollected = false;

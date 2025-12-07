@@ -5,6 +5,7 @@ using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.Descriptors;
+using Nexus.GameEngine.Runtime.Systems;
 
 namespace Tests.GameEngine.Components;
 
@@ -22,6 +23,13 @@ public class ComponentFactorTests
         services.AddSingleton(descriptorMock.Object);
         services.AddSingleton(resourceMock.Object);
         services.AddSingleton(pipelineMock.Object);
+
+        // Register mocked systems
+        services.AddSingleton(new Mock<IGraphicsSystem>().Object);
+        services.AddSingleton(new Mock<IResourceSystem>().Object);
+        services.AddSingleton(new Mock<IContentSystem>().Object);
+        services.AddSingleton(new Mock<IWindowSystem>().Object);
+        services.AddSingleton(new Mock<IInputSystem>().Object);
 
         var serviceProvider = services.BuildServiceProvider();
 

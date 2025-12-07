@@ -3,6 +3,7 @@ using Nexus.GameEngine;
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime;
+using Nexus.GameEngine.Runtime.Extensions;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
@@ -10,17 +11,13 @@ namespace TestApp.Tests;
 
 public partial class TestComponent : Component, ITestComponent
 {
-    protected IWindow Window { get; init; }
-
     [ComponentProperty]
     [TemplateProperty]
     public int _frameCount = 1;
     public int Updates { get; private set; } = 0;
 
-    public TestComponent(IWindowService windowService)
+    public TestComponent()
     {
-        Window = windowService.GetWindow();
-
         // Subscribe to validation events to log errors before activation is aborted
         ValidationFailed += OnValidationFailed;
     }
@@ -43,7 +40,7 @@ public partial class TestComponent : Component, ITestComponent
         
         // Set size constraints for all UI element children
         // This ensures root UI elements get properly sized and positioned
-        var windowSize = Window.FramebufferSize;
+        var windowSize = Window.GetWindow().FramebufferSize;
         var constraints = new Rectangle<float>(-windowSize.X / 2f, -windowSize.Y / 2f, windowSize.X, windowSize.Y);
         foreach (var child in GetChildren<IUserInterfaceElement>())
         {

@@ -3,6 +3,7 @@ using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Runtime;
+using Nexus.GameEngine.Runtime.Extensions;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
@@ -14,9 +15,8 @@ namespace TestApp.Tests;
 /// </summary>
 public partial class RenderableTest(
     IPixelSampler pixelSampler,
-    IRenderer renderer,
-    IWindowService windowService)
-    : TestComponent(windowService)
+    IRenderer renderer)
+    : TestComponent
 {
     protected IRenderer Renderer => renderer;
 
@@ -42,8 +42,8 @@ public partial class RenderableTest(
     private Vector2D<int>[] _sampleCoordinates = [];
     protected virtual Vector2D<int>[] GetSampleCoordinates()
     {
-        int width = Window.FramebufferSize.X;
-        int height = Window.FramebufferSize.Y;
+        int width = Window.GetWindow().FramebufferSize.X;
+        int height = Window.GetWindow().FramebufferSize.Y;
         
         return [
             new(width / 2, height / 2),           // Center

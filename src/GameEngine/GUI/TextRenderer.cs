@@ -7,16 +7,13 @@ using Nexus.GameEngine.Graphics.PushConstants;
 using Nexus.GameEngine.Resources;
 using Nexus.GameEngine.Resources.Fonts;
 using Nexus.GameEngine.Resources.Shaders;
+using Nexus.GameEngine.Runtime.Extensions;
 using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI;
 
 public partial class TextRenderer : Component, IDrawable
 {
-    private readonly IPipelineManager _pipelineManager;
-    private readonly IDescriptorManager _descriptorManager;
-    private readonly IResourceManager _resourceManager;
-
     [ComponentProperty]
     [TemplateProperty]
     protected string _text = string.Empty;
@@ -38,11 +35,8 @@ public partial class TextRenderer : Component, IDrawable
     private DescriptorSet? _fontAtlasDescriptorSet;
     private PipelineHandle _pipeline;
 
-    public TextRenderer(IPipelineManager pipelineManager, IDescriptorManager descriptorManager, IResourceManager resourceManager)
+    public TextRenderer()
     {
-        _pipelineManager = pipelineManager;
-        _descriptorManager = descriptorManager;
-        _resourceManager = resourceManager;
     }
 
     public bool IsVisible() => Visible && IsActive();
@@ -51,11 +45,11 @@ public partial class TextRenderer : Component, IDrawable
     {
         base.OnActivate();
 
-        _pipeline = _pipelineManager.GetOrCreate(PipelineDefinitions.UIElement);
+        _pipeline = Graphics.GetPipeline(PipelineDefinitions.UIElement);
 
         // Load font
         var def = _fontDefinition ?? FontDefinitions.RobotoNormal;
-        _fontResource = _resourceManager.Fonts.GetOrCreate(def);
+        _fontResource = Resources.GetFont(def);
 
         CreateFontAtlasDescriptorSet();
         UpdateSize();
@@ -65,7 +59,7 @@ public partial class TextRenderer : Component, IDrawable
     {
         if (_fontResource != null && _fontDefinition != null)
         {
-            _resourceManager.Fonts.Release(_fontDefinition);
+            Resources.ReleaseFont(_fontDefinition);
             _fontResource = null;
         }
         
@@ -82,10 +76,10 @@ public partial class TextRenderer : Component, IDrawable
         if (shader.DescriptorSetLayouts == null || !shader.DescriptorSetLayouts.ContainsKey(1))
             return;
 
-        var layout = _descriptorManager.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[1]);
-        _fontAtlasDescriptorSet = _descriptorManager.AllocateDescriptorSet(layout);
+        var layout = Graphics.CreateDescriptorSetLayout(shader.DescriptorSetLayouts[1]);
+        _fontAtlasDescriptorSet = Graphics.AllocateDescriptorSet(layout);
 
-        _descriptorManager.UpdateDescriptorSet(
+        Graphics.UpdateDescriptorSet(
             _fontAtlasDescriptorSet.Value,
             _fontResource.AtlasTexture.ImageView,
             _fontResource.AtlasTexture.Sampler,

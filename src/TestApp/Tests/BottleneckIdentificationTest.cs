@@ -11,9 +11,8 @@ namespace TestApp.Tests;
 /// Tests that PerformanceReport can identify top N slowest operations.
 /// </summary>
 public partial class BottleneckIdentificationTest(
-    IProfiler profiler,
-    IWindowService windowService)
-    : TestComponent(windowService), ITestComponent
+    IProfiler profiler)
+    : TestComponent, ITestComponent
 {
     private const int FramesToProfile = 10;
     private bool _topSlowestIdentified = false;

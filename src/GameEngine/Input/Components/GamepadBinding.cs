@@ -8,14 +8,10 @@ namespace Nexus.GameEngine.Input.Components;
 /// </summary>
 /// <typeparam name="TAction">The type of action to execute when the gamepad binding is triggered</typeparam>
 /// <remarks>
-/// Initializes a new instance of the GamepadBinding class with dependency injection.
+/// Initializes a new instance of the GamepadBinding class.
 /// </remarks>
-/// <param name="windowService">The window service to use for getting input context</param>
-/// <param name="actionFactory">The action factory for creating and executing actions</param>
-public partial class GamepadBinding(
-    IWindowService windowService,
-    IActionFactory actionFactory)
-    : InputBinding(windowService, actionFactory)
+public partial class GamepadBinding()
+    : InputBinding
 {
     /// <summary>
     /// The gamepad button that triggers this binding.

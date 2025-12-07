@@ -1,6 +1,7 @@
 using Nexus.GameEngine.Graphics;
 using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Runtime;
+using Nexus.GameEngine.Runtime.Extensions;
 using Nexus.GameEngine.Testing;
 using Silk.NET.Maths;
 
@@ -15,14 +16,13 @@ namespace TestApp.Tests;
 /// </summary>
 public partial class BackgroundImageLayerTest(
     IPixelSampler pixelSampler,
-    IRenderer renderer,
-    IWindowService windowService
-    ) : RenderableTest(pixelSampler, renderer, windowService)
+    IRenderer renderer
+    ) : RenderableTest(pixelSampler, renderer)
 {
     protected override Vector2D<int>[] GetSampleCoordinates()
     {
-        int width = Window.FramebufferSize.X;
-        int height = Window.FramebufferSize.Y;
+        int width = Window.GetWindow().FramebufferSize.X;
+        int height = Window.GetWindow().FramebufferSize.Y;
         
         return [
             new(0, 0),              // Top-left UV (0,0)
@@ -35,8 +35,8 @@ public partial class BackgroundImageLayerTest(
 
     protected override Dictionary<int, Vector4D<float>[]> GetExpectedResults()
     {
-        int width = Window.FramebufferSize.X;
-        int height = Window.FramebufferSize.Y;
+        int width = Window.GetWindow().FramebufferSize.X;
+        int height = Window.GetWindow().FramebufferSize.Y;
         
         return new Dictionary<int, Vector4D<float>[]>()
         {

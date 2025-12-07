@@ -11,11 +11,7 @@ public class BackgroundImageLayerTests
     [Fact]
     public void GetDrawCommands_ReturnsEmpty_WhenNotActivatedOrResourcesMissing()
     {
-        var desc = new Mock<IDescriptorManager>();
-        var resources = new Mock<IResourceManager>();
-        var pipeline = new Mock<IPipelineManager>();
-
-        var layer = new BackgroundImageLayer(desc.Object, resources.Object, pipeline.Object);
+        var layer = new BackgroundImageLayer();
 
         // Without activation and resources the draw commands enumerable should be empty
         var cmds = layer.GetDrawCommands(default!).ToList();

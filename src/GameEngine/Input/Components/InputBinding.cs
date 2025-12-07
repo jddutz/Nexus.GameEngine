@@ -1,3 +1,5 @@
+using Nexus.GameEngine.Runtime.Extensions;
+
 namespace Nexus.GameEngine.Input.Components;
 
 /// <summary>
@@ -7,15 +9,11 @@ namespace Nexus.GameEngine.Input.Components;
 /// Uses lazy initialization to obtain input context from window service when ready.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the InputBinding class with dependency injection.
-/// The input context is obtained lazily from the window service to ensure proper
+/// Initializes a new instance of the InputBinding class.
+/// The input context is obtained lazily from the input system to ensure proper
 /// initialization order during component lifecycle.
 /// </remarks>
-/// <param name="windowService">The window service used to obtain input context when ready</param>
-/// <param name="actionFactory">The action factory for creating and executing actions</param>
-public abstract partial class InputBinding(
-    IWindowService windowService,
-    IActionFactory actionFactory)
+public abstract partial class InputBinding()
     : Component
 {
     /// <summary>
@@ -31,12 +29,10 @@ public abstract partial class InputBinding(
             if (_inputContext != null)
                 return _inputContext;
 
-            _inputContext = windowService.InputContext;
+            _inputContext = Input.GetInputContext();
             return _inputContext;
         }
     }
-
-    protected readonly IActionFactory _actionFactory = actionFactory;
 
     /// <summary>
     /// Gets the action that will be executed when input is triggered.
@@ -51,15 +47,6 @@ public abstract partial class InputBinding(
     /// <returns>Collection of validation errors</returns>
     protected override IEnumerable<ValidationError> OnValidate()
     {
-        if (_actionFactory == null)
-        {
-            yield return new ValidationError(
-                this,
-                "ActionFactory is required for input binding",
-                ValidationSeverityEnum.Error
-            );
-        }
-
         if (ActionId == ActionId.None)
         {
             yield return new ValidationError(
@@ -95,9 +82,7 @@ public abstract partial class InputBinding(
             return;
         }
 
-        if (_actionFactory == null) return;
-
-        var result = await _actionFactory.ExecuteAsync(ActionId, this);
+        var result = await Input.ExecuteActionAsync(ActionId, this);
     }
 
     /// <summary>
