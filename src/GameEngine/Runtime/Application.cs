@@ -19,7 +19,7 @@ public class Application(IServiceProvider services) : IApplication
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
     /// <param name="startupTemplate">The template for the root component to load on startup.</param>
-    public void Run(WindowOptions windowOptions, Template startupTemplate)
+    public void Run(WindowOptions windowOptions, ComponentTemplate startupTemplate)
     {
         var windowService = services.GetRequiredService<IWindowService>();
         var window = windowService.GetOrCreateWindow(windowOptions);
@@ -41,7 +41,11 @@ public class Application(IServiceProvider services) : IApplication
             var renderer = services.GetRequiredService<IRenderer>();
             var profiler = services.GetRequiredService<IProfiler>();
 
-            if (startupTemplate == null) return;
+            if (startupTemplate == null)
+            {
+                Log.Warning("startupTemplate is null, skipping content load");
+                return;
+            }
 
             // Load content through ContentManager
             // ContentManager automatically registers cameras found in the content tree
@@ -53,13 +57,14 @@ public class Application(IServiceProvider services) : IApplication
             {
                 // Use centered coordinate system to match StaticCamera's viewport
                 // Origin at center: (-width/2, -height/2) to (width/2, height/2)
-                var constraints = new Rectangle<float>(-window.Size.X / 2f, -window.Size.Y / 2f, window.Size.X, window.Size.Y);
+                var constraints = new Rectangle<float>(0, 0, window.Size.X, window.Size.Y);
                 rootElement.UpdateLayout(constraints);
                 
                 // Update constraints when window resizes
                 window.Resize += newSize =>
                 {
-                    rootElement.UpdateLayout(new Rectangle<float>(-newSize.X / 2f, -newSize.Y / 2f, newSize.X, newSize.Y));
+                    var newConstraints = new Rectangle<float>(0, 0, newSize.X, newSize.Y);
+                    rootElement.UpdateLayout(newConstraints);
                 };
             }
 

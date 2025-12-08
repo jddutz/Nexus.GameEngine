@@ -32,7 +32,7 @@ namespace Tests.GameEngine
             try
             {
                 Console.SetOut(sw);
-                Log.Info("i");
+                Log.Debug("i");
                 Log.Warning("w");
                 Log.Error("e");
                 var output = sw.ToString();

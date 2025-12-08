@@ -13,6 +13,12 @@ public class ParentLookup<T> : ILookupStrategy where T : class, IComponent
     {
         ArgumentNullException.ThrowIfNull(targetComponent);
 
-        return targetComponent.Parent as T;
+        var current = targetComponent.Parent;
+        while (current != null)
+        {
+            if (current is T typed) return typed;
+            current = current.Parent;
+        }
+        return null;
     }
 }

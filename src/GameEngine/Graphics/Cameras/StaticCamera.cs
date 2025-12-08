@@ -1,19 +1,17 @@
+using Nexus.GameEngine.Runtime.Systems;
+
 namespace Nexus.GameEngine.Graphics.Cameras;
 
 /// <summary>
-/// Orthographic camera for UI rendering with centered coordinate system.
-/// Creates a projection matrix that transforms pixel coordinates (centered at origin)
-/// to normalized device coordinates. Origin (0,0) is at the center of the viewport,
-/// with coordinates ranging from (-width/2, -height/2) to (width/2, height/2).
+/// Orthographic camera for UI rendering with top-left origin coordinate system.
+/// Creates a projection matrix that transforms pixel coordinates (top-left at origin)
+/// to normalized device coordinates. Origin (0,0) is at the top-left of the viewport,
+/// with coordinates ranging from (0, 0) to (width, height).
 /// The viewport dimensions must be set via <see cref="SetViewportSize"/> before rendering.
 /// Manages its own ViewProjection UBO buffer and descriptor set for efficient rendering.
 /// </summary>
 public partial class StaticCamera : Component, ICamera
 {
-    private readonly IBufferManager _bufferManager;
-    private readonly IDescriptorManager _descriptorManager;
-    private readonly IGraphicsContext _graphicsContext;
-
     public StaticCamera()
     {
     }
@@ -29,17 +27,6 @@ public partial class StaticCamera : Component, ICamera
     // DELIBERATELY WRONG defaults to catch initialization bugs - must call SetViewportSize()
     private float _viewportWidth = 640f;   // Obvious fallback
     private float _viewportHeight = 480f;  // Obvious fallback
-
-    // Constructor with dependency injection
-    public StaticCamera(
-        IBufferManager bufferManager,
-        IDescriptorManager descriptorManager,
-        IGraphicsContext graphicsContext)
-    {
-        _bufferManager = bufferManager;
-        _descriptorManager = descriptorManager;
-        _graphicsContext = graphicsContext;
-    }
 
     // Clipping plane distances
     [ComponentProperty]
@@ -106,16 +93,16 @@ public partial class StaticCamera : Component, ICamera
         // Identity view matrix (UI coordinates are in screen space)
         ViewMatrix = Matrix4X4<float>.Identity;
 
-        // Create pixel-to-NDC orthographic projection with CENTERED origin
-        // Our coordinate system: (0,0) at center, +Y goes DOWN (screen space)
-        // We want: (-width/2, -height/2) pixel -> (-1, -1) NDC (top-left)
-        //          (width/2, height/2) pixel -> (1, 1) NDC (bottom-right)
-        // This matches shader calculations like: gl_Position = vec4(xy.x / (width/2), xy.y / (height/2), 0, 1)
+        // Create pixel-to-NDC orthographic projection with TOP-LEFT origin
+        // Our coordinate system: (0,0) at top-left, +X right, +Y down (standard UI convention)
+        // We want: (0, 0) pixel -> (-1, -1) NDC (top-left)
+        //          (width, height) pixel -> (1, 1) NDC (bottom-right)
+        // Note: Vulkan NDC has Y pointing down, matching our UI coordinate system
         ProjectionMatrix = Matrix4X4.CreateOrthographicOffCenter(
-            -_viewportWidth / 2f,   // left
-            _viewportWidth / 2f,    // right
-            -_viewportHeight / 2f,  // bottom
-            _viewportHeight / 2f,   // top
+            0f,              // left
+            _viewportWidth,  // right
+            0f,              // bottom
+            _viewportHeight, // top
             _nearPlane,
             _farPlane);
 
@@ -133,10 +120,10 @@ public partial class StaticCamera : Component, ICamera
     {
         if (!_visibleRectDirty) return;
 
-        // With centered coordinate system, visible rect spans from -width/2 to +width/2
+        // With top-left coordinate system, visible rect spans from (0,0) to (width, height)
         _visibleRect = new Rectangle<float>(
-            -_viewportWidth / 2f,
-            -_viewportHeight / 2f,
+            0f,
+            0f,
             _viewportWidth,
             _viewportHeight
         );
@@ -187,11 +174,9 @@ public partial class StaticCamera : Component, ICamera
 
     public Ray3D<float> ScreenToWorldRay(Vector2D<int> screenPoint, int screenWidth, int screenHeight)
     {
-        // Convert from screen coordinates (top-left origin) to centered world coordinates
-        // Screen: (0,0) at top-left -> World: (-width/2, -height/2)
-        var worldX = screenPoint.X - (screenWidth / 2f);
-        var worldY = screenPoint.Y - (screenHeight / 2f);
-        var rayOrigin = new Vector3D<float>(worldX, worldY, 0);
+        // With top-left origin, screen coordinates are the same as world coordinates
+        // Screen: (0,0) at top-left -> World: (0,0) at top-left
+        var rayOrigin = new Vector3D<float>(screenPoint.X, screenPoint.Y, 0);
 
         // Ray direction is always forward for orthographic projection
         return new Ray3D<float>(rayOrigin, Forward);
@@ -199,10 +184,10 @@ public partial class StaticCamera : Component, ICamera
 
     public Vector2D<int> WorldToScreenPoint(Vector3D<float> worldPoint, int screenWidth, int screenHeight)
     {
-        // Convert from centered world coordinates to screen coordinates (top-left origin)
-        // World: (-width/2, -height/2) -> Screen: (0,0) at top-left
-        var screenX = (int)(worldPoint.X + (screenWidth / 2f));
-        var screenY = (int)(worldPoint.Y + (screenHeight / 2f));
+        // With top-left origin, world coordinates are the same as screen coordinates
+        // World: (0,0) at top-left -> Screen: (0,0) at top-left
+        var screenX = (int)worldPoint.X;
+        var screenY = (int)worldPoint.Y;
         return new Vector2D<int>(screenX, screenY);
     }
 
@@ -233,7 +218,7 @@ public partial class StaticCamera : Component, ICamera
         var uboSize = (ulong)sizeof(ViewProjectionUBO);
 
         // Create UBO buffer
-        (_viewProjectionBuffer, _viewProjectionMemory) = _bufferManager.CreateUniformBuffer(uboSize);
+        (_viewProjectionBuffer, _viewProjectionMemory) = ((ResourceSystem)Resources).BufferManager.CreateUniformBuffer(uboSize);
 
         // Create descriptor set layout for UBO (set=0, binding=0)
         var layoutBinding = new DescriptorSetLayoutBinding
@@ -243,10 +228,10 @@ public partial class StaticCamera : Component, ICamera
             DescriptorCount = 1,
             StageFlags = ShaderStageFlags.VertexBit
         };
-        _viewProjectionDescriptorLayout = _descriptorManager.CreateDescriptorSetLayout([layoutBinding]);
+        _viewProjectionDescriptorLayout = ((GraphicsSystem)Graphics).DescriptorManager.CreateDescriptorSetLayout([layoutBinding]);
 
         // Allocate descriptor set
-        _viewProjectionDescriptorSet = _descriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);
+        _viewProjectionDescriptorSet = ((GraphicsSystem)Graphics).DescriptorManager.AllocateDescriptorSet(_viewProjectionDescriptorLayout);
 
         // Write descriptor set to bind UBO
         var bufferInfo = new DescriptorBufferInfo
@@ -267,7 +252,8 @@ public partial class StaticCamera : Component, ICamera
             PBufferInfo = &bufferInfo
         };
 
-        _graphicsContext.VulkanApi.UpdateDescriptorSets(_graphicsContext.Device, 1, &writeDescriptorSet, 0, null);
+        var context = ((GraphicsSystem)Graphics).Context;
+        context.VulkanApi.UpdateDescriptorSets(context.Device, 1, &writeDescriptorSet, 0, null);
 
         // Update UBO with initial matrix
         UpdateViewProjectionUBO();
@@ -281,14 +267,14 @@ public partial class StaticCamera : Component, ICamera
 
         var ubo = ViewProjectionUBO.FromMatrix(GetViewProjectionMatrix());
         var span = new ReadOnlySpan<byte>(&ubo, sizeof(ViewProjectionUBO));
-        _bufferManager.UpdateUniformBuffer(_viewProjectionMemory, span);
+        ((ResourceSystem)Resources).BufferManager.UpdateUniformBuffer(_viewProjectionMemory, span);
     }
 
     private void CleanupViewProjectionUBO()
     {
         if (!_uboInitialized) return;
 
-        _bufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
+        ((ResourceSystem)Resources).BufferManager.DestroyBuffer(_viewProjectionBuffer, _viewProjectionMemory);
         // Descriptor set is freed automatically when pool is reset
         
         _uboInitialized = false;

@@ -15,8 +15,6 @@ public partial class Component
     [TemplateProperty]
     protected bool _active = false;
 
-    private PropertyBindings? _bindings;
-
     /// <summary>
     /// Returns whether this component is currently active and enabled.
     /// This is the combined state that determines if the component participates in updates.
@@ -25,17 +23,11 @@ public partial class Component
 
     public event EventHandler<EventArgs>? Activating;
     public event EventHandler<EventArgs>? Activated;
+    public event EventHandler<EventArgs>? Deactivating;
+    public event EventHandler<EventArgs>? Deactivated;
 
-    protected virtual void OnActivate() 
-    {
-        if (_bindings != null)
-        {
-            foreach (var (propName, binding) in _bindings)
-            {
-                binding.Activate(this, propName);
-            }
-        }
-    }
+    protected virtual void OnActivate() {}
+    protected virtual void OnDeactivate() {}
 
     public void Activate()
     {
@@ -45,6 +37,8 @@ public partial class Component
         if (!IsValid()) return;
 
         Activating?.Invoke(this, EventArgs.Empty);
+
+        ActivatePropertyBindings();
 
         OnActivate();
 
@@ -131,20 +125,6 @@ public partial class Component
         }
     }
 
-    public event EventHandler<EventArgs>? Deactivating;
-    public event EventHandler<EventArgs>? Deactivated;
-
-    protected virtual void OnDeactivate() 
-    {
-        if (_bindings != null)
-        {
-            foreach (var (_, binding) in _bindings)
-            {
-                binding.Deactivate();
-            }
-        }
-    }
-
     public void Deactivate()
     {
         if (!IsActive()) return;
@@ -160,6 +140,8 @@ public partial class Component
             child.Deactivate();
         }
 
+        DeactivatePropertyBindings();
+        
         OnDeactivate();
 
         Deactivated?.Invoke(this, EventArgs.Empty);

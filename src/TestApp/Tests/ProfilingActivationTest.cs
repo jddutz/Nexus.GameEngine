@@ -24,11 +24,11 @@ public partial class ProfilingActivationTest(
         // Frame 0: Check initial state (should be disabled by default)
         if (Updates == 1 && !_initialStateChecked)
         {
-            Log.Info($"[ProfilingActivationTest] Frame {Updates}: Checking initial profiler state");
+            Log.Debug($"[ProfilingActivationTest] Frame {Updates}: Checking initial profiler state");
             
             if (!profiler.IsEnabled)
             {
-                Log.Info("✓ Profiler is initially disabled (expected)");
+                Log.Debug("✓ Profiler is initially disabled (expected)");
                 _initialStateChecked = true;
             }
             else
@@ -40,12 +40,12 @@ public partial class ProfilingActivationTest(
         // Frame 1: Enable profiling
         if (Updates == 2 && !_enabledStateChecked)
         {
-            Log.Info($"[ProfilingActivationTest] Frame {Updates}: Enabling profiler");
+            Log.Debug($"[ProfilingActivationTest] Frame {Updates}: Enabling profiler");
             profiler.Enable();
 
             if (profiler.IsEnabled)
             {
-                Log.Info("✓ Profiler.Enable() sets IsEnabled to true");
+                Log.Debug("✓ Profiler.Enable() sets IsEnabled to true");
                 _enabledStateChecked = true;
             }
             else
@@ -57,17 +57,17 @@ public partial class ProfilingActivationTest(
         // Frame 2: Disable profiling
         if (Updates == 3 && !_disabledStateChecked)
         {
-            Log.Info($"[ProfilingActivationTest] Frame {Updates}: Disabling profiler");
+            Log.Debug($"[ProfilingActivationTest] Frame {Updates}: Disabling profiler");
             profiler.Disable();
 
             if (!profiler.IsEnabled)
             {
-                Log.Info("✓ Profiler.Disable() sets IsEnabled to false");
+                Log.Debug("Profiler.Disable() sets IsEnabled to false");
                 _disabledStateChecked = true;
             }
             else
             {
-                Log.Error("✗ Profiler.Disable() did not set IsEnabled to false");
+                Log.Error("Profiler.Disable() did not set IsEnabled to false");
             }
             
             // Test complete

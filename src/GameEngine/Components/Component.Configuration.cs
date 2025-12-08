@@ -21,15 +21,7 @@ public partial class Component
     /// Parent is Loadd before calling this method.
     /// </summary>
     /// <param name="template">Template used for configuration, or null if created without template</param>
-    protected virtual void OnLoad(Template? template) 
-    {
-        if (template != null)
-        {
-            _bindings = template.Bindings;
-        }
-    }
-
-
+    protected virtual void OnLoad(Template? template) { }
 
     /// <summary>
     /// Load the component using the specified template (legacy Configurable.Template).
@@ -42,6 +34,8 @@ public partial class Component
         Loading?.Invoke(this, new(template));
 
         Configure(template);
+
+        LoadPropertyBindings(template);
 
         OnLoad(template);
 

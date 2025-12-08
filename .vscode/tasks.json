@@ -62,6 +62,26 @@
                 "showReuseMessage": true,
                 "clear": false
             }
+        },
+        {
+            "label": "run-nexus-ide",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/src/IDE/Nexus.IDE.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "dependsOn": ["build-solution"],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
         }
     ]
 }

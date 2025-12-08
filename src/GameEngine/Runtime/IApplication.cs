@@ -13,5 +13,5 @@ public interface IApplication
     /// </summary>
     /// <param name="windowOptions">The configuration options for the main application window.</param>
     /// <param name="startupTemplate">The template for the root component to load on startup.</param>
-    void Run(WindowOptions windowOptions, Template startupTemplate);
+    void Run(WindowOptions windowOptions, ComponentTemplate startupTemplate);
 }

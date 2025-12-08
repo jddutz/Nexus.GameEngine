@@ -2,18 +2,18 @@ namespace Nexus.GameEngine.GUI;
 
 /// <summary>
 /// Alignment constants for UI element positioning and text alignment.
-/// Provides both individual axis values (-1 to 1) and common 2D alignment presets.
+/// Provides both individual axis values (0 to 1) and common 2D alignment presets.
 /// </summary>
 public static class Align
 {
     // Horizontal alignment values
-    public const float Left = -1f;
-    public const float Center = 0f;
+    public const float Left = 0f;
+    public const float Center = 0.5f;
     public const float Right = 1f;
 
     // Vertical alignment values
-    public const float Top = -1f;
-    public const float Middle = 0f;
+    public const float Top = 0f;
+    public const float Middle = 0.5f;
     public const float Bottom = 1f;
 
     // Common 2D alignment presets (9 standard positions)

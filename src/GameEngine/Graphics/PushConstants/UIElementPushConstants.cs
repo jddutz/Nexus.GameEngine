@@ -103,6 +103,22 @@ public struct UIElementPushConstants
     }
 
     /// <summary>
+    /// Constructor allowing explicit pivot with full-texture UVs and float size for precision.
+    /// </summary>
+    public UIElementPushConstants(
+        Matrix4X4<float> model,
+        Vector4D<float> tintColor,
+        Vector2D<float> size,
+        Vector2D<float> pivot)
+    {
+        Model = model;
+        TintColor = tintColor;
+        UvRect = new Vector4D<float>(0f, 0f, 1f, 1f);
+        Size = size;
+        Pivot = pivot;
+    }
+
+    /// <summary>
     /// Constructor allowing explicit UV rectangle but default pivot (0,0).
     /// </summary>
     public UIElementPushConstants(

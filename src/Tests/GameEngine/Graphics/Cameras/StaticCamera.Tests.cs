@@ -13,11 +13,7 @@ public class StaticCameraTests
     public void GetViewProjectionMatrix_WithIdentityView_ReturnsProjection()
     {
         // Arrange - create mocks for dependencies; StaticCamera won't use them for matrix math
-        var mockBufferManager = new Mock<IBufferManager>();
-        var mockDescriptorManager = new Mock<IDescriptorManager>();
-        var mockGraphicsContext = new Mock<IGraphicsContext>();
-
-        var camera = new StaticCamera(mockBufferManager.Object, mockDescriptorManager.Object, mockGraphicsContext.Object);
+        var camera = new StaticCamera();
 
         // Act - initialize matrices (sets View=Identity and builds Projection)
         camera.SetViewportSize(800f, 600f);
@@ -34,11 +30,7 @@ public class StaticCameraTests
     public void ViewMatrix_IsIdentity_AfterInitialize()
     {
         // Arrange
-        var mockBufferManager = new Mock<IBufferManager>();
-        var mockDescriptorManager = new Mock<IDescriptorManager>();
-        var mockGraphicsContext = new Mock<IGraphicsContext>();
-
-        var camera = new StaticCamera(mockBufferManager.Object, mockDescriptorManager.Object, mockGraphicsContext.Object);
+        var camera = new StaticCamera();
 
         // Act
         camera.SetViewportSize(800f, 600f);
@@ -55,7 +47,7 @@ public class StaticCameraTests
         var mockDescriptorManager = new Mock<IDescriptorManager>();
         var mockGraphicsContext = new Mock<IGraphicsContext>();
 
-        var camera = new StaticCamera(mockBufferManager.Object, mockDescriptorManager.Object, mockGraphicsContext.Object);
+        var camera = new StaticCamera();
         camera.SetViewportSize(800f, 600f);
 
         var initialProjection = camera.ProjectionMatrix;
@@ -77,11 +69,7 @@ public class StaticCameraTests
     public void IsVisible_ReturnsTrue_WhenBoxOverlapsViewport()
     {
         // Arrange
-        var mockBufferManager = new Mock<IBufferManager>();
-        var mockDescriptorManager = new Mock<IDescriptorManager>();
-        var mockGraphicsContext = new Mock<IGraphicsContext>();
-
-        var camera = new StaticCamera(mockBufferManager.Object, mockDescriptorManager.Object, mockGraphicsContext.Object);
+        var camera = new StaticCamera();
         camera.SetViewportSize(100f, 100f);
 
         // Build a Box3D<float> that lies within the viewport (10..20 in both X and Y)
@@ -98,11 +86,7 @@ public class StaticCameraTests
     public void IsVisible_ReturnsFalse_WhenBoxOutsideViewport()
     {
         // Arrange
-        var mockBufferManager = new Mock<IBufferManager>();
-        var mockDescriptorManager = new Mock<IDescriptorManager>();
-        var mockGraphicsContext = new Mock<IGraphicsContext>();
-
-        var camera = new StaticCamera(mockBufferManager.Object, mockDescriptorManager.Object, mockGraphicsContext.Object);
+        var camera = new StaticCamera();
         camera.SetViewportSize(100f, 100f);
 
         // Build a Box3D<float> that lies completely to the right of the viewport (200..300 in X)

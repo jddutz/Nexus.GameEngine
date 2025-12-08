@@ -274,7 +274,6 @@ public static class Log
 
         // Write to both console and debug channel
         Console.WriteLine(output);
-        System.Diagnostics.Debug.WriteLine(output);
     }
 
     /// <summary>

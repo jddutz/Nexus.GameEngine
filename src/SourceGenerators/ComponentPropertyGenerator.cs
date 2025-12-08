@@ -140,7 +140,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             var beforeChange = GetAttributeValue<string?>(animationAttr, "BeforeChange", null);
             
             // Read optional NotifyChange named argument from attribute
-            var notifyChange = GetAttributeValue<bool>(animationAttr, "NotifyChange", false);
+            var notifyChange = GetAttributeValue<bool>(animationAttr, "NotifyChange", true);
 
             properties.Add(new PropertyInfo
             {
@@ -151,8 +151,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
                 IsCollection = isCollection,
                 // Duration and Interpolation are now runtime parameters, not attribute properties
                 DefaultValue = GetFieldDefaultValue(field),
-                BeforeChange = beforeChange,
-                NotifyChange = notifyChange
+                BeforeChange = beforeChange
             });
         }
 
@@ -332,10 +331,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine($"            {{");
         var callbackArgSet = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
         sb.AppendLine($"                On{prop.Name}Changed({callbackArgSet});");
-        if (prop.NotifyChange)
-        {
-            sb.AppendLine($"                {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArgSet}, value));");
-        }
+        sb.AppendLine($"                {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArgSet}, value));");
         sb.AppendLine($"            }}");
         sb.AppendLine($"            else");
         sb.AppendLine($"            {{");
@@ -358,11 +354,8 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         sb.AppendLine($"        if (!global::System.Collections.Generic.EqualityComparer<{prop.Type}>.Default.Equals(oldValue, value))");
         sb.AppendLine("        {");
         var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? "oldValue!" : "oldValue";
-        sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-        if (prop.NotifyChange)
-        {
-            sb.AppendLine($"            {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArg}, value));");
-        }
+        sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");        
+        sb.AppendLine($"            {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArg}, value));");        
         sb.AppendLine("        }");
         sb.AppendLine("    }");
         sb.AppendLine();
@@ -384,14 +377,11 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             sb.AppendLine($"    partial void On{prop.Name}Changed({paramType} oldValue);");
             sb.AppendLine();
 
-            if (prop.NotifyChange)
-            {
-                sb.AppendLine($"    /// <summary>");
-                sb.AppendLine($"    /// Event raised when the {prop.Name} property changes.");
-                sb.AppendLine($"    /// </summary>");
-                sb.AppendLine($"    public event global::System.EventHandler<global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>>? {prop.Name}Changed;");
-                sb.AppendLine();
-            }
+            sb.AppendLine($"    /// <summary>");
+            sb.AppendLine($"    /// Event raised when the {prop.Name} property changes.");
+            sb.AppendLine($"    /// </summary>");
+            sb.AppendLine($"    public event global::System.EventHandler<global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>>? {prop.Name}Changed;");
+            sb.AppendLine();
         }
 
         // Generate override of ApplyUpdates method to support inheritance
@@ -429,10 +419,7 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
             sb.AppendLine("        {");
             var callbackArg = (prop.TypeSymbol?.IsValueType == false) ? $"{fieldName}Old!" : $"{fieldName}Old";
             sb.AppendLine($"            On{prop.Name}Changed({callbackArg});");
-            if (prop.NotifyChange)
-            {
-                sb.AppendLine($"            {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArg}, {fieldName}));");
-            }
+            sb.AppendLine($"            {prop.Name}Changed?.Invoke(this, new global::Nexus.GameEngine.Events.PropertyChangedEventArgs<{prop.Type}>({callbackArg}, {fieldName}));");
             sb.AppendLine("        }");
             sb.AppendLine();
         }
@@ -460,7 +447,5 @@ public class ComponentPropertyGenerator : IIncrementalGenerator
         public string DefaultValue { get; set; } = string.Empty;
         // Optional name of a generated hook to call before queuing the change
         public string? BeforeChange { get; set; }
-        // Whether to generate PropertyChanged notification for this property
-        public bool NotifyChange { get; set; }
     }
 }

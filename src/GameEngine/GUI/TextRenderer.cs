@@ -12,7 +12,7 @@ using Silk.NET.Vulkan;
 
 namespace Nexus.GameEngine.GUI;
 
-public partial class TextRenderer : Component, IDrawable
+public partial class TextRenderer : UserInterfaceElement, IDrawable
 {
     [ComponentProperty]
     [TemplateProperty]
@@ -27,10 +27,6 @@ public partial class TextRenderer : Component, IDrawable
     [TemplateProperty]
     protected Vector4D<float> _color = new Vector4D<float>(0, 0, 0, 1);
 
-    [ComponentProperty]
-    [TemplateProperty]
-    protected bool _visible = true;
-
     private FontResource? _fontResource;
     private DescriptorSet? _fontAtlasDescriptorSet;
     private PipelineHandle _pipeline;
@@ -39,7 +35,7 @@ public partial class TextRenderer : Component, IDrawable
     {
     }
 
-    public bool IsVisible() => Visible && IsActive();
+    public bool IsVisible() => Visible;
 
     protected override void OnActivate()
     {
@@ -98,17 +94,13 @@ public partial class TextRenderer : Component, IDrawable
         if (!IsVisible() || _fontResource == null || _fontResource.SharedGeometry == null || !_fontAtlasDescriptorSet.HasValue || string.IsNullOrEmpty(_text))
             yield break;
 
-        var parentUI = Parent as UserInterfaceElement;
-        
-        var parentWorldMatrix = parentUI?.WorldMatrix ?? Matrix4X4<float>.Identity;
-        var parentPivot = parentUI?.Pivot ?? Vector2D<float>.Zero;
-        
-        // Measure text
+        // Measure text to determine total size
         var textSize = MeasureText(_text);
         
-        // Calculate text block offset based on Pivot (relative to parent's origin)
-        float textOffsetX = -parentPivot.X * textSize.X;
-        float textOffsetY = -parentPivot.Y * textSize.Y;
+        // Calculate text start position based on Pivot
+        // Pivot (0,0) = top-left, Pivot (0.5,0.5) = center, Pivot (1,1) = bottom-right
+        float textStartX = Pivot.X - Alignment.X * textSize.X;
+        float textStartY = Pivot.Y - Alignment.Y * textSize.Y;
         
         float cursorX = 0f;
         float baselineY = _fontResource.Ascender;
@@ -124,21 +116,27 @@ public partial class TextRenderer : Component, IDrawable
                 continue;
             }
             
-            // Glyph center in LOCAL space
-            float halfWidth = glyph.Width / 2.0f;
-            float halfHeight = glyph.Height / 2.0f;
+            // Calculate glyph position in local space (relative to TextRenderer's position)
+            // Glyph metrics are relative to baseline/cursor position
+            // Position at the top-left corner of the glyph (since quad is 0-1 with pivot at 0)
+            float glyphLeft = textStartX + cursorX + glyph.BearingX;
+            float glyphTop = textStartY + baselineY - glyph.BearingY;
             
-            float glyphLocalX = textOffsetX + cursorX + glyph.BearingX + halfWidth;
-            float glyphLocalY = textOffsetY + baselineY - glyph.BearingY + halfHeight;
+            // Build glyph world matrix: rotation + translation only (NO scaling)
+            // Glyphs should render at their actual pixel size from the font atlas
+            var rotationMatrix = Matrix4X4.CreateRotationZ(Rotation);
+            var translationMatrix = Matrix4X4.CreateTranslation(new Vector3D<float>(
+                MathF.Floor(Position.X + glyphLeft),
+                MathF.Floor(Position.Y + glyphTop),
+                0.0f));
             
-            // Create local translation matrix for the glyph
-            var glyphLocalMatrix = Matrix4X4.CreateTranslation(glyphLocalX, glyphLocalY, 0);
+            var glyphWorldMatrix = rotationMatrix * translationMatrix;
             
-            // Combine with parent world matrix
-            // This allows the text to rotate/scale with the parent
-            var glyphWorldMatrix = glyphLocalMatrix * parentWorldMatrix;
-            
-            var glyphSize = new Vector2D<int>(glyph.Width, glyph.Height);
+            // The normalized quad is 1x1 (from 0 to 1), so we pass the full glyph size
+            // because the shader does (inPos - pivot) * size, and inPos ranges over 1 unit
+            // Pivot at 0 means top-left alignment for the quad
+            var glyphSize = new Vector2D<float>(glyph.Width, glyph.Height);
+            var glyphPivot = new Vector2D<float>(0f, 0f);
             
             yield return new DrawCommand
             {
@@ -149,7 +147,7 @@ public partial class TextRenderer : Component, IDrawable
                 VertexCount = 4,
                 InstanceCount = 1,
                 RenderPriority = 1000,
-                PushConstants = new UIElementPushConstants(glyphWorldMatrix, _color, glyphSize, new Vector2D<float>(0.5f, 0.5f)),
+                PushConstants = new UIElementPushConstants(glyphWorldMatrix, _color, glyphSize, glyphPivot),
                 DescriptorSet = _fontAtlasDescriptorSet.Value
             };
             
@@ -157,10 +155,10 @@ public partial class TextRenderer : Component, IDrawable
         }
     }
 
-    public Vector2D<int> MeasureText(string text)
+    public Vector2D<float> MeasureText(string text)
     {
         if (string.IsNullOrEmpty(text) || _fontResource == null)
-            return new Vector2D<int>(0, 0);
+            return new Vector2D<float>(0, 0);
 
         float totalWidth = 0f;
         foreach (char c in text)
@@ -171,7 +169,7 @@ public partial class TextRenderer : Component, IDrawable
             }
         }
 
-        return new Vector2D<int>((int)totalWidth, _fontResource.LineHeight);
+        return new Vector2D<float>(totalWidth, _fontResource.LineHeight);
     }
 
     /// <summary>
@@ -187,19 +185,12 @@ public partial class TextRenderer : Component, IDrawable
         if (_fontResource == null)
             return null;
 
-        var parentUI = Parent as UserInterfaceElement;
-        var parentWorldMatrix = parentUI?.WorldMatrix ?? Matrix4X4<float>.Identity;
-        var parentPivot = parentUI?.Pivot ?? Vector2D<float>.Zero;
-        var parentPosition = parentUI?.Position ?? Vector2D<float>.Zero;
-        var parentSize = parentUI?.Size ?? Vector2D<float>.Zero;
-        var parentScale = parentUI?.Scale ?? Vector2D<float>.One;
-
-        // Measure total text size to calculate anchor offset
+        // Measure total text size to calculate pivot offset
         var textSize = MeasureText(_text);
 
-        // Calculate text block offset based on Pivot (relative to parent's origin)
-        float textOffsetX = -parentPivot.X * textSize.X;
-        float textOffsetY = -parentPivot.Y * textSize.Y;
+        // Calculate text block offset based on Pivot (relative to element's origin)
+        float textStartX = -Pivot.X * textSize.X;
+        float textStartY = -Pivot.Y * textSize.Y;
 
         // Calculate cursor position up to the target index
         float cursorX = 0f;
@@ -214,21 +205,17 @@ public partial class TextRenderer : Component, IDrawable
             if (i == index)
             {
                 // Found target glyph - calculate its bounds in local space
-                float glyphLocalX = textOffsetX + cursorX + glyph.BearingX;
-                float glyphLocalY = textOffsetY + baselineY - glyph.BearingY;
+                float glyphLocalX = textStartX + cursorX + glyph.BearingX;
+                float glyphLocalY = textStartY + baselineY - glyph.BearingY;
 
-                // Transform to screen space
-                // Note: This is a simplified transform assuming no rotation for the bounds rect
-                // For full correctness with rotation, we'd need to transform all 4 corners
+                // Transform to world space using this element's transform
+                var glyphPos = new Vector2D<float>(glyphLocalX, glyphLocalY);
                 
-                // Calculate element's top-left corner in screen space (approximate)
-                float elementOriginX = parentPosition.X - (parentPivot.X * parentSize.X * 0.5f * parentScale.X);
-                float elementOriginY = parentPosition.Y - (parentPivot.Y * parentSize.Y * 0.5f * parentScale.Y);
-                
-                float screenX = elementOriginX + glyphLocalX * parentScale.X;
-                float screenY = elementOriginY + glyphLocalY * parentScale.Y;
+                // For simplicity, assume no rotation and just apply position + scale
+                float worldX = Position.X + glyphPos.X * Scale.X;
+                float worldY = Position.Y + glyphPos.Y * Scale.Y;
 
-                return new((int)screenX, (int)screenY, (int)(glyph.Width * parentScale.X), (int)(glyph.Height * parentScale.Y));
+                return new((int)worldX, (int)worldY, (int)(glyph.Width * Scale.X), (int)(glyph.Height * Scale.Y));
             }
 
             cursorX += glyph.Advance;

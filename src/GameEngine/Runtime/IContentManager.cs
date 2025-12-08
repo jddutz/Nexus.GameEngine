@@ -1,4 +1,4 @@
-namespace Nexus.GameEngine.Components;
+namespace Nexus.GameEngine.Runtime;
 
 /// <summary>
 /// Provides an interface for managing reusable content trees that can be assigned to viewports.
@@ -19,7 +19,7 @@ public interface IContentManager : IDisposable
     /// </summary>
     /// <param name="template">The template describing the content to load.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? Load(Template template);
+    IComponent? Load(ComponentTemplate template);
 
     /// <summary>
     /// Creates a component instance via dependency injection without configuration or activation.
@@ -59,7 +59,7 @@ public interface IContentManager : IDisposable
     /// <typeparam name="T">The component type to create.</typeparam>
     /// <param name="template">The template to use for configuration.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? Create<T>(Template template) where T : IComponent;
+    IComponent? Create<T>(ComponentTemplate template) where T : IComponent;
 
     /// <summary>
     /// Creates a component instance from a template by inferring the type from the template's declaring type.
@@ -71,7 +71,7 @@ public interface IContentManager : IDisposable
     /// </summary>
     /// <param name="template">The template to use for instantiation and configuration.</param>
     /// <returns>The created <see cref="IComponent"/>, or null if creation failed.</returns>
-    IComponent? CreateInstance(Template template);
+    IComponent? CreateInstance(ComponentTemplate template);
 
     /// <summary>
     /// Retrieves a component with the specified identifier, or null if not found.

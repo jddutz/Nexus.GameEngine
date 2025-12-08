@@ -1,5 +1,6 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Data.Binding;
+using Nexus.GameEngine.GUI;
 
 namespace Nexus.GameEngine.Performance;
 
@@ -8,7 +9,7 @@ namespace Nexus.GameEngine.Performance;
 /// Acts as a facade over IProfiler service, making performance data available for data binding.
 /// Does not handle rendering - rendering should be wired up separately via data binding.
 /// </summary>
-public partial class PerformanceMonitor : Component
+public partial class PerformanceMonitor : UserInterfaceElement
 {
     private readonly IProfiler _profiler = new Profiler();
     

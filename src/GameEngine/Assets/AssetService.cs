@@ -32,7 +32,7 @@ public class AssetService : IAssetService
     public IEnumerable<string> GetLoadedAssets()
     {
         // Return empty collection for stub implementation
-        return Enumerable.Empty<string>();
+        return [];
     }
 
     public async Task PreloadAsync(string assetPath)

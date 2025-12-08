@@ -67,7 +67,7 @@ public partial class Component
         return component;
     }
 
-    public virtual IComponent? CreateChild(Template template)
+    public virtual IComponent? CreateChild(ComponentTemplate template)
     {
         if (template == null)
         {

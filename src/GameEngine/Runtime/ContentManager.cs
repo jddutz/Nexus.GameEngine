@@ -53,7 +53,7 @@ public class ContentManager(
     /// Use Create() when you need more control over the activation lifecycle.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? Load(Template template)
+    public IComponent? Load(ComponentTemplate template)
     {
         var name = (template as ComponentTemplate)?.Name;
         
@@ -75,13 +75,8 @@ public class ContentManager(
                 // Validate the component tree
                 created.Validate();
 
-                // Update layout for UI elements
+                // Check validity before proceeding
                 if (!created.IsValid()) return created;
-                
-                if(created is IUserInterfaceElement uiElement)
-                {
-                    uiElement.UpdateLayout();
-                }
 
                 if(created is IActivatable rc && template is ComponentTemplate ct && ct.Active != null && ct.Active.HasValue == true)
                 {
@@ -191,7 +186,7 @@ public class ContentManager(
     }
 
     /// <inheritdoc/>
-    public IComponent? Create<T>(Template template) where T : IComponent
+    public IComponent? Create<T>(ComponentTemplate template) where T : IComponent
         => Create(typeof(T), template);
 
     /// <summary>
@@ -199,19 +194,26 @@ public class ContentManager(
     /// Gets type from template's ComponentType property, creates component, sets ContentManager, configures, and creates subcomponents.
     /// </summary>
     /// <inheritdoc/>
-    public IComponent? CreateInstance(Template template)
+    public IComponent? CreateInstance(ComponentTemplate template)
     {
-        if (template == null) return null;
-
-        // Get component type from the template's ComponentType property
-        var componentType = template.ComponentType;
-        if (componentType == null || !typeof(IComponent).IsAssignableFrom(componentType))
+        if (template == null)
         {
             return null;
         }
 
+        if (template.ComponentType == null)
+        {
+            return null;
+        }
+        
+        if (!typeof(IComponent).IsAssignableFrom(template.ComponentType))
+        {
+            Log.Warning($"Template {template.GetType().Name} has invalid ComponentType");
+            return null;
+        }
+
         // Use the full Create method which handles configuration and subcomponents
-        return Create(componentType, template);
+        return Create(template.ComponentType, template);
     }
 
     /// <summary>

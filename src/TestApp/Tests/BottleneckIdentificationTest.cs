@@ -27,7 +27,7 @@ public partial class BottleneckIdentificationTest(
         // Frame 1: Enable profiling
         if (Updates == 1)
         {
-            Log.Info($"[BottleneckIdentificationTest] Frame {Updates}: Enabling profiler");
+            Log.Debug($"[BottleneckIdentificationTest] Frame {Updates}: Enabling profiler");
             profiler.Enable();
             profiler.Clear();
         }
@@ -63,7 +63,7 @@ public partial class BottleneckIdentificationTest(
         // Frame 12: Validate bottleneck identification
         if (Updates == FramesToProfile + 2)
         {
-            Log.Info($"[BottleneckIdentificationTest] Frame {Updates}: Identifying bottlenecks");
+            Log.Debug($"[BottleneckIdentificationTest] Frame {Updates}: Identifying bottlenecks");
 
             var report = profiler.GenerateReport(FramesToProfile);
 
@@ -76,7 +76,7 @@ public partial class BottleneckIdentificationTest(
                 Deactivate();
                 return;
             }
-            Log.Info($"✓ GetTopNSlowest returned {topSlowest.Count} operations");
+            Log.Debug($"✓ GetTopNSlowest returned {topSlowest.Count} operations");
 
             // Test 2: Verify VerySlowOperation is among the slowest operations
             // Note: The "Update" operation may be the slowest because it contains all component updates,
@@ -87,7 +87,7 @@ public partial class BottleneckIdentificationTest(
             if (verySlowOpIndex >= 0)
             {
                 var verySlowOp = topSlowest[verySlowOpIndex];
-                Log.Info($"✓ VerySlowOperation identified in top bottlenecks: {verySlowOp.AverageMs:F2}ms avg (rank #{verySlowOpIndex + 1})");
+                Log.Debug($"✓ VerySlowOperation identified in top bottlenecks: {verySlowOp.AverageMs:F2}ms avg (rank #{verySlowOpIndex + 1})");
                 _topSlowestIdentified = true;
             }
             else
@@ -109,7 +109,7 @@ public partial class BottleneckIdentificationTest(
                     return;
                 }
             }
-            Log.Info("✓ Operations correctly sorted from slowest to fastest");
+            Log.Debug("✓ Operations correctly sorted from slowest to fastest");
 
             // Test 4: Threshold violation detection (6.67ms target for 150 FPS)
             var violations = report.GetThresholdViolations(thresholdMs: 6.67);
@@ -121,13 +121,13 @@ public partial class BottleneckIdentificationTest(
                 Deactivate();
                 return;
             }
-            Log.Info($"✓ Detected {violations.Count} frames exceeding 6.67ms threshold");
+            Log.Debug($"✓ Detected {violations.Count} frames exceeding 6.67ms threshold");
 
             // Log all identified bottlenecks
-            Log.Info("[BottleneckIdentificationTest] Top 5 slowest operations:");
+            Log.Debug("[BottleneckIdentificationTest] Top 5 slowest operations:");
             for (int i = 0; i < Math.Min(5, topSlowest.Count); i++)
             {
-                Log.Info($"  {i + 1}. {topSlowest[i].Label}: {topSlowest[i].AverageMs:F3}ms average");
+                Log.Debug($"  {i + 1}. {topSlowest[i].Label}: {topSlowest[i].AverageMs:F3}ms average");
             }
 
             Deactivate();

@@ -85,7 +85,7 @@ public partial class TestRunner : Component
         // If we're done, deactivate and exit
         if (tests.Count == 0)
         {
-            Log.Info($"Update {frameCount}, all tests complete - deactivating");
+            Log.Debug($"Update {frameCount}, all tests complete - deactivating");
             Deactivate();
             return; 
         }
@@ -163,7 +163,7 @@ public partial class TestRunner : Component
             resultsSummary += failedTestsSummary + "\n";
 
     // Emit concise summary information to the log (Test Explorer will capture this output).
-    Nexus.GameEngine.Log.Info(resultsSummary);
+    Nexus.GameEngine.Log.Debug(resultsSummary);
 
         // Set exit code
         Environment.ExitCode = failed.Count == 0 ? 0 : 1;

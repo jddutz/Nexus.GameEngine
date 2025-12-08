@@ -19,3 +19,19 @@ Draw frames by acquiring images, submitting the right draw command buffer and re
 4. Create `IVkSyncManager` interface and implementation
 5. Create `IVkPipelineManager` interface and implementation
 6. Create `IVkRenderer` orchestrator
+
+## UI Templates
+
+### PerformanceMonitor
+
+A drop-in UI overlay that displays real-time performance metrics including FPS, frame time, and subsystem timings.
+
+**Usage**:
+```csharp
+// In your startup code
+var template = new PerformanceMonitorTemplate()
+{
+    Position = new Vector2(10, 10),
+    Alignment = Alignment.TopLeft
+};
+```

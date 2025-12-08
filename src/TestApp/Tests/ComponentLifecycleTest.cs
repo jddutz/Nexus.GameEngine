@@ -16,18 +16,18 @@ public partial class ComponentLifecycleTest()
     {
         base.OnActivate();
         callOrder.Add("OnActivate");
-        Log.Info($"OnActivate called");
+        Log.Debug($"OnActivate called");
     }
 
     protected override void OnUpdate(double deltaTime)
     {
         base.OnUpdate(deltaTime);
         callOrder.Add("OnUpdate");
-        Log.Info($"OnUpdate called (Frame {Updates}/{FrameCount})");
+        Log.Debug($"OnUpdate called (Frame {Updates}/{FrameCount})");
         
         if (Updates >= FrameCount)
         {
-            Log.Info($"Test complete, deactivating");
+            Log.Debug($"Test complete, deactivating");
             Deactivate();
         }
     }
@@ -35,7 +35,7 @@ public partial class ComponentLifecycleTest()
     protected override void OnDeactivate()
     {
         callOrder.Add("OnDeactivate");
-        Log.Info($"OnDeactivate called");
+        Log.Debug($"OnDeactivate called");
         base.OnDeactivate();
     }
 

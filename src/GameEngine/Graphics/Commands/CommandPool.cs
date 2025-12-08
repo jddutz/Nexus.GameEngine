@@ -78,7 +78,7 @@ public unsafe class CommandPool : ICommandPool
 
         if (count == 0)
         {
-            return Array.Empty<CommandBuffer>();
+            return [];
         }
 
         _totalAllocationRequests++;

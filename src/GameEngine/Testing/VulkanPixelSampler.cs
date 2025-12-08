@@ -22,7 +22,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
     private DeviceMemory _stagingMemory;
     private ulong _bufferSize;
     
-    private Vector2D<int>[] _sampleCoordinates = Array.Empty<Vector2D<int>>();
+    private Vector2D<int>[] _sampleCoordinates = [];
     private bool _isActive;
     private readonly List<Vector4D<float>?[]> _capturedResults = [];
 
@@ -45,7 +45,7 @@ public unsafe class VulkanPixelSampler : IPixelSampler, IDisposable
     public Vector2D<int>[] SampleCoordinates
     {
         get => _sampleCoordinates;
-        set => _sampleCoordinates = value ?? Array.Empty<Vector2D<int>>();
+        set => _sampleCoordinates = value ?? [];
     }
     
     /// <inheritdoc />

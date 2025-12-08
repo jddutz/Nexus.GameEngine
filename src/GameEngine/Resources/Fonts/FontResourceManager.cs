@@ -219,11 +219,11 @@ public unsafe class FontResourceManager(
         {
             var glyph = kvp.Value;
 
-            // Create normalized quad (-1 to 1) for this glyph
+            // Create normalized quad (0 to 1) for this glyph to match top-left origin coordinate system
             // The actual position will be calculated per-instance via model matrix in push constants
-            float left = -1.0f;
+            float left = 0.0f;
             float right = 1.0f;
-            float top = -1.0f;
+            float top = 0.0f;
             float bottom = 1.0f;
 
             // Pre-bake UV coordinates from atlas

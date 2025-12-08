@@ -14,7 +14,7 @@ public static class ContentSystemExtensions
     /// <param name="system">The content system.</param>
     /// <param name="template">The template to load.</param>
     /// <returns>The loaded component, or null if loading failed.</returns>
-    public static IComponent? Load(this IContentSystem system, Template template)
+    public static IComponent? Load(this IContentSystem system, ComponentTemplate template)
     {
         return ((ContentSystem)system).ContentManager.Load(template);
     }
@@ -35,7 +35,7 @@ public static class ContentSystemExtensions
     /// <param name="system">The content system.</param>
     /// <param name="template">The template to create an instance from.</param>
     /// <returns>The created component instance, or null if creation failed.</returns>
-    public static IComponent? CreateInstance(this IContentSystem system, Template template)
+    public static IComponent? CreateInstance(this IContentSystem system, ComponentTemplate template)
     {
         return ((ContentSystem)system).ContentManager.CreateInstance(template);
     }

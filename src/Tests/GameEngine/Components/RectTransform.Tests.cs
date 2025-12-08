@@ -10,7 +10,7 @@ public class RectTransformTests
     public void GetBounds_Default_ReturnsZero()
     {
         var rect = new RectTransform();
-        var bounds = rect.GetBounds();
+        var bounds = rect.Bounds;
         
         Assert.Equal(0, bounds.Origin.X);
         Assert.Equal(0, bounds.Origin.Y);
@@ -24,7 +24,7 @@ public class RectTransformTests
         var rect = new RectTransform();
         rect.SetSize(new Vector2D<float>(100, 50));
         
-        var bounds = rect.GetBounds();
+        var bounds = rect.Bounds;
         
         // Default Pivot is (0,0) (Top-Left)
         // Position is (0,0)
@@ -44,7 +44,7 @@ public class RectTransformTests
         rect.SetPivot(new Vector2D<float>(0.5f, 0.5f));
         rect.SetPosition(new Vector2D<float>(100, 100));
         
-        var bounds = rect.GetBounds();
+        var bounds = rect.Bounds;
         
         // Pivot (0.5, 0.5) means Position is at center.
         // Size 100x100.
@@ -65,7 +65,7 @@ public class RectTransformTests
         rect.SetPosition(new Vector2D<float>(100, 100));
         rect.SetRotation(MathF.PI / 4); // 45 degrees
         
-        var bounds = rect.GetBounds();
+        var bounds = rect.Bounds;
         
         // Rotated 45 degrees, the AABB should be larger.
         // Diagonal of 100x100 square is sqrt(100^2 + 100^2) = 141.42
@@ -83,7 +83,7 @@ public class RectTransformTests
         rect.SetSize(new Vector2D<float>(100, 100));
         rect.SetScale(new Vector2D<float>(2, 2));
         
-        var bounds = rect.GetBounds();
+        var bounds = rect.Bounds;
         
         Assert.Equal(200, bounds.Size.X);
         Assert.Equal(200, bounds.Size.Y);
@@ -106,11 +106,11 @@ public class RectTransformTests
     public void DynamicUpdates_InvalidateBounds()
     {
         var rect = new RectTransform();
-        var initialBounds = rect.GetBounds();
+        var initialBounds = rect.Bounds;
         
         rect.SetSize(new Vector2D<float>(100, 100));
         
-        var newBounds = rect.GetBounds();
+        var newBounds = rect.Bounds;
         Assert.NotEqual(initialBounds, newBounds);
         Assert.Equal(100, newBounds.Size.X);
     }

@@ -33,8 +33,9 @@ public sealed class ComponentPropertyAttribute : Attribute
 
     /// <summary>
     /// Whether to generate PropertyChanged notification for this property.
-    /// Default: false (no notification overhead unless needed)
+    /// Default: true (supports property bindings and observation by default)
+    /// Set to false for performance-critical properties that are updated frequently and don't need observation.
     /// </summary>
-    public bool NotifyChange { get; set; } = false;
+    public bool NotifyChange { get; set; } = true;
 }
 

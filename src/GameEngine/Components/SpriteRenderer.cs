@@ -1,6 +1,7 @@
 using Nexus.GameEngine.Components;
 using Nexus.GameEngine.Data.Binding;
 using Nexus.GameEngine.Graphics;
+using Nexus.GameEngine.GUI;
 using Nexus.GameEngine.Graphics.Descriptors;
 using Nexus.GameEngine.Graphics.Pipelines;
 using Nexus.GameEngine.Graphics.PushConstants;

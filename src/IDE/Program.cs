@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Nexus.GameEngine;
 using Nexus.GameEngine.Actions;
 using Nexus.GameEngine.Assets;
 using Nexus.GameEngine.Components;
@@ -71,6 +72,7 @@ class Program
                 .AddSingleton<IContentManager, ContentManager>()
                 .AddSingleton<IActionFactory, ActionFactory>()
                 .AddSingleton<IProfiler, Profiler>()
+                .AddGameEngineSystems()
                 .AddPixelSampling()
                 .AddDiscoveredServices<IComponent>()
                 .AddDiscoveredServices<IAction>()

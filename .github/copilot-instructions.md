@@ -87,32 +87,27 @@ Renderer uses `IBatchStrategy` to group compatible render commands and minimize 
 
 ### Layout System
 
-**Directional Layout Components**: `VerticalLayout` and `HorizontalLayout` extend `Container` to provide automatic child positioning along a single axis.
+**Layout Controllers**: `VerticalLayoutController` and `HorizontalLayoutController` extend `LayoutController` to provide automatic positioning of sibling elements. They are NOT containers themselves but control the layout of elements within a container.
 
 **Layout Properties**:
-- `ItemHeight` / `ItemWidth` (uint?): Fixed size for child elements (null = use child's natural size)
-- `ItemSpacing` (uint?): Gap between adjacent children (null = no spacing)
-- `Spacing` (SpacingMode): Distribution strategy - `Stacked` (default, stack directly), `Justified` (space-between), `Distributed` (space-evenly)
-- `AlignContent` (float): Cross-axis alignment from -1.0 (top/left) to 1.0 (bottom/right), default 0.0 (center)
+- `ItemSpacing` (float): Gap between adjacent children (default 0.0)
+- `Alignment` (float): Cross-axis alignment from -1.0 (top/left) to 1.0 (bottom/right), default 0.0 (center)
+- `Spacing` (SpacingMode): Distribution strategy - `Stacked` (default), `Justified`, `Distributed`
 
 **SpacingMode Behavior**:
-- `Stacked` (0): Children positioned sequentially with ItemSpacing gap, aligned using AlignContent
-- `Justified` (1): First child at start, last at end, remaining space distributed evenly between
+- `Stacked` (0): Children positioned sequentially with ItemSpacing gap
+- `Justified` (1): First child at start, last at end, remaining space distributed evenly
 - `Distributed` (2): Equal spacing before, between, and after all children
 
-**Zero-Size Handling**: Children with zero height (VerticalLayout) or zero width (HorizontalLayout) are excluded from layout calculations to prevent spacing artifacts.
-
-**Edge Cases**: Single-child layouts with Justified/Distributed modes delegate to Stacked behavior using AlignContent for positioning.
+**Zero-Size Handling**: Children with zero size on the primary axis are excluded from layout calculations.
 
 **Template Usage**:
 ```csharp
-new VerticalLayoutTemplate()
+new VerticalLayoutControllerTemplate()
 {
-    ItemHeight = 50,        // Fixed 50px height per item
-    ItemSpacing = 10,       // 10px gap between items
+    ItemSpacing = 10.0f,
     Spacing = SpacingMode.Stacked,
-    AlignContent = -1.0f,   // Align to top
-    Subcomponents = [ /* children */ ]
+    Alignment = -1.0f
 }
 ```
 

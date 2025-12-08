@@ -36,7 +36,7 @@ public partial class TestComponent : Component, ITestComponent
         base.OnActivate();
 
         // If we reach here, validation passed (Activate() checks IsValid() first)
-        Log.Info($"{GetType().Name} '{Name}' passed all validation tests");
+        Log.Debug($"{GetType().Name} '{Name}' passed all validation tests");
         
         // Set size constraints for all UI element children
         // This ensures root UI elements get properly sized and positioned
@@ -55,7 +55,7 @@ public partial class TestComponent : Component, ITestComponent
         // to allow the last frame to be fully executed
         if (Updates > FrameCount)
         {
-            Log.Info($"{GetType().Name} '{Name}' reached frame limit, deactivating");
+            Log.Debug($"{GetType().Name} '{Name}' reached frame limit, deactivating");
             Deactivate();
         }
         Updates++;

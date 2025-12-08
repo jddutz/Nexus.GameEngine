@@ -56,7 +56,7 @@ public class AssetProcessorManager : IAssetProcessorManager
     public IEnumerable<IAssetProcessor> GetProcessorsForAsset(string inputPath, string targetPlatform)
     {
         if (string.IsNullOrEmpty(inputPath))
-            return Enumerable.Empty<IAssetProcessor>();
+            return [];
 
         lock (_lock)
         {

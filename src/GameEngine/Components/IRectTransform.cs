@@ -54,5 +54,5 @@ public interface IRectTransform : IComponent
     /// <summary>
     /// Calculates the screen-space bounding box.
     /// </summary>
-    Rectangle<int> GetBounds();
+    Rectangle<int> Bounds { get; }
 }

@@ -4,7 +4,7 @@ using Nexus.GameEngine.GUI.Layout;
 
 namespace Nexus.GameEngine.GUI;
 
-public partial class UserInterfaceElement : RectTransform
+public partial class UserInterfaceElement : RectTransform, IUserInterfaceElement
 {
     [ComponentProperty]
     [TemplateProperty]
@@ -41,6 +41,10 @@ public partial class UserInterfaceElement : RectTransform
     [ComponentProperty]
     [TemplateProperty]
     protected SafeArea _safeArea = SafeArea.Zero;
+
+    [ComponentProperty]
+    [TemplateProperty]
+    protected bool _visible = true;
 
 #pragma warning disable CS0414 // Field is assigned but its value is never used
     private bool _isLayoutInvalid = true;
@@ -125,7 +129,9 @@ public partial class UserInterfaceElement : RectTransform
     public virtual void UpdateLayout(Rectangle<float> constraints)
     {
         if (constraints.Size.X <= 0 || constraints.Size.Y <= 0)
+        {
             return;
+        }
 
         var intrinsicSize = CalculateIntrinsicSize();
         
@@ -149,12 +155,12 @@ public partial class UserInterfaceElement : RectTransform
 
         var preferredSize = new Vector2D<float>(preferredWidth, preferredHeight);
         var finalSize = ApplySizeConstraints(preferredSize);
-
         SetSize(finalSize);
 
-        var alignedX = constraints.Center.X + Alignment.X * (constraints.Size.X * 0.5f) + Offset.X;
-        var alignedY = constraints.Center.Y + Alignment.Y * (constraints.Size.Y * 0.5f) + Offset.Y;
-        
+        // Alignment uses 0-1 range: 0=left/top, 0.5=center, 1=right/bottom
+        // Position element within constraints based on alignment
+        var alignedX = constraints.Origin.X + Alignment.X * constraints.Size.X + Offset.X;
+        var alignedY = constraints.Origin.Y + Alignment.Y * constraints.Size.Y + Offset.Y;
         SetPosition(new Vector2D<float>(alignedX, alignedY));
         
         // Layout children
@@ -172,7 +178,7 @@ public partial class UserInterfaceElement : RectTransform
         float maxX = 0, maxY = 0;
         foreach (var elem in childElements)
         {
-            var childBounds = elem.GetBounds();
+            var childBounds = elem.Bounds;
             maxX = Math.Max(maxX, childBounds.Origin.X + childBounds.Size.X);
             maxY = Math.Max(maxY, childBounds.Origin.Y + childBounds.Size.Y);
         }
@@ -197,6 +203,7 @@ public partial class UserInterfaceElement : RectTransform
     {
         // Check for LayoutController components
         var layoutControllers = GetChildren<LayoutController>().ToList();
+        
         if (layoutControllers.Count > 0)
         {
             foreach (var controller in layoutControllers)
@@ -209,6 +216,7 @@ public partial class UserInterfaceElement : RectTransform
             // Default layout: fill content area
             var contentArea = GetContentRect();
             var children = GetChildren<IUserInterfaceElement>().ToList();
+            
             foreach (var child in children)
             {
                 child.UpdateLayout(contentArea);
@@ -216,19 +224,11 @@ public partial class UserInterfaceElement : RectTransform
         }
     }
 
-    protected Rectangle<float> GetContentRect()
+    public Rectangle<float> GetContentRect()
     {
-        // In local coordinates, the container's center is at (0, 0) if Pivot is Center.
-        // But wait, Position is where the Pivot is.
-        // If we want to layout children, we need to define the content area relative to Position.
-        // If Pivot is TopLeft (0,0), Position is TopLeft.
-        // If Pivot is Center (0.5,0.5), Position is Center.
-        
-        // We want the content rect to be the bounds of the element, minus padding.
-        // The bounds are relative to the Pivot.
-        
+        // Calculate the content area in local coordinate space
+        // This is where children will be positioned
         var size = Size;
-        var tl = -Pivot * size; // Top-Left relative to Position
         
         // Calculate effective padding including SafeArea
         var safeMargins = SafeArea.CalculateMargins(new Vector2D<int>((int)size.X, (int)size.Y));
@@ -237,33 +237,14 @@ public partial class UserInterfaceElement : RectTransform
         var effectivePaddingRight = Padding.Right + safeMargins.Right;
         var effectivePaddingBottom = Padding.Bottom + safeMargins.Bottom;
         
-        var contentLeft = tl.X + effectivePaddingLeft;
-        var contentTop = tl.Y + effectivePaddingTop;
+        // Content area size after padding
         var contentWidth = Math.Max(0, size.X - effectivePaddingLeft - effectivePaddingRight);
         var contentHeight = Math.Max(0, size.Y - effectivePaddingTop - effectivePaddingBottom);
         
-        // But wait, UpdateLayout passes constraints in PARENT space.
-        // When we call child.UpdateLayout(contentArea), contentArea should be in PARENT space of the child.
-        // The parent space of the child is the LOCAL space of this element (plus WorldMatrix transform).
-        // Actually, `UpdateLayout` takes constraints. `SetPosition` sets local position.
-        // So constraints should be in LOCAL space of this element.
-        
-        // If this element is at (100,100), and child is at (0,0) local, child is at (100,100) world.
-        // So we should pass constraints in LOCAL space.
-        
-        // However, `UpdateLayout` implementation uses `constraints.Center`.
-        // If we pass a rect starting at (0,0), Center is (w/2, h/2).
-        // If we pass a rect starting at (-w/2, -h/2), Center is (0,0).
-        
-        // `GetContentRect` calculates the area where children should be placed, in LOCAL space.
-        // If Pivot is Center, TopLeft is (-w/2, -h/2).
-        // If Pivot is TopLeft, TopLeft is (0,0).
-        
-        // So `tl` calculation above is correct for Local Space Top-Left.
-        
-        // But `UpdateLayout` uses `constraints.Center` + `Alignment` * `HalfSize`.
-        // If `constraints` is the content rect, `Center` is the center of the content rect.
-        // This seems correct.
+        // The content rectangle is centered at the element's local origin (0,0)
+        // with the content size, so children use alignment relative to this centered area
+        var contentLeft = -contentWidth / 2f;
+        var contentTop = -contentHeight / 2f;
         
         return new Rectangle<float>(contentLeft, contentTop, contentWidth, contentHeight);
     }

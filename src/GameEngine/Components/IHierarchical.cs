@@ -21,7 +21,7 @@ public interface IHierarchical
     void AddChild(IComponent child);
     void RemoveChild(IComponent child);
     IComponent? CreateChild(Type componentType);
-    IComponent? CreateChild(Template template);
+    IComponent? CreateChild(ComponentTemplate template);
     
     // Navigation
     IEnumerable<T> GetChildren<T>(Func<T, bool>? filter = null, bool recursive = false, bool depthFirst = false) 

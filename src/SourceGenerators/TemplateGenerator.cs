@@ -138,13 +138,6 @@ namespace Nexus.GameEngine.SourceGenerators
                 sb.AppendLine($"        public override Type? ComponentType {{ get; init; }} = typeof({classToGenerate.Name});");
                 sb.AppendLine();
                 
-                sb.AppendLine($"        public new {classToGenerate.Namespace}.{classToGenerate.Name}PropertyBindings? Bindings");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            get => ({classToGenerate.Namespace}.{classToGenerate.Name}PropertyBindings?)base.Bindings;");
-                sb.AppendLine("            init => base.Bindings = value;");
-                sb.AppendLine("        }");
-                sb.AppendLine();
-                
                 foreach (var prop in classToGenerate.Properties)
                 {
                     string type = prop.Type;

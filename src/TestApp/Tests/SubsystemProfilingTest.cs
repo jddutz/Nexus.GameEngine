@@ -26,7 +26,7 @@ public partial class SubsystemProfilingTest(
         // Frame 1: Enable profiling
         if (Updates == 1)
         {
-            Log.Info($"[SubsystemProfilingTest] Frame {Updates}: Enabling profiler");
+            Log.Debug($"[SubsystemProfilingTest] Frame {Updates}: Enabling profiler");
             profiler.Enable();
             profiler.Clear(); // Clear any existing data
         }
@@ -53,13 +53,13 @@ public partial class SubsystemProfilingTest(
             }
 
             var profile = profiler.EndFrame();
-            Log.Info($"[SubsystemProfilingTest] Frame {Updates}: Captured {profile.Samples.Count} samples");
+            Log.Debug($"[SubsystemProfilingTest] Frame {Updates}: Captured {profile.Samples.Count} samples");
         }
 
         // Frame 7: Validate collected data
         if (Updates == FramesToProfile + 2)
         {
-            Log.Info($"[SubsystemProfilingTest] Frame {Updates}: Validating profiling data");
+            Log.Debug($"[SubsystemProfilingTest] Frame {Updates}: Validating profiling data");
 
             var report = profiler.GenerateReport(FramesToProfile);
 
@@ -67,7 +67,7 @@ public partial class SubsystemProfilingTest(
             _actualFrameCount = report.FrameCount;
             if (report.FrameCount == FramesToProfile)
             {
-                Log.Info($"✓ Collected profiling data for {report.FrameCount} frames");
+                Log.Debug($"✓ Collected profiling data for {report.FrameCount} frames");
                 _dataCollected = true;
             }
             else
@@ -92,7 +92,7 @@ public partial class SubsystemProfilingTest(
             }
             
             _collectedLabels = avgTimePerLabel.Keys.ToList();
-            Log.Info($"✓ Timing data collected for all major subsystems: {string.Join(", ", expectedLabels)}");
+            Log.Debug($"✓ Timing data collected for all major subsystems: {string.Join(", ", expectedLabels)}");
 
             // Verify timing values are reasonable
             _allTimingsValid = true;
@@ -106,9 +106,9 @@ public partial class SubsystemProfilingTest(
                     Deactivate();
                     return;
                 }
-                Log.Info($"[SubsystemProfilingTest] {label}: {avgTime:F3}ms average");
+                Log.Debug($"[SubsystemProfilingTest] {label}: {avgTime:F3}ms average");
             }
-            Log.Info("✓ All subsystem timing values are valid and measurable");
+            Log.Debug("✓ All subsystem timing values are valid and measurable");
 
             Deactivate();
         }

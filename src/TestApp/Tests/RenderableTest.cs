@@ -111,14 +111,14 @@ public partial class RenderableTest(
 
     protected override void OnUpdate(double deltaTime)
     {        
-        Log.Info($"[{GetType().Name}] OnUpdate called (FramesRendered={FramesRendered}/{FrameCount})");
+        Log.Debug($"[{GetType().Name}] OnUpdate called (FramesRendered={FramesRendered}/{FrameCount})");
         
         // Deactivate when we've reached the target frame count
         // Note: Visibility is checked at START of Update (before this runs), so the current frame
         // will still render even after we deactivate here. This is expected behavior.
         if (FramesRendered >= FrameCount)
         {
-            Log.Info($"[{GetType().Name}] Test complete after {FramesRendered} frames, deactivating");
+            Log.Debug($"[{GetType().Name}] Test complete after {FramesRendered} frames, deactivating");
             Deactivate();
         }
     }
@@ -131,7 +131,7 @@ public partial class RenderableTest(
 
     protected override void OnDeactivate()
     {
-        Log.Info($"[{GetType().Name}] OnDeactivate called");
+        Log.Debug($"[{GetType().Name}] OnDeactivate called");
         
         renderer.AfterRendering -= OnRenderComplete;
         pixelSampler.Deactivate();
