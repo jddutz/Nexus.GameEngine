@@ -17,7 +17,7 @@ public partial class HorizontalLayoutController : LayoutController
     protected float _itemSpacing = 0.0f;
 
     /// <summary>
-    /// Cross-axis alignment from -1.0 (top) to 1.0 (bottom).
+    /// Cross-axis alignment from 0.0 (top) to 1.0 (bottom).
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
@@ -66,21 +66,21 @@ public partial class HorizontalLayoutController : LayoutController
 
         Log.Debug($"[HorizontalLayoutController] Laying out {children.Count} children");
 
-        // Clamp alignment
-        float alignment = Math.Clamp(Alignment, -1.0f, 1.0f);
+        // Clamp alignment to [0, 1] range
+        float alignment = Math.Clamp(Alignment, 0.0f, 1.0f);
+
+        var contentArea = container.GetContentRect();
 
         if (Spacing == SpacingMode.Stacked)
         {
             Log.Debug("[HorizontalLayoutController] Using Stacked spacing mode");
-            float currentX = 0f;
-            float containerHeight = container.Size.Y;
+            float currentX = contentArea.Origin.X;
 
             foreach (var child in children)
             {
-                // Calculate Y based on alignment
+                // Calculate Y based on alignment (0 = top, 0.5 = middle, 1 = bottom)
                 float childHeight = child.Size.Y;
-                float t = alignment;
-                float childY = t * (containerHeight - childHeight);
+                float childY = contentArea.Origin.Y + alignment * (contentArea.Size.Y - childHeight);
 
                 Log.Debug($"[HorizontalLayoutController] Child {child.Name}: position=({currentX}, {childY}), size=({child.Size.X}, {childHeight})");
                 child.SetCurrentPosition(new Vector2D<float>(currentX, childY));
@@ -94,7 +94,7 @@ public partial class HorizontalLayoutController : LayoutController
             float totalChildWidth = 0;
             foreach (var child in children) totalChildWidth += child.Size.X;
 
-            float availableSpace = container.Size.X - totalChildWidth;
+            float availableSpace = contentArea.Size.X - totalChildWidth;
             float gap = 0;
             if (children.Count > 1)
             {
@@ -103,14 +103,12 @@ public partial class HorizontalLayoutController : LayoutController
 
             Log.Debug($"[HorizontalLayoutController] totalChildWidth={totalChildWidth}, availableSpace={availableSpace}, gap={gap}");
 
-            float currentX = 0;
-            float containerHeight = container.Size.Y;
+            float currentX = contentArea.Origin.X;
 
             foreach (var child in children)
             {
                 float childHeight = child.Size.Y;
-                float t = alignment;
-                float childY = t * (containerHeight - childHeight);
+                float childY = contentArea.Origin.Y + alignment * (contentArea.Size.Y - childHeight);
 
                 Log.Debug($"[HorizontalLayoutController] Child {child.Name}: position=({currentX}, {childY})");
                 child.SetCurrentPosition(new Vector2D<float>(currentX, childY));
@@ -124,7 +122,7 @@ public partial class HorizontalLayoutController : LayoutController
             float totalChildWidth = 0;
             foreach (var child in children) totalChildWidth += child.Size.X;
 
-            float availableSpace = container.Size.X - totalChildWidth;
+            float availableSpace = contentArea.Size.X - totalChildWidth;
             float gap = 0;
             if (children.Count > 0)
             {
@@ -133,14 +131,12 @@ public partial class HorizontalLayoutController : LayoutController
 
             Log.Debug($"[HorizontalLayoutController] totalChildWidth={totalChildWidth}, availableSpace={availableSpace}, gap={gap}");
 
-            float currentX = gap;
-            float containerHeight = container.Size.Y;
+            float currentX = contentArea.Origin.X + gap;
 
             foreach (var child in children)
             {
                 float childHeight = child.Size.Y;
-                float t = alignment;
-                float childY = t * (containerHeight - childHeight);
+                float childY = contentArea.Origin.Y + alignment * (contentArea.Size.Y - childHeight);
 
                 Log.Debug($"[HorizontalLayoutController] Child {child.Name}: position=({currentX}, {childY})");
                 child.SetCurrentPosition(new Vector2D<float>(currentX, childY));

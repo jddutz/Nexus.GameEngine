@@ -17,7 +17,7 @@ public partial class VerticalLayoutController : LayoutController
     protected float _itemSpacing = 0.0f;
 
     /// <summary>
-    /// Cross-axis alignment from -1.0 (left) to 1.0 (right).
+    /// Cross-axis alignment from 0.0 (left) to 1.0 (right).
     /// </summary>
     [ComponentProperty]
     [TemplateProperty]
@@ -66,21 +66,21 @@ public partial class VerticalLayoutController : LayoutController
 
         Log.Debug($"[VerticalLayoutController] Laying out {children.Count} children");
 
-        // Clamp alignment
-        float alignment = Math.Clamp(Alignment, -1.0f, 1.0f);
+        // Clamp alignment to [0, 1] range
+        float alignment = Math.Clamp(Alignment, 0.0f, 1.0f);
+
+        var contentArea = container.GetContentRect();
 
         if (Spacing == SpacingMode.Stacked)
         {
             Log.Debug("[VerticalLayoutController] Using Stacked spacing mode");
-            float currentY = 0f;
-            float containerWidth = container.Size.X;
+            float currentY = contentArea.Origin.Y;
 
             foreach (var child in children)
             {
-                // Calculate X based on alignment
+                // Calculate X based on alignment (0 = left, 0.5 = center, 1 = right)
                 float childWidth = child.Size.X;
-                float t = alignment;
-                float childX = t * (containerWidth - childWidth);
+                float childX = contentArea.Origin.X + alignment * (contentArea.Size.X - childWidth);
 
                 Log.Debug($"[VerticalLayoutController] Child {child.Name}: position=({childX}, {currentY}), size=({childWidth}, {child.Size.Y})");
                 child.SetCurrentPosition(new Vector2D<float>(childX, currentY));
@@ -94,7 +94,7 @@ public partial class VerticalLayoutController : LayoutController
             float totalChildHeight = 0;
             foreach (var child in children) totalChildHeight += child.Size.Y;
 
-            float availableSpace = container.Size.Y - totalChildHeight;
+            float availableSpace = contentArea.Size.Y - totalChildHeight;
             float gap = 0;
             if (children.Count > 1)
             {
@@ -103,14 +103,12 @@ public partial class VerticalLayoutController : LayoutController
 
             Log.Debug($"[VerticalLayoutController] totalChildHeight={totalChildHeight}, availableSpace={availableSpace}, gap={gap}");
 
-            float currentY = 0;
-            float containerWidth = container.Size.X;
+            float currentY = contentArea.Origin.Y;
 
             foreach (var child in children)
             {
                 float childWidth = child.Size.X;
-                float t = alignment;
-                float childX = t * (containerWidth - childWidth);
+                float childX = contentArea.Origin.X + alignment * (contentArea.Size.X - childWidth);
 
                 Log.Debug($"[VerticalLayoutController] Child {child.Name}: position=({childX}, {currentY})");
                 child.SetCurrentPosition(new Vector2D<float>(childX, currentY));
@@ -124,7 +122,7 @@ public partial class VerticalLayoutController : LayoutController
             float totalChildHeight = 0;
             foreach (var child in children) totalChildHeight += child.Size.Y;
 
-            float availableSpace = container.Size.Y - totalChildHeight;
+            float availableSpace = contentArea.Size.Y - totalChildHeight;
             float gap = 0;
             if (children.Count > 0)
             {
@@ -133,14 +131,12 @@ public partial class VerticalLayoutController : LayoutController
 
             Log.Debug($"[VerticalLayoutController] totalChildHeight={totalChildHeight}, availableSpace={availableSpace}, gap={gap}");
 
-            float currentY = gap;
-            float containerWidth = container.Size.X;
+            float currentY = contentArea.Origin.Y + gap;
 
             foreach (var child in children)
             {
                 float childWidth = child.Size.X;
-                float t = alignment;
-                float childX = t * (containerWidth - childWidth);
+                float childX = contentArea.Origin.X + alignment * (contentArea.Size.X - childWidth);
 
                 Log.Debug($"[VerticalLayoutController] Child {child.Name}: position=({childX}, {currentY})");
                 child.SetCurrentPosition(new Vector2D<float>(childX, currentY));

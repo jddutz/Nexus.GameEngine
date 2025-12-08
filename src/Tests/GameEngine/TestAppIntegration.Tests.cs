@@ -16,27 +16,6 @@ namespace Tests.GameEngine
         private static bool s_ran = false;
         private static Exception? s_exception = null;
 
-    [Fact(Skip = "Superseded by per-component integration tests - kept for reference")]
-    public void TestApp_MainCompletesWithoutThrowing()
-        {
-            // Skip in CI or when explicitly disabled
-            var ci = Environment.GetEnvironmentVariable("CI");
-            var skip = Environment.GetEnvironmentVariable("SKIP_TESTAPP_INTEGRATION");
-            if (!string.IsNullOrEmpty(ci) || string.Equals(skip, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(skip, "true", StringComparison.OrdinalIgnoreCase))
-            {
-                // Considered skipped in CI environments
-                return;
-            }
-
-            EnsureTestAppRan();
-
-            if (s_exception != null)
-            {
-                // Rethrow to fail the test with original stack
-                throw new AggregateException("TestApp execution failed", s_exception);
-            }
-        }
-
         private static void EnsureTestAppRan()
         {
             if (s_ran) return;

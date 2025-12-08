@@ -16,7 +16,7 @@ public class HorizontalLayoutControllerTests
         var controller = new HorizontalLayoutController();
         controller.SetCurrentItemSpacing(10.0f);
         controller.SetCurrentSpacing(SpacingMode.Stacked);
-        controller.SetCurrentAlignment(-1.0f); // Top align
+        controller.SetCurrentAlignment(0.0f); // Top align
 
         var container = new UserInterfaceElement();
         
@@ -68,14 +68,15 @@ public class HorizontalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
+        // Container size 200x100, content area: origin=(-100, -50), size=(200, 100)
         // Total width = 150. Available = 200. Gap = 50 / 2 = 25.
-        // Child 1: 0
-        // Child 2: 50 + 25 = 75
-        // Child 3: 75 + 50 + 25 = 150
+        // Child 1: -100 (content origin X)
+        // Child 2: -100 + 50 + 25 = -25
+        // Child 3: -25 + 50 + 25 = 50
         
-        Assert.Equal(0, child1.Position.X);
-        Assert.Equal(75, child2.Position.X);
-        Assert.Equal(150, child3.Position.X);
+        Assert.Equal(-100, child1.Position.X);
+        Assert.Equal(-25, child2.Position.X);
+        Assert.Equal(50, child3.Position.X);
     }
 
     [Fact]
@@ -102,12 +103,13 @@ public class HorizontalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
+        // Container size 200x100, content area: origin=(-100, -50), size=(200, 100)
         // Total width = 100. Available = 200. Gap = 100 / 3 = 33.33
-        // Child 1: 33.33
-        // Child 2: 33.33 + 50 + 33.33 = 116.66
+        // Child 1: -100 + 33.33 = -66.67
+        // Child 2: -66.67 + 50 + 33.33 = 16.66
         
-        Assert.Equal(33.333f, child1.Position.X, 2);
-        Assert.Equal(116.666f, child2.Position.X, 2);
+        Assert.Equal(-66.666f, child1.Position.X, 2);
+        Assert.Equal(16.666f, child2.Position.X, 2);
     }
 
     [Fact]

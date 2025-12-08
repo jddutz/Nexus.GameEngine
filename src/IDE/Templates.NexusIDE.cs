@@ -23,45 +23,45 @@ public static partial class Templates
         Padding = Padding.All(20),
         Subcomponents =
         [
-            new LayoutControllerTemplate(),
+            // Vertical layout controller - try Distributed spacing for vertical centering effect
+            new VerticalLayoutControllerTemplate
+            {
+                ItemSpacing = 15.0f,
+                Alignment = 0.5f,  // Center horizontally
+                Spacing = SpacingMode.Distributed  // Equal spacing before, between, and after
+            },
             
-            // Simple test - one box top-left
+            // Red box
             new TextureRectTemplate()
             {
                 Name = "RedBox",
                 Texture = TextureDefinitions.UniformColor,
                 Color = Colors.Red,
-                Size = new Vector2D<float>(140, 100),
+                Size = new Vector2D<float>(200, 80),
                 HorizontalSizeMode = SizeMode.Fixed,
-                VerticalSizeMode = SizeMode.Fixed,
-                Pivot = Align.TopLeft,  // Explicit
-                Alignment = Align.TopLeft
+                VerticalSizeMode = SizeMode.Fixed
             },
             
-            // Simple test - one box at center
+            // Green box
             new TextureRectTemplate()
             {
                 Name = "GreenBox",
                 Texture = TextureDefinitions.UniformColor,
                 Color = Colors.Green,
-                Size = new Vector2D<float>(120, 80),
+                Size = new Vector2D<float>(150, 60),
                 HorizontalSizeMode = SizeMode.Fixed,
-                VerticalSizeMode = SizeMode.Fixed,
-                Pivot = Align.MiddleCenter,
-                Alignment = Align.MiddleCenter
+                VerticalSizeMode = SizeMode.Fixed
             },
             
-            // Simple test - one box middle-left
+            // Blue box
             new TextureRectTemplate()
             {
                 Name = "BlueBox",
                 Texture = TextureDefinitions.UniformColor,
                 Color = Colors.Blue,
-                Size = new Vector2D<float>(100, 60),
+                Size = new Vector2D<float>(180, 100),
                 HorizontalSizeMode = SizeMode.Fixed,
-                VerticalSizeMode = SizeMode.Fixed,
-                Pivot = Align.TopLeft,
-                Alignment = Align.MiddleLeft
+                VerticalSizeMode = SizeMode.Fixed
             }
         ]
     };

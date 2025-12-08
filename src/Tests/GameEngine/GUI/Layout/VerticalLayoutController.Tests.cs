@@ -16,7 +16,7 @@ public class VerticalLayoutControllerTests
         var controller = new VerticalLayoutController();
         controller.SetCurrentItemSpacing(10.0f);
         controller.SetCurrentSpacing(SpacingMode.Stacked);
-        controller.SetCurrentAlignment(-1.0f);
+        controller.SetCurrentAlignment(0.0f); // Left align
 
         var container = new UserInterfaceElement();
         
@@ -33,11 +33,10 @@ public class VerticalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
-        // Child 1 should be at (0, 0) (relative to container content area)
+        // Content area is centered, so origin is at (0, 0) but we position at content origin
+        // Container has no size set, so content area spans from 0,0
+        // Child 1 should be at (0, 0) (relative to content area origin)
         // Child 2 should be at (0, 50 + 10) = (0, 60)
-        
-        // Note: Alignment -1.0 means Left aligned. 
-        // If container has padding, it should be accounted for, but here we assume 0 padding.
         
         Assert.Equal(0, child1.Position.Y);
         Assert.Equal(60, child2.Position.Y);
@@ -71,19 +70,20 @@ public class VerticalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
+        // Container size 100x200, content area: origin=(-50, -100), size=(100, 200)
         // Total child height = 150. Available space = 200.
         // Justified: First at start, Last at end.
         // Space remaining = 200 - 150 = 50.
         // Gaps = count - 1 = 2.
         // Gap size = 50 / 2 = 25.
         
-        // Child 1: 0
-        // Child 2: 50 + 25 = 75
-        // Child 3: 75 + 50 + 25 = 150 (or 200 - 50 = 150)
+        // Child 1: -100 (content origin Y)
+        // Child 2: -100 + 50 + 25 = -25
+        // Child 3: -25 + 50 + 25 = 50
         
-        Assert.Equal(0, child1.Position.Y);
-        Assert.Equal(75, child2.Position.Y);
-        Assert.Equal(150, child3.Position.Y);
+        Assert.Equal(-100, child1.Position.Y);
+        Assert.Equal(-25, child2.Position.Y);
+        Assert.Equal(50, child3.Position.Y);
     }
 
     [Fact]
@@ -110,17 +110,18 @@ public class VerticalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
+        // Container size 100x200, content area: origin=(-50, -100), size=(100, 200)
         // Total child height = 100. Available space = 200.
         // Distributed: Equal spacing before, between, after.
         // Gaps = count + 1 = 3.
         // Space remaining = 200 - 100 = 100.
         // Gap size = 100 / 3 = 33.333...
         
-        // Child 1: 33.33
-        // Child 2: 33.33 + 50 + 33.33 = 116.66
+        // Child 1: -100 + 33.33 = -66.67
+        // Child 2: -66.67 + 50 + 33.33 = 16.66
         
-        Assert.Equal(33.333f, child1.Position.Y, 2);
-        Assert.Equal(116.666f, child2.Position.Y, 2);
+        Assert.Equal(-66.666f, child1.Position.Y, 2);
+        Assert.Equal(16.666f, child2.Position.Y, 2);
     }
 
     [Fact]
@@ -128,7 +129,7 @@ public class VerticalLayoutControllerTests
     {
         // Arrange
         var controller = new VerticalLayoutController();
-        controller.SetCurrentAlignment(-2.0f); // Should be clamped to -1.0
+        controller.SetCurrentAlignment(-2.0f); // Should be clamped to 0.0
 
         var container = new UserInterfaceElement();
         container.SetCurrentSize(new Vector2D<float>(100, 100));
@@ -140,8 +141,9 @@ public class VerticalLayoutControllerTests
         controller.UpdateLayout(container);
 
         // Assert
-        // Alignment -1.0 -> X = 0
-        Assert.Equal(0, child.Position.X);
+        // Container size 100x100, content area: origin=(-50, -50), size=(100, 100)
+        // Alignment 0.0 (clamped from -2.0) -> X = -50 (left edge of content area)
+        Assert.Equal(-50, child.Position.X);
     }
 
     [Fact]

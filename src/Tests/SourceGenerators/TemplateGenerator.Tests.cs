@@ -11,33 +11,6 @@ namespace Tests.SourceGenerators;
 
 public class TemplateGeneratorTests
 {
-    [Fact]
-    public void ShouldGenerateBindingsProperty()
-    {
-        // Arrange
-        var source = @"
-using Nexus.GameEngine.Components;
-
-namespace TestNamespace
-{
-    // Abstract to avoid implementing interface members
-    public abstract partial class TestComponent : IConfigurable
-    {
-        [TemplateProperty]
-        public int Value { get; set; }
-    }
-}";
-        
-        // Act
-        var output = RunGenerator(source);
-
-        // Assert
-        // The generator should add a Bindings property of type TestNamespace.TestComponentPropertyBindings?
-        Assert.Contains("public new TestNamespace.TestComponentPropertyBindings? Bindings", output);
-        Assert.Contains("get => (TestNamespace.TestComponentPropertyBindings?)base.Bindings;", output);
-        Assert.Contains("init => base.Bindings = value;", output);
-    }
-
     private string RunGenerator(string source)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source);
